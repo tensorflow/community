@@ -16,7 +16,6 @@ Archives of the mailing list will be publicly accessible.
 * [sig-rust mailing list](https://groups.google.com/a/tensorflow.org/forum/#!forum/sig-rust)
 * Github [tensorflow/rust](https://github.com/tensorflow/rust)
 
-* any more? IRC?
 
 ## Contacts
 * Project lead: Adam Crume [@adamcrume](https://github.com/adamcrume) - acrume

@@ -1,0 +1,14 @@
+# Owners for community repo
+# For syntax, see https://help.github.com/articles/about-codeowners/
+
+# This file controls who is asked for a review when PRs are submitted
+
+# SIGS
+
+sigs/rust/ @adamcrume
+sigs/tensorboard/ @jart
+sigs/build/ @martinwicke @ewilderj
+
+# RFCs
+
+rfcs/ @ewilderj @martinwicke
