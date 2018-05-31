@@ -1,7 +1,7 @@
-# Title of RFC 
+# Title of RFC
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)       |
-|---------------|------------------------------------------------------|
+:-------------- |:---------------------------------------------------- |
 | **ID**        | <this will be allocated on approval>                 |
 | **Author(s)** | My Name (me@example.org), AN Other (you@example.org) |
 | **Sponsor**   | A N Expert (whomever@tensorflow.org)                 |
