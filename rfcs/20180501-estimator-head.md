@@ -1,6 +1,6 @@
 # Estimator Head
 
-| Status        | Proposed                                          |
+| Status        | Accepted                                          |
 :-------------- | :-------------------------------------------------|
 | **Author(s)** | George Roumpos (Google), TensorFlow team          |
 | **Sponsor**   | Mustafa Ispir (Google)                            |
@@ -472,3 +472,7 @@ API handles
     dnn-linear-combined models. There is code in `tf.contrib.learn` that accepts
     either `logits` or `logits_input` (final hidden layer). But that choice
     complicates the code significantly.
+
+## Discussion
+
+*  [Public feedback on this design](https://github.com/tensorflow/tensorflow/pull/19157)
