@@ -11,7 +11,7 @@ There are three major phases of the process:
 
 
 
-1.  Engagement — connect with the TensorFlow core team and work on a plan for integration, tests, documentation and support.
+1.  Engagement — connect with the TensorFlow core team and work on a plan for integration, tests, documentation and support
 1.  Testing — set up continuous integration and connect to GitHub webhooks
 1.  Building — once tests exist and pass, and builds are available, they will be linked as community supported builds from the official TensorFlow site
 
@@ -44,7 +44,7 @@ The TensorFlow team will work with you to set up continuous testing of your buil
 
 
 *   There is no mandated CI system: you can choose what CI system you would like to use (e.g. Jenkins, Travis, custom)
-*   We recommend running as m	any unit tests as possible
+*   We recommend running as many unit tests as possible
 *   Continuous testing of the master branch is required
 *   Testing release branches at least once after each branch cut is highly recommended
 
@@ -72,5 +72,5 @@ If the build remains broken for an extended period of time, the TensorFlow team 
 
 ## Comments and questions
 
-Please feel free to ask further about this process on the [developers@tensorflow.org](mailto:developers@tensorflow.org) mailing list.
+Please feel free to ask further about this process on the [build@tensorflow.org](mailto:build@tensorflow.org) mailing list.
 
