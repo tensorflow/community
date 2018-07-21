@@ -182,31 +182,50 @@ Here are some explained details for the regressor parameters:
 *   **base_random_seed:** By default (base_random_seed = 0), the random number generator for each tree is seeded by a 64-bit random value when each tree is first created. Using a non-zero value causes tree training to be deterministic, in that the i-th tree's random number generator is seeded with the value base_random_seed + i.
 *   **config:** `RunConfig` object to configure the runtime settings.
 
+### First version supported features
+
+The first version will only:
+
+- Support dense numeric features. Categorical features would need to be imported as one-hot encoding
+- No sample weight is supported
+- No feature importances will be provided
+
 
 ## High Level Design
 
 Each tree in the forest is trained independently and in parallel.
 
-In the first version, we only support dense numeric features. And no sample weight is supported yet.
+For each tree, we maintain the following data:
 
-For each tree, we maintain the following data(two tf.resources):
-1. Tree resource
-    - The tree structure, giving the two children of each non-leaf node and the split used to route data between them. Each split looks at a single input feature and compares it to a threshold value.
-    - Leaf statistics. Each leaf needs to gather statistics, and those statistics have the property that at the end of training, they can be turned into predictions. For classification problems, the statistics are class counts, and for regression problems they are the vector sum of the values seen at the leaf, along with a count of those values (which can be turned into the mean for the final prediction).
-2. Fertile Stats resource
-    - Growing statistics. Each leaf needs to gather data that will potentially allow it to grow into a non-leaf parent node. That data usually consists of a list of potential splits, along with the statistics for each of those splits. Split statistics in turn consist of leaf statistics for their left and right branches, along with some other information that allows us to assess the quality of the split. For classification problems, that's usually the [gini impurity](https://en.wikipedia.org/wiki/Decision_tree_learning#Gini_impurity) of the split, while for regression problems it's the [mean-squared error](https://en.wikipedia.org/wiki/Mean_squared_error).
+1. Tree Resource over the DecisionTree [proto](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/decision_trees/proto/generic_tree_model.proto#L73). It contains information about the tree structure and has statistics for:
 
-During training, every tree is being trained completely independent. For each tree, for every batch of data, we first pass through the tree structure to obtain the leaf ids. Then we update the leaf statistics and after that we update the grow statics and pick the leaf to grow and finally we grow the tree.
+    - Non-leaf nodes: namely two children of each non-leaf node and the split used to route data between them. Each split looks at a single input feature and compares it to a threshold value. Right now only numeric features will be supported. Categorical features should be encoded as 1-hot.
+    - Leaf nodes ([proto](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/decision_trees/proto/generic_tree_model.proto#L137)). Each leaf needs to gather statistics, and those statistics have the property that at the end of training, they can be turned into predictions. For classification problems, the statistics are class counts, and for regression problems they are the vector sum of the values seen at the leaf, along with a count of those values (which can be turned into the mean for the final prediction).
 
-During inferencing, for every batch of data, we pass through the tree structure and obtain the predictions from all the trees and then we average over all the predictions.
+2. Fertile Stats resource over Growing statistics. Each leaf needs to gather data that will potentially allow it to grow into a non-leaf parent node. That data usually consists of
+
+    - A list of potential splits, which is an array in a [proto](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/tensor_forest/proto/fertile_stats.proto#L80)
+    - Split Statistics for each of those splits. Split statistics in turn consist of leaf statistics for their left and right branches, along with some other information that allows us to assess the quality of the split. For classification problems, that's usually the [gini impurity](https://en.wikipedia.org/wiki/Decision_tree_learning#Gini_impurity) of the split, while for regression problems it's the mean-squared error.
+
+
+During training, every tree is being trained completely independently. For each tree, for every batch of the data, we
+
+  - First, pass through the tree structure to obtain the leaf ids.
+  - Then we update the leaf statistics
+  - Update the growing statistics
+  - Pick the leaf to grow
+  - And finally, grow the tree.
+
+During inference, for every batch of data, we pass through the tree structure and obtain the predictions from all the trees and then we average over all the predictions.
 
 ## Distributed version
 
-Since the trees are independent, for the distributed version, we would distribute the number of trees required to train evenly around all the workers. For every tree, they would have two tf.resources available for training.
+Since the trees are independent, for the distributed version, we would distribute the number of trees required to train evenly among all the available workers. For every tree, they would have two tf.resources available for training.
 
 ## Future Work
 
 Add sample importance, right now we don’t support sample importance, which it’s a widely used [feature](http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.ExtraTreesClassifier.html#sklearn.ensemble.ExtraTreesClassifier.fit).
+## Alternatives Considered
 
 ## Questions and Discussion Topics
 
