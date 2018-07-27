@@ -1,5 +1,5 @@
 # Dynamic Loading of Kernels in TensorFlow
- | Status | Proposed |
+ | Status | Accepted |
 :-------------- | :-------------------------------------------------|
 | **Author(s)** | Gunhan Gulsoy (Google) |
 | **Sponsor**   | Martin Wicke (Google)  |
