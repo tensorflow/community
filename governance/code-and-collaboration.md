@@ -2,16 +2,16 @@
 
 ## Projects
 
-A project is the primary unit of collaboration. It can either have its own repo,
-preferably, or be a part of another repo (e.g. a directory in
-_tensorflow/models_, or a _tensorflow/contrib_ module)
+A **project** is the primary unit of collaboration. It can either have its own repo,
+or be a part of another repo (e.g. a directory in _tensorflow/models_).
 
 
 ## Contributors
 
 Anyone can submit a PR contribution to any project, as long as they have signed
-the CLA and follow the guidelines in CONTRIBUTING.md. Their code must be
-reviewed by a maintainer, and their code must pass all applicable tests.
+the CLA and follow the guidelines in
+[CONTRIBUTING.md](https://github.com/tensorflow/tensorflow/blob/master/CONTRIBUTING.md).
+Their code must be reviewed by a maintainer, and must pass all applicable tests.
 
 Code reviews check for code quality and style, including documentation, and
 enforce API compatibility guarantees and other policies. Contributions may be
@@ -21,10 +21,19 @@ APIs.
 
 ## Maintainers
 
-A project has one or more maintainers. If the project is in its own repo, the
-maintainers are those with write access to the repo[^1]. If a repo is shared
-between many projects, we use GitHub's CODEOWNERS to identify owners and route
-PRs to them for review[^2].
+A project has one or more **maintainers***. If the project is in its own repo, the
+maintainers are those with write access to the repo. 
+
+Note that for some repos this may not allow direct commit access, which is
+reserved for administrators or bots. *tensorflow/tensorflow* is a case in point,
+due to the complexity around releasing, only a small group of release engineers
+are administrators. In this case maintainers have approval rights.
+
+If a repo is shared between many projects, we use GitHub's CODEOWNERS to
+identify owners and route PRs to them for review. Because of the way CODEOWNERS
+works, it is not possible to use the GitHub routing mechanism everywhere -- for
+example, the TensorFlow CODEOWNERS file is mainly for informational purposes, as
+to not impede merges.
 
 Once there are more than a couple of maintainers for a project, we will create a
 GitHub team for the project maintainers. This allows for easier maintenance, and
