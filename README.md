@@ -6,6 +6,7 @@ The `community` repository stores documents used by the developer community.
 
 * `rfcs` - design documents used by the design review process
 * `sigs` - documentation for each TensorFlow Special Interest group (SIG)
+* `governance` - operating processes for the TensorFlow project
 
 ## Contact
 
