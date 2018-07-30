@@ -21,7 +21,7 @@ APIs.
 
 ## Maintainers
 
-A project has one or more **maintainers***. If the project is in its own repo, the
+A project has one or more **maintainers**. If the project is in its own repo, the
 maintainers are those with write access to the repo. 
 
 Note that for some repos this may not allow direct commit access, which is
