@@ -24,7 +24,8 @@ An RFC is a document that describes a requirement and the proposed changes that
 will solve it. Specifically, the RFC will:
 
 * be formatted according to the RFC template
-* be submitted as a pull request to the community/rfcs directory
+* be submitted as a pull request to the
+  [community/rfcs](https://github.com/tensorflow/community/tree/master/rfcs) directory
 * be subject to discussion and a review meeting prior to acceptance
 
 ## RFC process
@@ -35,7 +36,14 @@ list for the project concerned (developers@tensorflow.org, or the list for the
 relevant SIG). After writing the RFC draft, get feedback from these
 experts before submitting it.
 
-1. Submit your RFC as a pull request to community/rfcs. 
+1. Recruit a sponsor from the maintainers of the project which your RFC concerns.
+
+   Identify them in the RFC, before posting the PR in step 2.
+   If no sponsor is found you may still post the RFC, but if 
+   within a month of posting the PR there is still no sponsor,
+   it will be closed.
+
+2. Submit your RFC as a pull request to community/rfcs. 
 
    Name your RFC file using the [template](https://github.com/tensorflow/community/blob/master/rfcs/yyyymmdd-rfc-template.md) `YYYYMMDD-descriptive-name.md`, where
    YYYYMMDD is the date of submission, and ‘descriptive-name’ relates to the
@@ -44,12 +52,19 @@ experts before submitting it.
    or other auxiliary files, create a directory of the form `YYYYMMDD-descriptive-name`
    in which to store those files.
 
-2. Recruit a sponsor from the maintainers of the project which your RFC concerns.
-   Identify them in the PR, ideally before posting the PR. If no sponsor is found
-   within a month of posting the PR, it will be closed.
+   Include the header table and the contents of the **Objective** section 
+   in the comment of your pull request, using Markdown. For an example,
+   please see [this example
+   RFC](https://github.com/tensorflow/community/pull/5). Include a mention
+  of any of the GitHub handles of co-authors, reviewers, and sponsors.
+
+   At the top of the PR identify how long the comment period will be. This
+   should be a minimum of two weeks from posting the PR.
 
 3. Email the developer mailing list with a brief description, and a link to the
-   PR and a request for review.
+   PR and a request for review. Follow the example of previous mailings,
+   as you can see in [this
+   example](https://groups.google.com/a/tensorflow.org/forum/#!topic/developers/PIChGLLnpTE).
 
 4. The sponsor will request a review committee meeting, no sooner than two weeks
    after the RFC PR is posted. If discussion is lively, wait until it has
@@ -65,6 +80,9 @@ experts before submitting it.
 
 While implementation code is not necessary to start the RFC process, its
 existence in full or part may help the design discussion.
+
+If in any doubt about this process, feel free to ask on the
+developers mailing list or file an issue in tensorflow/community.
 
 ## Community members
 
