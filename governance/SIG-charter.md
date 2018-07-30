@@ -6,7 +6,7 @@ One or two sentences describing the group's purpose.
 
 ## Membership
 
-*Who can join? How can they join? Who can read the group's activity?**
+*Who can join? How can they join? Who can read the group's activity?*
 
 Example:
 

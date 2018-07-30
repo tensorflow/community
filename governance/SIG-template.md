@@ -3,6 +3,7 @@
 ## What is this group for?
 
 Describe the need the group fills. Who is the audience?
+Provide evidence that work is already ongoing in this area.
 
 ## Who will be part of it?
 
@@ -10,13 +11,14 @@ Describe:
 
 * group leader
 * a second for the leader
-* one or more interested parties who will also be in the group
+* one or more interested parties who will also be in the group -- provide
+  evidence of the sustainability of the group
 
 What will be your membership policy?
 
 ## What initial problems will the group tackle?
 
-*List potential goals for the group**
+*List potential goals for the group*
 
 ## What modes of communication do you intend to use?
 
