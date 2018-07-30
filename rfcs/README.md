@@ -9,6 +9,5 @@ process](https://github.com/tensorflow/community/blob/master/governance/TF-RFCs.
 
 ## Template
 
-Use [this
-template](https://github.com/tensorflow/community/blob/master/governance/TF-RFCs.md)
+Use [this template](yyyymmdd-rfc-template.md)
 to draft an RFC.
