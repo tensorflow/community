@@ -2,7 +2,6 @@
 
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
-| **ID**        | <this will be allocated on approval>                 |
 | **Author(s)** | Austin Anderson (angerson@google.com) |
 | **Sponsor**   | Gunhan Gulsoy (gunan@google.com)                     |
 | **Updated**   | 2018-07-31                                           |
