@@ -3,15 +3,23 @@
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
 | **ID**        | <this will be allocated on approval>                 |
-| **Author(s)** | Austin Anderson (angerson@google.com)
+| **Author(s)** | Austin Anderson (angerson@google.com) |
 | **Sponsor**   | Gunhan Gulsoy (gunan@google.com)                     |
 | **Updated**   | 2018-07-31                                           |
 
 
 # Summary
 
-This PR describes a new way to manage TensorFlow's Dockerfiles that is detached
-from the build-and-delpoy-images system.
+This document describes a new way to manage TensorFlow's dockerfiles. Instead
+of handling complexity via an on-demand build script, Dockerfile maintainers
+manage re-usable chunks called partials which are assembled into documented,
+standard, committed-to-repo Dockerfiles that don't need extra scripts to build.
+It is also decoupled from the system that builds and uploads the Docker images,
+which can be safely handled by separate CI scripts.
+
+**Important:** This document is slim. The real meat of the design has already
+been implemented in [this PR to
+tensorflow/tensorflow](https://github.com/tensorflow/tensorflow/pull/21291).
 
 # Background
 
@@ -37,6 +45,10 @@ be finicky, and is not easily understood compared to vanilla Dockerfiles. Some
 Dockerfiles are duplicated, some are unused, and some users have made their own
 instead. None of the Dockerfiles use the ARG directive.
 
+Furthermore, `parameterized_docker_build.sh` is tightly coupled with the
+deploy-to-image-hub process we use, which is confusing because users who build
+the images locally don't need that information at all.
+
 This document proposes a new way for the TF team to maintain this complex set
 of similar Dockerfiles.
 
@@ -48,8 +60,9 @@ documented and support argument customization. Unlike the parameterized image
 builder script, this system excludes the image deployment steps, which should
 be handled by a totally different system anyway.
 
-This section lightly describes the design, which is fully implemented in this
-very PR.
+This section lightly describes the design, which is fully implemented in [this
+pull request to the main TensorFlow
+repo](https://github.com/tensorflow/tensorflow/pull/21291).
 
 Partial files are syntactically valid but incomplete files with Dockerfile
 syntax.
