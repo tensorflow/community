@@ -28,6 +28,31 @@ not particularly well defined or documented, and [our
 Dockerfiles](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/docker)
 are complicated and frightening.
 
+## Existing Images are Hard to Optimize
+
+TensorFlow's current set of Dockerfiles are difficult to optimize. Developers
+dislike pulling enormous Docker containers, and many of our tags could be
+considered clunky (sizes from Dockerhub):
+
+| Image Tag          |   Size |
+|:-------------------|-------:|
+|latest-devel-gpu-py3| 1 GB   |
+|latest-devel-py3    | 773 MB |
+|latest-gpu-py3      |1 GB    |
+|latest-py3          | 438 MB |
+|latest-devel-gpu    | 1 GB   |
+|latest-devel        | 727 MB |
+|latest-gpu          | 1 GB   |
+|latest              | 431 MB |
+
+Including an extra dependency like Jupyter can add a few hundred megabytes of
+extra storage. Since some developers want to have Jupyter in the images and
+it's too much trouble for us to maintain many similar Dockerfiles, we've ended
+up with a limited set of non-optimized images for developers who want only a
+certain set of functions. I'm not sure if this is ever a critical problem, but
+it's a little annoying (one of my personal computers only has 32 GB of SSD
+space on the root drive, and I regularly need to wipe my docker cache).
+
 ## TF Docker Images need Complexity
 
 Our Docker images support two primary use cases: development _with_ TensorFlow,
@@ -73,6 +98,14 @@ based on ordered lists of partials, and documentation for those values.
 The assembler is a python script that accepts a spec and generates a bunch of
 Dockerfiles to be committed. The spec includes documentation and descriptions,
 and the output Dockerfiles are fully documented and can be built manually.
+
+**Important**: This design in its current implementation does **not** attempt
+to address the limitations of our current set of images. Instead, it replicates
+the current set of tags with a few easy improvements, the most notable being a
+separate set of Dockerfiles that add Jupyter -- identical in every way to the
+non-Jupyter images without needing any extra maintenance. This design makes it
+much easier to craft TensorFlow's Docker offering in a way that satisfies
+everyone with minimal extra work from the Dockerfile maintainers.
 
 # Impact
 
