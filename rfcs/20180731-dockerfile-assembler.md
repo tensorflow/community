@@ -20,6 +20,8 @@ which can be safely handled by separate CI scripts.
 been implemented in [this PR to
 tensorflow/tensorflow](https://github.com/tensorflow/tensorflow/pull/21291).
 
+**Also Important:** This design is not currently attempting to revise the images for speed or size: the design sets out a process that makes optimizing the images much easier to do on a larger scale.
+
 # Background
 
 TensorFlow's Docker offerings have lots of problems that affect both users and
