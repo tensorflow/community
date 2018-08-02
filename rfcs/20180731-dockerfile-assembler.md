@@ -169,12 +169,57 @@ heavily coupled to our current environment, which may change immensely e.g. if
 AMD releases Docker images similar to Nvidia's or if someone would like to add
 MKL support.
 
-### Note on Normal Multi Stage Dockerfiles
+## Multiple Normal Dockerfiles Aggregated into Multiple Stages
 
-Simple multi-stage Dockerfiles won't be useful for our case, because the images
-don't include freshly-built artifacts. They *could* be used for offering images
-that come with very fresh package builds, but that's about it. See also
-comments on this doc by @flx42.
+In a [comment on this doc's PR](https://github.com/tensorflow/community/pull/8#issuecomment-410080344), @flx42 suggested a much-improved version of the
+previous section. Another way of using ARG interpolation in FROM lines would be
+to write multiple isolated Dockerfiles that can be layered together during the `docker build` process:
+
+
+```
+ARG from
+FROM ${from}
+
+ARG PIP
+RUN ${PIP} install jupyter
+```
+
+And then:
+
+```
+$ docker build -t nvidia-devel -f Dockerfile.nvidia-devel .
+$ docker build -t nvidia-devel-jupyter-py3 --build-arg from=nvidia-devel --build-arg pip=pip3 -f Dockerfile.jupyter .
+```
+
+This shares the advantage of the current design by working from many reusable parts, but carries some notable tradeoffs:
+
+### Advantages over Current Design
+
+I can see a variety of minor improvements:
+
+- No need for assembler script or spec file
+- Possibly faster build times due to concretely isolated image stages
+- Image stages (akin to partials) may be more reusable due to slot-like usage of `--build-args`
+- Because there are no concrete Dockerfiles, there's only one place that defines the Dockerhub tags and what components describe them (in the current design, the spec files describes the Dockerfiles, and then a little more logic elsewhere in our CI would configure those Dockerfiles with the tags)
+
+### Downsides compared to Current Design
+
+...but some downsides that I think are fairly heavy:
+
+- Spec + Assembler have some very nice advantages (validation, re-use, etc.)
+- No concrete Dockerfiles for OSS devs to use / refer to
+- Advanced usage requires some unintuitive file/directory layout + build ordering
+- Image-building complexity offloaded to OSS developers and to the CI scripts, which would need scripts / logic to define sets of images to build
+- Updating requires familiarity with multi-stage behavior
+
+### Conclusion
+
+This is an interesting approach that I like a lot, but I don't think it offers
+enough benefits over the current design (which has another advantage in that it
+is already mostly finished) to implement.
+
+It's worth noting that using multiple FROM stages is a powerful tool that could
+possibly be leveraged in the partials for the current design.
 
 ## Manually Maintained Dockerfiles with Script References
 
