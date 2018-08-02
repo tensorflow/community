@@ -32,7 +32,8 @@ are complicated and frightening.
 
 TensorFlow's current set of Dockerfiles are difficult to optimize. Developers
 dislike pulling enormous Docker containers, and many of our tags could be
-considered clunky (sizes from Dockerhub):
+considered clunky (tag sizes yanked from Dockerhub, see also @flx42's comment
+on this doc's PR for on-disk sizes):
 
 | Image Tag          |   Size |
 |:-------------------|-------:|
@@ -45,13 +46,13 @@ considered clunky (sizes from Dockerhub):
 |latest-gpu          | 1 GB   |
 |latest              | 431 MB |
 
-Including an extra dependency like Jupyter can add a few hundred megabytes of
-extra storage. Since some developers want to have Jupyter in the images and
-it's too much trouble for us to maintain many similar Dockerfiles, we've ended
-up with a limited set of non-optimized images for developers who want only a
-certain set of functions. I'm not sure if this is ever a critical problem, but
-it's a little annoying (one of my personal computers only has 32 GB of SSD
-space on the root drive, and I regularly need to wipe my docker cache).
+Including an extra dependency like Jupyter and convenience packagesnot can add
+a few hundred megabytes of extra storage. Since some developers want to have
+Jupyter in the images and it's too much trouble for us to maintain many similar
+Dockerfiles, we've ended up with a limited set of non-optimized images. I'm not
+sure if this truly a critical problem, but it's a little annoying (one of my
+personal computers only has 32 GB of SSD space on the root drive, and I
+regularly need to wipe my docker cache of large images).
 
 ## TF Docker Images need Complexity
 
@@ -113,7 +114,7 @@ This approach has many convenient benefits:
 
 *   The result is concrete, buildable, documented Dockerfiles. Users who wish
 to build their own images locally do not need to also understand the build
-system.
+system. Furthermore, basing our images on clean Dockerfiles that live in the repository feels clean and right -- as a user, I (personally) like to be able to see how an image works. It removes the mystery and magic from the process.
 *   This implementation is agnostic to what images we would like to make
 available online (i.e. our Docker story). It's very easy to add new dockerfile
 outputs.
@@ -134,16 +135,21 @@ available args.
 
 I considered two alternatives while working on this.
 
-## Modern Multi-Stage Dockerfile
+## Hacky Multi-Stage Dockerfile
 
 "Multi-stage Building" is a powerful new Dockerfile feature that supports
-multiple FROM statements in one Dockerfile. It is meant to be used for creating
-artifacts with one image before using those artifacts in another image, but you
-can also use variable expansion in any FROM line:
+multiple FROM statements in one Dockerfile. Multi-stage builds let you build
+and run an artifact (like a compiled version of a binary) in any number of
+separate stages designated by FROM directives; the resulting image is only as
+large as the final stage without the build-only dependencies from previous
+stages.
+
+However, Docker's ARG parameter expansion can be used in these extra FROM
+directives to conditionally set base images for each build stage:
 
 
 ```dockerfile
-# If --build-arg FROM_FOO is set, build from foo. else build from bar.
+# If --build-arg FROM_FOO is set, build FROM foo. else build FROM bar.
 ARG FROM_FOO
 ARG _HELPER=${FROM_FOO:+foo}
 ARG BASE_IMAGE=${_HELPER:-bar}
@@ -151,13 +157,22 @@ FROM ${BASE_IMAGE}
 …
 ```
 
-...which means that you can dynamically set multiple FROM images. My first
-draft used ARGs and FROMs in a single Dockerfile to manipulate build stages.
-[The resulting
-Dockerfile](https://gist.github.com/angersson/3d2b5ae6a01de4064b1c3fe7a56e3821)
-is incredibly powerful, obscenely difficult to understand, and absolutely not
-extensible: it is heavily coupled to our current environment, which may change
-immensely e.g. if AMD releases Docker images similar to Nvidia's.
+This means that it's possible to use multi-stage builds and ARGs to create
+stages that are conditionally based on previous stages in the Dockerfile.
+[This sample
+Dockerfile](https://gist.github.com/angersson/3d2b5ae6a01de4064b1c3fe7a56e3821),
+which I've included only as a demonstration of a bad idea (and may currently
+work), is very powerful but not extensible and not easy to understand. It is
+heavily coupled to our current environment, which may change immensely e.g. if
+AMD releases Docker images similar to Nvidia's or if someone would like to add
+MKL support.
+
+### Note on Normal Multi Stage Dockerfiles
+
+Simple multi-stage Dockerfiles won't be useful for our case, because the images
+don't include freshly-built artifacts. They *could* be used for offering images
+that come with very fresh package builds, but that's about it. See also
+comments on this doc by @flx42.
 
 ## Manually Maintained Dockerfiles with Script References
 
@@ -176,15 +191,15 @@ RUN /bin/install_bazel.sh
 This is better than our current approach, but has many small drawbacks that add
 up:
 
-*   Argument passing becomes slightly more complex, because ARGs must be passed
+* Argument passing becomes slightly more complex, because ARGs must be passed
 and read as either ENV variables or as build arguments.
-*   Each dockerfile has to be properly documented manually, if at all.
-*   Developers have to leave the Dockerfile to read the shell scripts, which
+* Each dockerfile has to be properly documented manually, if at all.
+* Developers have to leave the Dockerfile to read the shell scripts, which
 gets annoying.
-*   Maintenance is spread across the dockerfiles and the scripts, and can grow
+* Maintenance is spread across the dockerfiles and the scripts, and can grow
 into even more work (like some Dockerfiles having extra non-script directives,
 etc.).
-*   Extra overhead in the scripts can be kind of wasteful 
+* Extra overhead in the scripts can be kind of wasteful 
 
 # Work Estimates
 
