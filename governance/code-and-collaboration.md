@@ -21,13 +21,17 @@ APIs.
 
 ## Maintainers
 
-A project has one or more **maintainers**. If the project is in its own repo, the
-maintainers are those with write access to the repo. 
+A project has one or more **maintainers**. 
 
-Note that for some repos this may not allow direct commit access, which is
-reserved for administrators or bots. *tensorflow/tensorflow* is a case in point,
-due to the complexity around releasing, only a small group of release engineers
-are administrators. In this case maintainers have approval rights.
+Maintainers have write access to the repo containing their project. That means
+they can review PRs—an approving review will allow PRs to be merged. They can
+also change labels (which means they can trigger tests), add assignees and
+reviewers, and they can be assigned to issues and PRs.
+
+Note that for some repos being a maintainer may not allow direct commit access,
+which is reserved for administrators or bots. *tensorflow/tensorflow* is a case
+in point, due to the complexity around releasing, only a small group of release
+engineers are administrators. In this case maintainers have approval rights.
 
 If a repo is shared between many projects, we use GitHub's CODEOWNERS to
 identify owners and route PRs to them for review. Because of the way CODEOWNERS
@@ -43,10 +47,6 @@ communication. Larger projects can facilitate coordination and contribution
 through establishing a
 [TensorFlow SIG](SIGS.md).
 
-Maintainers have write access to the repo containing their project. That means
-they can review PRs—an approving review will allow PRs to be merged. They can
-also change labels (which means they can trigger tests), add assignees and
-reviewers, and they can be assigned to issues and PRs.
 
 ### Repositories requiring synchronization
 
@@ -70,11 +70,11 @@ previous contributions and established trust.
 ## Collaboration
 
 Maintainers are free to agree on their preferred form of collaboration and
-decision making, with the requirement that their material discussions and
-decisions about the project must be made publicly accessible—this can happen
-after the fact, for example in the form of publishing meeting minutes, reviews,
-or decisions. Communication about topics such as admitting other maintainers, or
-as of yet undisclosed security issues, can be kept confidential.
+decision making, with the requirement that material discussions and decisions
+about the project must be made publicly accessible—this can happen after the
+fact, for example in the form of publishing meeting minutes, reviews, or
+decisions. Communication about topics such as admitting other maintainers, or as
+of yet undisclosed security issues, can be kept confidential.
 
 If significant engagement from multiple parties is encountered, the group may
 request the formation of a SIG to formalize collaboration and cooperation. The
