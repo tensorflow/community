@@ -70,11 +70,11 @@ previous contributions and established trust.
 ## Collaboration
 
 Maintainers are free to agree on their preferred form of collaboration and
-decision making, with the requirement that material discussions and decisions
-about the project must be made publicly accessible—this can happen after the
-fact, for example in the form of publishing meeting minutes, reviews, or
-decisions. Communication about topics such as admitting other maintainers, or as
-of yet undisclosed security issues, can be kept confidential.
+decision making, with the requirement that regular communication about decisions
+must be made publicly accessible—this can happen after the fact, for example in
+the form of publishing meeting minutes, reviews, or announcements. Communication
+about topics such as admitting other maintainers, or as of yet undisclosed
+security issues, can be kept confidential.
 
 If significant engagement from multiple parties is encountered, the group may
 request the formation of a SIG to formalize collaboration and cooperation. The
