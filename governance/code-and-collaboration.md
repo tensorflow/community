@@ -1,9 +1,10 @@
+
 # TensorFlow Governance: Code and Collaboration
 
 ## Projects
 
-A **project** is the primary unit of collaboration. It can either have its own repo,
-or be a part of another repo (e.g. a directory in _tensorflow/models_).
+A **project** is the primary unit of collaboration. It can either have its own
+repo, or be a part of another repo (e.g. a directory in _tensorflow/models_).
 
 
 ## Contributors
