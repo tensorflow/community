@@ -1,10 +1,10 @@
 # TensorForest Estimator
 
-| Status        | Proposed      |
+| Status        | Accepted      |
 :---------------|:-----------------------------------------------------|
 | **Author(s)** | Peng Yu(yupbank@gmail.com) |
 | **Sponsor**   | Natalia P (Google)                 |
-| **Updated**   | 2018-07-15                                           |
+| **Updated**   | 2018-08-09                                           |
 
 ## Objective
 
@@ -251,3 +251,5 @@ Add sample importance, right now we donâ€™t support sample importance, which itâ
 ## Questions and Discussion Topics
 
 [Google Groups](https://groups.google.com/a/tensorflow.org/forum/#!topic/developers/yreM9FRiBs4)
+
+[Github Pull Request Discussion](https://github.com/tensorflow/community/pull/3)
