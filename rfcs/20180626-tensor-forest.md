@@ -107,11 +107,11 @@ classifier = estimator.TensorForestClassifier(feature_columns=[feature_1, featur
 						model_dir=None,
 						n_classes=2,
 						label_vocabulary=None,
+						head=None,
 						n_trees=100,
 						max_nodes=1000,
 						num_splits_to_consider=10,
 						split_after_samples=250,
-						base_random_seed=0,
 						config=None)
 
 
@@ -120,6 +120,12 @@ def input_fn_train():
   return dataset
 
 classifier.train(input_fn=input_fn_train)
+
+def input_fn_predict():
+  ...
+  return dataset
+
+classifier.predict(input_fn=input_fn_predict)
 
 def input_fn_eval():
   ...
@@ -133,11 +139,14 @@ Here are some explained details for the classifier parameters:
 - **feature_columns**: An iterable containing all the feature columns used by the model. All items in the set should be instances of classes derived from FeatureColumn.
 - **n_classes**: Defaults to 2. The number of classes in a classification problem.
 - **model_dir**: Directory to save model parameters, graph and etc. This can also be used to load checkpoints from the directory into an estimator to continue training a previously saved model.
-- **label_vocabulary**: A list of strings representing all possible label values. If provided, labels must be of string type and their values must be present in label_vocabulary list. If label_vocabulary is omitted, it is assumed that the labels are already encoded as integer or float  values within [0, 1] for n_classes=2, or encoded as integer values in {0, 1,..., n_classes-1} for n_classes>2 . If vocabulary is not provided and labels are of string, an error will be generated.
+- **label_vocabulary**: A list of strings representing all possible label values. If provided, labels must be of string type and their values must be present in label_vocabulary list. If label_vocabulary is omitted, it is assumed that the labels are already encoded as integer values within {0, 1} for n_classes=2, or encoded as integer values in {0, 1,..., n_classes-1} for n_classes>2 . If vocabulary is not provided and labels are of string, an error will be generated.
+- **head**: .A `head_lib._Head` instance, the loss would be calculated for metrics purpose and not being used for training. If not provided, one will be automatically created based on params
 - **n_trees**: The number of trees to create. Defaults to 100. There usually isn't any accuracy gain from using higher values (assuming deep enough trees are built).
 - **max_nodes**: Defaults to 10k. No tree is allowed to grow beyond max_nodes nodes, and training stops when all trees in the forest are this large.
 - **num_splits_to_consider**: Defaults to sqrt(num_features). In the extremely randomized tree training algorithm, only this many potential splits are evaluated for each tree node.
 - **split_after_samples**: Defaults to 250. In our online version of extremely randomized tree training, we pick a split for a node after it has accumulated this many training samples.
+- **config**: RunConfig object to configure the runtime settings.
+
 
 
 ### TensorForestRegressor
@@ -149,11 +158,11 @@ feature_2 = numeric_column('feature_2')
 regressor = estimator.TensorForestRegressor(feature_columns=[feature_1, feature_2],
 						model_dir=None,
 						label_dimension=1,
+						head=None,
 						n_trees=100,
 						max_nodes=1000,
 						num_splits_to_consider=10,
 						split_after_samples=250,
-						base_random_seed=0,
 						config=None)
 
 
@@ -162,6 +171,12 @@ def input_fn_train():
   return dataset
 
 regressor.train(input_fn=input_fn_train)
+
+def input_fn_predict():
+  ...
+  return dataset
+
+regressor.predict(input_fn=input_fn_predict)
 
 def input_fn_eval():
   ...
@@ -172,15 +187,15 @@ metrics = regressor.evaluate(input_fn=input_fn_eval)
 
 Here are some explained details for the regressor parameters:
 
-*   **feature_columns:** An iterable containing all the feature columns used by the model. All items in the set should be instances of classes derived from `FeatureColumn`.
-*   **model_dir:** Directory to save model parameters, graph and etc. This can also be used to load checkpoints from the directory into a estimator to continue training a previously saved model.
-*   **label_dimension:** Defaults to 1. Number of regression targets per example.
-*   **n_trees:** The number of trees to create. Defaults to 100. There usually isn't any accuracy gain from using higher values.
-*   **max_nodes:**  Defaults to 10,000. No tree is allowed to grow beyond max_nodes nodes, and training stops when all trees in the forest are this large.
-*   **num_splits_to_consider:** Defaults to `sqrt(num_features)`. In the extremely randomized tree training algorithm, only this many potential splits are evaluated for each tree node.
-*   **split_after_samples:** Defaults to 250. In our online version of extremely randomized tree training, we pick a split for a node after it has accumulated this many training samples.
-*   **base_random_seed:** By default (base_random_seed = 0), the random number generator for each tree is seeded by a 64-bit random value when each tree is first created. Using a non-zero value causes tree training to be deterministic, in that the i-th tree's random number generator is seeded with the value base_random_seed + i.
-*   **config:** `RunConfig` object to configure the runtime settings.
+- **feature_columns:** An iterable containing all the feature columns used by the model. All items in the set should be instances of classes derived from `FeatureColumn`.
+- **model_dir:** Directory to save model parameters, graph and etc. This can also be used to load checkpoints from the directory into a estimator to continue training a previously saved model.
+- **label_dimension:** Defaults to 1. Number of regression targets per example.
+- **head**: .A `head_lib._Head` instance, the loss would be calculated for metrics purpose and not being used for training. If not provided, one will be automatically created based on params
+- **n_trees:** The number of trees to create. Defaults to 100. There usually isn't any accuracy gain from using higher values.
+- **max_nodes:**  Defaults to 10,000. No tree is allowed to grow beyond max_nodes nodes, and training stops when all trees in the forest are this large.
+- **num_splits_to_consider:** Defaults to `sqrt(num_features)`. In the extremely randomized tree training algorithm, only this many potential splits are evaluated for each tree node.
+- **split_after_samples:** Defaults to 250. In our online version of extremely randomized tree training, we pick a split for a node after it has accumulated this many training samples.
+- **config:** `RunConfig` object to configure the runtime settings.
 
 ### First version supported features
 
@@ -221,6 +236,11 @@ During inference, for every batch of data, we pass through the tree structure an
 ## Distributed version
 
 Since the trees are independent, for the distributed version, we would distribute the number of trees required to train evenly among all the available workers. For every tree, they would have two tf.resources available for training.
+
+## Differences from the latest contrib version
+
+- Simplified code with only limited subset of features (obviously, excluding all the experimental ones)
+- New estimator interface, support for new feature columns and losses
 
 ## Future Work
 
