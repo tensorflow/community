@@ -241,6 +241,7 @@ Since the trees are independent, for the distributed version, we would distribut
 
 - Simplified code with only limited subset of features (obviously, excluding all the experimental ones)
 - New estimator interface, support for new feature columns and losses
+- We will try to reuse as much code from canned boosted trees as possible (proto, inference etc)
 
 ## Future Work
 
