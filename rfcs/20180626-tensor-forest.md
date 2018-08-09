@@ -99,7 +99,7 @@ With single machine training, TensorForest finishes much faster on big dataset l
 ### Interface
 ### TensorForestClassifier
 
-```
+```python
 feature_1 = numeric_column('feature_1')
 feature_2 = numeric_column('feature_2')
 
@@ -151,7 +151,7 @@ Here are some explained details for the classifier parameters:
 
 ### TensorForestRegressor
 
-```
+```python
 feature_1 = numeric_column('feature_1')
 feature_2 = numeric_column('feature_2')
 
