@@ -78,7 +78,7 @@ At the start of training, the tree structure is initialized to a root node, and 
 
 ## Benchmark
 
-Comparing with Scikit-learn ExtraTrees. Both using 100 trees with 10k nodes. And Scikit-learn ExtraTrees is a batch algorithm while TensorForest is a streaming/online algorithm.
+Comparing with Scikit-learn ExtraTrees. Both using 100 trees with 10k nodes. And Scikit-learn ExtraTrees is a batch algorithm while TensorForest is a streaming/online algorithm [16](https://docs.google.com/viewer?a=v&pid=sites&srcid=ZGVmYXVsdGRvbWFpbnxtbHN5c25pcHMyMDE2fGd4OjFlNTRiOWU2OGM2YzA4MjE).
 
 |Data Set| #Examples | #Features| #Classes| TensorForest Accuracy(%)/R^2 Score| Scikit-learn ExtraTrees Accuracy(%)/R^2 Score|
 |-------|:---------:|:---------:|:---------:|:---------:|---------:|
@@ -92,7 +92,7 @@ Comparing with Scikit-learn ExtraTrees. Both using 100 trees with 10k nodes. And
 |Covertype| 581k| 54| 7| 83.0| 85.0|
 |HiGGS| 11M| 28| 2| 70.9| 71.7|
 
-With single machine training, TensorForest finishes much faster on big dataset like HIGGS, takes about one percent of the time scikit-lean required.
+With single machine training, TensorForest finishes much faster on big dataset like HIGGS, takes about one percent of the time scikit-lean required [17](https://docs.google.com/viewer?a=v&pid=sites&srcid=ZGVmYXVsdGRvbWFpbnxtbHN5c25pcHMyMDE2fGd4OjFlNTRiOWU2OGM2YzA4MjE).
 
 ## Design Proposal
 
