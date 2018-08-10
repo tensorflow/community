@@ -76,7 +76,7 @@ At the start of training, the tree structure is initialized to a root node, and 
 4. Otherwise, `(x_i, y_i)` is used to update the statistics of every split in the growing statistics of leaf `l_i`. If leaf `l_i` has now seen `split_after_samples` data points since creating all of its potential splits, the split with the best score is chosen, and the tree structure is grown.
 
 
-## BenchMark
+## Benchmark
 
 Comparing with Scikit-learn ExtraTrees. Both using 100 trees with 10k nodes. And Scikit-learn ExtraTrees is a batch algorithm while TensorForest is a streaming/online algorithm.
 
