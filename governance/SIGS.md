@@ -69,7 +69,7 @@ required resources created.
 
 ### Template Request for New SIG
 
-This template will be available in the community repo: [SIG-template.md](SIG-template.md).
+This template will be available in the community repo: [SIG-request-template.md](SIG-request-template.md).
 
 ### Chartering
 
