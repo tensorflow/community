@@ -39,6 +39,6 @@ on agenda items. Slack or other chat channels are optional.*
 
 # Charter
 
-Please draft the SIG's charter using the [SIG Charter Template](SIG-charter.md).
+Please draft the SIG's charter using the [SIG Charter Template](SIG-charter-template.md).
 
 
