@@ -58,7 +58,7 @@ For each intermediate tensor of the while loop function body that is needed for 
 
 Excerpt from white paper on [Control Flow in TensorFlow](http://download.tensorflow.org/paper/white_paper_tf_control_flow_implementation_2017_11_1.pdf):
 
-> "<span style="color:#000000;">Intuitively, the gradient of <code>while_loop(pred, body)</code> is just a while loop of the form:</span></em>
+> Intuitively, the gradient of `while_loop(pred, body)` is just a while loop of the form:
 >
 >
 > ```
@@ -66,7 +66,7 @@ Excerpt from white paper on [Control Flow in TensorFlow](http://download.tensorf
 > while_loop(pred, g_body, [0] + g_vars)
 > ```
 >
-> <span style="color:#000000;">Where <code>N</code> is the number of iterations that the forward while loop runs, <code>g_body</code> is the gradient of the forward loop body, and <code>g_vars</code> is the initial values for the loop variables. As we will see later, <code>g_vars</code> includes the initial gradients for the loop variables of the forward while loop.</span>"</em>*
+> Where `N` is the number of iterations that the forward while loop runs, `g_body` is the gradient of the forward loop body, and `g_vars` is the initial values for the loop variables. As we will see later, `g_vars` includes the initial gradients for the loop variables of the forward while loop.
 
 We use the same logic here as well. To get a count of the number of forward iterations we add an integer counter which is initialized to 0 and is incremented in the loop body. Note that we just need the total number of iterations for the gradient pass so we do not need to accumulate the intermediate values of the counter. This counter is always the first output of the While op.
 
