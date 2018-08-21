@@ -127,11 +127,9 @@ grad = tf.gradients(ret, [x])
 ![alt_text](20180821-differentiable-functional-while/while_v2.png "image_tooltip")
 
 
-The forward functional while op is highlighted in <span style="color:#ff0000;">red</span>. Note that it takes 2 `Const` nodes as inputs. One of the `Const` nodes is `x` with value 2. The other `Const` node is the initial value of the loop counter which is set to 0. There are also 2 `EmptyTensorList` nodes which are used 
+The forward functional while op is highlighted in <span style="color:#ff0000;">red</span>. Note that it takes 2 `Const` nodes as inputs. One of the `Const` nodes is `x` with value 2. The other `Const` node is the initial value of the loop counter which is set to 0. There are also 2 `EmptyTensorList` nodes which are used for accumulating intermediate values.
 
-for accumulating intermediate values.
-
-<span style="text-decoration:underline;">while_cond</span>
+*while_cond*
 
 The loop condition function is fairly trivial. It expects the extra args for the loop counter and accumulators but doesn't actually use them.
 
@@ -140,7 +138,7 @@ The loop condition function is fairly trivial. It expects the extra args for the
 ![alt_text](20180821-differentiable-functional-while/while_cond.png "image_tooltip")
 
 
-<span style="text-decoration:underline;">while_body</span>
+*while_body*
 
 The loop body contains the extra nodes for updating the counter and accumulating intermediates.
 
