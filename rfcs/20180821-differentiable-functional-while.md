@@ -92,7 +92,7 @@ tf.while_loop swaps the tensors from GPU to CPU when the [swap_memory](https://g
 
 ### Lowering pass
 
-In order to get feature parity with the current implementation we will lower the While op to the current while loop graph representation as a grappler pass similar to the one for [if_op](http://google3/third_party/tensorflow/core/common_runtime/lower_if_op.cc). This gets us around some of the issues with the current functional op:
+In order to get feature parity with the current implementation we will lower the While op to the current while loop graph representation as a grappler pass similar to the one for [if_op](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/common_runtime/lower_if_op.cc). This gets us around some of the issues with the current functional op:
 
 
 
