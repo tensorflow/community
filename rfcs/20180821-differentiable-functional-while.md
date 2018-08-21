@@ -109,7 +109,7 @@ x = tf.constant(2.)
 
 ret = while_loop(lambda v: v < 8., lambda v: v * v, [x])
 
-grad = gradients_impl.gradients(ret, [x])
+grad = tf.gradients(ret, [x])
 
 ```
 
