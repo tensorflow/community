@@ -1,7 +1,4 @@
-# Functional while_loop
-
-| Status        | Proposed                                             |
-:---------------|:-----------------------------------------------------|
+# Functional while_loop | Status        | Proposed                                             | :---------------|:-----------------------------------------------------|
 | **Author(s)** | Saurabh Saxena (Google) |
 | **Sponsor**   | Skye Wanderman-Milne (Google)                 |
 | **Updated**   | 2018-08-21                                           |
@@ -158,4 +155,4 @@ Accumulators:
 
 `tensorlist0` <- `arg1`, the value of `x` at the start of the loop.
 
-`tensorlist4` <- Output of `mul_0`.
+`tensorlist1` <- Output of `mul_0`.
