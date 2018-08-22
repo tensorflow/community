@@ -39,17 +39,15 @@ The current implementation uses [Stacks](https://github.com/tensorflow/tensorflo
 
 #### Algorithm
 
-For each intermediate tensor of the while loop function body that is needed for gradient computation, we create an empty TensorList and add it to the list of loop_vars. We then push the intermediate values to the TL using the [TensorListPushBack](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/list_ops.cc#L40) op. Accumulating each intermediate value can sometimes be wasteful since not all intermediates may be required for gradient computation. We can perform a few optimizations to mitigate this:
+For each intermediate tensor of the while loop function body that may be needed for gradient computation, we create an empty TensorList and add it to the list of loop_vars. We then push the intermediate values to the TL using the [TensorListPushBack](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/ops/list_ops.cc#L40) op. Note that this way we may be accumulating more tensors than are actually needed for gradient computation. It is even possible that the graph is just used for inference and hence we do not need the accumulators at all! We rely on the C++ optimization pass that happens after the While op is lowered to remove all such superfluous accumulators. So adding extra accumulators will not have any performance or memory overhead at runtime.
 
-
+To facilitate use-cases where lowering is not desired we can perform a few optimizations to the functional form of the While op:
 
 *   Expose only those intermediate values that are required by the backward pass by building the gradient graph in the forward pass.
     *   This will increase graph building time.
 *   Do not accumulate Const nodes. We can lift these outside the while loop.
 *   Do not accumulate loop vars that are passed-through unchanged.
-*   Implement a grappler pass that removes unused TLs at runtime similar to the [existing pass](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/grappler/optimizers/loop_optimizer.cc#L503) for Stacks.
-    *   This will need to happen after the While op has been lowered and the functions have been inlined.
-*   Rewrite the forward pass when gradients are requested.
+*   Rewrite the forward pass to add accumulators when gradients are requested.
     *   This will require creating a new While op and new FunctionDefs for the loop condition and body.
     *   Since we cannot remove nodes from the Graph there will be unused functions and the dangling While op in the GraphDef.
 
@@ -98,7 +96,7 @@ In order to get feature parity with the current implementation we will lower the
 
 1.  We can perform parallel iterations which are not possible due to the strict mode execution of functions which requires that all inputs to the function must be ready before the function can start executing. We will need to add a `parallel_iterations` attr to the While op.
 1.  The FunctionLibraryRuntime currently does not allow running multi-device functions.
-1.  We can perform global grappler optimizations without needing to cross function boundaries. E.g. we can remove accumulators for intermediate values which are not consumed downstream. The current while loop performs such a pass for removing [unused stacks](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/grappler/optimizers/loop_optimizer.cc#L503) which were used to accumulate intermediates.
+1.  We can perform global grappler optimizations without needing to cross function boundaries. E.g. we can remove accumulators for intermediate values which are not consumed downstream.
 
 
 ### Example
