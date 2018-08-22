@@ -1,4 +1,6 @@
-# Functional while_loop | Status        | Proposed                                             | :---------------|:-----------------------------------------------------|
+# Functional while_loop
+| Status        | Proposed                                             |
+:---------------|:-----------------------------------------------------|
 | **Author(s)** | Saurabh Saxena (Google) |
 | **Sponsor**   | Skye Wanderman-Milne (Google)                 |
 | **Updated**   | 2018-08-21                                           |
