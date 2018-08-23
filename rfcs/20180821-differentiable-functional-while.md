@@ -48,7 +48,7 @@ To facilitate use-cases where lowering is not desired we can perform a few optim
 *   Do not accumulate loop vars that are passed-through unchanged.
 *   Rewrite the forward pass to add accumulators when gradients are requested.
     *   This will require creating a new While op and new FunctionDefs for the loop condition and body.
-    *   Since we cannot remove nodes from the Graph there will be unused functions and the dangling While op in the GraphDef.
+    *   Since we cannot remove nodes from the Graph there will be unused functions and the dangling While op in the GraphDef. These will however be pruned out at runtime and hence will not affect performance or correctness.
 
 
 ### Computing gradients
