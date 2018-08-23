@@ -1,10 +1,10 @@
 # TensorFlow Dockerfile Assembler
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Austin Anderson (angerson@google.com) |
 | **Sponsor**   | Gunhan Gulsoy (gunan@google.com)                     |
-| **Updated**   | 2018-07-31                                           |
+| **Updated**   | 2018-08-23                                           |
 
 
 # Summary
