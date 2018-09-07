@@ -198,7 +198,7 @@ formed) will be deleted by default at 2.0.
 | hvx                | satok16          | delete (redundant with NNAPI)        |
 | image              |                  | partial move to tensorflow/contrib?  |
 | input_pipeline     | rohan100jain     | delete                               |
-| integrate          | shoyer *mcoram   | delete?                              |
+| integrate          | shoyer *mcoram   | move to tensorflow/scientific?       |
 | kafka              | yongtang (mrry)  | move to tensorflow/io?               |
 | keras              | fchollet         | delete (moved to tf.keras)           |
 | kernel_methods    | petrosmol rostami | move to tensorflow/estimator?        |
