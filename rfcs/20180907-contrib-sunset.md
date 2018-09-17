@@ -196,6 +196,8 @@ formed) will be deleted by default at 2.0.
 | hadoop             | yongtang (mrry)  | move to tensorflow/io?               |
 | hooks              | ispirmustafa     | delete (already in core)             |
 | hvx                | satok16          | delete (redundant with NNAPI)        |
+| igfs (#22194)      | dmitrievanthony  | move to tensorflow/io                |
+| ignite (#22210)    | dmitrievanthony  | move to tensorflow/io                |
 | image              |                  | partial move to tensorflow/contrib?  |
 | input_pipeline     | rohan100jain     | delete                               |
 | integrate          | shoyer *mcoram   | move to tensorflow/scientific?       |
