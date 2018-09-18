@@ -261,7 +261,7 @@ formed) will be deleted by default at 2.0.
 | testing            | ispirmustafa     | move to core, make private           |
 | text               |                  | move to tensorflow/contrib?          |
 | tfprof             |                  | delete (replaced by tf.profiler)     |
-| timeseries         | gsundeep karmel terrytangyuan | move to tensorflow/estimator         |
+| timeseries         | bananabowl karmel terrytangyuan | move to tensorflow/estimator         |
 | tpu                | saeta            | move to core                         |
 | training           | ebrevdo sguada joel-shor |                              |
 | util               |                  | delete (no owner), or move to tools  |
