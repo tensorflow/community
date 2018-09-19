@@ -1,7 +1,7 @@
 # Functional while_loop
 | Status        | Accepted                                             |
 :---------------|:-----------------------------------------------------|
-| **Author(s)** | Saurabh Saxena (Google) |
+| **Author** | Saurabh Saxena (Google) |
 | **Sponsor**   | Skye Wanderman-Milne (Google)                 |
 | **Updated**   | 2018-08-23                                           |
 
