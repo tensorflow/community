@@ -161,4 +161,4 @@ Accumulators:
 
 ## Discussion notes
 
-Please see notes in [tensorflow/community#13](https://github.com/tensorflow/community/pull/13).
+Please see notes in [tensorflow/community#13](https://github.com/tensorflow/community/pull/13#issuecomment-422591773).
