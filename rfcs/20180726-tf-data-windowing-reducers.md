@@ -33,8 +33,8 @@ This document proposes leveraging the recently introduced support for _nested_ d
 
 
 
-1.  A <span style="text-decoration:underline;">window</span> transformation is used to combine consecutive elements of the input into a nested dataset (as opposed to a higher dimensional tensor).
-1.  A map transformation is used to, on a per-component basis, apply a suitable <span style="text-decoration:underline;">reducer</span> which transforms the nested dataset to a batched tensor.
+1.  A __window__ transformation is used to combine consecutive elements of the input into a nested dataset (as opposed to a higher dimensional tensor).
+1.  A map transformation is used to, on a per-component basis, apply a suitable __reducer__ which transforms the nested dataset to a batched tensor.
 
 The underlined transformations do not exist and are the proposed extensions to the tf.data API.
 
@@ -75,12 +75,6 @@ def window(size, shift=1, stride=1, drop_remainder=True):
     Dataset: A `Dataset` whose elements are a `Dataset`.
   """
 ```
-
-For example:
-
-*   `tf.data.range(5).window(3)` produces `{{0, 1, 2}, {1, 2, 3}, {2, 3, 4}}`.
-*   `tf.data.range(5).window(3, 3, 1, False)` produces `{{0, 1, 2}, {3, 4}}`.
-*   `tf.data.range(6).window(3, 1, 2)` produces `{{0, 2, 4}, {1, 3, 5}}`.
 
 
 ### Reducers
