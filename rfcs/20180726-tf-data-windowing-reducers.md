@@ -1,10 +1,10 @@
 # Generalizing tf.data batching using windowing and reducers 
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :---------------|:-----------------------------------------------------|
 | **Author(s)** | Jiri Simsa (Google)                                  |
 | **Sponsor**   | Derek Murray (Google)                                |
-| **Updated**   | 2018-07-26                                           |
+| **Updated**   | 2018-09-19                                           |
 
 ## Objective 
 
