@@ -1,5 +1,5 @@
 # Functional while_loop
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :---------------|:-----------------------------------------------------|
 | **Author(s)** | Saurabh Saxena (Google) |
 | **Sponsor**   | Skye Wanderman-Milne (Google)                 |
@@ -158,3 +158,7 @@ Accumulators:
 `tensorlist0` <- `arg1`, the value of `x` at the start of the loop.
 
 `tensorlist1` <- Output of `mul_0`.
+
+## Discussion notes
+
+Please see notes in [tensorflow/community#13](https://github.com/tensorflow/community/pull/13).
