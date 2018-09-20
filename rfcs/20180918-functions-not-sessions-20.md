@@ -21,6 +21,10 @@ This document elaborates on the proposal to make TensorFlow be more "Pythonic" i
 
 This document liberally employs the use of sample code to describe the end-user effect of proposed changes.
 
+(We say "encourage" instead of "require" since removing the Session API from the
+Python frontend within a year may be an unrealistic aspiration.  Particularly
+given the use in Estimators and the use of MonitoredSession and hooks. The
+`Session` API may have to stick around in `tf.compat.v1`).
 
 
 ## Design Proposal
@@ -30,7 +34,7 @@ This document liberally employs the use of sample code to describe the end-user 
 Today, the TensorFlow graph defines the union of all computation that the author of the graph may be interested in. The actual computation to execute is defined by the arguments to `tf.Session.run`. Once this subgraph is defined, the runtime can optimize and execute. For example, consider the following:
 
 
-```
+```python
 import tensorflow as tf
 
 x = tf.placeholder(tf.float32)
@@ -48,7 +52,7 @@ z1 = sess.run([z], feed_dict={x: 2., y: 2.}) # 4.0
 Though there is one `tf.Graph` object the user is interacting with (`tf.get_default_graph()`), the two `sess.run` calls are executing different programs (indeed the runtime ends up with two separate `Graph` objects in C++, one for each program), equivalent to:
 
 
-```
+```python
 def compute_z0(x):
   return tf.add(x, tf.square(x))
 
@@ -60,7 +64,7 @@ def compute_z1(x, y):
 The core proposal of this document is the alignment between computation expressed in Python and the computation executed by the runtime. Instead of defining a graph and then selecting the subgraph to execute at `sess.run()` time, the exact computation of interest is encapsulated in a Python callable. For example, the program above that uses `sess.run()` to compute `z0` and `z1` can be written as:
 
 
-```
+```python
 import tensorflow as tf
 
 @tf.defun
@@ -97,7 +101,7 @@ If one was not explicitly specified by the user (as an argument to `defun`), the
 Changes in input signature result in a new graph being traced. For example:
 
 
-```
+```python
 @tf.defun
 def f(x):
   one = tf.constant(1, dtype=x.dtype)
@@ -187,7 +191,7 @@ Worthy of note here - in TensorFlow 1.x, the memory underlying the variables `W`
 In TensorFlow graphs today, control dependencies are sometimes needed to ensure correct evaluation order. For example, consider the following:
 
 
-```
+```python
 v = tf.Variable(1.0)
 init_op = tf.global_variables_initializer()
 assign_op = v.assign(2.0)
@@ -205,7 +209,7 @@ with tf.Session() as sess:
 The output here is not deterministic, since `val` may evaluate to either 1.0 or 2.0 depending on whether the runtime happened to execute `assign_op` before `y` or not. `tf.control_dependencies` is a mechanism provided to add annotations at graph construction time to influence graph execution. The TensorFlow user, a Python programmer, is thus forced to think about two execution models - TensorFlow graphs and the Python interpreter. To eliminate this cognitive load, `defun` will automatically insert control dependencies to ensure that operations that produce or consume a given `DT_RESOURCE` tensor and operations that are marked stateful (`REGISTER_OP(...).SetIsStateful()`) follow graph construction order. Thus:
 
 
-```
+```python
 v = tf.Variable(1.0)
 @tf.defun
 def f():
@@ -226,7 +230,7 @@ In the above code, no `tf.Variable` objects are created inside a `tf.defun` deco
 Note that if the function naturally creates state only on the first trace, all is well:
 
 
-```
+```python
 v = None
 
 @tf.defun
@@ -267,7 +271,7 @@ We've introduced a single new symbol: `defun` that consumes a Python function an
 Since new graphs are traced when new input signatures are encountered, a `defun` can encapsulate multiple graphs. For example, consider the following snippet:
 
 
-```
+```python
 @tf.defun
 def f(x):
   return tf.square(x)
@@ -283,7 +287,7 @@ There are two graphs created here - one which corresponds to the `Square` operat
 The same holds for the case where arguments are not `Tensor`s, for example:
 
 
-```
+```python
 @tf.defun
 def f(x, use_multiply):
   return tf.multiply(x, x) if use_multiply else tf.square(x)
@@ -298,7 +302,7 @@ will result in 2 graphs being created.
 Note that the "type" of `Tensor` inputs to the function also incorporates the shape. For example:
 
 
-```
+```python
 @tf.defun
 def f(x): return tf.add(x, 1.)
 f([2.0])
@@ -321,7 +325,7 @@ will result in 3 graphs being created:
 Tracing the decorated function to create a new graph on each input shape is a conservative choice (allowing for `f` to create graphs dependent on the shape), which may be unnecessary. Users can explicitly specify an input signature to ensure that the same graph is used for multiple inputs. For example:
 
 
-```
+```python
 @tf.defun(input_signature=((tf.float32, [None]))
 def f(x): return tf.add(x, 1.)
 
@@ -342,7 +346,7 @@ f([[2.0]])    # Raises an error as the arguments don't match the input signature
 If a member function of a class does not create variables, it may be decorated with `@tf.defun` and it will work:
 
 
-```
+```python
 class ScalarModel(object):
   def __init__(self):
     self.v = tf.Variable(0)
@@ -366,7 +370,7 @@ assert int(model2.v) == 5
 This works since `increment()` has `self` as a non-tensor argument, and a new trace will be created for each value of `self`. However, if variables are created in a method, we want to allow a new set of variables for every instantiation of `self`. You get this behavior by using `@tf.method`:
 
 
-```
+```python
 class AnyShapeModel(object):
   def __init__(self):
     self.v = None
@@ -398,7 +402,7 @@ In addition, as long as all variable creation/initialization happens while we ar
 The definition of `tf.defun` above is careful to check that invoking a decorated Python function would have the same behavior as invoking an undecorated function. This is to guard against it being passed code from TensorFlow v1.x that expects to only be called once (and relies on things like graph collections to track which variables are created), for example:
 
 
-```
+```python
 def f(x, do_add):
   v = tf.Variable(5.0)
   if do_add:
@@ -412,7 +416,7 @@ def f(x, do_add):
 For this case, we use a different API, `tf.compat.v1.wrap_function`, that treats any created variables as static local state:
 
 
-```
+```python
 f_add = tf.compat.v1.wrap_function(f, tf.TensorSpec(tf.float32, ()), True)
 
 assert float(f_add(1.0)) == 6.0
@@ -446,7 +450,7 @@ We recognize that code written for TensorFlow 1.x commonly does not encapsulate 
 With the `tf.compat.v1.wrap_function` proposed above, most graph construction library functions written against TensorFlow 1.x can be incorporated into TensorFlow 2.x programs.
 
 
-```
+```python
 def f(x):
   W = tf.compat.v1.get_variable(name="weight", shape=[10, 10])
   b = tf.compat.v1.get_variable(name="bias", shape=[10],
@@ -458,7 +462,7 @@ def f(x):
 
 
 
-```
+```python
 f = tf.compat.v1.wrap_function(f, tf.placeholder(tf.float32, None))
 print(f(make_input_value()))
 assert len(f.variables) == 3
@@ -789,7 +793,7 @@ The author realizes that this section can do with more detail. However, to keep 
 `defun` decorates a graph construction function and transparently recreates graphs if needed. However, this does mean that if the function has data-dependent control flow then though the function will execute fine with eager execution enabled, `defun` decorating it will fail. For example:
 
 
-```
+```python
 def f(x, y):
   if tf.equal(y, 0.0):
     return y
@@ -809,7 +813,7 @@ df(x, y)  # Will raise an error complaining about the data-dependent control flo
 To fix this, one would have to use the graph construction APIs for control flow (`tf.cond`, `tf.while_loop`):
 
 
-```
+```python
 def f(x, y):
   return tf.cond(tf.equal(y, 0.0), lambda: y, lambda: x/y)
 
@@ -833,7 +837,7 @@ This situation can be improved with the help of  go/tf-autograph to allow expres
 The summary writing operations (<code>[tb.summary.scalar](https://www.tensorflow.org/api_docs/python/tf/contrib/summary/scalar)</code>, <code>[tb.summary.image](https://www.tensorflow.org/api_docs/python/tf/contrib/summary/image)</code> etc.) can be naturally placed in the graph by using them in a <code>defun</code>-decorated function. These operations require two "external" inputs - the summary writer resource and the condition, that will be picked up from the context (e.g., <code>[tb.summary.create_file_writer](https://www.tensorflow.org/api_docs/python/tf/contrib/summary/create_file_writer)</code> and <code>[tb.summary.record_summary_every_n_global_steps](https://www.tensorflow.org/api_docs/python/tf/contrib/summary/record_summary_every_n_global_steps)</code>).  When defining the graph, these inputs are converted to placeholders, which are then resolved at function invocation time. Thus, something like this:
 
 
-```
+```python
 writer = tf.contrib.summary.create_file_writer('/tmp/test')
 with writer.as_default(), tf.contrib.summary.always_record_summaries():
     f()
@@ -845,7 +849,7 @@ with writer.as_default(), tf.contrib.summary.never_record_summaries():
 Will write one summary to `writer` whether `f` is defined as:
 
 
-```
+```python
 def f(): 
     tb.summary.scalar("loss", compute_loss()) 
 ```
@@ -854,7 +858,7 @@ def f():
 Or
 
 
-```
+```python
 f = tf.contrib.eager.defun(f)
 ```
 
@@ -919,7 +923,7 @@ How state (`DT_RESOURCE` tensors)  created inside a `defun` should be handled is
 `tf.contrib.eager.defun` today treats state as function-static variables, which allows for code like:
 
 
-```
+```python
 def f(x):
   v = tf.Variable(1, dtype=x.dtype)
   v.assign_add(x)
@@ -937,7 +941,7 @@ print(df(x))  # 3.0
 However, the one major issue with this approach is that it behaves differently from how an undecorated function would:
 
 
-```
+```python
 print(f(1.0), df(1.0))  # 2.0, 2.0
 print(f(1.0), df(1.0))  # 2.0, 3.0
 ```
@@ -957,7 +961,7 @@ To be conservative, we propose some restrictions on `defun`, such as:
 Another option would be to match typical Python functions, where state is created and destroyed during the call to the function. So:
 
 
-```
+```python
 def f(x):
   v = tf.Variable(1.0)
   v.assign_add(x)
@@ -982,10 +986,4 @@ For now, we propose that `defun` continue with the restricted abilities proposed
     *   `tf.defun` or `tf.function`?
     *   `tf.compat.v1.wrap_function` or `tf.compat.v1.defun` or `tf.compat.v1.function` or `tf.compat.v1.wrap_graph_as_function`?
 
-<!-- Footnotes themselves at the bottom. -->
-## Notes
-
-[^1]:
-
-     We say "encourage" instead of "require" since removing the Session API from the Python frontend within a year may be an unrealistic aspiration. Particularly given the use in Estimators and the use of MonitoredSession and hooks. The `Session` API may have to stick around in `tf.compat.v1`.
 
