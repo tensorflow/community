@@ -659,9 +659,9 @@ class Model(tf.train.Checkpointable):
 
 m = Model()
 
-tf.export_saved_model(m, "/tmp/model")
+tf.saved_model.export("/tmp/model", m)
 
-m = tf.import_saved_model("/tmp/model")
+m = tf.saved_model.import("/tmp/model")
 </pre>
 
 
