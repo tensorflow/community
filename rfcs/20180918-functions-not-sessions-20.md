@@ -1,6 +1,6 @@
 # TensorFlow 2.0: Functions, not Sessions.
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)       |
+| Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | ashankar@google.com, joshl@google.com                |
 | **Sponsor**   | apassos@google.com                                   |
