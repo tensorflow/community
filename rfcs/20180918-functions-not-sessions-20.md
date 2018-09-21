@@ -842,7 +842,7 @@ df(x, y)  # Will be 1.0
 ```
 
 
-This situation can be improved with the help of  [autograph](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/contrib/autograph) to allow expression of control flow in Python. Whether autograph will be enabled by default or not is still under debate, but the option will be there as a flag on defun. For example:
+This situation can be improved with the help of  [autograph](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/autograph) to allow expression of control flow in Python. Whether autograph will be enabled by default or not is still under debate, but the option will be there as a flag on defun. For example:
 
 ```python
 df = tf.defun(f, autograph=True)
@@ -920,7 +920,7 @@ NOTE: In TensorFlow 1.x, eager execution is enabled by <code>[tf.enable_eager_ex
     *   The <code>model_fn</code> of a regular (non-canned) <code>Estimator</code> will remain as a graph construction function.
 *   <strong>[SavedModel](https://www.tensorflow.org/guide/saved_model#save_and_restore_models)</strong> will continue to be the format encouraged for exporting trained models
     *   Crudely speaking, a SavedModel encapsulates a Graph, a checkpoint of variable values, and some metadata like signature information (names of input and output tensors).
-    *   A path will be provided to easily export models in this format (e.g., via <code>tf.keras.Model.save()</code>). There may be instances where converting the Python code to a graph is not trivial (e.g., it uses the subset of Python that [autograph](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/contrib/autograph) does not support), in which case, exporting to a SavedModel (and thus a Graph) will fail.
+    *   A path will be provided to easily export models in this format (e.g., via <code>tf.keras.Model.save()</code>). There may be instances where converting the Python code to a graph is not trivial (e.g., it uses the subset of Python that [autograph](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/autograph) does not support), in which case, exporting to a SavedModel (and thus a Graph) will fail.
 
 
 
