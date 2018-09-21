@@ -845,13 +845,8 @@ df(x, y)  # Will be 1.0
 This situation can be improved with the help of  [autograph](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/contrib/autograph) to allow expression of control flow in Python. Whether autograph will be enabled by default or not is still under debate, but the option will be there as a flag on defun. For example:
 
 ```python
-@tf.defun(autograph=True)
-def f(x, y):
-  if tf.equal(y, 0.0):
-    return y
-  return x / y
-
-f(tf.constant(2.0), tf.constant(2.0)) # Will be 1.0
+df = tf.defun(f, autograph=True)
+f(x, y) # Will be 1.0
 ```
 
 
