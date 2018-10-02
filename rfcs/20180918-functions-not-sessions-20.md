@@ -4,13 +4,11 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | ashankar@google.com, joshl@google.com                |
 | **Sponsor**   | apassos@google.com                                   |
-| **Updated**   | 2018-09-18                                           |
+| **Updated**   | 2018-10-02                                           |
 
 ## Objective
 
 This document presents a proposal to make TensorFlow be more "Pythonic" in 2.0. In five bullet points, the proposal is to:
-
-
 
 *   Encourage the encapsulation of graph computation as Python functions \
 (where the graph is executed when the function is invoked, instead of via `Session`)
@@ -90,28 +88,12 @@ Having the Python function correspond to what the runtime will execute reduces c
 
 
 *   `f` is a Python function that returns zero or more `Tensor`s
-*   `defun(f)` is a Python function that returns a Python callable, `C`
-*   When the `C` is invoked it:
-    1.  Determines an "input signature" \
-If an input signature was not explicitly specified by the user (as an argument to `defun`), the signature is computed from the types of the input arguments (including `dtype` and `shape` for `Tensor` arguments)
-    1.  Every time a new input signature is encountered, it invokes `f` to create a TensorFlow graph, `G`. If the input signature has been seen before, it looks up `G` from a cache keyed by the input signature.
-    1.  It executes the graph defined by `G,` feeding each argument as a value of the corresponding `Placeholder` node in the graph.
-
-Changes in input signature result in a new graph being traced. For example:
-
-
-```python
-@tf.defun
-def f(x):
-  one = tf.constant(1, dtype=x.dtype)
-  return tf.add(x, one)
-
-# Traces a graph with int32 operations and executes it
-f(tf.constant(1, dtype=tf.int32))
-# Traces a graph with float32 operations and executes it.
-f(tf.constant(1, dtype=tf.float32))
-```
-
+*   `defun(f)` is a Python function that returns a Python callable, `F`
+*   When `F` is invoked it:
+    1.  Potentially casts inputs to tensors if an input signature was specified, see the "Input Signatures" section below.
+    1.  Determines a "trace_cache_key" (based on the types and/or values of the arguments).
+    1.  Every time a new trace_cache_key is encountered, it invokes `f` to create a TensorFlow graph, `G`. If the trace_cache_key has been seen before, it looks up `G` from a cache.
+    1.  It executes the graph defined by `G,` feeding each argument as a value of the corresponding node in the graph, and returns a tuple of `Tensor`s (or list of `Tensor`s).
 
 
 ### Referencing state: Variables, tables etc.
@@ -270,17 +252,30 @@ If any variables are created in the first execution of `f`, then `@tf.defun` wil
 In the future we may want to allow for function local `tf.Variable`s, which are created and destroyed each time the decorated function is invoked.
 
 
-### API for `defun`
+### Trace Caches
 
-We've introduced a single new symbol: `defun` that consumes a Python function and returns a callable Python object. The precise API of the object is being iterated on, but at a high level it will have methods to:
+Every argument to a `defun` decorated Python function (`F`) must be either:
 
 
 
-*   List out all captured state (`tf.Variable` objects, other `DT_RESOURCE` tensors used by the computation and provided as implicit inputs).
-*   Access the `tf.Graph` that corresponds to the graph executed by the `__call__` method of the object.
-*   Execute the function with custom `RunOptions` and retrieve `RunMetadata`.
+*   A `Tensor` object (NumPy `ndarray`s are converted to the equivalent `Tensor`), or
+*   A list of `Tensor` objects, or
+*   An arbitrary Python value.
 
-Since new graphs are traced when new input signatures are encountered, a `defun` can encapsulate multiple graphs. For example, consider the following snippet:
+(There seems to be some interest expressed in supporting structured inputs using <code>[nest.flatten](https://github.com/tensorflow/tensorflow/blob/ed7ae86228c58e0a32f0dc21aedc9dad62db97c7/tensorflow/python/util/util.i#L77)</code> and <code>nest.pack_sequence_as</code>. This will be considered as follow-up work.)
+
+Every time `F` is invoked in the Python program, a `trace_cache_key` is computed as a function of:
+
+
+
+1.  The element datatype and shape of every `Tensor` argument
+1.  The length of the list, and (dtype, shape) of every element in the list of `Tensor` argument
+1.  The concrete value of non-`Tensor` (and list of `Tensor`) Python object arguments
+1.  The "context" in which `F` is invoked (e.g., the device prescribed by the `tf.device()` scope in which `F` is invoked).
+
+This key is used to determine if a new graph needs to be created or if a previously created graph can be invoked.
+
+Since new graphs are traced when new input signatures are encountered, a `defun` can encapsulate multiple graphs. For example, consider the following:
 
 
 ```python
@@ -288,15 +283,24 @@ Since new graphs are traced when new input signatures are encountered, a `defun`
 def f(x):
   return tf.square(x)
 
-f(int(1))
-f(float(1.0))
+f(tf.constant(1, dtype=tf.int32))
+f(tf.constant(1.0, dtype=tf.float32))
 ```
 
 
  \
 There are two graphs created here - one which corresponds to the `Square` operation applied to `DT_INT32` tensors, and one with the `Square` operation applied to `DT_FLOAT32` tensors. The object returned by `defun` encapsulates multiple graphs (lazily generated based on the type and shape of input arguments), multiplexing between them in `__call__`.
 
-The same holds for the case where arguments are not `Tensor`s, for example:
+Note the use of `tf.constant` to ensure that the argument is a `Tensor`. If the argument were a Python value, then additional graphs will be traced for each such value. For example, the following two calls will result in two additional graphs being traced:
+
+
+```python
+f(1.0)
+f(2.0)
+```
+
+
+Where arguments are not `Tensor`s, the "value" of the argument is used to compute the `trace_cache_key`. For example:
 
 
 ```python
@@ -304,12 +308,12 @@ The same holds for the case where arguments are not `Tensor`s, for example:
 def f(x, use_multiply):
   return tf.multiply(x, x) if use_multiply else tf.square(x)
 
-f(2.0, True)
-f(2.0, False)
+f(tf.constant(2.0), True)
+f(tf.constant(2.0), False)
 ```
 
 
-will result in 2 graphs being created.
+will result in 2 graphs being created, since the two calls result in two different cache keys because the value of the Python object (the second argument) changes between the two.
 
 Note that the "type" of `Tensor` inputs to the function also incorporates the shape. For example:
 
@@ -317,9 +321,11 @@ Note that the "type" of `Tensor` inputs to the function also incorporates the sh
 ```python
 @tf.defun
 def f(x): return tf.add(x, 1.)
-f([2.0])
-f([2.0, 3.0])
-f([[2.0]])
+f(tf.constant([2.0]))
+f(tf.constant([2.0, 3.0]))
+f(tf.constant([[2.0]]))
+f(tf.constant([3.0]))
+f(tf.constant([4.0, 5.0]))
 ```
 
 
@@ -327,30 +333,132 @@ will result in 3 graphs being created:
 
 
 
-1.  One for when the first argument is a `tf.float32` vector with 1 element \
-(input signature: `((tf.float32, [1]))`)
-1.  One for when the first argument is a `tf.float32` vector with 2 elements \
-(input signature: `((tf.float32, [2]]))`)
-1.  One for when the first argument is a `tf.float32` 1x1 matrix \
-(input signature: `((tf.float32, [1, 1]))`)
+1.  One for when the first argument is a `tf.float32` vector with 1 element
+1.  One for when the first argument is a `tf.float32` vector with 2 elements
+1.  One for when the first argument is a `tf.float32` 1x1 matrix
 
-Tracing the decorated function to create a new graph on each input shape is a conservative choice (allowing for `f` to create graphs dependent on the shape), which may be unnecessary. Users can explicitly specify an input signature to ensure that the same graph is used for multiple inputs. For example:
+The trace_cache_key also incorporates the "context" in which the call was made. For example:
+
+
+```python
+@tf.defun
+def f(x): return tf.add(x, 1.)
+
+with tf.device("/device:CPU:0"):
+  f(tf.constant(2.0))
+with tf.device("/device:GPU:0"):
+  f(tf.constant(2.0))
+```
+
+
+Will create 2 graphs, one where the operations are pinned to the CPU device and one where they are pinned to the GPU device.
+
+
+#### CAUTION: Too many traces
+
+Since new traces are generated on demand, the object returned by `defun` may hold on to more resources than the user may realize. Possible mitigations:
+
+
+
+*   Garbage collect the graphs when the weak reference to any component of the `trace_cache_key` is no longer alive.
+*   Use input signatures to prevent unnecessary retraces (see "Input Signatures" section below)
+*   Raise / log an error when the ratio of calls to traces is greater than some threshold (e.g., if every 2 calls to a `defun` decorated function generates a new graph). 
+
+
+#### CAUTION: Mutable non-`Tensor` arguments
+
+The trace_cache_key includes the Python object for non-`Tensor` arguments. Mutations of these arguments might not be detected. For example:
+
+
+```python
+class Params(object):
+  multiply = True
+
+p = Params()
+@tf.defun
+def f(x, y):
+  return tf.multiply(x, 2.) if y.multiply else tf.add(x, 2.)
+
+f(3., p) # Returns 6.0
+y.multiply = False
+f(3., y)  # Mutations to `y` may not trigger a retrace, so might still return 6.0
+```
+
+
+
+### Input Signatures
+
+Tracing the decorated function to create a new graph on each input shape is a conservative choice. Often the same graph suffices for `Tensor`s of multiple shapes. As a trivial example, consider:
+
+
+```python
+@tf.defun
+def f(x): return tf.add(x, 1.)
+
+f(tf.constant(1.0)) # Scalar argument
+f(tf.constant([1.0, 2.0])) # Vector argument
+f(tf.constant([[3.0]])) # Matrix
+```
+
+
+ \
+This snippet would result in 3 graphs being traced. An "input signature" can be explicitly specified to control the `trace_cache_key` computation based on the type and shape of `Tensor` (and list of `Tensor`) arguments to `f`.
+
+For example:
 
 
 ```python
 @tf.defun(input_signature=((tf.float32, [None]))
 def f(x): return tf.add(x, 1.)
 
-f([2.0])      # Returns [3.0]
-f([2.0, 3.0]) # Matches the input signature as [None] matches the actual shape [2]
-f([[2.0]])    # Raises an error as the arguments don't match the input signature.
+f(tf.constant([2.0]))      # Returns [3.0]
+f(tf.constant([2.0, 3.0])) # Matches the input signature as [None]
+                           # matches the actual shape [2]
+f(tf.constant([[2.0]]))    # Raises an error as the arguments don't match the
+                           # input signature.
+f(tf.constant([2], dtype=tf.int32)) # Raises an error as the dtype of the argument
+                                    # does not match the input signature
 
 # f is backed by a single Graph since the input signature specification allowed
 # for the same graph to be used when the input shape is (1,) or (2,).
 ```
 
 
- 
+An "input signature" specifies a pattern for each of the arguments that may be accepted by the `defun`-decorated function. Specifically:
+
+
+
+*   For a `Tensor` argument, it specifies a (dtype, shape pattern). \
+For example:
+    *   `(tf.float32, [None])` means the argument must be a float32 vector (with any number of elements).
+    *   `(tf.int32, [])` means that the argument must be an int32 scalar. \
+ \
+In this case, non-`Tensor` Python values provided at call time are automatically converted (using `tf.convert_to_tensor`) to a `Tensor` matching this signature.
+*   For a list of `Tensor` objects, it specifies an optional list length and the signature for elements in the list (i.e., the dtype and shape pattern for all elements in the list).
+*   For non-`Tensor` arguments: `tf.PYTHON_VALUE`
+
+When an input signature is specified, new graphs are traced only when the value of the Python argument or the context in which the function is invoked changes. If this is considered to be too restrictive, a possible future extension would be to annotate signature of an argument so that new traces can be created. For example:
+
+
+```python
+@tf.defun(input_signature=((tf.TRACE_ON_NEW_VALUE, [None]))
+def f(x): return tf.square(x)
+
+f(tf.constant([2.0])) # Returns 4.0
+f(tf.constant([2, 2], dtype=tf.int32) # Returns [4, 4] after tracing a new graph
+```
+
+
+
+### API for `defun`
+
+We've introduced a single new symbol: `defun` that consumes a Python function and returns a callable Python object. The precise API of the object is being iterated on in go/tf-2.0-function-api, but at a high level it will have methods to:
+
+
+
+*   List out all captured state (`tf.Variable` objects, other `DT_RESOURCE` tensors used by the computation and provided as implicit inputs).
+*   Access the `tf.Graph` that corresponds to the graph executed by the `__call__` method of the object.
+*   Execute the function with custom `RunOptions` and retrieve `RunMetadata`. 
 
 
 ### Classes
@@ -798,7 +906,7 @@ g(2.0) # 16.0</pre>
 
 At the lowest level of the API, distributed execution continues to work with `tf.device` annotations, where the device name can reference remote devices as well, just like they do today.
 
-The `DistributionStrategy` API, typically aimed at synchronous training will continue to be the method of choice (where the API can be used inside a `defun`).
+The `DistributionStrategy` API, typically aimed at synchronous training will continue to be the method of choice (where the API can be used inside a `defun`). Other APIs such as go/tf-replicator will also be usable.
 
 The author realizes that this section can do with more detail. However, to keep this document more focused, these details will be discussed separately. In particular, usage of `MonitoredSession` and session hooks today needs additional thought.
 
@@ -844,10 +952,12 @@ df(x, y)  # Will be 1.0
 
 This situation can be improved with the help of  [autograph](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/autograph) to allow expression of control flow in Python. Whether autograph will be enabled by default or not is still under debate, but the option will be there as a flag on defun. For example:
 
+
 ```python
 df = tf.defun(f, autograph=True)
 f(x, y) # Will be 1.0
 ```
+
 
 
 ### Summaries
@@ -921,7 +1031,6 @@ NOTE: In TensorFlow 1.x, eager execution is enabled by <code>[tf.enable_eager_ex
 *   <strong>[SavedModel](https://www.tensorflow.org/guide/saved_model#save_and_restore_models)</strong> will continue to be the format encouraged for exporting trained models
     *   Crudely speaking, a SavedModel encapsulates a Graph, a checkpoint of variable values, and some metadata like signature information (names of input and output tensors).
     *   A path will be provided to easily export models in this format (e.g., via <code>tf.keras.Model.save()</code>). There may be instances where converting the Python code to a graph is not trivial (e.g., it uses the subset of Python that [autograph](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/autograph) does not support), in which case, exporting to a SavedModel (and thus a Graph) will fail.
-
 
 
 ## Alternatives Considered
@@ -999,10 +1108,21 @@ This seems like an avenue definitely worth pursuing, but requires careful consid
 For now, we propose that `defun` continue with the restricted abilities proposed in this document and a "maintain Python semantics" decorator be investigated independently.
 
 
-## Open Questions
+## Open Questions/Ideas
 
 
 
 *   Naming:
     *   `tf.defun` or `tf.function`?
     *   `tf.compat.v1.wrap_function` or `tf.compat.v1.defun` or `tf.compat.v1.function` or `tf.compat.v1.wrap_graph_as_function`?
+*   Signatures in Python 3? ([From ngc92](https://github.com/tensorflow/community/pull/20#issuecomment-423345326))
+*   Can `tf.defun` and `tf.method` be combined into a single decorator (where `tf.defun` has the behavior of `tf.method` when applied to a class method)? Or is it okay to have two separate decorators?
+    *   (How do you detect if the decorated function is a method or a function? Rely on the convention of first argument being called `self`?)
+*   Supporting structured inputs: \
+As proposed, arguments to `defun` must be either `Tensor` objects, or objects that can be converted to a `Tensor` (`tf.convert_to_tensor`), or opaque Python objects. \
+ \
+Perhaps we can support nested structures of `Tensor`s (using `nest.flatten` and `nest.pack_sequence_as`), or even arbitrary Python objects? \
+ \
+If this is supported, then specifying an `input_signature` may become cumbersome, but perhaps we can have a `defun(infer_signature_from_first_call=True)` to make that easier. \
+ \
+
