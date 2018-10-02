@@ -48,7 +48,7 @@ must demonstrate:
 
 *   A clear purpose and benefit to TensorFlow (either around a sub-project or
     application area)
-*   Two or more contributors willing to act as maintainers, existence of other
+*   Two or more contributors willing to act as group leads, existence of other
     contributors, and evidence of demand for the group
 *   Resources it will initially require (usually, mailing list and regular VC
     call.)
@@ -79,9 +79,9 @@ open to all without approval, or available on request, pending approval of the
 group administrator.
 
 The charter must nominate an administrator. As well as an administrator, the
-group must include at least one maintainer as lead (these may be the same
-person), who will serve as point of contact for coordination as required with
-the TF community team.
+group must include at least one person as lead (these may be the same person),
+who will serve as point of contact for coordination as required with the TF
+community team.
 
 This charter will be posted initially to the group mailing list. The _community_
 repository in the TensorFlow Github organization will archive such documents and
