@@ -444,7 +444,7 @@ class VariableTracker(object):
   def __init__(self):
     self.variables = []
 
-  def variable_tracker(next_creator, **kwargs):
+  def variable_tracker(self, next_creator, **kwargs):
     v = next_creator(**kwargs)
     self.variables.append(v)
     return v
