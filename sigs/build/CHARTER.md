@@ -2,14 +2,14 @@
 
 ## Objective
 
-For discussion and collaboration around the packaging and distribution of
-TensorFlow.
+For discussion and collaboration around the building, testing, packaging, and
+distribution of TensorFlow.
 
 ## Membership
 
-Everyone involved in the packaging, distributing or embedding of TensorFlow is
-welcome to join the group. To participate, request an invitation join the
-mailing list.
+Everyone involved in the building, testing, packaging, distributing or embedding
+of TensorFlow is welcome to join the group. To participate, request an invitation
+join the mailing list.
 
 Archives of the mailing list will be publicly accessible.
 
