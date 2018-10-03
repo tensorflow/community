@@ -84,6 +84,8 @@ Use cases:
 1.  **Assets:** The ASSET_FILEPATHS collection tracks all external files ([lookup_ops](https://github.com/tensorflow/tensorflow/blob/r1.10/tensorflow/python/ops/lookup_ops.py#L550), [tf_transform](https://github.com/tensorflow/transform/blob/master/tensorflow_transform/analyzers.py#L830), [estimator](https://github.com/tensorflow/tensorflow/blob/r1.10/tensorflow/python/estimator/estimator.py#L941)) that are needed by the model for instance vocabulary files etc. These are used in a few places
     1.  SavedModel: [builder_impl.py](https://github.com/tensorflow/tensorflow/blob/r1.10/tensorflow/python/saved_model/builder_impl.py#L354)
     1.  TF Transform:  [analyzers.py](https://github.com/tensorflow/transform/blob/master/tensorflow_transform/analyzers.py#L98), [beam/impl.py](https://github.com/tensorflow/transform/blob/master/tensorflow_transform/beam/impl.py#L560), [impl_helper.py](https://github.com/tensorflow/transform/blob/master/tensorflow_transform/impl_helper.py#L405), [saved_io_transform.py](https://github.com/tensorflow/transform/blob/master/tensorflow_transform/saved/saved_transform_io.py#L213)
+    1.  TF Hub:
+        [saved_model_lib.py](https://github.com/tensorflow/hub/blob/master/tensorflow_hub/saved_model_lib.py#L278)
 
 1.  **Resources:** A few contrib libraries don't keep track of resources to init / create them but instead just "[register](https://github.com/tensorflow/tensorflow/blob/r1.10/tensorflow/python/ops/resources.py#L37)" them in these collections. Estimator etc. code makes sure that the [init ops registered are run](https://github.com/tensorflow/tensorflow/blob/r1.10/tensorflow/contrib/learn/python/learn/estimators/estimator.py#L1405) before hand. Some example contrib libraries are [BoostedTrees](https://github.com/tensorflow/tensorflow/blob/r1.10/tensorflow/contrib/boosted_trees/python/ops/model_ops.py#L112), [TensorForest](https://github.com/tensorflow/tensorflow/blob/r1.10/tensorflow/contrib/tensor_forest/python/ops/model_ops.py#L118)
 
@@ -435,6 +437,29 @@ For the keras models use case, Model.variables already tracks all variables crea
 
 In case of custom graph code, variable_creator_scope can be used to collect up variables.
 
+Example code might look like
+
+```python
+class VariableTracker(object):
+  def __init__(self):
+    self.variables = []
+
+  def variable_tracker(next_creator, **kwargs):
+    v = next_creator(**kwargs)
+    self.variables.append(v)
+    return v
+
+VariableTracker tracker
+with tf.variable_creator_scope(tracker.variable_tracker):
+  ...
+  a = tf.Variable(0)
+  ...
+
+assert tracker.variables == [a]
+```
+
+We might want to expose VariableTracker as well.
+
 
 ### **Local variables**
 
@@ -525,6 +550,18 @@ The current Cond implementation uses collections but the new CondV2 implementati
 ### **Updates**
 
 Batch normalization is the only use case for updates. For keras models, all updates are tracked via Model.updates. For the graph construction case, the updates are accessible via the updates attribute on the BatchNormalization layer itself and then they could be added to the train op. We will deprecate the [functional batch_normalization API](https://github.com/tensorflow/tensorflow/blob/r1.10/tensorflow/python/layers/normalization.py#L158) so that users deal with objects only.
+
+A sample estimator model_fn might look like
+```python
+def model_fn(features, labels, mode, params, config):
+  logits = ...
+  batch_norm = tf.BatchNormalization(momentum=0.99)
+  logits = batch_norm(logits)
+
+  train_op = …
+  train_op = tf.group(train_op, *batch_norm.updates)
+  return tf.EstimatorSpec(..., train_op=train_op, ...)
+```
 
 
 ### **Losses**
