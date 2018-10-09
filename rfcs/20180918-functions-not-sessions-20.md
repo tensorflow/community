@@ -487,7 +487,7 @@ assert int(model2.v) == 5
 
 
  \
-This works since `increment()` has `self` as a non-tensor argument, and a new trace will be created for each value of `self`. However, if variables are created in a method, we want to allow a new set of variables for every instantiation of `self`. You get this behavior by using `@tf.method`:
+This works since `increment()` has `self` as a non-tensor argument, and a new trace will be created for each value of `self`. However, if variables are created in a method, we want to allow a new set of variables for every instantiation of `self`.
 
 
 ```python
@@ -495,7 +495,7 @@ class AnyShapeModel(object):
   def __init__(self):
     self.v = None
 
-  @tf.method
+  @tf.function
   def increment(self, amount):
     if self.v is None:
       self.v = tf.Variable(tf.zeros_like(amount))
@@ -512,9 +512,7 @@ assert model2.v.numpy() == [4, 5]
 ```
 
 
-The semantics here are that each new instance is allowed to create variables in each `@tf.method` once. The simple recommendation would be "always use `@tf.method` on methods, use `@tf.function` for functions outside of a class".
-
-In the above example, if `increment` was decorated with `@tf.function` instead, then the `model2.increment()` call would raise an exception (as per `function`s stated behavior of disallowing state creation on anything but the first trace). However, if the method didn't create any state then `@tf.function` or `@tf.method` would both have the same effect.
+The semantics here are that each new instance is allowed to create variables in each `@tf.function` once.
 
 In addition, as long as all variable creation/initialization happens while we are tracing, we should be able to support exporting the initialization graph when exporting a `SavedModel` or `MetaGraphDef`.
 
@@ -775,7 +773,7 @@ class Model(tf.train.Checkpointable):
   def __init__(self):
     self.W = tf.Variable(...)
 
-  @tf.method
+  @tf.function
   def f(self, x):
     return tf.matmul(x, self.W)
 
