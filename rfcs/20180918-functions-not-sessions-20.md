@@ -380,8 +380,8 @@ def f(x, y):
   return tf.multiply(x, 2.) if y.multiply else tf.add(x, 2.)
 
 f(3., p) # Returns 6.0
-y.multiply = False
-f(3., y)  # Mutations to `y` may not trigger a retrace, so might still return 6.0
+p.multiply = False
+f(3., p)  # Mutations to `p` may not trigger a retrace, so might still return 6.0
 ```
 
 
