@@ -2,10 +2,9 @@
 
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
-| **Author(s)** | cjfj@google.com, dominikg@google.com, jhseu@google.com, |
-:               : petebu@google.com, priyag@google.com                    :
+| **Author(s)** | cjfj@google.com, dominikg@google.com, jhseu@google.com, petebu@google.com, priyag@google.com |
 | **Sponsor**   | joshl@google.com                                        |
-| **Updated**   | 2018-10-16                                              |
+| **Updated**   | 2018-10-17                                              |
 
 ## Objective
 
