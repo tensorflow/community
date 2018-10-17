@@ -648,10 +648,10 @@ def input_fn(ctx):
   assert effective_batch_size % ctx.num_replicas_in_sync == 0
   return imagenet.ImageNet(effective_batch_size // ctx.num_replicas_in_sync)
 
-def step_fn(ctx, input):
+def step_fn(ctx, inputs):
   del ctx  # Unused.
-  image, label = input
-  logits = tf.squeeze(model(images))
+  image, label = inputs
+  logits = model(images)
   cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
       logits=logits, labels=label)
   loss = tf.reduce_mean(cross_entropy)
@@ -681,10 +681,10 @@ def eval_input_fn(ctx):
   return imagenet.ImageNet(
       eval_batch_size, subset="valid", shuffle=False, num_epochs=1)
 
-def eval_top1_accuracy(ctx, input):
+def eval_top1_accuracy(ctx, inputs):
   del ctx  # Unused.
-  image, label = input
-  logits = tf.squeeze(model(images))
+  image, label = inputs
+  logits = model(images)
   predicted_label = tf.argmax(logits, axis=1)
   top_1_acc = tf.reduce_mean(
       tf.cast(tf.equal(predicted_label, label), tf.float32))
@@ -757,9 +757,9 @@ with replicator.scope():
   disc_optimizer = tf.train.AdamOptimizer(disc_learning_rate, beta1=0.5, beta2=0.9)
   gen_optimizer = tf.train.AdamOptimizer(gen_learning_rate, beta1=0.5, beta2=0.9)
 
-def discriminator_step(ctx, input):
+def discriminator_step(ctx, inputs):
   del ctx  # Unused.
-  image, noise = input
+  image, noise = inputs
   gan_output = gan.connect(image, noise)
   disc_loss, disc_vars = gan_output.discriminator_loss_and_vars()
   disc_train_op = disc_optimizer.minimize(disc_loss, var_list=disc_vars)
@@ -767,9 +767,9 @@ def discriminator_step(ctx, input):
   with tf.control_dependencies([disc_train_op]):
     return tf.identity(disc_loss)
 
-def generator_step(ctx, input):
+def generator_step(ctx, inputs):
   del ctx  # Unused.
-  image, noise = input
+  image, noise = inputs
   gan_output = gan.connect(image, noise)
   gen_loss, gen_vars = gan_output.generator_loss_and_vars()
   gen_train_op = gen_optimizer.minimize(gen_loss, var_list=gen_vars)
@@ -831,11 +831,11 @@ def learner_step(ctx, trajectories):
 learner_inputs = replicator.prepare_input(learner_input)
 
 def run_actor(actor_id):
-  queue = queues[actor % len(queues)]
+  queue = queues[actor_id % len(queues)]
   for _ in xrange(num_trajectories_per_actor):
     observation = get_observation_from_environment()
-    action_taken, logits, _ = agent(tf.expand_dims(observation, axis=0))
-    trajectory = Transition(observation, action_taken, ...)
+    action_taken, logits = agent(tf.expand_dims(observation, axis=0))
+    trajectory = Transition(observation, action_taken, logits)
     queue.enqueue(tf.nest.flatten(trajectory))
 
 # Start the actors.
@@ -866,8 +866,7 @@ def global_batch_norm(ctx, x):
   global_x_mean, global_x_squared_mean = (
       ctx.all_sum([local_x_mean / ctx.num_replicas_in_sync,
                    local_x_squared_mean / ctx.num_replicas_in_sync])
-  global_x_variance = (
-      global_x_squared_mean - tf.stop_gradient(tf.square(global_x_mean)))
+  global_x_variance = global_x_squared_mean - tf.square(global_x_mean)
   return tf.nn.batch_normalization(
       x, global_x_mean, global_x_variance, offset=None, scale=None)
 ```
