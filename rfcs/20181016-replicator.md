@@ -930,7 +930,7 @@ We considered a few different names for some things.
 1.  replica
 1.  tower
 
-Decided "replica" based on popular opinion (through a survey).
+Decided "replica" based on popular opinion through a survey.
 
 #### Machines
 
