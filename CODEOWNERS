@@ -7,8 +7,8 @@
 
 sigs/rust/ @adamcrume
 sigs/tensorboard/ @jart
-sigs/build/ @martinwicke @ewilderj
+sigs/build/ @martinwicke @ewilderj @angersson @perfinion 
 
 # RFCs
 
-rfcs/ @ewilderj @martinwicke
+rfcs/ @ewilderj @martinwicke @goldiegadde
