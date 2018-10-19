@@ -19,7 +19,7 @@ Archives of the mailing list will be publicly accessible.
 
 ## Contacts
 
-* Project lead: Martin Wicke [@martinwicke](https://github.com/martinwicke) - wicke at google
+* Project leads: Jason Zaman [@perfinion](https://github.com/perfinion), Austin Anderson [@angersson](https://github.com/angersson)
 * For administrative questions, contact Edd Wilder-James @ewilderj - ewj at
   google
 
