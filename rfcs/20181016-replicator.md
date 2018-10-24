@@ -8,7 +8,7 @@
 
 ## Objective
 
-We propose to add a new API in TensorFlow for replicating computation across
+This document presents a proposal to add a new API in TensorFlow for replicating computation across
 different GPUs, TPUs and multiple machines. It will be implemented as a thin
 usability API layer on top of
 [DistributionStrategy](https://www.tensorflow.org/api_docs/python/tf/contrib/distribute/DistributionStrategy).
