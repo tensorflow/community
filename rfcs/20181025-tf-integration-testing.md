@@ -8,7 +8,7 @@
 
 ## Objective
 
-With TensorFlow becoming more and more modularized, libraries that sit on top of core TensorFlow need to be tested. Unfortunately we cannot wait for any adjustments made to core TensorFlow to propagate through to a formal release and we need a way to have a reliable way of getting the latest stable TensorFlow to test any new changes to the external repositories. The following approach is the official way to test projects and repositories downstream from TensorFlow. A great example is the estimator library which is moving out of TensorFlow, but is still heavily dependent on core TensorFlow changes.
+This document proposes the official way to test projects and repositories downstream from TensorFlow. With TensorFlow becoming more and more modularized, libraries that sit on top of core TensorFlow need to be tested. Unfortunately we cannot wait for any adjustments made to core TensorFlow to propagate through to a formal release and we need a way to have a reliable way of getting the latest stable TensorFlow to test any new changes to the external repositories. A great example is the estimator library which is moving out of TensorFlow, but is still heavily dependent on core TensorFlow changes.
 
 ## Motivation
 
