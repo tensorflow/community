@@ -5,7 +5,7 @@
 | **Author(s)** | Gabriel Perdue (gnperdue@gmail.com),                 |
 |               | Christopher Jones (cdj@fnal.gov)                     |
 | **Sponsor**   | Ravi Chirravuri (crk@google.com)                     |
-| **Updated**   | 2018-10-22                                           |
+| **Updated**   | 2018-10-29                                           |
 
 ## Objective
 
