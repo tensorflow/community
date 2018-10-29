@@ -4,6 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Gabriel Perdue (gnperdue@gmail.com),                 |
 |               | Christopher Jones (cdj@fnal.gov)                     |
+|               | Matti Kortelainen (matti@fnal.gov)                   |
 | **Sponsor**   | Ravi Chirravuri (crk@google.com)                     |
 | **Updated**   | 2018-10-29                                           |
 
@@ -25,9 +26,9 @@ optimally.
 For example, in High Energy Physics (HEP), we do a lot of very large scale
 batch processing. Our goal is generally "high throughput computing" - we want
 to process an enormous number of data chunks as fast as possible, but we don't
-care about the order in which they are processed at all. We also would like
-more hooks to manage threads, something like a plug-in mechanism for
-concurrency engines.
+care about the order in which they are processed at all. We would like more
+hooks to manage threads, something like a plug-in mechanism for concurrency
+engines.
 
 Each chunk needs to be processed by a large number of tasks (from a few tens to
 a few thousand) where each task is doing a transformation on a given chunk. Our
