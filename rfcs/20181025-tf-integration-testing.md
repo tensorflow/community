@@ -31,7 +31,7 @@ None of these solutions are ideal for testing projects downstream from TensorFlo
 
 ### New Testing Approach
 
-The renovated `tf-nightly` approach will combat the two issues that plague option 3 for testing TensorFlow dependent packages.
+The [renovated `tf-nightly` approach](https://github.com/tensorflow/community/blob/master/rfcs/20181026-tf-nightly.md) will combat the two issues that plague option 3 for testing TensorFlow dependent packages.
 
 |Approach:                    |New `tf-nightly`  |
 |-----------------------------|------------------|
