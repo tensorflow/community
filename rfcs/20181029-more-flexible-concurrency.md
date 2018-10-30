@@ -3,7 +3,7 @@
 | Status        | (Proposed / Accepted / Implemented / Obsolete)       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Gabriel Perdue (gnperdue@gmail.com),                 |
-|               | Christopher Jones (cdj@fnal.gov)                     |
+|               | Christopher Jones (cdj@fnal.gov),                    |
 |               | Matti Kortelainen (matti@fnal.gov)                   |
 | **Sponsor**   | Ravi Chirravuri (crk@google.com)                     |
 | **Updated**   | 2018-10-29                                           |
