@@ -1,4 +1,4 @@
-# Title of RFC
+# More Flexible Concurrency
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)       |
 :-------------- |:---------------------------------------------------- |
