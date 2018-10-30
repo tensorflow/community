@@ -10,9 +10,10 @@
 
 ## Objective
 
-We would like to implement a more flexible thread scheduling system. This would
-enable users to plug in a different thread management system (e.g., Intel TBB)
-as opposed to using only libraries TensorFlow is dependent on.
+This document presents a proposal to implement a more flexible thread
+scheduling system. This would enable users to plug in a different thread
+management system (e.g., Intel TBB) as opposed to using only libraries
+TensorFlow is dependent on.
 
 ## Motivation
 
