@@ -1,6 +1,6 @@
 # More Flexible Concurrency
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)       |
+| Status        | (Proposed)                                           |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Gabriel Perdue (gnperdue@gmail.com),                 |
 |               | Christopher Jones (cdj@fnal.gov),                    |
