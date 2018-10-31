@@ -12,12 +12,12 @@ Everybody with an interest in making TensorFlow work (better) on differrent type
 
 ## Resources
 
-* SIG-networking mailing list: [networking@tensorflow.org](https://groups.google.com/a/tensorflow.org/forum/#!forum/networking)
-* Repository maintained by SIG-networking: [github.com/tensorflow/networking](https://github.com/tensorflow/networking)
+* SIG Networking mailing list: [networking@tensorflow.org](https://groups.google.com/a/tensorflow.org/forum/#!forum/networking)
+* Repository maintained by SIG Networking: [github.com/tensorflow/networking](https://github.com/tensorflow/networking)
 
 ## Contacts
 
-* Project leads: Bairen Yi [@byronyi](https://github.com/byronyi) - byronyi@clustar.ai, Jeroen Bédorf [@jbedorf](https://github.com/jbedorf) - jeroen@minds.ai
+* SIG leads: Bairen Yi [@byronyi](https://github.com/byronyi) - byronyi@clustar.ai, Jeroen Bédorf [@jbedorf](https://github.com/jbedorf) - jeroen@minds.ai
 * TensorFlow technical contact: Paul Tucker [@poxvoculi](https://github.com/poxvoculi) - tucker@google.com
 * For administrative questions, contact Edd Wilder-James [@ewilderj](https://github.com/ewilderj) - ewj at google
 
