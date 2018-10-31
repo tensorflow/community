@@ -76,7 +76,7 @@ z1 = compute_z1(2., 2.)
 ```
 
 
-Where `tf.function` is a decorator that "**de**fines a TensorFlow **fun**ction". A "TensorFlow function" defines a computation as a graph of TensorFlow operations, with named arguments and explicit return values. Users define the function they want TensorFlow to "accelerate" as a Python function and integrate it into their Python program like any other Python function call.
+Where `tf.function` is a decorator that "defines a TensorFlow function". A "TensorFlow function" defines a computation as a graph of TensorFlow operations, with named arguments and explicit return values. Users define the function they want TensorFlow to "accelerate" as a Python function and integrate it into their Python program like any other Python function call.
 
 Having the Python function correspond to what the runtime will execute reduces conceptual complexity in translating between the two domains. It also affords an opportunity to provide more helpful stacktraces on errors. More advanced features available today (e.g., carving sub-graphs, feeding intermediate values) will still be possible (discussed later), though most users should not need to think in terms of graphs, feeds, and fetches. The constructed graph also provides a natural point for accelerators/acceleration libraries (NVIDIA TensorRT, Google Cloud TPUs etc.) to hook in for rewrites.
 
@@ -952,7 +952,7 @@ This situation can be improved with the help of  [autograph](https://github.com/
 
 
 ```python
-df = tf.function(f, autograph=True)
+df = tf.function(autograph=True)(f)
 f(x, y) # Will be 1.0
 ```
 
