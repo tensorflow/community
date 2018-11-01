@@ -347,6 +347,7 @@ class DistributionStrategy(object):
   def broadcast(self, value: tf.Tensor) -> PerReplica[tf.Tensor]:
     """Broadcasts the given value from the current device to all replicas."""
 
+  @property
   def extended(self) -> DistributionStrategyExtended:
     """Returns an instance of the class implementing additional DistributionStrategy functionality.
     
@@ -571,6 +572,13 @@ class InputContext(object):
     If `replication_mode` == `PER_WORKER`, this is the number of workers.
     If `replication_mode` == `PER_REPLICA`, this is total number of replicas.
     """
+
+  def per_replica_batch_size(self, global_batch_size: int) -> int:
+    """Returns the per replica batch size user should use in their input pipeline, given desired global batch size.
+
+    It would be computed as per_replica_batch_size = global_batch_size // num_replicas_in_sync. global_batch_size should be divisible by num_replicas_in_sync. This will throw an error if not.
+    """ 
+
 ```
 
 #### InputIterator class
@@ -708,8 +716,7 @@ with strategy.scope():
   optimizer = tf.train.MomentumOptimizer(learning_rate, 0.9)
 
 def input_fn(ctx):
-  assert effective_batch_size % ctx.num_replicas_in_sync == 0
-  return imagenet.ImageNet(effective_batch_size // ctx.num_replicas_in_sync)
+  return imagenet.ImageNet(ctx.per_replica_batch_size(effective_batch_size))
 
 def step_fn(inputs):
   image, label = inputs
@@ -791,8 +798,7 @@ def input_fn(ctx):
   d = d.interleave(tf.data.TFRecordDataset, cycle_length=num_readers)
   d = d.map(parser_fn)
 
-  assert effective_batch_size % ctx.num_replicas_in_sync == 0
-  return d.batch(effective_batch_size // ctx.num_replicas_in_sync)
+  return d.batch(ctx.per_replica_batch_size(effective_batch_size))
 
 ```
 
@@ -807,8 +813,7 @@ def sample_noise(batch_size):
       shape=(batch_size, num_latents), mean=0.0, stddev=1.0)
 
 def input_fn(ctx):
-  assert effective_batch_size % ctx.num_replicas_in_sync == 0
-  batch_size = effective_batch_size // ctx.num_replicas_in_sync
+  batch_size = ctx.per_replica_batch_size(effective_batch_size)
   ds = cifar.Cifar10(batch_size)
   return ds.map(lambda x: (x['image'], sample_noise(batch_size)))
 
