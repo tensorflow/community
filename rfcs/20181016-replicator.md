@@ -363,6 +363,33 @@ An instance of the `ReplicaContext` can be retrieved by calling `tf.distribute.g
 
 ```python
 class ReplicaContext(object):
+  “””A context within replicated computation.
+
+  IMPORTANT: The ordering of calls to cross-replica interactions must be identical in all replicas.
+  This includes `merge_call` and all communications methods (`all_sum`, etc.). Where possible, an exception
+  will be raised. However, some user errors are not detectable and may lead to silent numerical errors.
+  Particular care should be taken when iterating over Python dictionaries.
+
+  Example of incorrect usage:
+  ```
+  losses = {"loss1": ..., "loss2": ...}
+  total_losses = {k: ctx.all_sum(v) for k, v in losses.iteritems()}
+  ```
+
+  In Python versions earlier than 3.7, iteration order of dictionaries is not guaranteed.
+  Use an `OrderedDict`:
+  ```
+  losses = collections.OrderedDict([("loss1", ...), ("loss2", ...)])
+  total_losses = {k: ctx.all_sum(v) for k, v in losses.iteritems()}
+  ```
+
+  However, in this particular example, the dictionary keys are sortable. In such cases, this is best:
+  ```
+  losses = {"loss1": ..., "loss2": ...}
+  total_losses = ctx.all_sum(losses)
+  ```
+  “””
+
   @property
   def replica_id(self) -> tf.Tensor:
     "Returns the current replica ID."""
@@ -374,7 +401,7 @@ class ReplicaContext(object):
   def logical_device(self, logical_device_id: int) -> ContextManager:
     """Returns a context to place ops / variables on the given logical device.
 
-    The logical device ids are numbered 0 to N-1 where N is number of logical devices per replica. 
+    The logical device IDs are numbered 0 to N-1 where N is number of logical devices per replica. 
     """
 
   def all_sum(self, value: T) -> T:
@@ -383,7 +410,7 @@ class ReplicaContext(object):
     If `all_sum` is called in any replica, it must be called in all replicas.
     The nested structure and `Tensor` shapes must be identical in all replicas.
 
-    IMPORTANT: The ordering of communications must be identical in all replicas. Otherwise an error will be thrown.
+    IMPORTANT: The ordering of communications must be identical in all replicas. See class docstring.
 
     Example with two replicas:
       Replica 0:: `value`: {'a': 1, 'b': [40,  1]}
@@ -406,7 +433,7 @@ class ReplicaContext(object):
     If `all_min` is called in any replica, it must be called in all replicas.
     The nested structure and `Tensor` shapes must be identical in all replicas.
 
-    IMPORTANT: The ordering of communications must be identical in all replicas. Otherwise an error will be thrown.
+    IMPORTANT: The ordering of communications must be identical in all replicas. See class docstring.
 
     Example with two replicas:
       Replica 0:: `value`: {'a': 1, 'b': [40,  1]}
@@ -420,7 +447,7 @@ class ReplicaContext(object):
         The structure must be compatible with `tf.nest`.
 
     Returns:
-       A `Tensor` nest with the element-wise minimum `value`s from each replica. Otherwise an error will be thrown.
+       A `Tensor` nest with the element-wise minimum `value`s from each replica.
     """
 
   def all_max(self, value: T) -> T:
@@ -429,7 +456,7 @@ class ReplicaContext(object):
     If `all_max` is called in any replica, it must be called in all replicas.
     The nested structure and `Tensor` shapes must be identical in all replicas.
 
-    IMPORTANT: The ordering of communications must be identical in all replicas.
+    IMPORTANT: The ordering of communications must be identical in all replicas. See class docstring.
 
     Example with two replicas:
       Replica 0:: `value`: {'a': 1, 'b': [40,  1]}
@@ -443,7 +470,7 @@ class ReplicaContext(object):
         The structure must be compatible with `tf.nest`.
 
     Returns:
-       A `Tensor` nest with the element-wise maximum `value`s from each replica. Otherwise an error will be thrown.
+       A `Tensor` nest with the element-wise maximum `value`s from each replica.
     """
 
   def all_gather(self, value: T) -> T:
@@ -452,7 +479,7 @@ class ReplicaContext(object):
     If `all_gather` is called in any replica, it must be called in all replicas.
     The nested structure and `Tensor` shapes must be identical in all replicas.
 
-    IMPORTANT: The ordering of communications must be identical in all replicas. Otherwise an error will be thrown.
+    IMPORTANT: The ordering of communications must be identical in all replicas. See class docstring.
 
     Example with two replicas:
       Replica 0:: `value`: {'a': 1, 'b': [40,  1]}
@@ -478,7 +505,7 @@ class ReplicaContext(object):
     The nested structure, `Tensor` shapes, and `source_replica_id` must be
     identical in all replicas.
 
-    IMPORTANT: The ordering of communications must be identical in all replicas. Otherwise an error will be thrown.
+    IMPORTANT: The ordering of communications must be identical in all replicas. See class docstring.
 
     `value` will always be evaluated on all replicas.
 
@@ -499,7 +526,10 @@ class ReplicaContext(object):
     """
 
   def merge_call(merge_fn, *args, **kwargs):
-    """Merge args across replicas and run `merge_fn` in a cross-replica context."""
+    """Merge args across replicas and run `merge_fn` in a cross-replica context.
+
+    IMPORTANT: The ordering of `merge_call`s must be identical in all replicas. See class docstring.
+    """
 ```
 
 #### AggregationType enum
@@ -1021,7 +1051,3 @@ say they're copies of each other, or are sharded.
 *   How would we handle configuring the session options according to the strategy in eager execution?
 *   Can we keep type annotations in code for documentation purposes (but turn off type checking)? 
 *   ([From Karmel’s comment](https://github.com/tensorflow/community/pull/25#discussion_r228659379)) Keras supports DistStrat natively, but we have also discussed the fact that the inclusion of DistStrat in compile/fit limits our ability to handle, say, model parallelism or very large models. Is there an intersection of Keras and DS API that allows for model parallelism/more complicated use semantics without requiring too much from the Keras user?
-
-
-
-
