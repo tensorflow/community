@@ -183,7 +183,7 @@ with tf.Session() as sess:
 ```
 
 
-The output here is not deterministic, since `val` may evaluate to either 1.0 or 2.0 depending on whether the runtime happened to execute `assign_op` before `y` or not. `tf.control_dependencies` is a mechanism provided to add annotations at graph construction time to influence graph execution. The TensorFlow user, a Python programmer, is thus forced to think about two execution models - TensorFlow graphs and the Python interpreter. To eliminate this cognitive load, `function` will automatically insert control dependencies to ensure that (1) operations that produce or consume a given `DT_RESOURCE` tensor and (2) operations that are marked stateful (`REGISTER_OP(...).SetIsStateful()`) follow graph construction order. Thus:
+The output here is not deterministic, since `val` may evaluate to either 1.0 or 2.0 depending on whether the runtime happened to execute `assign_op` before `read` or not. `tf.control_dependencies` is a mechanism provided to add annotations at graph construction time to influence graph execution. The TensorFlow user, a Python programmer, is thus forced to think about two execution models - TensorFlow graphs and the Python interpreter. To eliminate this cognitive load, `function` will automatically insert control dependencies to ensure that (1) operations that produce or consume a given `DT_RESOURCE` tensor and (2) operations that are marked stateful (`REGISTER_OP(...).SetIsStateful()`) follow graph construction order. Thus:
 
 
 ```python
