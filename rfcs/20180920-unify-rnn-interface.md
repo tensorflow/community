@@ -143,33 +143,12 @@ parameter. By default it only returns the output for the last timestep, and user
 return additional output for all timesteps, as well as the final states for the last timestep.
 
 #### Changes to make
-1. Aggressive Approach (<b>NOT TAKEN, due to high usage of TF RNN layer API</b>).
-
-    Based on the difference above, it is hard to do an automatic regex replacement in user's code, 
-    maybe the migration strategy is to:
-    1. Provide clear example about how to convert from TF RNN to Keras RNN. 
-    1. Update the Keras RNN to cover all the use cases that are already covered by TF RNN, eg nested 
-       input/output/state.
-    1. Make TF RNN as deprecated, but still available in tf.v1_compatible, eventually delete it 
-       in 2.X.
-
-1. Less Aggressive Approach (Adapted)
-    
-    1. Keep both TF RNN and Keras API interface in 2.0.
-    1. Provide clear tutorial and documentation about both API and their differences, state our 
-       preference about the Keras one.
-    1. Could also writing a conversion/compatibility layer under tf.nn that forward the call to 
-       tf.keras.RNN, eg:
-       ```python
-       tf.nn.static_rnn(cell, input, ...):
-         keras_input = tf.transpose(tf.convert_to_tensor(input), perm=[1, 0, 2])
-         Keras_output, keras_state = tf.keras.layers.RNN(
-             cell, return_sequence=True, return_state=True, unroll=False)(keras_input)
-         # convert keras_output/state to tf.nn tensor format
-         return output, states
-       ```
-       This will get rid of the duplicated logic for maintenance purpose, but still keep TF RNN API 
-       interface around. This layer need some prototype and performance tests.
+1. Add support nested input/output/state for Keras.RNN layer, which is one of the feature gap between
+   Keras RNN and TF RNN.
+1. Add support for time-major input tensor (time, batch, feature).
+1. Provide clear example about how to convert from existing TF RNN to Keras RNN interface.
+1. Make TF RNN as deprecated, but still available in tf.v1_compatible, eventually delete it 
+   in 2.X.
        
 ### RNN Cell
 Following table lists out the current status for RNN cells between 2 APIs:
@@ -235,7 +214,7 @@ enable all the cells to be used by both layer interfaces.
 1. Deprecate the duplicated RNN cells in TF RNN and suggest user to use the Keras equivalent, 
 namely:
     1. nn.BasicRNNCell -> keras.SimpleRNNCell
-    1. (nn.BasicLSTMCell,  keras.LSTMCell) -> nn.LSTMCell
+    1. (nn.BasicLSTMCell, nn.LSTMCell) -> keras.LSTMCell
     1. nn.GRUCell -> keras.GRUCell
     1. nn.MultiRNNCell -> keras.StackedRNNCells
     1. (Optional) Remove the individual dropout param from Keras cells and preferred the DropWrapper 
@@ -250,7 +229,7 @@ The side effects of deleting cell is that previously saved checkpoint will not w
 
 There are extra implementations for various RNN cells and wrappers in tf.contrib.rnn. Since 
 tf.contrib is going away in TF 2.0. It is a good time to do the housekeeping and decide whether they
-should be moved to core, or leave them in contrib, or just delete.
+should be moved to core, or move to newly introduce SIG-Addon repository.
 
 |Name|Usage|Comment|
 |:---|:----|:------|
@@ -269,18 +248,18 @@ should be moved to core, or leave them in contrib, or just delete.
 |TimeFreqLSTMCell|low usage within Google|Leave in v1.compat due to low usage|
 |GridLSTMCell|low usage within Google|Leave in v1.compat due to low usage|
 |BidirectionalGridLSTMCell|low usage within Google|Leave in v1.compat due to low usage|
-|NASCell|low usage within Google|Leave in v1.compat due to low usage|
-|UGRNNCell|low usage within Google|Leave in v1.compat due to low usage|
-|IntersectionRNNCell|low usage within Google|Leave in v1.compat due to low usage|
+|NASCell|low usage within Google|Move to new Addon repository|
+|UGRNNCell|low usage within Google|Move to new Addon repository|
+|IntersectionRNNCell|low usage within Google|Move to new Addon repository|
 |PhasedLSTMCell|low usage within Google|Leave in v1.compat due to low usage|
 |ConvLSTMCell<br>Conv1DLSTMCell<br>Conv2DLSTMCell<br>Conv3DLSTMCell|low usage within Google|Keras has a Conv2DLSTM implementation and this is more generic. Probably port this core|
-|GLSTMCell|low usage within Google|Leave in v1.compat due to low usage|
-|SRUCell|low usage within Google|Leave in v1.compat due to low usage|
-|IndRNNCell|low usage within Google|Leave in v1.compat due to low usage|
-|IndyGRUCell|low usage within Google|Leave in v1.compat due to low usage|
-|IndyLSTMCell|low usage within Google|Leave in v1.compat due to low usage|
+|GLSTMCell|low usage within Google|Move to new Addon repository|
+|SRUCell|low usage within Google|Move to new Addon repository|
+|IndRNNCell|low usage within Google|Move to new Addon repository|
+|IndyGRUCell|low usage within Google|Move to new Addon repository|
+|IndyLSTMCell|low usage within Google|Move to new Addon repository|
 |AttentionCellWrapper|Medium usage|Move to core|
-|HighwayWrapper|low usage within Google|Leave in v1.compat due to low usage|
+|HighwayWrapper|low usage within Google|Move to new Addon repository|
 
 
 ### CuDNN implementation vs Normal implementation
