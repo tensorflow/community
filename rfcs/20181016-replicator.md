@@ -183,7 +183,7 @@ or more model replicas (on one or more workers). See [InputReplicationMode](#inp
         replica.
     *   `make_input_iterator`: This method is used to create the input iterator that is passed to run. It takes an `input_fn` which either returns a
         `Dataset` or a function which returns a nested structure of input tensors. It also takes an optional `InputReplicationMode`
-        `replication_mode` which specifies how, if at all, the input fn should
+        `input_replication_mode` which specifies how, if at all, the input fn should
         be replicated. The current options are (1) no replication, (2) replicate
         per worker (default option), and (3) replicate per compute-replica. See
         [InputReplicationMode](#inputreplicationmode) section for more details.
@@ -294,7 +294,7 @@ class DistributionStrategy(object):
   def make_input_iterator(
       self,
       input_source: InputFn[T],
-      replication_mode: InputReplicationMode = InputReplicationMode.PER_WORKER) -> InputIterator[T]:
+      input_replication_mode: InputReplicationMode = InputReplicationMode.PER_WORKER) -> InputIterator[T]:
     """Makes an iterator for input provided via an input function.
 
     Depending on the input replication mode, the input function may be called one time
@@ -309,7 +309,7 @@ class DistributionStrategy(object):
         The function must take an `InputContext` as the only parameter. It must return either
         an instance of `tf.data.Dataset` or a parameter-less Python callable that returns a
         `Tensor` nest.
-      replication_mode: The input replication mode. Defaults to per-worker replication.
+      input_replication_mode: The input replication mode. Defaults to per-worker replication.
     """
 
   @overload
@@ -589,21 +589,21 @@ class InputContext(object):
   def input_pipeline_id(self) -> int:
     """Returns the input pipeline ID.
 
-    If `replication_mode` == `SINGLE`, this is always `0`.
-    If `replication_mode` == `PER_WORKER`, this is the worker ID.
-    If `replication_mode` == `PER_REPLICA`, this is the compute replica ID.
+    If `input_replication_mode` == `SINGLE`, this is always `0`.
+    If `input_replication_mode` == `PER_WORKER`, this is the worker ID.
+    If `input_replication_mode` == `PER_REPLICA`, this is the compute replica ID.
     """
 
   @property
   def num_input_pipelines(self) -> int:
     """Returns the number of input pipelines.
 
-    If `replication_mode` == `SINGLE`, this is always `1`.
-    If `replication_mode` == `PER_WORKER`, this is the number of workers.
-    If `replication_mode` == `PER_REPLICA`, this is total number of replicas.
+    If `input_replication_mode` == `SINGLE`, this is always `1`.
+    If `input_replication_mode` == `PER_WORKER`, this is the number of workers.
+    If `input_replication_mode` == `PER_REPLICA`, this is total number of replicas.
     """
 
-  def per_replica_batch_size(self, global_batch_size: int) -> int:
+  def get_per_replica_batch_size(self, global_batch_size: int) -> int:
     """Returns the per replica batch size user should use in their input pipeline, given desired global batch size.
 
     It would be computed as per_replica_batch_size = global_batch_size // num_replicas_in_sync. global_batch_size should be divisible by num_replicas_in_sync. This will throw an error if not.
@@ -746,13 +746,14 @@ with strategy.scope():
   optimizer = tf.train.MomentumOptimizer(learning_rate, 0.9)
 
 def input_fn(ctx):
-  return imagenet.ImageNet(ctx.per_replica_batch_size(effective_batch_size))
+  return imagenet.ImageNet(ctx.get_per_replica_batch_size(effective_batch_size))
 
 def step_fn(inputs):
   image, label = inputs
+
   logits = model(images)
   cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
-      logits=logits, labels=label)
+      logits=logits, labels=label)  
   loss = tf.reduce_mean(cross_entropy)
   train_op = optimizer.minimize(loss)
   with tf.control_dependencies([train_op]):
@@ -790,7 +791,7 @@ def eval_top1_accuracy(inputs):
   return top1_acc
 
 eval_input_iterator = strategy.make_input_iterator(
-    eval_input_fn, replication_mode=InputReplicationMode.SINGLE)
+    eval_input_fn, input_replication_mode=InputReplicationMode.SINGLE)
 per_replica_top1_accs = strategy.run(eval_top1_accuracy, eval_input_iterator)
 mean_top1_acc = strategy.reduce(per_replica_top1_accs)
 
@@ -828,7 +829,7 @@ def input_fn(ctx):
   d = d.interleave(tf.data.TFRecordDataset, cycle_length=num_readers)
   d = d.map(parser_fn)
 
-  return d.batch(ctx.per_replica_batch_size(effective_batch_size))
+  return d.batch(ctx.get_per_replica_batch_size(effective_batch_size))
 
 ```
 
@@ -843,7 +844,7 @@ def sample_noise(batch_size):
       shape=(batch_size, num_latents), mean=0.0, stddev=1.0)
 
 def input_fn(ctx):
-  batch_size = ctx.per_replica_batch_size(effective_batch_size)
+  batch_size = ctx.get_per_replica_batch_size(effective_batch_size)
   ds = cifar.Cifar10(batch_size)
   return ds.map(lambda x: (x['image'], sample_noise(batch_size)))
 
@@ -1046,8 +1047,10 @@ say they're copies of each other, or are sharded.
 ### Naming questions
 *   What should the `extended` property and class be called? “Advanced” is the other strong contender. Some other candidates we discussed: internal, complex, expert, framework, platform, custom, extra, extras, core, supplementary, additional, auxiliary, special, secondary, specialized, all, full, complete, extended, detail.
 *   Alternate names for `InputReplicationMode`? `InputPipelineMode`? `InputMode`? Relatedly, is `SINGLE` a good name for the case where there is one input pipeline? We can call it `NONE` but that doesn’t work as an `InputPipelineMode` or `InputMode`.
+*   “worker” as defined in this document is confusing, and potentially conflicts with the TF worker task concept. Should we use a different name for this concept, or should we re-define this concept?
 
 ### Other questions:
 *   How would we handle configuring the session options according to the strategy in eager execution?
 *   Can we keep type annotations in code for documentation purposes (but turn off type checking)? 
 *   ([From Karmel’s comment](https://github.com/tensorflow/community/pull/25#discussion_r228659379)) Keras supports DistStrat natively, but we have also discussed the fact that the inclusion of DistStrat in compile/fit limits our ability to handle, say, model parallelism or very large models. Is there an intersection of Keras and DS API that allows for model parallelism/more complicated use semantics without requiring too much from the Keras user?
+
