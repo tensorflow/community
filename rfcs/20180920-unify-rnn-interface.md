@@ -1,6 +1,6 @@
 # Unify RNN Inteface
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 | ------------- |:---------------------------------------------------- |
 | **Author(s)** | @qlzh727 (scottzhu@google.com)                       |
 | **Sponsor**   | @ebrevdo (ebrevdo@google.com), @drpng (drpng@google.com)|
