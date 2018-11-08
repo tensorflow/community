@@ -1025,21 +1025,29 @@ say they're copies of each other, or are sharded.
 
 ### API questions
 *   Should `DistributionStrategy.run` be allowed to return non tensor outputs? This might be useful (at least in graph execution) to return relevant objects defined in step `fn`, for instance a metric object. If this is not allowed, the user has to restructure their code to capture any non tensor outputs defined inside `fn` if they want to access them outside. 
+    * Decision: Allow only tensors for now. Can allow non tensors in the future as use cases show up.
 *   Should DS handle calling initializer for the input dataset or leave it up to the user? (Current design leaves it up to the user)
 *   Should we allow passing arbitrary args/kwargs in `run` which will then be passed to `fn`? Will make it more handy than having to capture anything that might be needed. If we do allow this, what’s a good way to handle any future name collisions with user’s kw?
+    * Decision: For now keep the API to just tensor inputs, no args/kwargs. In the future, we can benchmark the alternatives and allow arbitrary args, if the need arises. 
 *   Should `DistributionStrategy.run` return a `List` of outputs from each `fn` call instead of a `PerReplica/Mirrored` type values which preserve some of the replica information? 
 *   Should InputReplicationMode be specified in the DistributionStrategy constructor and not allowed to be changed for different inputs (create a new strategy if you need a different input replication mode). Current design passes InputReplicationMode in `make_input_iterator` method so it can be changed for different inputs. This question is also related to how much state does the DS object contain, especially in multi worker modes etc. 
+    * We will have another method to allow passing in datasets directly as input, not requiring input function. In those cases, there is no replication mode. So it makes sense to keep this argument here as it is only relevant for this use case. 
 *   Should we have separate methods for each type of reduce/all_reduce operation (all_sum, all_mean etc), or one common method with an enum specifying which AggregationType (SUM, MEAN etc)?
+    * Send out a survey to see what people prefer. 
 *   Should `ReplicaContext` be passed into the `fn` in `run`, or being accessible from a module method is better? 
 *   Certain distribution strategies are between-graph
     (CollectiveAllReduceStrategy and ParameterServerStrategy). In those cases,
     should the `DistributionStrategy.run` method return outputs only from the replicas in
     that graph? Or should we try to return outputs from all graphs? Do we need
     to add more properties like “num_replicas_in_graph” ?
+    * It is not clear it makes sense to collect outputs from other workers/graphs. It gives API clarity but introduces significant overhead. Instead, we will make it clear in the documentation instead what to expect when using each strategy. We should also consider simplifying the options available for doing sync multi GPU/worker training. We should also think about what in-graph/between-graph translate to in TF 2.0 where we don’t explicitly talk about graphs. 
+* Model parallelism: is this the right API? 
+    * We have some data points, but we will start off by making this an experimental API. 
 
 
 ### Naming questions
 *   What should the `extended` property and class be called? “Advanced” is the other strong contender. Some other candidates we discussed: internal, complex, expert, framework, platform, custom, extra, extras, core, supplementary, additional, auxiliary, special, secondary, specialized, all, full, complete, extended, detail.
+    * Send out a survey to see what people prefer. 
 *   Alternate names for `InputReplicationMode`? `InputPipelineMode`? `InputMode`? Relatedly, is `SINGLE` a good name for the case where there is one input pipeline? We can call it `NONE` but that doesn’t work as an `InputPipelineMode` or `InputMode`.
 *   “worker” as defined in this document is confusing, and potentially conflicts with the TF worker task concept. Should we use a different name for this concept, or should we re-define this concept?
 
@@ -1047,4 +1055,5 @@ say they're copies of each other, or are sharded.
 *   How would we handle configuring the session options according to the strategy in eager execution?
 *   Can we keep type annotations in code for documentation purposes (but turn off type checking)? 
 *   ([From Karmel’s comment](https://github.com/tensorflow/community/pull/25#discussion_r228659379)) Keras supports DistStrat natively, but we have also discussed the fact that the inclusion of DistStrat in compile/fit limits our ability to handle, say, model parallelism or very large models. Is there an intersection of Keras and DS API that allows for model parallelism/more complicated use semantics without requiring too much from the Keras user?
+
 
