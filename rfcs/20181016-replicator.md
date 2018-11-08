@@ -363,7 +363,7 @@ An instance of the `ReplicaContext` can be retrieved by calling `tf.distribute.g
 
 ```python
 class ReplicaContext(object):
-  “””A context within replicated computation.
+  """A context within replicated computation.
 
   IMPORTANT: The ordering of calls to cross-replica interactions must be identical in all replicas.
   This includes `merge_call` and all communications methods (`all_sum`, etc.). Where possible, an exception
@@ -371,24 +371,18 @@ class ReplicaContext(object):
   Particular care should be taken when iterating over Python dictionaries.
 
   Example of incorrect usage:
-  ```
   losses = {"loss1": ..., "loss2": ...}
   total_losses = {k: ctx.all_sum(v) for k, v in losses.iteritems()}
-  ```
 
   In Python versions earlier than 3.7, iteration order of dictionaries is not guaranteed.
   Use an `OrderedDict`:
-  ```
   losses = collections.OrderedDict([("loss1", ...), ("loss2", ...)])
   total_losses = {k: ctx.all_sum(v) for k, v in losses.iteritems()}
-  ```
 
   However, in this particular example, the dictionary keys are sortable. In such cases, this is best:
-  ```
   losses = {"loss1": ..., "loss2": ...}
   total_losses = ctx.all_sum(losses)
-  ```
-  “””
+  """
 
   @property
   def replica_id(self) -> tf.Tensor:
