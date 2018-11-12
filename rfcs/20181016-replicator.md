@@ -5,7 +5,7 @@
 | **Author(s)** | cjfj@google.com, dominikg@google.com, jhseu@google.com, joshl@google.com, |
 |               | petebu@google.com, priyag@google.com, tomhennigan@google.com              |
 | **Sponsor**   | wicke@google.com                                                          |
-| **Updated**   | 2018-11-08                                                                |
+| **Updated**   | 2018-11-12                                                                |
 
 ## Objective
 
@@ -209,7 +209,7 @@ or more model replicas (on one or more workers). See [InputReplicationMode](#inp
     *   `get_cross_replica_context`: Returns the current `DistributionStrategy` if in a cross-replica context, otherwise None. 
 
 *   `ReplicaContext`: This is an object that can be obtained via the `get_replica_context()` method. It contains information about the replication context, such as the number of replicas, current replica id etc. It also
-    provides the methods for communication across replicas such as `all_sum`,
+    provides the methods for communication across replicas such as `all_reduce`,
     `broadcast`, etc. This is useful for use cases #3, for e.g. when writing custom layers.
 *   Input: Replicating and distributing the input correctly across replicas is
     an important component of replicating the computation. The API provides a
@@ -366,22 +366,22 @@ class ReplicaContext(object):
   """A context within replicated computation.
 
   IMPORTANT: The ordering of calls to cross-replica interactions must be identical in all replicas.
-  This includes `merge_call` and all communications methods (`all_sum`, etc.). Where possible, an exception
+  This includes `merge_call` and all communications methods (`all_reduce`, etc.). Where possible, an exception
   will be raised. However, some user errors are not detectable and may lead to silent numerical errors.
   Particular care should be taken when iterating over Python dictionaries.
 
   Example of incorrect usage:
   losses = {"loss1": ..., "loss2": ...}
-  total_losses = {k: ctx.all_sum(v) for k, v in losses.iteritems()}
+  total_losses = {k: ctx.all_reduce(v, AggregationType.SUM) for k, v in losses.iteritems()}
 
   In Python versions earlier than 3.7, iteration order of dictionaries is not guaranteed.
   Use an `OrderedDict`:
   losses = collections.OrderedDict([("loss1", ...), ("loss2", ...)])
-  total_losses = {k: ctx.all_sum(v) for k, v in losses.iteritems()}
+  total_losses = {k: ctx.all_reduce(v, AggregationType.SUM) for k, v in losses.iteritems()}
 
   However, in this particular example, the dictionary keys are sortable. In such cases, this is best:
   losses = {"loss1": ..., "loss2": ...}
-  total_losses = ctx.all_sum(losses)
+  total_losses = ctx.all_reduce(losses, AggregationType.SUM)
   """
 
   @property
@@ -398,15 +398,16 @@ class ReplicaContext(object):
     The logical device IDs are numbered 0 to N-1 where N is number of logical devices per replica. 
     """
 
-  def all_sum(self, value: T) -> T:
-    """All-sums the given `Tensor` nest across replicas.
+  def all_reduce(self, value: T, aggregation: AggregationType) -> T:
+    """All-reduces the given `Tensor` nest across replicas .
 
-    If `all_sum` is called in any replica, it must be called in all replicas.
+    `aggregation` specified the type of reduction, such as sum, mean etc. See `AggregationType` enum.
+    If `all_reduce` is called in any replica, it must be called in all replicas.
     The nested structure and `Tensor` shapes must be identical in all replicas.
 
     IMPORTANT: The ordering of communications must be identical in all replicas. See class docstring.
 
-    Example with two replicas:
+    Example with two replicas with aggregation = SUM:
       Replica 0:: `value`: {'a': 1, 'b': [40,  1]}
       Replica 1:: `value`: {'a': 3, 'b': [ 2, 98]}
 
@@ -414,57 +415,11 @@ class ReplicaContext(object):
       Replica 1:: result: {'a': 4, 'b': [42, 99]}
 
     Args:
-      value: The nested structure of `Tensor`s to all-sum.
+      value: The nested structure of `Tensor`s to all-reduce.
         The structure must be compatible with `tf.nest`.
 
     Returns:
-       A `Tensor` nest with the summed `value`s from each replica.
-    """
-
-  def all_min(self, value: T) -> T:
-    """All-mins the given `Tensor` nest across replicas.
-
-    If `all_min` is called in any replica, it must be called in all replicas.
-    The nested structure and `Tensor` shapes must be identical in all replicas.
-
-    IMPORTANT: The ordering of communications must be identical in all replicas. See class docstring.
-
-    Example with two replicas:
-      Replica 0:: `value`: {'a': 1, 'b': [40,  1]}
-      Replica 1:: `value`: {'a': 3, 'b': [ 2, 98]}
-
-      Replica 0:: result: {'a': 1, 'b': [2, 1]}
-      Replica 1:: result: {'a': 1, 'b': [2, 1]}
-
-    Args:
-      value: The nested structure of `Tensor`s to all-min.
-        The structure must be compatible with `tf.nest`.
-
-    Returns:
-       A `Tensor` nest with the element-wise minimum `value`s from each replica.
-    """
-
-  def all_max(self, value: T) -> T:
-    """All-maxs the given `Tensor` nest across replicas.
-
-    If `all_max` is called in any replica, it must be called in all replicas.
-    The nested structure and `Tensor` shapes must be identical in all replicas.
-
-    IMPORTANT: The ordering of communications must be identical in all replicas. See class docstring.
-
-    Example with two replicas:
-      Replica 0:: `value`: {'a': 1, 'b': [40,  1]}
-      Replica 1:: `value`: {'a': 3, 'b': [ 2, 98]}
-
-      Replica 0:: result: {'a': 3, 'b': [40, 98]}
-      Replica 1:: result: {'a': 3, 'b': [40, 98]}
-
-    Args:
-      value: The nested structure of `Tensor`s to all-max.
-        The structure must be compatible with `tf.nest`.
-
-    Returns:
-       A `Tensor` nest with the element-wise maximum `value`s from each replica.
+       A `Tensor` nest with the reduced `value`s from each replica.
     """
 
   def all_gather(self, value: T) -> T:
@@ -947,7 +902,7 @@ strategy.finalize()
 
 When using a standard batch normalization layer with DistributionStrategy, the calculated
 mean and variance will be with-respect-to the local batch. A global batch
-normalization layer could be built using the `all_sum` method.
+normalization layer could be built using the `all_reduce` method.
 
 ```python
 def global_batch_norm(x):
@@ -955,8 +910,8 @@ def global_batch_norm(x):
   local_x_mean = tf.reduce_mean(x, axis=0)
   local_x_squared_mean = tf.reduce_mean(tf.square(x), axis=0)
   global_x_mean, global_x_squared_mean = (
-      ctx.all_sum([local_x_mean / ctx.num_replicas_in_sync,
-                   local_x_squared_mean / ctx.num_replicas_in_sync])
+      ctx.all_reduce([local_x_mean / ctx.num_replicas_in_sync,
+                     local_x_squared_mean / ctx.num_replicas_in_sync], AggregationType.SUM)
   global_x_variance = global_x_squared_mean - tf.square(global_x_mean)
   return tf.nn.batch_normalization(
       x, global_x_mean, global_x_variance, offset=None, scale=None)
@@ -1033,7 +988,7 @@ say they're copies of each other, or are sharded.
 *   Should InputReplicationMode be specified in the DistributionStrategy constructor and not allowed to be changed for different inputs (create a new strategy if you need a different input replication mode). Current design passes InputReplicationMode in `make_input_iterator` method so it can be changed for different inputs. This question is also related to how much state does the DS object contain, especially in multi worker modes etc. 
     * We will have another method to allow passing in datasets directly as input, not requiring input function. In those cases, there is no replication mode. So it makes sense to keep this argument here as it is only relevant for this use case. 
 *   Should we have separate methods for each type of reduce/all_reduce operation (all_sum, all_mean etc), or one common method with an enum specifying which AggregationType (SUM, MEAN etc)?
-    * Send out a survey to see what people prefer. 
+    * Decide to have a single method with an enum, based on survey responses. 
 *   Should `ReplicaContext` be passed into the `fn` in `run`, or being accessible from a module method is better? 
 *   Certain distribution strategies are between-graph
     (CollectiveAllReduceStrategy and ParameterServerStrategy). In those cases,
@@ -1047,7 +1002,7 @@ say they're copies of each other, or are sharded.
 
 ### Naming questions
 *   What should the `extended` property and class be called? “Advanced” is the other strong contender. Some other candidates we discussed: internal, complex, expert, framework, platform, custom, extra, extras, core, supplementary, additional, auxiliary, special, secondary, specialized, all, full, complete, extended, detail.
-    * Send out a survey to see what people prefer. 
+    * Decide to use `extended` based on survey responses.  
 *   Alternate names for `InputReplicationMode`? `InputPipelineMode`? `InputMode`? Relatedly, is `SINGLE` a good name for the case where there is one input pipeline? We can call it `NONE` but that doesn’t work as an `InputPipelineMode` or `InputMode`.
 *   “worker” as defined in this document is confusing, and potentially conflicts with the TF worker task concept. Should we use a different name for this concept, or should we re-define this concept?
 
