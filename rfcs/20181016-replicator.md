@@ -1,6 +1,6 @@
 # Distribution Strategy - Revised API
 
-| Status        | Proposed                                                                  |
+| Status        | Accepted                                                                  |
 | :------------ | :------------------------------------------------------------------------ |
 | **Author(s)** | cjfj@google.com, dominikg@google.com, jhseu@google.com, joshl@google.com, |
 |               | petebu@google.com, priyag@google.com, tomhennigan@google.com              |
