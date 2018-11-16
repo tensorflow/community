@@ -37,7 +37,7 @@ SavedModel as a format satisfies this use-case. Various APIs for creating SavedM
 
 #### Sharing
 
-Beyond serving, users may want to reuse all of parts of a trained model. SavedModel allows saving the specific computation together with its pre-trained weights, without depending on the model definition in Python and its particular framework. This helps reproducibility (say, for results reported in a paper) and reuse (say, for importing a pre-trained embedding into a model that uses it on a new task). While serving and reproducibility call for a complete model, reuse typically concerns part of a trained model and its composition. That means loading the SavedModel must restore enough Python state to allow building on top of it.
+Beyond serving, users may want to reuse parts of a trained model in building new models. SavedModel allows saving the computation together with its pre-trained weights, without depending on the model definition in Python and its particular framework. This helps reproducibility (say, for results reported in a paper) and reuse (say, for importing a pre-trained embedding into a model that uses it on a new task). While serving and reproducibility call for a complete model, reuse typically concerns part of a trained model and its composition. That means loading the SavedModel must restore enough Python state to allow building on top of it.
 
 These use-cases are not well addressed in core TensorFlow 1.x APIs. Export APIs have been complicated by concerns relevant to the serving use-case, and not much time has been spent on usability for re-importing models into Python. TensorFlow Hub has solved this (esp. the import workflow) for sharing graphs, but this needs significant redesign for TF 2.x in light of [the Functions, not Sessions RFC](https://github.com/tensorflow/community/pull/20).
 
@@ -386,7 +386,7 @@ Non-`Tensor` arguments to functions used to generate signatures are fine (e.g. `
 
 SavedModel SignatureDef outputs require each output to have a name. If a single dictionary is returned from the traced function, the string keys will be used to name outputs. Otherwise signature functions must return a flat list of `Tensor`s, and the outputs will be numbered ("output_1", "output_2", ...). Flattening outputs would be trivial before numbering them, but serving APIs would have no way to reconstruct the structure.
 
-Any return structure other than a dictionary with string keys or a flat list of Tensors from a function used to generate a signature will raise an exception on export. Note that this limitation applies only to serving functions; functions attached to objects but not specified as signatures may have other output patterns.
+Any return structure other than a dictionary with string keys or a flat sequence of Tensors from a function used to generate a signature will raise an exception on export. Note that this limitation applies only to serving functions; functions attached to objects but not specified as signatures may have other output patterns.
 
 #### Protos in serving signatures, re-exporting
 
@@ -532,7 +532,7 @@ In the SavedModel protocol buffer, AssetFileDefs will have a restore function ta
 
 ### Devices
 
-Functions will always be traced outside of any device scope, and we will rely on the placement of the `PartitionedCallOp` for a "default" device. So no special treatment is needed to switch devices between export and import: just call the imported function in a device scope.
+Functions will be traced outside of any device scope, and we will rely on the placement of the `PartitionedCallOp` for a "default" device. So no special treatment is needed to switch devices between export and import: just call the imported function in a device scope.
 
 Device placements specified within the function body will be hard-coded in the SavedModel, and aside from library code needing to place things on the CPU, we should discourage `tf.device` within graph functions so devices aren't hard-coded for export.
 
@@ -637,7 +637,7 @@ assert list(net_from_class.var.numpy()) == [2., 2., 2., 2., 2.]
 
 Constructing a new object from a revived type will also construct new objects for any dependencies. To be usable, the pre-export object associated with this type must not have had a transitive dependency on any function or method unless it also had transitive dependencies on all that function's referenced variables. So for example an object referencing a checkpointable list of functions which reference its variables may be constructed, but the list itself may not be constructed on its own.
 
-Unless `__init__` is decorated, revived objects will not take constructor arguments. Constructing a new object from a revived type creates uninitialized variables of the same shape and dtype as the revived object with that type, and calling the method which created a variable (before export) initializes it. Variable initialization will be automatic and idempotent (prototyped in cl/214065999).
+Unless `__init__` is decorated, revived objects will not take constructor arguments. Constructing a new object from a revived type creates uninitialized variables of the same shape and dtype as the revived object with that type, and calling the method which created a variable (before export) initializes it. Variable initialization will be automatic and idempotent, as implemented in [tf.function](https://github.com/tensorflow/tensorflow/blob/4a5126674c9c3086a2c38c78126d0e190cb93a61/tensorflow/python/eager/def_function.py#L504).
 
 A `@tf.function`-decorated `__init__` before export requires corresponding tensors be passed to the constructor of the revived type. Dependencies are constructed in an uninitialized state even if they have tensor arguments to their `__init__` methods, with the understanding that initialization will be included in the trace of the method of the parent object which created the depended-on object before export (i.e. using a traced constructor to create a depended-on object outside of a traced method will result in uninitialized variables).
 
@@ -742,3 +742,9 @@ How, once a user has specified a `signatures=` argument on export, should that a
 ### Does tf.saved_model.load() work in graph mode?
 
 Probably not. The compatibility section now makes this explicit.
+
+### Return value of load() for SavedModels with multiple MetaGraphs
+
+TensorFlow 1.x SavedModel load APIs have a tag-based selection system for choosing which MetaGraphs to load. Should `load()` take arguments to replicate this behavior, even if they’re not relevant to `save()`? Or is returning a list and lazily loading MetaGraphs sufficient?
+
+Is returning an unwrapped object in the single-MetaGraph case but a list in the multi-MetaGraph case too surprising? If so, do we need a separate API?
