@@ -245,7 +245,7 @@ To support this `function` imposes some requirements on the decorated function:
 
 1.  State (like `tf.Variable` objects) are only created the first time the function `f` is called. \
 How that is accomplished is left up to the implementation of `f`. \
-If any variables are created in the first execution of `f`, then `@tf.function` will trace `f` a second time in order to record the behavior that will be used from then on. No variables may be created during that second trace, or any other trace after that (due to different dtypes, shapes, or non-tensor arguments).
+If any variables are created in the first execution of `f`, then `@tf.function` will trace `f` again the second time it is invoked in order to record the behavior that will be used from then on. No variables may be created during that second trace, or any other trace after that (due to different dtypes, shapes, or non-tensor arguments).
 1.  The caller must make sure that any variable referenced by the function still exists whenever the function is evaluated. \
 `@tf.function` itself will keep only weak references to these created variables. Thus, if the referenced state does not exist when the decorated function is invoked, an exception will be raised.
 
