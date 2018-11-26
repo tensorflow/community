@@ -1,6 +1,6 @@
 # TensorFlow Integration Testing
 
-| Status        | Proposed                                                |
+| Status        | Accepted                                                |
 | :------------ | :------------------------------------------------------ |
 | **Author**    | amitpatankar@google.com 								  |
 | **Sponsor**   | gunan@google.com                                        |
