@@ -419,9 +419,15 @@ When unambiguous and not specified with an explicit `signatures=` argument, a de
 
 #### Imported representation of signatures
 
-On `tf.saved_model.save`, signatures from the `signatures=` argument are saved as if they were attributes of the saved object, so that these attributes exist on `load`. They are not added to the Python object itself. An exception will be raised if a key in the `signatures=` dictionary is also an attribute of the object being exported. This attribute reservation includes implicit signatures, which de facto makes `serving_default` a reserved attribute.
+The `.signatures` attribute will be reserved on objects which are saved and restored. On `tf.saved_model.load` it will contain an immutable mapping from signature keys (e.g. `"serving_default"`) to the functions used to implement each signature. This supports introspection, allowing users to import a SavedModel and run exactly the computation a serving API would run.
 
-If no `signatures=` argument is provided but signature attributes tagged by `tf.saved_model.load` exist on an object being saved, `tf.saved_model.save` will use the signatures from these attributes. This makes `load` followed by `save` idempotent.
+On `tf.saved_model.save`, signatures in the exported SavedModel come from the first available of the following sources:
+
+
+
+1.  The `tf.saved_model.save(..., signatures=...)` argument
+1.  The `.signatures` attribute of the exported object
+1.  A set of heuristics to determine a default signature, for example exporting a functional Keras model or searching for `@tf.function`-decorated methods with a signature. This may fail, in which case no signatures will be exported.
 
 For example:
 
@@ -444,9 +450,13 @@ tf.saved_model.save(
 
 ```
 loaded = tf.saved_model.load("/tmp/serve")
-loaded.serving_default(tf.constant([[1.]]))  # <tf.Tensor [[1.]], dtype=float32>
+loaded.signatures["serving_default"](x=tf.constant([[1.]])) 
+#   -> {"output_0": <tf.Tensor [[1.]], dtype=float32>}
 tf.saved_model.save(loaded, "/tmp/serve1")  # Contains the same signature
 ```
+
+
+Attempting to save an object with a `.signatures` attribute containing something other than an immutable signature mapping (for example created by `tf.saved_model.load`) will raise an exception. This prevents accidentally ignored signatures when the attribute is modified and the argument passed. However, internal APIs may make use of the attribute to provide a user-overridable default.
 
 ### Format and API compatibility
 
