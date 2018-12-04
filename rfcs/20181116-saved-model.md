@@ -469,7 +469,7 @@ SavedModels exported from the proposed APIs will be importable using TensorFlow 
 
 #### Importing existing SavedModels
 
-Using `tf.saved_model.load` on a SavedModel exported from a TensorFlow 1.x API will import each SignatureDef as an individual  `tf.compat.v1.wrap_function` object. This will follow the [same style as for signatures exported using tf.saved_model.save](#imported-representation-of-signatures), with attributes of the root object corresponding to signature keys containing `wrap_function` objects. Another attribute will contain variables.
+Using `tf.saved_model.load` on a SavedModel exported from a TensorFlow 1.x API will import each SignatureDef as an individual  `tf.compat.v1.wrap_function` object. This will follow the [same style as for signatures exported using tf.saved_model.save](#imported-representation-of-signatures), with a `.signatures` attribute of the root object containing a mapping from signature keys to `wrap_function` objects. Another attribute will contain variables.
 
 If multiple MetaGraphs exist in the SavedModel, the imported root object will be a list of objects, each corresponding to a MetaGraph. Variables will not be shared between the MetaGraphs. If there is a single MetaGraph, there will be no list wrapping. If memory becomes a concern loading multiple MetaGraphs and their variables simultaneously, they may be loaded lazily.
 
