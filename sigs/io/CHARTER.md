@@ -20,13 +20,17 @@ Archives of the mailing list are publicly accessible.
 
 * SIG IO  mailing list: [io@tensorflow.org](https://groups.google.com/a/tensorflow.org/forum/#!forum/io)
 * Repository: [github.com/tensorflow/io](https://github.com/tensorflow/io)
+* Python Package Repository: [tensorflow-io](https://pypi.org/project/tensorflow-io)
+
+## Releases
+
+Information about SIG IO releases and the release team could be found in [RELEASE.md](RELEASE.md).
 
 ## Contacts
 
-* Project leads: Yong Tang [@yongtang](https://github.com/yongtang) -
-  yong.tang.github@outlook.com, Anthony Dmitriev
-  [@dmitrievanthony](https://github.com/dmitrievanthony) -
-  dmitrievanthony@gmail.com
+* Project leads:
+  - Yong Tang [@yongtang](https://github.com/yongtang) - yong.tang.github@outlook.com
+  - Anthony Dmitriev [@dmitrievanthony](https://github.com/dmitrievanthony) - dmitrievanthony@gmail.com
 * TensorFlow technical contact [@mrry](https://github.com/mrry) - mrry@google.com
 * For administrative questions, contact Edd Wilder-James
   [@ewilderj](https://github.com/ewilderj) - ewj at google
