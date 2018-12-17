@@ -2,20 +2,13 @@
 
 ## Objective
 
-To facilitate code contribution and plugin development for the TensorBoard
-project.
+For discussion and collaboration around TensorBoard, the visualization tool for TensorFlow.
 
 ## Membership
 
-Everyone involved in developing with TensorBoard is welcome to participate in
-our [GitHub community](https://github.com/tensorflow/tensorboard). The SIG
-mailing list exists to facilitate conversations between certain stakeholders.
-While the contents of this list are publicly available for maximum transparency,
-we curate posting privileges to ensure each group of stakeholders has exactly
-one voice. The TensorBoard team reserves the right to exercise good judgement in
-determining the boundaries of stakeholding.
+Everyone interested in developing TensorBoard is welcome to join the group. To participate, request an invitation join the mailing list.
 
-Archives of the mailing list are publicly accessible.
+Archives of the mailing list will be publicly accessible.
 
 ## Resources
 
@@ -25,7 +18,7 @@ Archives of the mailing list are publicly accessible.
 * [Writing a TensorBoard plugin](https://github.com/tensorflow/tensorboard-plugin-example/blob/master/README.md)
 
 ## Contacts
-* Project lead: Justine Tunney [@jart](https://github.com/jart) - jart at google
+* Project lead: Mani Varadarajan [@maniv](https://github.com/manivaradarajan) - maniv at google
 * For administrative questions, contact Edd Wilder-James [@ewilderj](https://github.com/ewilderj) - ewj at google
 
 ## Code of Conduct
