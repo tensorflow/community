@@ -61,7 +61,11 @@ def create_rng_state(seed, algorithm=None):
   # algorithm=None -> auto-select
   # Returns a 1-D tensor "rng_state" with:
   # * rng_state[0] is a value that identifies the RNG algorithm
-  # * rng_state[1:] holds the RNG state itself (more like 1024 bits than 128)
+  # * rng_state[1:] holds the RNG state itself. The state and seed of random ops
+  #     (stateful and stateless) will always be 1024 bits, all of which will be
+  #     sent to the C++ code. The actual C++ implementation of some algorithms 
+  #     may only use a lower part of the bits.
+  # *QUESTION*: Is 1024 a good number? Would 256 be enough?
 
 @tf_export("random.Generator")
 class Generator(Checkpointable):
@@ -91,15 +95,14 @@ class Generator(Checkpointable):
     # Returns a tensor of independent `Generator` objects
   # ...
 
-def _create_op_generator(seed):
-  return Generator(seed=seed)
-
-op_generator = _create_op_generator(None)
+op_generator = Generator()
 
 @tf_export("random.reset_global_generator")
-def reset_global_generator(seed):
+def reset_global_generator(seed, algorithm=None):
   global op_generator
-  op_generator = _create_op_generator(seed)
+  if algorithm is None:
+    algorithm = op_generator.algorithm # preserve the old algorithm
+  op_generator = Generator(seed=seed, algorithm=algorithm)
 
 @tf_export("random.set_global_generator")
 def set_global_generator(generator):
@@ -171,16 +174,18 @@ We may need to add additional features, like batch seeds for the stateless rando
 *   There is another design where there is a global variable called `global_seed`. Initializers will use it together with the op seed to determine the seed sent to the stateless random ops. The affected change is:
 ```python
 global_seed = None
-op_generator = _create_op_generator(global_seed)
+op_generator = Generator(seed=global_seed)
 DEFAULT_GLOBAL_SEED = 87654321
 
 # Renamed from 'reset_global_generator'
 @tf_export("random.set_seed")
-def set_seed(seed):
+def set_seed(seed, algorithm=None):
   # reset the global seed and the global generator
   global global_seed, op_generator
   global_seed = seed
-  op_generator = _create_op_generator(seed)
+  if algorithm is None:
+    algorithm = op_generator.algorithm
+  op_generator = Generator(seed=seed, algorithm=algorithm)
 
 def _combine_seeds(global_seed, op_seed):
   # combines global_seed and op_seed into a seed for stateless random ops
@@ -196,5 +201,4 @@ def create_seed(op_seed):
   return _combine_seeds(global_seed, op_seed)
 ```
 The motivation is to preserve the design in TensorFlow 1.x which uses a global seed and an op seed. Do we want `global_seed`?
-*   The `RandomUniform` implementation shown above has the behavior that when `seed` is not `None`, multiple `__call__` invocations return the same result. This has the advantage that it makes it easy to initialize two layers the same way when you want, and the downside that it makes it easy to accidentally initialize two layers the same way.
-    An alternative implementation is that when `seed` is not `None`, `RandomUniform` creates a `Generator` instance from `seed`, stores it as a member, and draws samples from it. In this way, multiple `__call__` invocations return different results, but we can use `seed` to get determinism. Which of the two semantics do we want?
+*   The `RandomUniform` implementation shown above has the behavior that when `seed` is not `None`, multiple `__call__` invocations return the same result. This has the advantage that it makes it easy to initialize two layers the same way when you want, and the downside that it makes it easy to accidentally initialize two layers the same way. An alternative implementation is that when `seed` is not `None`, `RandomUniform` creates a `Generator` instance from `seed`, stores it as a member, and draws samples from it. In this way, multiple `__call__` invocations return different results, but we can use `seed` to get determinism. Which of the two semantics do we want?
