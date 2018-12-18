@@ -50,6 +50,11 @@ The following represents the desired end-state, and doesn't go into detail about
 ```python
 # random.py
 
+# A seed for random ops (stateful and stateless) will always be 256 
+# bits, all of which will be sent to the C++ code. The actual C++ 
+# implementation of some algorithms may only use a lower part of the bits.
+# *QUESTION*: Is 256 a good number? 
+  
 @tf_export("random.non_deterministic_seed")
 def non_deterministic_seed():  # returns an integer
   # *QUESTION*: Is this pure Python or an op?
@@ -60,12 +65,9 @@ def create_rng_state(seed, algorithm=None):
   # seed must be an integer or stateless seed, never None
   # algorithm=None -> auto-select
   # Returns a 1-D tensor "rng_state" with:
-  # * rng_state[0] is a value that identifies the RNG algorithm
-  # * rng_state[1:] holds the RNG state itself. The state and seed of random ops
-  #     (stateful and stateless) will always be 1024 bits, all of which will be
-  #     sent to the C++ code. The actual C++ implementation of some algorithms 
-  #     may only use a lower part of the bits.
-  # *QUESTION*: Is 1024 a good number? Would 256 be enough?
+  # * rng_state[0] is a value that identifies the RNG algorithm;
+  # * rng_state[1:] holds the RNG state itself (size dependent on the 
+  #                 algorithm).
 
 @tf_export("random.Generator")
 class Generator(Checkpointable):
