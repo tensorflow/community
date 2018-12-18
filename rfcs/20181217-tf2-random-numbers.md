@@ -55,10 +55,6 @@ def non_deterministic_seed():  # returns an integer
   # *QUESTION*: Is this pure Python or an op?
   # PROPOSAL: Op; need only be implemented on CPU
 
-def _combine_seeds(global_seed, op_seed):
-  # combines global_seed and op_seed into a seed for stateless random ops
-  return tf.stack([global_seed, op_seed])
-
 # *QUESTION*: Should this be public?
 def create_rng_state(seed, algorithm=None):
   # seed must be an integer or stateless seed, never None
@@ -98,39 +94,17 @@ class Generator(Checkpointable):
 def _create_op_generator(seed):
   return Generator(seed=seed)
 
-# *QUESTION*: Do we need 'global_seed'? If we remove 'global_seed', the affected
-# change is:
-#
-#  op_generator = _create_op_generator(None)
-#
-#  # Renamed from 'set_seed'
-#  def reset_global_generator(seed):
-#    global op_generator
-#    op_generator = _create_op_generator(seed)
-#
-#  def create_seed(op_seed):
-#    global op_generator
-#    if op_seed is None:
-#      return op_generator.make_seeds()
-#    return op_seed
-  
-global_seed = None
-op_generator = _create_op_generator(global_seed)
-DEFAULT_GLOBAL_SEED = 87654321
+op_generator = _create_op_generator(None)
 
-@tf_export("random.set_seed")
-def set_seed(seed):
-  # reset the global seed and the global generator
-  global global_seed, op_generator
-  global_seed = seed
-  op_generator = _create_op_generator(global_seed)
+@tf_export("random.reset_global_generator")
+def reset_global_generator(seed):
+  global op_generator
+  op_generator = _create_op_generator(seed)
 
 @tf_export("random.set_global_generator")
 def set_global_generator(generator):
   global op_generator
   op_generator = generator
-  # *QUESTION*: Do we set global_seed in this case?
-  # PROPOSAL: No
 
 @tf_export("random.get_global_generator")
 def get_global_generator():
@@ -151,24 +125,11 @@ def algorithms_supported_on_all_devices():
 
 @tf_export("random.create_seed")
 def create_seed(op_seed):
-  global global_seed, op_generator
+  global op_generator
   if op_seed is None:
     return op_generator.make_seeds()
-  if global_seed is None:
-    return _combine_seeds(DEFAULT_GLOBAL_SEED, op_seed)
-  return _combine_seeds(global_seed, op_seed)
-
-# *QUESTION*: The following implementation has the behavior that when 'seed' is 
-#             not None, multiple '__call__' invocations return the same result. 
-#             This has the advantage that it makes it easier to initialize 
-#             two layers the same way when you want, and the downside that it 
-#             makes it easier to accidentally initialize two layers the same 
-#             way.
-#             An alternative implementation is that when 'seed' is not None, 
-#             'RandomUniform' creates a 'Generator' instance from 'seed', stores 
-#             it as a member, and draws samples from it. In this way, multiple 
-#             '__call__' invocations return different results, but we can use 
-#             'seed' to get determinism. Which of the two semantics do we want?
+  return op_seed
+  
 @tf_export("initializer.random_uniform")
 class RandomUniform(Initializer):
   """Initializer that generates tensors with a uniform distribution..."""
@@ -207,5 +168,33 @@ We may need to add additional features, like batch seeds for the stateless rando
 
 ## Questions and Discussion Topics
 
-*   Do we need `global_seed`?
-*   Which of the two semantics of initializers do we want?
+*   There is another design where there is a global variable called `global_seed`. Initializers will use it together with the op seed to determine the seed sent to the stateless random ops. The affected change is:
+```python
+global_seed = None
+op_generator = _create_op_generator(global_seed)
+DEFAULT_GLOBAL_SEED = 87654321
+
+# Renamed from 'reset_global_generator'
+@tf_export("random.set_seed")
+def set_seed(seed):
+  # reset the global seed and the global generator
+  global global_seed, op_generator
+  global_seed = seed
+  op_generator = _create_op_generator(seed)
+
+def _combine_seeds(global_seed, op_seed):
+  # combines global_seed and op_seed into a seed for stateless random ops
+  return tf.stack([global_seed, op_seed])
+
+@tf_export("random.create_seed")
+def create_seed(op_seed):
+  global global_seed, op_generator
+  if op_seed is None:
+    return op_generator.make_seeds()
+  if global_seed is None:
+    return _combine_seeds(DEFAULT_GLOBAL_SEED, op_seed)
+  return _combine_seeds(global_seed, op_seed)
+```
+The motivation is to preserve the design in TensorFlow 1.x which uses a global seed and an op seed. Do we want `global_seed`?
+*   The `RandomUniform` implementation shown above has the behavior that when `seed` is not `None`, multiple `__call__` invocations return the same result. This has the advantage that it makes it easy to initialize two layers the same way when you want, and the downside that it makes it easy to accidentally initialize two layers the same way.
+    An alternative implementation is that when `seed` is not `None`, `RandomUniform` creates a `Generator` instance from `seed`, stores it as a member, and draws samples from it. In this way, multiple `__call__` invocations return different results, but we can use `seed` to get determinism. Which of the two semantics do we want?
