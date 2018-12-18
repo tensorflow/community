@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Peng Wang (wangpeng@google.com), Josh Levenberg (joshl@google.com), Alexandre Passos (apassos@google.com), Asim Shankar (ashankar@google.com) |
 | **Sponsor**   | Josh Levenberg (joshl@google.com), Alexandre Passos (apassos@google.com)                 |
-| **Updated**   | 2018-12-12                                           |
+| **Updated**   | 2018-12-18                                           |
 
 ## Objective
 
