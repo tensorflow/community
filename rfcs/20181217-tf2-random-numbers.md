@@ -73,8 +73,6 @@ class Generator(Checkpointable):
     if copy_from is None:
       if seed is None:
         seed = non_deterministic_seed()
-      # *QUESTION*: Should 'algorithm' be part of the Variable or just a Python 
-      #             variable?
       self._state_var = tf.Variable(create_rng_state(seed, algorithm))
     else:
       assert seed is None
@@ -100,11 +98,23 @@ class Generator(Checkpointable):
 def _create_op_generator(seed):
   return Generator(seed=seed)
 
-# *QUESTION*: Do we need 'global_seed' as a global variable, or just pass it as
-#             an argument when calling 'set_seed' (which means the stateless ops
-#             will no longer depend on it)?
+# *QUESTION*: Do we need 'global_seed'? If we remove 'global_seed', the affected
+# change is:
+#
+#  op_generator = _create_op_generator(None)
+#
+#  # Renamed from 'set_seed'
+#  def reset_global_generator(seed):
+#    global op_generator
+#    op_generator = _create_op_generator(seed)
+#
+#  def create_seed(op_seed):
+#    global op_generator
+#    if op_seed is None:
+#      return op_generator.make_seeds()
+#    return op_seed
+  
 global_seed = None
-# *QUESTION*: Should it be renamed 'global_generator'?
 op_generator = _create_op_generator(global_seed)
 DEFAULT_GLOBAL_SEED = 87654321
 
@@ -115,12 +125,16 @@ def set_seed(seed):
   global_seed = seed
   op_generator = _create_op_generator(global_seed)
 
-@tf_export("random.set_default_generator")
-def set_default_generator(generator):
+@tf_export("random.set_global_generator")
+def set_global_generator(generator):
   global op_generator
   op_generator = generator
   # *QUESTION*: Do we set global_seed in this case?
   # PROPOSAL: No
+
+@tf_export("random.get_global_generator")
+def get_global_generator():
+  return op_generator
 
 @tf_export("random.default_algorithm")
 def default_algorithm():
@@ -146,6 +160,10 @@ def create_seed(op_seed):
 
 # *QUESTION*: The following implementation has the behavior that when 'seed' is 
 #             not None, multiple '__call__' invocations return the same result. 
+#             This has the advantage that it makes it easier to initialize 
+#             two layers the same way when you want, and the downside that it 
+#             makes it easier to accidentally initialize two layers the same 
+#             way.
 #             An alternative implementation is that when 'seed' is not None, 
 #             'RandomUniform' creates a 'Generator' instance from 'seed', stores 
 #             it as a member, and draws samples from it. In this way, multiple 
@@ -182,13 +200,12 @@ This pretty well achieves our objectives:
 *   Seeding of individual ops without an op seed is dependent on the number of calls to `tf.random.create_seed()` not the number of ops in the graph.
 *   `tf.random.Generator`'s state may be copied to another `Generator`.
 *   Calling `tf.random.set_seed()` reinitializes the sequence of op seeds, addressing [GitHub issue 9171](https://github.com/tensorflow/tensorflow/issues/9171).
-*   Switching to new RNG APIs are an opportunity to switch to a different RNG algorithm that can be efficiently implemented on both TPUs and GPUs. We include a number identifying the algorithm being used in the RNG state so we can be sure that different devices agree on which algorithm to use or raise an error. Even the same algorithm can have a consistent version and an inconsistent one, the former of which guarantees that all devices will give the same results, possibly in sacrifice of efficiency.
+*   Switching to new RNG APIs are an opportunity to switch to a different RNG algorithm that can be efficiently implemented on both TPUs and GPUs. We include a number identifying the algorithm being used in the RNG state so we can be sure that different devices agree on which algorithm to use or raise an error. 
 *   Symbols moved to the `tf.random` namespace.
 
 We may need to add additional features, like batch seeds for the stateless random ops to address DeepMind use cases.
 
 ## Questions and Discussion Topics
 
-*   Do we need `global_seed` as a global variable, or we just pass it as an argument when resetting `op_generator` (and the stateless ops won't use it)?
+*   Do we need `global_seed`?
 *   Which of the two semantics of initializers do we want?
-*   How will this affect TensorFlow Probability?
