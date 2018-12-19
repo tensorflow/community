@@ -19,6 +19,7 @@ Archives of the mailing list are publicly accessible.
 ## Resources
 
 * SIG IO  mailing list: [io@tensorflow.org](https://groups.google.com/a/tensorflow.org/forum/#!forum/io)
+* Gitter room: [tensorflow/sig-io](https://gitter.im/tensorflow/sig-io)
 * Repository: [github.com/tensorflow/io](https://github.com/tensorflow/io)
 * Python Package Repository: [tensorflow-io](https://pypi.org/project/tensorflow-io)
 
