@@ -40,4 +40,5 @@ Please provide both GitHub and PyPI handle to join the release team.
 
 Current Release Team:
 - Yong Tang - GitHub: [@yongtang](https://github.com/yongtang) - PyPI: [yongtang](https://pypi.org/user/yongtang)
+- Anthony Dmitriev - GitHub: [@dmitrievanthony](https://github.com/dmitrievanthony) - PyPI: [dmitrievanthony](https://pypi.org/user/dmitrievanthony)
 - Yuan (Terry) Tang - GitHub: [@terrytangyuan](https://github.com/terrytangyuan) - PyPI: [terrytangyuan](https://pypi.org/user/terrytangyuan)
