@@ -93,8 +93,8 @@ class Generator(Checkpointable):
   def uniform(self, shape, minval=0, maxval=None, dtype=tf.float32, name=None):
   def normal(self, shape, mean=0.0, stddev=1.0, dtype=tf.float32, name=None):
   def make_seeds(self, shape=()):  # generates seeds for stateless random ops
-  def make_generators(self, shape=(), name=None):
-    # Returns a tensor of independent `Generator` objects
+  def make_generators(self, count=1, name=None):
+    # Returns a list of `count` independent `Generator` objects
   # ...
 
 op_generator = Generator()
