@@ -73,8 +73,9 @@ repository after the directory structure is shaped during the initial move.
 | image.image_ops | connected_components | Useful functionality not otherwise available |
 | text.skip_gram_ops | ALL | Useful functionality not otherwise available |
 | crf.crf | ALL | Heavily used by the NLP community |
-
-
+| opt.weight_decay_optimizers | DecoupledWeightDecayExtension | ~SOTA convergence speeds / Needs refactored as Wrapper subclass |
+| opt.weight_decay_optimizers | AdamWOptimizer  | ~SOTA convergence speeds / Needs refactored as wrapper + keras Adam |
+| opt.weight_decay_optimizers | MomentumWOptimizer | ~SOTA convergence speeds / Needs refactored as wrapper + keras SGD|
 
 ### Code that will not be moved from tf.contrib pending objections
 
@@ -97,12 +98,8 @@ repository after the directory structure is shaped during the initial move.
 | opt.sign_decay | get_restart_decay_fn | No OSS usage / Not an optimizer |
 | opt.reg_adagrad_optimizer | RegAdagradOptimizer | No OSS uses found / Needs refactored as keraas Adagrad subclass |
 | opt.variable_clipping_optimizer | VariableClippingOptimizer  | No OSS uses found / Needs refactored as Wrapper subclass / partial covered by keras norm clip |
-| opt.weight_decay_optimizers | DecoupledWeightDecayExtension | No OSS uses found / Needs refactored as Wrapper subclass |
-| opt.weight_decay_optimizers | MomentumWOptimizer | No OSS uses found / Needs refactored as keras SGD subclass |
-| opt.weight_decay_optimizers | AdamWOptimizer  | One OSS use found / Needs refactored as keras Adam subclass |
 | opt.weight_decay_optimizers | ShampooWOptimizer | No OSS uses found |
-| opt.weight_decay_optimizers | extend_with_decoupled_weight_decay | No OSS uses found /  Functional paradigm - factory function / Needs refactored as Wrapper|
-| layers.embedding_ops | scattered_embedding_lookup | No OSS uses found |
+| opt.weight_decay_optimizers | extend_with_decoupled_weight_decay | No OSS uses found /  Functional paradigm - factory function |
 | layers.embedding_ops | scattered_embedding_lookup_sparse | No OSS uses found |
 | layers.embedding_ops | embedding_lookup_unique | No OSS uses found |
 | layers.encoders | bow_encoder | Creates variables, but does not subclass Layer |
