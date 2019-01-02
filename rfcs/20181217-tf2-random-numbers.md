@@ -108,7 +108,7 @@ class Generator(Checkpointable):
     # Returns a list of `count` independent `Generator` objects
   # ...
 
-op_generator = Generator()
+global_generator = Generator()
 
 # This function creates a new Generator object (and the Variable object within),
 # which does not work well with tf.function because (1) tf.function puts
@@ -123,23 +123,23 @@ op_generator = Generator()
 # 'Generator.reset' though because 'Generator.reset' can't change the algorithm.
 @tf_export("random.reset_global_generator")
 def reset_global_generator(seed, algorithm=None):
-  global op_generator
+  global global_generator
   if algorithm is None:
-    algorithm = op_generator.algorithm # preserve the old algorithm
-  op_generator = Generator(seed=seed, algorithm=algorithm)
+    algorithm = global_generator.algorithm # preserve the old algorithm
+  global_generator = Generator(seed=seed, algorithm=algorithm)
 
 @tf_export("random.set_global_generator")
 def set_global_generator(generator):
-  global op_generator
-  op_generator = generator
+  global global_generator
+  global_generator = generator
 
 @tf_export("random.get_global_generator")
 def get_global_generator():
-  return op_generator
+  return global_generator
 
 @tf_export("random.default_algorithm")
 def default_algorithm():
-  return op_generator.algorithm
+  return global_generator.algorithm
 
 @tf_export("random.algorithms_for_device")
 def algorithms_for_device(device_type):
@@ -152,9 +152,9 @@ def algorithms_supported_on_all_devices():
 
 @tf_export("random.create_seed")
 def create_seed(op_seed):
-  global op_generator
+  global global_generator
   if op_seed is None:
-    return op_generator.make_seeds()
+    return global_generator.make_seeds()
   return op_seed
   
 @tf_export("initializer.random_uniform")
@@ -198,18 +198,18 @@ We may need to add additional features, like batch seeds for the stateless rando
 *   There is another design where there is a global variable called `global_seed`. Initializers will use it together with the op seed to determine the seed sent to the stateless random ops. The affected change is:
 ```python
 global_seed = None
-op_generator = Generator(seed=global_seed)
+global_generator = Generator(seed=global_seed)
 DEFAULT_GLOBAL_SEED = 87654321
 
 # Renamed from 'reset_global_generator'
 @tf_export("random.set_seed")
 def set_seed(seed, algorithm=None):
   # reset the global seed and the global generator
-  global global_seed, op_generator
+  global global_seed, global_generator
   global_seed = seed
   if algorithm is None:
-    algorithm = op_generator.algorithm
-  op_generator = Generator(seed=seed, algorithm=algorithm)
+    algorithm = global_generator.algorithm
+  global_generator = Generator(seed=seed, algorithm=algorithm)
 
 def _combine_seeds(global_seed, op_seed):
   # combines global_seed and op_seed into a seed for stateless random ops
@@ -217,9 +217,9 @@ def _combine_seeds(global_seed, op_seed):
 
 @tf_export("random.create_seed")
 def create_seed(op_seed):
-  global global_seed, op_generator
+  global global_seed, global_generator
   if op_seed is None:
-    return op_generator.make_seeds()
+    return global_generator.make_seeds()
   if global_seed is None:
     return _combine_seeds(DEFAULT_GLOBAL_SEED, op_seed)
   return _combine_seeds(global_seed, op_seed)
