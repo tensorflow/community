@@ -61,6 +61,7 @@ def non_deterministic_seed():  # returns an integer
   # PROPOSAL: Op; need only be implemented on CPU
 
 # *QUESTION*: Should this be public?
+# *QUESTION*: Should this function be usable inside tf.function?
 def create_rng_state(seed, algorithm=None):
   # seed must be an integer or stateless seed, never None
   # algorithm=None -> auto-select
@@ -71,6 +72,8 @@ def create_rng_state(seed, algorithm=None):
 
 @tf_export("random.Generator")
 class Generator(Checkpointable):
+
+  # *QUESTION*: Should this function be usable inside tf.function?
   def __init__(self, copy_from=None, seed=None, algorithm=None):
     if copy_from is None:
       if seed is None:
@@ -79,6 +82,14 @@ class Generator(Checkpointable):
     else:
       assert seed is None
       self._state_var = tf.Variable(copy_from.state)
+
+  # *QUESTION*: Should this function be usable inside tf.function?
+  def reset(self, seed):
+    # We can't reset algorithm here because different algorithms may require
+    # different state sizes while Variable.assign requires equal size.
+    algorithm = int(self.algorithm)
+    state = create_rng_state(seed, algorithm)
+    self._state_var.assign(state)
 
   @property
   def state(self):
@@ -99,6 +110,17 @@ class Generator(Checkpointable):
 
 op_generator = Generator()
 
+# This function creates a new Generator object (and the Variable object within),
+# which does not work well with tf.function because (1) tf.function puts
+# restrictions on Variable creation thus reset_global_generator can't be freely
+# used inside tf.function; (2) redirecting a global variable to
+# a new object is problematic with tf.function because the old object may be
+# captured by a 'tf.function'ed function and still be used by it.
+# A 'tf.function'ed function only keeps weak references to variables,
+# so deleting a variable and then calling that function again may raise an
+# error. The function 'set_global_generator' below also has this problem.
+# 'reset_global_generator' and 'set_global_generator' can't be replaced by
+# 'Generator.reset' though because 'Generator.reset' can't change the algorithm.
 @tf_export("random.reset_global_generator")
 def reset_global_generator(seed, algorithm=None):
   global op_generator
