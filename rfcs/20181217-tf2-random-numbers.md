@@ -50,10 +50,10 @@ The following represents the desired end-state, and doesn't go into detail about
 ```python
 # random.py
 
-# A seed for random ops (stateful and stateless) will always be 256 
+# A seed for random ops (stateful and stateless) will always be 1024 
 # bits, all of which will be sent to the C++ code. The actual C++ 
 # implementation of some algorithms may only use a lower part of the bits.
-# *QUESTION*: Is 256 a good number? 
+# *QUESTION*: Is 1024 a good number? 
   
 @tf_export("random.non_deterministic_seed")
 def non_deterministic_seed():  # returns an integer
