@@ -18,7 +18,9 @@ Archives of the mailing list will be publicly accessible.
 * [Writing a TensorBoard plugin](https://github.com/tensorflow/tensorboard-plugin-example/blob/master/README.md)
 
 ## Contacts
-* Project lead: Mani Varadarajan [@maniv](https://github.com/manivaradarajan) - maniv at google
+* Project leads: 
+    * Mani Varadarajan [@maniv](https://github.com/manivaradarajan) - maniv at google
+    * Gal Oshri [@GalOshri](https://github.com/GalOshri) - goshri at google
 * For administrative questions, contact Edd Wilder-James [@ewilderj](https://github.com/ewilderj) - ewj at google
 
 ## Code of Conduct
