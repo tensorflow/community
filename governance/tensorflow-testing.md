@@ -12,7 +12,9 @@ TensorFlow is truly a community effort, and **we would love to have your feedbac
 
 ### 🐞 Report a Bug
 
-Please submit all bugs, errors, and pecularities on GitHub:
+Please submit all bugs, errors, and pecularities on GitHub. Differences between documentation and implementation, lack of
+documentation, performance issues, or compatibility problems are all fair game. Please be specific and include all information
+that would be helpful to debug the issue using our issue templates:
 
 * **[Bug / Performance Issue](https://github.com/tensorflow/tensorflow/issues/new?template=00-bug-performance-issue.md)**
 * **[Build / Installation Issue](https://github.com/tensorflow/tensorflow/issues/new?template=10-build-installation-issue.md)**
@@ -31,11 +33,13 @@ As members of the TensorFlow community, your recommendations and suggestions are
 
 ### 🤔 Send an Experience Report
 
-If you would like to submit general feedback about TensorFlow 2.0, consider [submitting a friction log](mailto:webpaige@google.com)! 
+If you would like to submit general feedback about TensorFlow (and in particular, about TensorFlow 2.0), consider submitting a friction log! 
 
 **Friction logs** are documents that describe the frustrations and delights of a product, focused around a specific use case (for example, creating an LSTM model for text classification). They're also intended to be brutally honest - feel free to vent or to praise! 😊
 
-An example of a TensorFlow friction log can be found [here](https://docs.google.com/document/d/1_-0Zzn0hqS4ltLwqWAHm41-MgE60_9zlKyPHr5c-HCs/edit?usp=sharing).
+An template and example of a TensorFlow friction log can be found [here](https://docs.google.com/document/d/1_-0Zzn0hqS4ltLwqWAHm41-MgE60_9zlKyPHr5c-HCs/edit?usp=sharing).
+
+Once you have completed such a document, please email it to [Paige Bailey](mailto:webpaige@google.com).
 
 ---------------------------------
 
@@ -47,9 +51,9 @@ _Please subscribe to [tf-2.0-testing@google.com](https://groups.google.com/a/goo
 
 ### Special Interest Groups (SIGs)
 
-TensorFlow's [Special Interest Groups (SIGs)](https://github.com/tensorflow/community/tree/master/sigs) support community collaboration on particular project focuses. Members of these groups work together to build and support TensorFlow-related projects. While their archives are public, different SIGs have their own membership policies.
+TensorFlow's [Special Interest Groups (SIGs)](https://github.com/tensorflow/community/tree/master/sigs) support community collaboration on particular projects. Members of these groups work together to build and support specific parts of TensorFlow or TensorFlow-related projects. 
 
-_To join the discussion, subscribe to one of our SIG mailing lists:_
+_To join the discussion on a specific topic, subscribe to one of our SIG mailing lists:_
 
 * **[TensorBoard](https://groups.google.com/a/tensorflow.org/d/forum/sig-tensorboard)**: Plug-in development, discussion, and contribution to TensorFlow visualization tooling.
 * **[Networking](https://groups.google.com/a/tensorflow.org/d/forum/networking)**: Adding network protocols other than gRPC.
