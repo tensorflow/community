@@ -47,7 +47,7 @@ Once you have completed such a document, please email it to [Paige Bailey](mailt
 
 Between now and the preview launch for TensorFlow 2.0, we will be actively maintaining a discussion group for any questions, comments, suggestions, or issues that arise. **We will be holding a weekly stand-up for TF 2.0 testing via Hangouts** that will be announced through the TensorFlow Testing Discussion Group.
 
-_Please subscribe to [tf-2.0-testing@google.com](https://groups.google.com/a/google.com/forum/#!forum/tf-2.0-testing/new) to stay up-to-date._
+_Please subscribe to [tensorflow-testing@googlegroups.com](https://groups.google.com/forum/#!forum/tensorflow-testing) to stay up-to-date._
 
 ### Special Interest Groups (SIGs)
 
