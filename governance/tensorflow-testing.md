@@ -39,7 +39,7 @@ If you would like to submit general feedback about TensorFlow (and in particular
 
 An template and example of a TensorFlow friction log can be found [here](https://docs.google.com/document/d/1_-0Zzn0hqS4ltLwqWAHm41-MgE60_9zlKyPHr5c-HCs/edit?usp=sharing).
 
-Once you have completed such a document, please email it to [Paige Bailey](mailto:webpaige@google.com).
+Once you have completed such a document, please email it to our [testing team](mailto:testing@tensorflow.org).
 
 ---------------------------------
 
@@ -47,7 +47,7 @@ Once you have completed such a document, please email it to [Paige Bailey](mailt
 
 Between now and the preview launch for TensorFlow 2.0, we will be actively maintaining a discussion group for any questions, comments, suggestions, or issues that arise. **We will be holding a weekly stand-up for TF 2.0 testing via Hangouts** that will be announced through the TensorFlow Testing Discussion Group.
 
-_Please subscribe to [tf-2.0-testing@google.com](https://groups.google.com/a/google.com/forum/#!forum/tf-2.0-testing/new) to stay up-to-date._
+_Please subscribe to [testing@tensorflow.org](http://groups.google.com/a/tensorflow.org/forum/#!forum/testing) to stay up-to-date._
 
 ### Special Interest Groups (SIGs)
 
