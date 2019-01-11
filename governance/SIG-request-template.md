@@ -2,15 +2,12 @@
 
 ## What is this group for?
 
-From the beginning of time, Java have been selected as one of the few languages supported out-of-the-box by TensorFlow, having its own client within the main repository. The principal goal was to run TensorFlow on the JVM of Android devices for model inference. Then many contributions were made to make it a good choice even for building, training and serving models. Now, its development and evolution pretty much relies exclusively on external contributions.
+From the beginning of time, Java has been one the few languages supported out-of-the-box by TensorFlow, having its own client within its main repository. The initial goal was to support inference of pretrained models on JVM-based platforms, such as Android devices. Then many contributions were made to make it a good choice even for building, training and serving models in Java. Now, most of the development and evolution of the Java client is taken care by the community.
 
-This purpose of this group is:
+This purpose of this group is to consolidate the effort of this community, or more precisely:
 * to synchronize the work of developers interested in ramping up Java support in TensorFlow
-* to establish a communication channel for discussion and collect suggestions (such as the list of features to be added next)
-* to provide new repositories for delivering high-level utility libraries on top of TensorFlow to improve usability
-
-Describe the need the group fills. Who is the audience?
-Provide evidence that work is already ongoing in this area.
+* to establish an official communication channel for discussions and suggestions related to Java TensorFlow
+* to provide a new set of high-level utility libraries on top of TensorFlow, in their distinct Git repositories, to improve overall user experience and deliver new features with their own release life cycle.
 
 ## Who will be part of it?
 
