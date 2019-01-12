@@ -44,7 +44,6 @@ repository after the directory structure is shaped during the initial move.
 | opt.external_optimizer | ScipyOptimizerInterface  | Significant usage in OSS projects |
 | opt.lazy_adam_optimizer | LazyAdamOptimizer | Significant usage in OSS projects / discussions |
 | opt.moving_average_optimizer | MovingAverageOptimizer | Significant usage in OSS projects |
-| layers.layers | convolution2d_in_plane | Functionality not available in tf keras |
 | layers.layers | dense_to_sparse | Useful functionality and discussion around it |
 | layers.layers | layer_norm | Heavily used is OSS projects / From impactful paper |
 | layers.layers | maxout | From impactful paper |
@@ -104,6 +103,7 @@ repository after the directory structure is shaped during the initial move.
 | layers.embedding_ops | embedding_lookup_unique | No OSS uses found |
 | layers.encoders | bow_encoder | Creates variables, but does not subclass Layer |
 | layers.encoders | embed_sequence | Creates variables, but does not subclass Layer |
+| layers.layers | convolution2d_in_plane | No OSS uses found |
 | layers.layers | GDN | No OSS uses found |
 | layers.layers | scale_gradient | No OSS uses found |
 | layers.layers | sequence_to_images | No OSS uses found |
