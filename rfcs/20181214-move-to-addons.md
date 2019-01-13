@@ -49,6 +49,7 @@ repository after the directory structure is shaped during the initial move.
 | layers.layers | maxout | From impactful paper |
 | layers.layers | poincare_normalize | Functionality not available / Useful for hyperbolic embeddings |
 | layers.normalization | instance_norm | Heavily used is OSS projects / Used for style xfer |
+| layers.normalization | group_norm | Will be moved as a generalized case of layer_norm and instance_norm |
 | losses.metric_loss_ops | pairwise_distance | Useful functionality not otherwise available  |
 | losses.metric_loss_ops | contrastive_loss | Useful functionality not otherwise available |
 | losses.metric_loss_ops | masked_maximum | Useful functionality not otherwise available |
@@ -108,7 +109,6 @@ repository after the directory structure is shaped during the initial move.
 | layers.layers | scale_gradient | No OSS uses found |
 | layers.layers | sequence_to_images | No OSS uses found |
 | layers.layers | spatial_softmax  | One OSS project found / Needs refactored as base Layer subclass / Uses get_variable_collections |
-| layers.normalization | group_norm | No OSS uses found / Needs refactored as base Layer subclass |
 | layers.optimizers | optimize_loss | Concience wrapper to build a training op / Would need refactor to stick to TF2.0 APIs |
 | layers.optimizers | adaptive_clipping_fn | No OSS uses found |
 | layers.rev_block_lib | RevBlock | No OSS uses found |
