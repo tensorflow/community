@@ -10,18 +10,20 @@ In addition, the group will develop and maintain a new set of high-level utility
 
 ## Who will be part of it?
 
-Describe:
+* Group leader: Karl Lessard
+* Second for the leader: Christian Tsolov
 
-* group leader
-* a second for the leader
-* one or more interested parties who will also be in the group -- provide
-  evidence of the sustainability of the group
+Any person who previously joined the [unofficial Java group](https://groups.google.com/forum/#!forum/tensorflow-java-dev-unofficial) might be interested to join this new official one (the later will be discarded).
 
-What will be your membership policy?
+All other individuals also interested to help the cause are invited to join freely.
 
 ## What initial problems will the group tackle?
 
-*List potential goals for the group*
+* Provide a new set of high-level API and features in Java
+    * New repositories under the TensorFlow organization will host the code for the new libraries, with their own release dates
+    * Features could be merged faster by allowing members of the community to do code reviews 
+* Establish an official communication channel for discussion around Java TF topics
+    * Right now, discussions are spread on different channels, such as the unofficial google group or on top of different GitHub issues
 
 ## What modes of communication do you intend to use?
 
