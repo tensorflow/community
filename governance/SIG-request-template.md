@@ -27,8 +27,9 @@ All other individuals also interested to help the cause are invited to join free
 
 ## What modes of communication do you intend to use?
 
-*A mailing list is a minimum. We recommend regularly scheduled VC calls to focus
-on agenda items. Slack or other chat channels are optional.*
+* A dedicated mailing list, backed by Google Groups
+* A Slack channel
+* VC calls on Google Hangout could be organized on demand
 
 ## Launch plan
 
