@@ -27,21 +27,17 @@ All other individuals also interested to help the cause are invited to join free
 
 ## What modes of communication do you intend to use?
 
-* A dedicated mailing list, backed by Google Groups
+* A dedicated mailing list backed by Google Groups
 * A Slack channel
 * VC calls on Google Hangout could be organized on demand
 
 ## Launch plan
 
-*Describe how the group will be launched. Example follows*
-
-```
-1.  `VC call with initial interested parties to finalize charter and initial group goals`
-1.  `SIG set up with initial group members`
-1.  `SIG added to community pages on tensorflow.org`
-1.  `Write blog post about SIG and its goals`
-1.  `Leader starts off mailing list discussion about initial work items`
-```
+1. Exposing the present plan and charter to the community for review
+2. SIG set up with initial group members
+3. SIG added to community pages on tensorflow.org
+4. Leader starts off mailing list discussions about initial work items
+5. Identification and creation of new repository(ies) based on the outcome of initial discussions 
 
 # Charter
 
