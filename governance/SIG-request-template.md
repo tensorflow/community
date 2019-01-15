@@ -13,9 +13,9 @@ In addition, the group will develop and maintain a new set of high-level utility
 * Group leader: Karl Lessard
 * Second for the leader: Christian Tsolov
 
-Members of the [unofficial Java group](https://groups.google.com/forum/#!forum/tensorflow-java-dev-unofficial) might be interested to join this new official one, as the former will be closed.
+Anyone interested to help are invited to join by requesting access to the mailing list, whether they are developers who wants get involve in the code or just individuals who wants to take part of the discussions.
 
-Anyone also interested to help are invited to join by requesting access to the mailing list, whether they are developers who wants get involve in the code or just individuals who wants to take part of the discussions.
+Members of the [unofficial Java group](https://groups.google.com/forum/#!forum/tensorflow-java-dev-unofficial) might be interested to join this new official one, as the former will be closed.
 
 ## What initial problems will the group tackle?
 
