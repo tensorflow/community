@@ -6,7 +6,7 @@ From the beginning of time, Java has been one of the few languages supported out
 
 The purpose of this group is to establish an official communication channel for discussions and suggestions related to the Java TensorFlow client and synchronizing the efforts of the developers contributing to it.
 
-In addition, the group will develop and maintain a new set of high-level utility libraries on top of TensorFlow, in their distinct Git repositories, for ramping up Java ML development and deliver new features faster with their own release life cycle.
+In addition, the group will develop and maintain a new set of high-level utility libraries on top of TensorFlow, in a distinct Git repository, for ramping up Java ML development and deliver new features faster with their own release life cycle.
 
 ## Who will be part of it?
 
@@ -20,7 +20,7 @@ All other individuals also interested to help the cause are invited to join free
 ## What initial problems will the group tackle?
 
 * Providing a new set of high-level API and features in Java
-    * New repository(ies) under the TensorFlow organization will host the code for the new libraries, with their own release dates
+    * New repository under the TensorFlow organization will host the code for the new libraries, with their own release dates
     * Features could be merged faster by allowing some members of the community to do code reviews 
 * Establish an official communication channel for discussion around Java TF topics
     * Right now, discussions are spread on different channels, such as the unofficial google group or on top of different GitHub issues
@@ -37,7 +37,7 @@ All other individuals also interested to help the cause are invited to join free
 2. SIG set up with initial group members
 3. SIG added to community pages on tensorflow.org
 4. Leader starts off mailing list discussions about initial work items
-5. Identification and creation of new repository(ies) based on the outcome of initial discussions 
+5. Inception of the first high-level libraries to be part of the new repository 
 
 # Charter
 
