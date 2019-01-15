@@ -2,7 +2,9 @@
 
 ## Objective
 
-Enhance support of JVM-based languages in TensorFlow by establishing an official communication channel and providing a set of high-level API libraries. 
+Establish an official communication channel for discussions and suggestions related to the Java TensorFlow client and synchronizing the efforts of the developers contributing to it.
+
+Develop and maintain a new set of high-level utility libraries on top of TensorFlow for ramping up Java ML development and deliver new features faster with their own release life cycle.
 
 ## Membership
 
