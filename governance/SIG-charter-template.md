@@ -14,8 +14,8 @@ mailing list. Archives of the mailing list will be publicly accessible.
 
 ## Resources
 
-Mailing list: TensorFlow Java Developers (tensorflow-java-dev)
-Repository: https://github.com/tensorflow/java
+* Mailing list: TensorFlow Java Developers (tensorflow-java-dev)
+* Repository: TBD from the outcome of the initial discussions
 
 ## Contacts
 
