@@ -15,7 +15,7 @@ mailing list. Archives of the mailing list will be publicly accessible.
 ## Resources
 
 * Mailing list: TensorFlow Java Developers (tensorflow-java-dev)
-* Repository: TBD from the outcome of the initial discussions
+* Repository: *TBD from the outcome of the initial discussions*
 
 ## Contacts
 
