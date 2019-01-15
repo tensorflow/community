@@ -13,7 +13,7 @@ In addition, the group will develop and maintain a new set of high-level utility
 * Group leader: Karl Lessard
 * Second for the leader: Christian Tsolov
 
-Any person who previously joined the [unofficial Java group](https://groups.google.com/forum/#!forum/tensorflow-java-dev-unofficial) might be interested to join this new official one (the later will be discarded).
+Any person who previously joined the [unofficial Java group](https://groups.google.com/forum/#!forum/tensorflow-java-dev-unofficial) might be interested to join this new official one (the former will be discarded).
 
 All other individuals also interested to help the cause are invited to join freely.
 
