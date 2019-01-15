@@ -19,9 +19,9 @@ All other individuals also interested to help the cause are invited to join free
 
 ## What initial problems will the group tackle?
 
-* Provide a new set of high-level API and features in Java
-    * New repositories under the TensorFlow organization will host the code for the new libraries, with their own release dates
-    * Features could be merged faster by allowing members of the community to do code reviews 
+* Providing a new set of high-level API and features in Java
+    * New repository(ies) under the TensorFlow organization will host the code for the new libraries, with their own release dates
+    * Features could be merged faster by allowing some members of the community to do code reviews 
 * Establish an official communication channel for discussion around Java TF topics
     * Right now, discussions are spread on different channels, such as the unofficial google group or on top of different GitHub issues
 
