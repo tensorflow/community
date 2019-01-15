@@ -41,6 +41,5 @@ Anyone also interested to help are invited to join by requesting access to the m
 
 # Charter
 
-Please draft the SIG's charter using the [SIG Charter Template](SIG-charter-template.md).
-
+Here's the link to the group [charter](SIG-charter-template.md).
 
