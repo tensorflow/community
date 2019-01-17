@@ -129,51 +129,10 @@ To avoid issue, it requires people to write methods that respect the partitions,
 
 Since Distribution Strategy is a library that is designed to parallelize and scale up models. We think that support for embeddings and partitioned layers should exist in Distribution Strategys. We'll support them differently for different Distribution Strategy:
 
-<table>
-  <tr>
-    <td></td>
-    <td>Embeddings</td>
-    <td>Partitioned Layer</td>
-  </tr>
-  <tr>
-    <td>Mirrored/ CollectiveAllReduce Strategy</td>
-    <td>
-      Pre-TF 2.0:<br />
-      w/ Keras' Embedding layer API: won't be sharded but will be mirrored on each replica. 
-      <p><br />
-      Post-TF 2.0:<br />
-      w/ Distribution Strategy's API directly: allow sharding; being placed on host; or dense update
-      <p>
-      Heuristics in Embedding layer to auto-set performance improvement hints.
-    </td>
-    <td>
-      Pre-TF 2.0:<br />
-      w/ Keras' layer API: won't be sharded but will be mirrored on all replicas, just like a normal layer.
-      <p><br />
-      Post-TF 2.0:<br />
-      w/ Distribution Strategy's API directly: allow being mirrored on each host
-      <p>
-      Heuristics in Embedding layer to auto-place larger embeddings on host.
-    </td>
-  </tr>
-  <tr>
-    <td>ParameterServer Strategy</td>
-    <td>
-      Pre-TF 2.0:<br />
-      w/ Keras' Embedding layer API: probably sharded, according to <code>partitioner</code> passed to its constructor.
-     <p><br />
-     Post-TF 2.0:<br />
-w/ Distribution Strategy's API directly: allow creating partitioned variable with different partitioners
-    </td>
-    <td>
-      Pre-TF 2.0:<br />
-      w/ Keras' layer API: probably sharded, according to <code>partitioner</code> passed to its constructor which applies globally to all layers.
-      <p><br />
-      Post-TF 2.0:<br />
-      w/ Distribution Strategy's API directly: allow creating partitioned variable with different partitioners.
-    </td>
-  </tr>
-</table>
+|          |Embeddings|Partitioned Layer|
+|:-------- |:-------- |:----------------|
+|Mirrored/ CollectiveAllReduce Strategy|Pre-TF 2.0: <br>w/ Keras' Embedding layer API: won't be sharded but will be mirrored on each replica. <br><br>Post-TF 2.0: <br>w/ Distribution Strategy's API directly: allow sharding; being placed on host; or dense update. <br><br>Heuristics in Embedding layer to auto-set performance improvement hints.|Pre-TF 2.0: <br>w/ Keras' layer API: won't be sharded but will be mirrored on all replicas, just like a normal layer. <br><br>Post-TF 2.0: w/ Distribution Strategy's API directly: allow being mirrored on each host. <br><br>Heuristics in Embedding layer to auto-place larger embeddings on host.|
+|ParameterServer Strategy|Pre-TF 2.0:<br>w/ Keras' Embedding layer API: probably sharded, according to `partitioner` passed to its constructor.<br><br>Post-TF 2.0:<br>w/ Distribution Strategy's API directly: allow creating partitioned variable with different partitioners.|Pre-TF 2.0:<br>w/ Keras' layer API: probably sharded, according to `partitioner` passed to its constructor which applies globally to all layers.<br><br>Post-TF 2.0:<br>w/ Distribution Strategy's API directly: allow creating partitioned variable with different partitioners.|
 
 In the `ParameterServerStrategy`, the goal of supporting partitioned variable is to match the existing behavior in 1.x. We will propose its APIs for TF 2.0 below. 
 
