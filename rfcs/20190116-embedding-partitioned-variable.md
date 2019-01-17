@@ -522,7 +522,7 @@ Alternatively, the layer can be placed on host memory since host memory is usual
 
 We can also treat the layer the same as a normal layer and mirrored its variables. This requires the replica have enough memory to hold the layer but there is no communication needed for the forward pass and only all-reduce is needed by the backward pass which can be fused with other all-reduce instances.
 
-**Therefore, mirroring the layer seems to be the optimal choice for now. **We can explore placing it on host in the future.
+**Therefore, mirroring the layer seems to be the optimal choice for now.** We can explore placing it on host in the future.
 
 
 #### Multiple hosts
