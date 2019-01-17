@@ -473,7 +473,7 @@ When an embedding variable is larger, we'll need an efficient allgather primitiv
 
 When an embedding variable is even larger, placing it on host may be the only choice.
 
-**We'll start with mirroring them on devices. **In the future we will provide a mechanism to place embedding variables on host and partition it or ask users to use parameter server architecture if their embeddings are too large.
+**We'll start with mirroring them on devices.** In the future we will provide a mechanism to place embedding variables on host and partition it or ask users to use parameter server architecture if their embeddings are too large.
 
 
 ##### Multiple hosts
