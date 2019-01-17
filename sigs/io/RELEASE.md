@@ -3,6 +3,7 @@
 At the moment SIG IO Releases consist of two parts:
 - Release of source code with versioning in GitHub
 - Release of python package in PyPI
+- Release of R package to CRAN
 
 ## GitHub Source Code Release
 
@@ -29,6 +30,33 @@ Then upload `artifacts/*.whl` files with:
 ```
 twine upload artifacts/*
 ```
+
+## CRAN R Package Release
+
+Before submitting the R package to CRAN, manually perform and check the following items:
+* Make sure the documentation in `README.md` and `vignettes` is up-to-date
+* Update `Version` field in `DESCRIPTION` file
+* Update `NEWS.md` to include items for this new release
+* Run `devtools::check()` and fix all the notable issues, especially warnings and errors
+* Update `cran-comments.md` to include any unsolvable issues from `devtools::check()` and
+other comments/responses to CRAN maintainers
+* Run checks on R-hub via `devtools::check_rhub()` and on win-builder via `devtools::check_win_devel()`. This is
+optional since Python is not be installed on CRAN test machines and we skip the tests on
+CRAN.
+
+To submit the package to CRAN for review, do the following:
+* Run `devtools::release()` to submit for review. Here's how it looks like if submission is successful:
+```
+Submitting file: /var/folders/zp/k98_wphd0h9c5b3zyk5xhnhm0000gn/T//RtmpHh9Wdo/tfio_0.1.0.tar.gz
+File size: 483.4 Kb
+Uploading package & comments
+Confirming submission
+Package submission successful.
+Check your email for confirmation link.
+```
+* Check email for confirmation link and confirm the submission
+* CRAN maintainers will review the submission and email you for the result of this submission.
+If there are any additional issues and comments that need to be addressed, address them and re-submit
 
 ## SIG IO Release Team
 
