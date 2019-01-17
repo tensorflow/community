@@ -87,6 +87,15 @@ We propose to implement the following common attention layers:
 *   `Attention`: Basic dot-product attention, a.k.a. Luong-style attention.
     Follows
     [tf.contrib.seq2seq.LuongAttention](https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/LuongAttention).
+    The calculation follows the steps:
+    1. Calculate scores with shape `[batch_size, Tq, Tv]` as a query-value
+       dot product: `scores = tf.matmul(query, value, transpose_b=True)`.
+    2. Use scores to calculate a distribution with shape
+       `[batch_size, Tq, Tv]`: `distribution = tf.nn.softmax(scores)`.
+    3. Use `distribution` to create a linear combination of `value` with
+       shape `batch_size, Tq, dim]`:
+       `return tf.matmul(distribution, value)`.
+
     This attention has two forms.
     *   The first is standard dot-product attention, as described in: Minh-Thang
         Luong, Hieu Pham, Christopher D. Manning. "Effective Approaches to
@@ -98,6 +107,17 @@ We propose to implement the following common attention layers:
 *   `AdditiveAttention`: Additive attention, a.k.a. Bahdanau-style attention.
     Follows
     [tf.contrib.seq2seq.BahdanauAttention](https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/BahdanauAttention).
+    The calculation follows the steps:
+    1. Reshape `query` and `value` into shapes `[batch_size, Tq, 1, dim]`
+       and `[batch_size, 1, Tv, dim]` respectively.
+    2. Calculate scores with shape `[batch_size, Tq, Tv]` as a non-linear
+       sum: `scores = tf.reduce_sum(tf.tanh(query + value), axis=-1)`
+    3. Use scores to calculate a distribution with shape
+       `[batch_size, Tq, Tv]`: `distribution = tf.nn.softmax(scores)`.
+    4. Use `distribution` to create a linear combination of `value` with
+       shape `batch_size, Tq, dim]`:
+       `return tf.matmul(distribution, value)`.
+
     This attention has two forms.
     *   The first is additive attention, as described in: Dzmitry Bahdanau,
         Kyunghyun Cho, Yoshua Bengio. "Neural Machine Translation by Jointly
@@ -269,8 +289,11 @@ The Self-Attention variant can be implemented by passing the same tensor to both
 ### Multi-Head Attention
 
 This is an Attention variant proposed in
-["Attention is all you need"](https://arxiv.org/abs/1706.03762). This variant is
-not covered in our proposal. But could be implemented as an additional feature,
+["Attention is all you need"](https://arxiv.org/abs/1706.03762). This variant
+can be implemented by using multiple attention layers, one for each head.
+
+If we later decide that we need a cleaner API, we can implement it as a
+feature of attention layers,
 e.g. by adding a `num_heads` argument that defaults to 1. The implementation
 will split the `query` and `value` tensors into `num_heads` tensors, calculate
 attention for each pair, then stack the results. This transformation can be
@@ -294,17 +317,20 @@ in the model output. The proposed techniques can be implemented as an additional
 feature in the Attention API.
 
 *   https://arxiv.org/abs/1803.02155 describes how relative position
-    representation can be added to dot-product attention.
+    representation can be added to dot-product attention. This must be
+    implemented as a feature of attention layers. It cannot be done as a
+    separate composable layer.
 *   https://arxiv.org/abs/1503.08895 and https://arxiv.org/abs/1706.03762 show
     how absolute position information can be added as a deterministic function
-    of position.
+    of position. This can be implemented as a separate keras layer that composes
+    with the `Embedding` and `Attention` layers.
 
-### 2D and 3D
+### 2D, 3D and n-D
 
 Attention is typically used in 1D sequences, such as text. It is conceivable
-that people may try to use it with 2D or 3D sequences, such as with the outputs
-of `Conv2D` or `Conv3D` layers. To make this work, users can follow the example
-code:
+that people may try to use it with 2D, 3D or n-D sequences, such as with the
+outputs of `Conv2D` or `Conv3D` layers. To make this work, users can follow the
+example code:
 
 ```python
 query_orig_shape = tf.shape(query)
@@ -315,7 +341,7 @@ attention = tf.reshape(attention, query_orig_shape)
 ```
 
 Alternatively, we could add the above reshapes inside the `Attention`
-implementation, so that 2D and 3D sequences can be supported out of the box. But
+implementation, so that n-D sequences can be supported out of the box. But
 given that this is a rare use case, we will not support it in the first version.
 
 ## Examples
