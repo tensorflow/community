@@ -54,14 +54,17 @@ The following represents the desired end-state, and doesn't go into detail about
 # bits, all of which will be sent to the C++ code. The actual C++ 
 # implementation of some algorithms may only use a lower part of the bits.
 # *QUESTION*: Is 1024 a good number? 
+# *DECISION*: Yes.
   
 @tf_export("random.non_deterministic_seed")
 def non_deterministic_seed():  # returns an integer
   # *QUESTION*: Is this pure Python or an op?
-  # PROPOSAL: Op; need only be implemented on CPU
+  # *DECISION*: Op.
 
 # *QUESTION*: Should this be public?
+# *DECISION*: Yes.
 # *QUESTION*: Should this function be usable inside tf.function?
+# *DECISION*: Yes.
 def create_rng_state(seed, algorithm=None):
   # seed must be an integer or stateless seed, never None
   # algorithm=None -> auto-select
@@ -74,6 +77,7 @@ def create_rng_state(seed, algorithm=None):
 class Generator(Checkpointable):
 
   # *QUESTION*: Should this function be usable inside tf.function?
+  # *DECISION*: Yes.
   def __init__(self, copy_from=None, seed=None, algorithm=None):
     if copy_from is None:
       if seed is None:
@@ -84,9 +88,9 @@ class Generator(Checkpointable):
       self._state_var = tf.Variable(copy_from.state)
 
   # *QUESTION*: Should this function be usable inside tf.function?
+  # *DECISION*: Yes.
   def reset(self, seed):
-    # We can't reset algorithm here because different algorithms may require
-    # different state sizes while Variable.assign requires equal size.
+    # Will be able to also change algorithm in the future
     algorithm = int(self.algorithm)
     state = create_rng_state(seed, algorithm)
     self._state_var.assign(state)
@@ -107,6 +111,15 @@ class Generator(Checkpointable):
   def make_generators(self, count=1, name=None):
     # Returns a list of `count` independent `Generator` objects
   # ...
+  # How to use `Generator` with distribution strategies:
+  #   - If the generator is created outside of the distributed portion, no 
+  #     special treatment is needed.
+  #   - If the generator is created within the distributed portion, its variable
+  #     always gets mirrored.
+  #   - If you want per-replica unsynced generators, you need to explicitly 
+  #     create the generators (where len(generators)==len(replicas)) and send 
+  #     them to the replicas via the `args` argument of 
+  #     `DistributionStrategyExtended.call_for_each_replica`. 
 
 global_generator = Generator()
 
@@ -119,8 +132,6 @@ global_generator = Generator()
 # A 'tf.function'ed function only keeps weak references to variables,
 # so deleting a variable and then calling that function again may raise an
 # error. The function 'set_global_generator' below also has this problem.
-# 'reset_global_generator' and 'set_global_generator' can't be replaced by
-# 'Generator.reset' though because 'Generator.reset' can't change the algorithm.
 @tf_export("random.reset_global_generator")
 def reset_global_generator(seed, algorithm=None):
   global global_generator
@@ -190,8 +201,7 @@ This pretty well achieves our objectives:
 *   Calling `tf.random.set_seed()` reinitializes the sequence of op seeds, addressing [GitHub issue 9171](https://github.com/tensorflow/tensorflow/issues/9171).
 *   Switching to new RNG APIs are an opportunity to switch to a different RNG algorithm that can be efficiently implemented on both TPUs and GPUs. We include a number identifying the algorithm being used in the RNG state so we can be sure that different devices agree on which algorithm to use or raise an error. 
 *   Symbols moved to the `tf.random` namespace.
-
-We may need to add additional features, like batch seeds for the stateless random ops to address DeepMind use cases.
+*   Additional features, like batch seeds for the stateless random ops to address DeepMind use cases.
 
 ## Questions and Discussion Topics
 
@@ -225,7 +235,9 @@ def create_seed(op_seed):
   return _combine_seeds(global_seed, op_seed)
 ```
 The motivation is to preserve the design in TensorFlow 1.x which uses a global seed and an op seed. Do we want `global_seed`?
+    * Decision: No need for `global_seed`.
 *   The `RandomUniform` implementation shown above has the behavior that when `seed` is not `None`, multiple `__call__` invocations return the same result. This has the advantage that it makes it easy to initialize two layers the same way when you want, and the downside that it makes it easy to accidentally initialize two layers the same way. An alternative implementation is that when `seed` is not `None`, `RandomUniform` creates a `Generator` instance from `seed`, stores it as a member, and draws samples from it. In this way, multiple `__call__` invocations return different results, but we can use `seed` to get determinism. Which of the two semantics do we want?
+    * Decision: The first semantics (always return the same sequence when seeded).
 
 ## Design Review Notes
 
@@ -233,7 +245,7 @@ The motivation is to preserve the design in TensorFlow 1.x which uses a global s
 
 * Question: Differences between CL with implementation and github RFC?
   * CL matches RFC
-* 4 Questions asked by RFC now have answers.
+* All 4 Questions asked by RFC now have answers (counting all `tf.function`-related questions as 1).
 * Minor questions (e.g. naming, etc.) asked new as a result of the RFC have been responded.
 * New big question: device placement.
 * Seed size: No one objects to 1024; TF Probability team wants >= 256.
