@@ -123,22 +123,12 @@ class Generator(Checkpointable):
 
 global_generator = Generator()
 
-# This function creates a new Generator object (and the Variable object within),
-# which does not work well with tf.function because (1) tf.function puts
-# restrictions on Variable creation thus reset_global_generator can't be freely
-# used inside tf.function; (2) redirecting a global variable to
-# a new object is problematic with tf.function because the old object may be
+# This function discards the old Generator object (and the variable within), 
+# which may be problematic with tf.function because the old object may be
 # captured by a 'tf.function'ed function and still be used by it.
 # A 'tf.function'ed function only keeps weak references to variables,
 # so deleting a variable and then calling that function again may raise an
-# error. The function 'set_global_generator' below also has this problem.
-@tf_export("random.reset_global_generator")
-def reset_global_generator(seed, algorithm=None):
-  global global_generator
-  if algorithm is None:
-    algorithm = global_generator.algorithm # preserve the old algorithm
-  global_generator = Generator(seed=seed, algorithm=algorithm)
-
+# error. 
 @tf_export("random.set_global_generator")
 def set_global_generator(generator):
   global global_generator
@@ -150,7 +140,6 @@ def get_global_generator():
 
 @tf_export("random.default_algorithm")
 def default_algorithm():
-  return global_generator.algorithm
 
 @tf_export("random.algorithms_for_device")
 def algorithms_for_device(device_type):
@@ -161,8 +150,7 @@ def algorithms_for_device(device_type):
 def algorithms_supported_on_all_devices():
   # Pick some algorithms that we can then require all devices implement
 
-@tf_export("random.create_seed")
-def create_seed(op_seed):
+def make_seed_if_none(op_seed):
   global global_generator
   if op_seed is None:
     return global_generator.make_seeds()
@@ -183,7 +171,7 @@ class RandomUniform(Initializer):
     if dtype is None:
       dtype = self.dtype
     return stateless_random_ops.stateless_random_uniform(
-        shape, create_seed(self.seed), self.minval, self.maxval, dtype,
+        shape, make_seed_if_none(self.seed), self.minval, self.maxval, dtype,
         self.algorithm)
 ```
 
@@ -196,7 +184,7 @@ This pretty well achieves our objectives:
     *   can be checkpointed, etc.
 *   Uses stateless random ops in the random initializers. The stateless seed will be a constant if the `seed` argument to the initializer is set to a non-`None` value. Otherwise it will depend on the value produced by the global op RNG.
 *   `tf.random.Generator` used for the op seed generation and directly should work the same in graph and eager execution.
-*   Seeding of individual ops without an op seed is dependent on the number of calls to `tf.random.create_seed()` not the number of ops in the graph.
+*   Seeding of individual ops without an op seed is dependent on the number of calls to `tf.random.make_seed_if_none()` not the number of ops in the graph.
 *   `tf.random.Generator`'s state may be copied to another `Generator`.
 *   Calling `tf.random.set_seed()` reinitializes the sequence of op seeds, addressing [GitHub issue 9171](https://github.com/tensorflow/tensorflow/issues/9171).
 *   Switching to new RNG APIs are an opportunity to switch to a different RNG algorithm that can be efficiently implemented on both TPUs and GPUs. We include a number identifying the algorithm being used in the RNG state so we can be sure that different devices agree on which algorithm to use or raise an error. 
@@ -211,7 +199,6 @@ global_seed = None
 global_generator = Generator(seed=global_seed)
 DEFAULT_GLOBAL_SEED = 87654321
 
-# Renamed from 'reset_global_generator'
 @tf_export("random.set_seed")
 def set_seed(seed, algorithm=None):
   # reset the global seed and the global generator
@@ -225,8 +212,8 @@ def _combine_seeds(global_seed, op_seed):
   # combines global_seed and op_seed into a seed for stateless random ops
   return tf.stack([global_seed, op_seed])
 
-@tf_export("random.create_seed")
-def create_seed(op_seed):
+@tf_export("random.make_seed_if_none")
+def make_seed_if_none(op_seed):
   global global_seed, global_generator
   if op_seed is None:
     return global_generator.make_seeds()
