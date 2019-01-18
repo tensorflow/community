@@ -1,6 +1,6 @@
 # Move from tf.contrib to tensorflow/addons
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Sean Morgan (seanmorgan@outlook.com), Armando Fandango (armando@neurasights.com) |
 | **Sponsor**   | Karmel Allison (karmel@google.com)                 |
@@ -225,3 +225,7 @@ repository after the directory structure is shaped during the initial move.
 * Are there any new modules that you feel should be added to addons from somewhere else apart from tf.contrib
 * We're actively collecting volunteers to help move, refactor and/or maintain in Addons (Please reachout to our [mailing list](https://groups.google.com/a/tensorflow.org/forum/#!forum/addons)
 or [gitter channel](https://gitter.im/tensorflow/sig-addons) if you have interest in helping our community.
+
+## After Request Notes
+* Now that the review period has ended, please post all suggested
+ additions/removals directly to the tensorflow/addons [issues page](https://github.com/tensorflow/addons/issues)
