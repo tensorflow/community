@@ -226,3 +226,39 @@ def create_seed(op_seed):
 ```
 The motivation is to preserve the design in TensorFlow 1.x which uses a global seed and an op seed. Do we want `global_seed`?
 *   The `RandomUniform` implementation shown above has the behavior that when `seed` is not `None`, multiple `__call__` invocations return the same result. This has the advantage that it makes it easy to initialize two layers the same way when you want, and the downside that it makes it easy to accidentally initialize two layers the same way. An alternative implementation is that when `seed` is not `None`, `RandomUniform` creates a `Generator` instance from `seed`, stores it as a member, and draws samples from it. In this way, multiple `__call__` invocations return different results, but we can use `seed` to get determinism. Which of the two semantics do we want?
+
+## Design Review Notes
+
+2019-01-17
+
+* Question: Differences between CL with implementation and github RFC?
+  * CL matches RFC
+* 4 Questions asked by RFC now have answers.
+* Minor questions (e.g. naming, etc.) asked new as a result of the RFC have been responded.
+* New big question: device placement.
+* Seed size: No one objects to 1024; TF Probability team wants >= 256.
+  * No provision for ever raising the limit, but we don't see a fundamental reason we can't use larger tensors later.
+  * State size is separate, algorithm specific, not fixed at 1024 bits.
+* Question: Algorithm + state bundled together? 
+  * Makes it easier to have a single thing for reproducing a sequence.
+* Question: But what about changing the algorithm? 
+  * Should be supported by `Generator.reset`. Currently we have bugs related to changing the size of the variable (to match the size of an algorithm's state size).
+* Decision: Using ops where there is a question, which means being compatibile with `tf.function`.
+* Decision: If you use an initializer with a specified seed, you should get the same model if you reinitialize; if you leave the seed unspecified, get different initialization each time.
+* Note: we have replaced the old global seed with a global generator.
+* New big question: we used to assume that the global generator is on one device. How do we handle models on multiple devices?
+* We could allow communication to the single device to get random numbers, but it's slow and has high latency.
+* There are a couple different ways of having one variable per device, either having multiple variables per generator (lazily adding them as you access the generator from new devices), or multiple generators one per device (one variable each).
+* Question: Regarding determinism of splitting, can we say something about the sequence you get from a seed?
+  * Decision: require explicit splitting (i.e. `Generator.make_generators`) until we have need for an automatic solution.
+* Question: Should input pipeline use these random numbers? 
+  * Ex. `tf.data.Dataset.list_files` is not currently affected by this proposal.
+* Problem right now with 1.x RNG ops, has different behavior for dynamic rnn vs. unrolling
+* Question: Interaction with `tf.distribute.Strategy`; will get mirrored variable if you use `MirroredStrategy`.
+  * Probably bad for GAN.
+* Question: Checkpointing the mirrored state?
+  * Checkpointing/reviving synced mirrored state is easy. Checkpointing/reviving unsynced per-replica states is hard.
+* Suggestion: Require explicit split if you are going to use random numbers in training step, where you explicitly specify whether the generators you are using on each device should be in sync. Have an API for things like the dropout layer: "Give me a generator and it should be (synced/unsynced) across replicas."
+* Expectation is that users like `tf.probability` are fine being explicit and generally want the control.
+* Hopefully the decision to be explicit will make checkpointing straightforward; harder case is unsynced across replicas -- what to do if the list of devices changes? 
+  * Word from [Allen](https://github.com/allenlavoie): will at least get an error if the set of variables changes.
