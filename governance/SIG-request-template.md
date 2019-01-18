@@ -11,7 +11,7 @@ In addition, the group will develop and maintain a new set of high-level utility
 ## Who will be part of it?
 
 * Group leader: Karl Lessard
-* Second for the leader: Christian Tsolov
+* Second for the leader: Christian Tzolov
 
 Anyone interested to help are invited to join by requesting access to the mailing list, whether they are developers who wants get involve in the code or just individuals who wants to take part of the discussions.
 
@@ -30,6 +30,7 @@ Members of the [unofficial Java group](https://groups.google.com/forum/#!forum/t
 * A dedicated mailing list backed by Google Groups
 * A Slack channel
 * VC calls on Google Hangout could be organized on demand
+? StackOverflow tag?
 
 ## Launch plan
 
