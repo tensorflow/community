@@ -42,8 +42,9 @@ affects the output at T+1.
 and
 [tf.contrib.seq2seq.BahdanauAttention](https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/BahdanauAttention)
 are implementations of dot-product (Luong) and additive (Bahdanau) Attention
-respectively for RNN in Tensorflow. This proposal is based on this
-implementation, but works with CNN/Dense networks.
+respectively for RNN in Tensorflow. There is ongoing work to implement those
+as Keras layers. Our proposal will follow the same implementation details,
+namely same mathematical operations, but will work with CNN/Dense networks.
 
 There is an implementation of Attention as a `tf.layers.Layer` subclass under
 https://github.com/tensorflow/models/tree/master/official/transformer,
