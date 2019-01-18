@@ -97,11 +97,11 @@ These APIs `tf.get_variable` and `tf.variable_scope` will be gone in TF 2.0.
 ### Possible Problems with The `PartitionedVariable` Class 
 
 
-Although we have a class called `PartitionedVariable`, we often concatenate all of their components to pretend it is a single variable.
+Although we have a class called `PartitionedVariable`, we often concatenate all of their components to pretend it is a single variable. With the concatenation, the `partitioned_var` would only serve for loadbalancing purposes. For example, `tf.matmul(partitioned_var, inputs)` would concatenate the list of variables in the `partitioned_var` before the execution of `matmul` as if the `partitioned_var` is a single variable. 
 
-For example, `tf.matmul(partitioned_var, inputs)` would concatenate the list of variables in the `partitioned_var` before the execution of `matmul` as if the `partitioned_var` is a single variable. With the concatenation, the `partitioned_var` would only serve for loadbalancing purposes.
+However, to parallelize computation, people have to write methods that respect the partitions, e.g. `tf.nn.sampled_softmax_loss`. Therefore, this class has been overloaded by different use cases.
 
-However, to parallelize computation, people have to write methods that respect the partitions, e.g. `tf.nn.sampled_softmax`. Therefore, this class has been overloaded by different use cases.
+On the other hand, when `PartitionedVariable` is used for sharded embeddings, `partitioned_strategy` has to be kept consistent when it is required by several methods down the stream such as `tf.nn.embedding_lookup` and `tf.nn.nce_loss`. This is uncessary for users and any inconsistency would lead to subtle bugs. 
 
 
 ## Goals
