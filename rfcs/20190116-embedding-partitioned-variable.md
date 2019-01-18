@@ -19,7 +19,7 @@ Summary: this RFC describes the design and interfaces for embeddings and partiti
 
 An [embedding](https://www.tensorflow.org/guide/embedding) is a mapping from discrete objects, such as words, to vectors of real numbers. In TensorFlow implementation, we use a variable to hold all these vectors for a feature column. All vectors in an embedding variable have the same size but the sizes of embedding variables may vary. 
 
-We don't always use the whole embedding variable in a training step, the result of embedding lookup is <code>[IndexedSlices](https://www.tensorflow.org/api_docs/python/tf/IndexedSlices)</code> which is essentially a dict mapping from indices to vectors. So is the gradient to an embedding variable.
+We don't always use the whole embedding variable in a training step, gradients w.r.t. to embeddings are <code>[IndexedSlices](https://www.tensorflow.org/api_docs/python/tf/IndexedSlices)</code> which are essentially dicts mapping from indices to vectors.
 
 
 #### Sharded Embedding
@@ -58,7 +58,7 @@ A layer of a network can sometimes be partitioned. We call it partitioned layer 
 
 The main reason people partition a layer is to balance parameter servers' load.
 
-Some layers can be huge. For example the logits layer can be extremely large when there are large number of classes. People may want to shard their computations accordingly to avoid concatenating them, e.g. the implementation of `tf.nn.nce_loss`.
+Some layers can be huge. For example the logits layer can be extremely large when there are large number of classes.
 
 Even for mid-sized layer, people want to partition them to have more even distribution of parameter servers' load because people may get bad luck when variables are assigned to parameter servers in a round-robin fashion. See this [issue](https://github.com/tensorflow/tensorflow/issues/24953).
 
@@ -97,11 +97,11 @@ These APIs `tf.get_variable` and `tf.variable_scope` will be gone in TF 2.0.
 ### Possible Problems with The `PartitionedVariable` Class 
 
 
-Although we have a class called `PartitionedVariable`,  we often concatenate all of their components to pretend it is a single variable.
+Although we have a class called `PartitionedVariable`, we often concatenate all of their components to pretend it is a single variable.
 
 For example, `tf.matmul(partitioned_var, inputs)` would concatenate the list of variables in the `partitioned_var` before the execution of `matmul` as if the `partitioned_var` is a single variable. With the concatenation, the `partitioned_var` would only serve for loadbalancing purposes.
 
-To avoid issue, it requires people to write methods that respect the partitions, e.g. `tf.nn.sampled_softmax`. This has some flavor of model parallelism.
+However, to parallelize computation, people have to write methods that respect the partitions, e.g. `tf.nn.sampled_softmax`. Therefore, this class has been overloaded by different use cases.
 
 
 ## Goals
@@ -109,7 +109,7 @@ To avoid issue, it requires people to write methods that respect the partitions,
 
 1.  Support partitioned embedding and partitioned layer in TF 2.0 in parameter server architecture via Distribution Strategy's and Keras layer's API. 
 1.  Better support for embeddings in mirrored and collective allreduce architecture. We will not shard them in this architecture in our pre-TF 2.0 design.
-2.  We will only support "div" partition strategy but as a post-TF 2.0 work we will support re-balancing embeddings in the Keras' Embedding layer. That means we will not support "mod" partition strategy any more.
+2.  We will only support "div" partition strategy but as a post-TF 2.0 work we will support re-balancing embeddings in the Keras' `Embedding` layer. That means we will not support "mod" partition strategy any more.
 3.  We also would like the API to enable people to easily switch between different architectures without needing to modify their models.
 
 
@@ -129,10 +129,10 @@ To avoid issue, it requires people to write methods that respect the partitions,
 
 Since Distribution Strategy is a library that is designed to parallelize and scale up models. We think that support for embeddings and partitioned layers should exist in Distribution Strategys. We'll support them differently for different Distribution Strategy:
 
-|          |Embeddings|Partitioned Layer|
+|          |Embeddings|Partitioned Layer (for Loadbalance Only)|
 |:-------- |:-------- |:----------------|
-|Mirrored/ CollectiveAllReduce Strategy|Pre-TF 2.0: <br>w/ Keras' Embedding layer API: won't be sharded but will be mirrored on each replica. <br><br>Post-TF 2.0: <br>w/ Distribution Strategy's API directly: allow sharding; being placed on host; or dense update. <br><br>Heuristics in Embedding layer to auto-set performance improvement hints.|Pre-TF 2.0: <br>w/ Keras' layer API: won't be sharded but will be mirrored on all replicas, just like a normal layer. <br><br>Post-TF 2.0: w/ Distribution Strategy's API directly: allow being mirrored on each host. <br><br>Heuristics in Embedding layer to auto-place larger embeddings on host.|
-|ParameterServer Strategy|Pre-TF 2.0:<br>w/ Keras' Embedding layer API: probably sharded, according to `partitioner` passed to its constructor.<br><br>Post-TF 2.0:<br>w/ Distribution Strategy's API directly: allow creating partitioned variable with different partitioners.|Pre-TF 2.0:<br>w/ Keras' layer API: probably sharded, according to `partitioner` passed to its constructor which applies globally to all layers.<br><br>Post-TF 2.0:<br>w/ Distribution Strategy's API directly: allow creating partitioned variable with different partitioners.|
+|Mirrored/ CollectiveAllReduce Strategy|Pre-TF 2.0: <br>w/ Keras' Embedding layer API: won't be sharded but will be mirrored on each replica. <br><br>Post-TF 2.0: <br>w/ Distribution Strategy's API directly: possibly allow sharding; allow being placed on host; or dense update. <br><br>`Heuristics` in Embedding layer to auto-set performance improvement hints.|Pre-TF 2.0: <br>w/ Keras' layer API: won't be sharded but will be mirrored on all replicas, just like a normal layer. <br><br>Post-TF 2.0: w/ Distribution Strategy's API directly: allow being mirrored on each host. <br><br>Heuristics in Embedding layer to auto-place larger layers on host.|
+|ParameterServer Strategy|Pre-TF 2.0:<br>w/ Keras' Embedding layer API: probably sharded, according to the `partitioner` passed to its constructor.<br><br>Post-TF 2.0:<br>w/ Distribution Strategy's API directly: allow creating embedding variables with different partitioners.|Pre-TF 2.0:<br>w/ Keras' layer API: probably sharded, according to the `partitioner` passed to its constructor which applies globally to all layers.|
 
 In the `ParameterServerStrategy`, the goal of supporting partitioned variable is to match the existing behavior in 1.x. We will propose its APIs for TF 2.0 below. 
 
@@ -152,9 +152,7 @@ The following is planned to be done before TF 2.0's release.
 #### A new type `ShardedVariable`
 
 
-As discussed above, `PartitionedVariable` sometimes concatenates component variables silently. So we need another object as a convenience wrapper for a list of variables and use this as a guard against any inadvertent concatenation. Users don't have to deal with it as long as they use Keras' layer API and it won't be exposed as a public API.
-
-In order not to be mixed up with the 1.x API, we give it a different name (other options are `LoadBalanceVariable` or `VariableList`): 
+As discussed above, `PartitionedVariable` concatenates component variables silently which can only serve the purpose of loadbalancing. So we need another object for uses cases where computation needs to be parellelized or storage needs to be sharded. Users don't have to deal with it as long as they use Keras' layer API and it won't be exposed as a public API in pre-TF 2.0 stage.
 
 ```python
 class ShardedVariable(object):
@@ -168,7 +166,9 @@ class ShardedVariable(object):
     pass
 ```
 
-Users may have to concatenate variables themselves when dealing with it directly in post-TF 2.0 and using it for loadbalancing purposes rather than embeddings. More convenience methods will be added post-TF 2.0.
+More convenience methods will be added post-TF 2.0. We can foresee more model parallelism features to be developed on this object.
+
+The original `PartitionedVariable` will be kept for the loadbalancing use case.
 
 
 #### Distribution strategy
@@ -177,7 +177,9 @@ Users may have to concatenate variables themselves when dealing with it directly
 ##### ParameterServerStrategy
 
 
-In `ParameterServerStrategy`, we'll add `partitioner` to the constructor. The `partitioner` is a callable object and will be invoked for every variable created by `experimental_create_sharded_variable` under the `ParameterServerStrategy`'s scope but the `partitioner` can choose to not partition some variables.
+In `ParameterServerStrategy`, we'll add `partitioner` to the constructor. The `partitioner` is a callable object and will be invoked for every variable created under the `ParameterServerStrategy`'s scope but the `partitioner` can choose to not partition some variables.
+
+We will also add a method called `experimental_create_sharded_variable` which creates a `ShardedVariable`for more than loadbalancing purposes. This method will be called by Keras' `Embedding` layer only. 
 
 ```python
 class ParameterServerStrategyExtended(...):
@@ -185,10 +187,7 @@ class ParameterServerStrategyExtended(...):
   def __init__(self,
                …,
                experiment_partitioner=None):
-  """Applies partitioner to variables created by 
-     `experimental_create_sharded_variable` under its scope.
-
-     The "div" partition_strategy will be used by default.
+  """Applies `experiment_partitioner` to variables created under its scope.
 
   Args:
     experiment_partitioner: a callable that accepts number of shards, variable
@@ -204,8 +203,8 @@ class ParameterServerStrategyExtended(...):
                                            name,
                                            shape,
                                            dtype):
-     """Returns a ShardedVariable, sharded by the partitioner from its
-        constructor.
+     """Returns a `ShardedVariable`, sharded by the `partitioner` or by the
+        partitioner from its constructor.
 
      Args:
        name: the name of the variable.
@@ -214,6 +213,7 @@ class ParameterServerStrategyExtended(...):
      """
      pass
 ```
+We will allow a different `partitioner` for embedding variables in post-TF 2.0 phase.
 
 
 ##### MirroredStrategy/CollectiveAllReduceStrategy
@@ -221,7 +221,7 @@ class ParameterServerStrategyExtended(...):
 
 In Mirrored and CollectiveAllReduce Strategy, we will start with mirroring everything.
 
-In our post-TF 2.0 design, we will allow users to provide some hints for performance improvement on partitioned variables if they use lower level APIs than Embedding layer, e.g. whether to mirror the variable on host or not, whether to cast its updates to dense tensors or not.
+In our post-TF 2.0 design, we will allow users to provide some hints for performance improvement on embedding variables if they use lower level APIs than Embedding layer, e.g. whether to mirror the variable on host or not, whether to cast its updates to dense tensors or not.
 
 ```python
 class MirroredStrategyExtended(...):
@@ -230,7 +230,7 @@ class MirroredStrategyExtended(...):
                                            name,
                                            shape,
                                            dtype):
-    """Returns a Mirrored ShardedVariable or MirroredVariable.
+    """Returns a Mirrored ShardedVariable.
 
     Args:
        name: the name of the variable.
@@ -244,11 +244,11 @@ class MirroredStrategyExtended(...):
 #### Layers
 
 
-We will need to call `strategy.experimental_create_sharded_variable()` in both embedding layers and ordinary layers. Whenever a `ShardedVariable` is referenced, layers will have to concatenate them manually for some operations. 
+We will need to call `strategy.experimental_create_sharded_variable()` in Keras' `Embeeding` layer. Under `ParameterServerStrategy` scope, all variables can potentially be `PartitionedVariable` for loadbalancing only.
 
 This doesn't involve an interface change and the details are omitted.
 
-In the pre-TF 2.0 design, no performance improvements hints will be added. 
+In the pre-TF 2.0 design, no performance improvements hints will be added for embeddings.
 
 
 #### Other Library Code
@@ -286,7 +286,7 @@ The following is planned to be done after TF 2.0's release. We describe their hi
 #### Add Partitions in `experimental_create_sharded_variable`
 
 
-We will add `partitions` argument to `experimental_create_sharded_variable` method so that users can create different `ShardedVariable` with different partitions: 
+We will add `partitions` argument to `experimental_create_sharded_variable` method so that users can specify a different `partitioner` for embeddings: 
 
 ```python
 class ParameterServerStrategyExtended(...):
@@ -304,7 +304,7 @@ class ParameterServerStrategyExtended(...):
        shape: the shape of the variable before partitioning.
        dtype: the data type of the variable.
        partitions: optional, a list of ints indicating desired number of shards per
-         dimension for this variable. If this is given, override the partitioner
+         dimension for this variable. If this is given, override the `partitioner`
          from the constructor.
      """
      pass
@@ -345,7 +345,7 @@ class MirroredStrategyExtended(...):
 
 ```
 
-With the Keras' Embedding layer API, we don't allow users to pass in these hints but we will add some heuristics in Embedding layer to set these hints automatically. For example, when an embedding variable is smaller than some threshold we will cast their gradients to dense tensors; or when an embedding variable is sufficiently large, we will place it on host memory. See the discussion in [Alternative Considered](#Alternative-Considered) section.
+With the Keras' `Embedding` layer API, we don't allow users to pass in these hints but we will add some heuristics in `Embedding` layer to set these hints automatically. For example, when an embedding variable is smaller than some threshold we will cast their gradients to dense tensors; or when an embedding variable is sufficiently large, we will place it on host memory. See the discussion in [Alternative Considered](#Alternative-Considered) section.
 
 
 #### Rebalance Embeddings in Embedding layer
