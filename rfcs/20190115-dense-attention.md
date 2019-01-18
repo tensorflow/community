@@ -515,6 +515,47 @@ Cons:
     no compile-time linking, users need to perform regular-expression searches
     across multiple files to discover which method is called.
 
+### Query, value and mask arguments
+
+An alternative to the `mask` argument would be to pass `query_mask` and
+`value_mask` as separate arguments, namely:
+
+```python
+  def call(self, inputs, query_mask=None, value_mask=None):
+    """Applies basic dot-product attention.
+
+    Args:
+      inputs: List of the following tensors:
+        * query: Query `Tensor` of shape `[batch_size, Tq, dim]`.
+        * value: Value `Tensor` of shape `[batch_size, Tv, dim]`.
+      query_mask: A boolean mask `Tensor` of shape `[batch_size, Tq]`.
+        If given, the output will be zero at the positions where
+        `mask==False`.
+      value_mask: A boolean mask `Tensor` of shape `[batch_size, Tv]`.
+        If given, will apply the mask such that values at positions where
+        `mask==False` do not contribute to the result.
+    Returns:
+      Attention outputs of shape `[batch_size, Tq, dim]`.
+    """
+```
+
+Another variation would be to pass `query` and `value` as named arguments:
+
+```python
+  def call(self, query, value, query_mask=None, value_mask=None):
+```
+
+Pros:
+
+* Code is self-documenting.
+* Could prevent some user bugs related to the ordering of arguments.
+
+Cons:
+
+* Passing arguments as lists is a pattern used in Keras layers, such as
+  `tf.keras.layers.Add`. E.g. see the code in
+  https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/python/keras/layers/merge.py#L205
+
 ## Questions and Discussion Topics
 
 *   The examples in this doc are in Tensorflow. Will the API work in other
