@@ -15,16 +15,14 @@ mailing list. Archives of the mailing list will be publicly accessible.
 ## Resources
 
 * Mailing list: TensorFlow Java Developers (tensorflow-java-dev)
-* Repository: *TBD from the outcome of the initial discussions*
+* Repositories: *TBD from the outcome of the initial discussions* (tensorflow-java, tensorflow-java-models)
 
 ## Contacts
 
 * Project lead: Karl Lessard [@karllessard](https://github.com/karllessard)
-* For administrative questions, contact Edd Wilder-James
-  [@ewilderj](https://github.com/ewilderj) - ewj at google
+* For administrative questions, contact Edd Wilder-James [@ewilderj](https://github.com/ewilderj) - ewj at google
 
 ## Code of Conduct
 
 As with all forums and spaces related to TensorFlow, SIG-Java is subject to
-the [TensorFlow Code of
-Conduct](https://github.com/tensorflow/tensorflow/blob/master/CODE_OF_CONDUCT.md).
+the [TensorFlow Code of Conduct](https://github.com/tensorflow/tensorflow/blob/master/CODE_OF_CONDUCT.md).
