@@ -24,13 +24,19 @@ Members of the [unofficial Java group](https://groups.google.com/forum/#!forum/t
     * Features could be merged faster by allowing some members of the community to do code reviews 
 * Establish an official communication channel for discussion around Java TF topics
     * Right now, discussions are spread on different channels, such as the unofficial google group or on top of different GitHub issues
+    
+The outcome of the initial discussions of this group will be to identify what features should be addressed first. Here is some ideas:
+
+* Eager execution mode in the Java core client
+* `tensorflow-java`: Utility library on top of the core client to simplify usage of TensorFlow in Java, such as multi-dimensional array accessors.
+* `tensorflow-java-models`: Modelisation in Java of pretrained TensorFlow models.
 
 ## What modes of communication do you intend to use?
 
 * A dedicated mailing list backed by Google Groups
 * A Slack channel
 * VC calls on Google Hangout could be organized on demand
-? StackOverflow tag?
+* StackOverflow
 
 ## Launch plan
 
