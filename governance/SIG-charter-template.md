@@ -15,7 +15,9 @@ mailing list. Archives of the mailing list will be publicly accessible.
 ## Resources
 
 * Mailing list: TensorFlow Java Developers (tensorflow-java-dev)
-* Repositories: *TBD from the outcome of the initial discussions* (tensorflow-java, tensorflow-java-models)
+* Repositories: TBD from the outcome of the initial discussions but we have in mind to start up with 
+    * `tensorflow-java`: high-level API and utilities on top of TensorFlow Java core client
+    * `tensorflow-java-models`: pretrained models from TensorFlow adapted to Java
 
 ## Contacts
 
