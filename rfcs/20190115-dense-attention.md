@@ -287,6 +287,34 @@ We will first work on the implementation for Tensorflow.
 The Self-Attention variant can be implemented by passing the same tensor to both
 `query` and `value`.
 
+There is a common case that requires special treatment: decoder self-attention.
+In this case, we need to prevent flow of information from the "future" towards
+the "past". So, position `i` cannot attend to positions `j > i`. This can be
+accomplished by masking the attention scores with a
+[lower triangular matrix](https://en.wikipedia.org/wiki/Triangular_matrix).
+This variant is the "Masked attention" in Figure 1 of the
+["Attention is all you need"](https://arxiv.org/abs/1706.03762) paper.
+
+This is a common case that we should cover. The mask needs to be applied to the
+scores, so this cannot be implemented as a separate composable layer. It needs
+to be a feature of the proposed attention layers. Because "masking" is a general
+technique, we should choose a special name for this technique, such as "causal
+mask".
+
+A causal mask can be implemented in the following ways.
+
+a. Add a constructor argument such as `causal_mask=False` in the proposed
+   attention layers.
+   * pro: No new classes are required.
+   * con: `causal_mask` makes no sense when `query` and `value` are different.
+
+b. Add special classes for self-attention, namely `SelfAttention` and
+   `AdditiveSelfAttention`, and use `causal_mask=False` as a constructor
+   argument. They can share most of the implementation details with the
+   `Attention` and `AdditiveAttention` classes.
+   * pro: Safer, easier to understand.
+   * con: Requires new classes.
+
 ### Multi-Head Attention
 
 This is an Attention variant proposed in
