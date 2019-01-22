@@ -66,12 +66,31 @@ to support, for example, OpenMP.
 
 The most important features we require are:
 
-1. Control the ability to run inter-op closures executed using the
-`default_runner`.
-2. We don't need to make changes to `EigenCPUDevice`, and are not concerned
-about intra-op parallelism.
-3. We want some control before the session-run completes, to handle `taskArena`
-or `taskGroup` cleanup.
+1. Setup state for the execution engine on each call to Session::Run. For TBB
+ this session would include the creation of a `tbb::task_arena` and a `tbb::task_group`.
+ The `tbb::task_arena` is used to isolate the tasks associated with this instance
+ of a TensorFlow inference from all other running TBB tasks. In that way if a TBB task
+ pauses and allows other TBB tasks to be run on its threads, a TensorFlow task will never
+ be used (similarly if a TensorFlow task pauses and allows other TBB tasks to run, only 
+ TensorFlow tasks from that same inference will be run on that thread). Such behavior avoids
+ possible deadlocks as well as performance degredation if a 'stolen' task takes much longer
+ than the remaining tasks for a given inference. The `tbb::task_group` provides a mechanism
+ to wait for all TBB tasks which were started for a given inference.
+2. Use that state as part of the args given to 'executor->RunAsync'. For example, the 
+   state could be contained within the `default_runner`. This state is then used to 
+   schedule each closure to be run. For the TBB case, each `std::function<void()>` closure
+   would be executed within the proper tbb::task_arena and as part of the proper
+   `tbb::task_group`.
+3. Use that state as part of the Session::WaitForNotification to allow the thread 
+ doing the Session::Run call to be used for processing closures associated with
+ the inference as well as to wait for all outstanding tasks associated with
+ the inference to finish. This also would be the time for the state to be cleaned
+ up. For the TBB case, the wait would be done using the `tbb::task_group` and
+ make use of the `tbb::task_arena`. Waiting on a `tbb::task_group` allows TBB
+ to run other TBB tasks associated with that thread's `tbb::task_arena` on that
+ thread. Using the `tbb::task_arena` from the state guarantees that only TBB
+ tasks associated with the given inference will be run on the thread which called
+ Session::Run.
 
 We believe it is possible to leverage the newly introduced `RunHandlerPool`
 instead of a new session Class. At a high level this would introduce a new
