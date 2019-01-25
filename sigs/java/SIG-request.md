@@ -48,5 +48,5 @@ The outcome of the initial discussions of this group will be to identify what fe
 
 # Charter
 
-Here's the link to the group [charter](SIG-charter-template.md).
+Here's the link to the group [charter](CHARTER.md).
 
