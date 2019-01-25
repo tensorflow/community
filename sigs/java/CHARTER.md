@@ -19,8 +19,8 @@ Everyone interested to promote Java or other JVM-based languages for training, r
 
 ## Contacts
 
-* Project lead: Karl Lessard [@karllessard](https://github.com/karllessard) karllessard at gmail
-* Second for the leader: Christian Tzolov [@tzolov](https://github.com/karllessard/community) christiantzolov at gmail
+* Project lead: Karl Lessard [@karllessard](https://github.com/karllessard) - karllessard at gmail
+* Second for the leader: Christian Tzolov [@tzolov](https://github.com/karllessard/community) - christiantzolov at gmail
 * For administrative questions, contact Edd Wilder-James [@ewilderj](https://github.com/ewilderj) - ewj at google
 
 ## Code of Conduct
