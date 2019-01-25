@@ -8,9 +8,7 @@ Develop and maintain a new set of high-level utility libraries on top of TensorF
 
 ## Membership
 
-Everyone involved in the packaging, distributing or embedding of TensorFlow is
-welcome to join the group. To participate, request an invitation to join the
-mailing list. Archives of the mailing list will be publicly accessible.
+Everyone interested to promote Java or other JVM-based languages for training, running or serving TensorFlow models is welcome to join the group, whether it is for contributing directly to the code or simply to suggest ideas. To participate, request an invitation to join the mailing list. Archives of the mailing list will be publicly accessible.
 
 ## Resources
 
