@@ -358,8 +358,9 @@ feature in the Attention API.
 
 Attention is typically used in 1D sequences, such as text. It is conceivable
 that people may try to use it with 2D, 3D or n-D sequences, such as with the
-outputs of `Conv2D` or `Conv3D` layers. To make this work, users can follow the
-example code:
+outputs of `Conv2D` or `Conv3D` layers. In fact, recent research applies
+self-attention to 2D images https://arxiv.org/abs/1805.08318.
+To make n-D work with the proposed layers, users can follow the example code:
 
 ```python
 query_orig_shape = tf.shape(query)
