@@ -304,6 +304,8 @@ class PartitionedSaveable(saveable_object.SaveableObject):
 
 The implementations details may subject to change. The saving and restoring of `ShardedVariable` should be similar.
 
+In parameter server architecture, model variables can sometimes be `AggregatingVariable` with a underlying `ShardedVariable` or `ParititionedVariable`; in mirrored architecture, variables can also sometimes be `MirroredVariable` with `ShardedVariable`. In these cases, we'll need to update `AggregatingVariable` and `MirroredVariable`'s `_gather_saveables_for_checkpoint` method. The details are not discussed here.
+
 
 ### Post-TF 2.0 Work
 
