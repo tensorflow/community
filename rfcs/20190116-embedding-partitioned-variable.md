@@ -244,7 +244,7 @@ class MirroredStrategyExtended(...):
 #### Layers
 
 
-We will need to call `strategy.experimental_create_sharded_variable()` in Keras' `Embeeding` layer. Under `ParameterServerStrategy` scope, all variables can potentially be `PartitionedVariable` for loadbalancing only.
+We will need to call `strategy.experimental_create_sharded_variable()` in Keras' `Embedding` layer. Under `ParameterServerStrategy` scope, all variables can potentially be `PartitionedVariable` for loadbalancing only.
 
 This doesn't involve an interface change and the details are omitted.
 
@@ -416,9 +416,7 @@ class HybridStrategy(DistributionStrategy):
 ### Embedding in Mirrored Architecture: Sharding or Mirroring?
 
 
-In the `MirroredStrategy` or `CollectiveAllReduceStrategy`, there are several ways of handling embeddings. However due to the fact that `dynamic_partition` and `dynamic_stitch` required by embedding lookups on sharded embeddings only have CPU kernels, we can not shard embeddings across GPUs.
-
-We'll discuss how embeddings will be handled in single host and multi-host cases.
+In the `MirroredStrategy` or `CollectiveAllReduceStrategy`, there are several ways of handling embeddings. We'll discuss how embeddings will be handled in single host and multi-host cases.
 
 
 ##### Single host
@@ -430,7 +428,7 @@ When an embedding variable is small, it may benefit from being mirrored on devic
 
 When an embedding variable is larger, we'll need an efficient allgather primitive to exchange updates between devices. Alternatively, we can place it on host memory at the cost of transferring embeddings from host to devices in the forward pass and gathering updates from devices to host in the backward pass.
 
-When an embedding variable is even larger, placing it on host may be the only choice.
+When an embedding variable is even larger, we can either shard it across GPUs or place it on host. The former requires an efficient all-to-all personalized communication primitive and the later one is much easier to implement.
 
 **We'll start with mirroring them on devices.** In the future we will provide a mechanism to place embedding variables on host and partition it or ask users to use parameter server architecture if their embeddings are too large.
 
@@ -441,6 +439,7 @@ When an embedding variable is even larger, placing it on host may be the only ch
 After excluding sharding across devices, there are still three ways of handling embeddings on multiple hosts:
 
 *   sharding across all workers' host memory;
+*   sharding across all workers' GPUs;
 *   mirroring on all workers' host memory;
 *   mirroring on all replicas, i.e. devices.
 
@@ -454,7 +453,7 @@ Similarly, within each worker, we can also mirror an embedding on devices or pla
 ### Partitioned layer in Mirrored Architecture?
 
 
-Partitioned layer is a set of normal variables under the hood. They don't require allgather to work correctly. But there are also several ways to handle partitioned layers as well.
+Partitioned layer is a set of normal variables under the hood. They don't require allgather to work efficiently. But there are also several ways to handle partitioned layers as well.
 
 
 #### Single host
