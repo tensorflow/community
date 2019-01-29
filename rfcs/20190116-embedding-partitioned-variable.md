@@ -277,6 +277,34 @@ def embedding_lookup(
 We will remove `parition_strategy` from all other library code.
 
 
+#### Save and Restore
+
+
+The current mechanism of saving and restoring `PartitionedVariable` which relies on private attributes on variables called `_save_slice_info` can continue to work. Saver reads `_save_slice_info` to save all partitions into one tensor, which allows this one tensor to be restored to different numbers of partitions as long as the new `PartitionedVariable` has the same full shape.
+
+To make the logic more TF 2.0-like, we can implement it differently via `CheckpointableBase`:
+
+```python
+class PartitionedVariable(checkpointable.CheckpointableBase):
+
+  def _gather_saveables_for_checkpoint(self):
+    def _saveable_factory(name=self._name):
+      return _PartitionedSaveable(name, self._partitions)
+    return {checkpointable.VARIABLE_VALUE_KEY: _saveable_factory}
+
+ 
+class PartitionedSaveable(saveable_object.SaveableObject):
+  
+  def __init__(self, name, partitions):
+    pass
+  
+  def restore(self, restored_tensors, restore_shapes):
+    pass
+```
+
+The implementations details may subject to change. The saving and restoring of `ShardedVariable` should be similar.
+
+
 ### Post-TF 2.0 Work
 
 
