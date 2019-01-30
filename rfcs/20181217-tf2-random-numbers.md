@@ -1,6 +1,6 @@
 # Random numbers in TensorFlow 2.0
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Peng Wang (wangpeng@google.com), Josh Levenberg (joshl@google.com), Alexandre Passos (apassos@google.com), Asim Shankar (ashankar@google.com) |
 | **Sponsor**   | Josh Levenberg (joshl@google.com), Alexandre Passos (apassos@google.com)                 |
@@ -68,10 +68,7 @@ def non_deterministic_seed():  # returns an integer
 def create_rng_state(seed, algorithm=None):
   # seed must be an integer or stateless seed, never None
   # algorithm=None -> auto-select
-  # Returns a 1-D tensor "rng_state" with:
-  # * rng_state[0] is a value that identifies the RNG algorithm;
-  # * rng_state[1:] holds the RNG state itself (size dependent on the 
-  #                 algorithm).
+  # Returns a 1-D tensor whose size depends on the algorithm.
 
 @tf_export("random.Generator")
 class Generator(Checkpointable):
@@ -83,16 +80,17 @@ class Generator(Checkpointable):
       if seed is None:
         seed = non_deterministic_seed()
       self._state_var = tf.Variable(create_rng_state(seed, algorithm))
+      self._alg_var = tf.Variable([algorithm])
     else:
       assert seed is None
       self._state_var = tf.Variable(copy_from.state)
+      self._alg_var = tf.Variable(copy_from.algorithm)
 
   # *QUESTION*: Should this function be usable inside tf.function?
   # *DECISION*: Yes.
   def reset(self, seed):
     # Will be able to also change algorithm in the future
-    algorithm = int(self.algorithm)
-    state = create_rng_state(seed, algorithm)
+    state = create_rng_state(seed, self.algorithm)
     self._state_var.assign(state)
 
   @property
@@ -101,7 +99,7 @@ class Generator(Checkpointable):
 
   @property
   def algorithm(self):
-    return self._state_var[0]
+    return self._alg_var
 
   # The following functions return a tensor and as a side effect update 
   # self._state_var.
@@ -114,8 +112,8 @@ class Generator(Checkpointable):
   # How to use `Generator` with distribution strategies:
   #   - If the generator is created outside of the distributed portion, no 
   #     special treatment is needed.
-  #   - If the generator is created within the distributed portion, its variable
-  #     always gets mirrored.
+  #   - If the generator is created within the distributed portion, its 
+  #     variables always get mirrored.
   #   - If you want per-replica unsynced generators, you need to explicitly 
   #     create the generators (where len(generators)==len(replicas)) and send 
   #     them to the replicas via the `args` argument of 
@@ -123,7 +121,7 @@ class Generator(Checkpointable):
 
 global_generator = Generator()
 
-# This function discards the old Generator object (and the variable within), 
+# This function discards the old Generator object (and the variables within), 
 # which may be problematic with tf.function because the old object may be
 # captured by a 'tf.function'ed function and still be used by it.
 # A 'tf.function'ed function only keeps weak references to variables,
@@ -179,7 +177,7 @@ We would also remove the stateful random ops from the public 2.0 API, replacing 
 
 This pretty well achieves our objectives:
 
-*   `tf.random.Generator` keeps its state in a variable resource:
+*   `tf.random.Generator` keeps its state in resource variables:
     *   the Python object owns the state
     *   can be checkpointed, etc.
 *   Uses stateless random ops in the random initializers. The stateless seed will be a constant if the `seed` argument to the initializer is set to a non-`None` value. Otherwise it will depend on the value produced by the global op RNG.
@@ -247,7 +245,7 @@ The motivation is to preserve the design in TensorFlow 1.x which uses a global s
 * Note: we have replaced the old global seed with a global generator.
 * New big question: we used to assume that the global generator is on one device. How do we handle models on multiple devices?
 * We could allow communication to the single device to get random numbers, but it's slow and has high latency.
-* There are a couple different ways of having one variable per device, either having multiple variables per generator (lazily adding them as you access the generator from new devices), or multiple generators one per device (one variable each).
+* There are a couple different ways of having one variable per device, either having multiple variables per generator (lazily adding them as you access the generator from new devices), or multiple generators one per device (one variable each) (here we are treating `_state_var` and `_alg_var` as one variable).
 * Question: Regarding determinism of splitting, can we say something about the sequence you get from a seed?
   * Decision: require explicit splitting (i.e. `Generator.make_generators`) until we have need for an automatic solution.
 * Question: Should input pipeline use these random numbers? 
