@@ -65,9 +65,9 @@ def non_deterministic_seed():  # returns an integer
 # *DECISION*: Yes.
 # *QUESTION*: Should this function be usable inside tf.function?
 # *DECISION*: Yes.
-def create_rng_state(seed, algorithm=None):
-  # seed must be an integer or stateless seed, never None
-  # algorithm=None -> auto-select
+@tf_export("random.create_rng_state")
+def create_rng_state(seed, algorithm):
+  # seed must be an integer or stateless seed, never None.
   # Returns a 1-D tensor whose size depends on the algorithm.
 
 @tf_export("random.Generator")
@@ -79,8 +79,10 @@ class Generator(Checkpointable):
     if copy_from is None:
       if seed is None:
         seed = non_deterministic_seed()
+      if algorithm is None:
+        algorithm = ...  // auto-select
       self._state_var = tf.Variable(create_rng_state(seed, algorithm))
-      self._alg_var = tf.Variable([algorithm])
+      self._alg_var = tf.Variable(algorithm)
     else:
       assert seed is None
       self._state_var = tf.Variable(copy_from.state)
