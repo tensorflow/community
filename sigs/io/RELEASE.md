@@ -20,8 +20,9 @@ To perform a release in GitHub, the following steps are needed:
 To perform a release in PyPI, first complete the above GitHub release, then
 build pip packages locally with docker in the following commands
 ```
-$ docker run -it -v ${PWD}:/working_dir -w /working_dir \
-    tensorflow/tensorflow:custom-op bash -x /working_dir/release.sh <2.7|3.4|3.5|3.6>
+$ docker run -it -e BAZEL_VERSION=0.20.0 --rm -v ${PWD}:/working_dir \
+    -w /working_dir  tensorflow/tensorflow:custom-op \
+    bash -x /working_dir/.travis/python.release.sh <2.7|3.4|3.5|3.6>
 ```
 Note the above commands has to run four times with 2.7, 3.4, 3.5, 3.6
 to generate all pip packages for different python versions.
