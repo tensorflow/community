@@ -131,7 +131,7 @@ Since Distribution Strategy is a library that is designed to parallelize and sca
 
 |          |Embeddings|Partitioned Layer (for Loadbalance Only)|
 |:-------- |:-------- |:----------------|
-|Mirrored/ CollectiveAllReduce Strategy|Pre-TF 2.0: <br>w/ Keras' Embedding layer API: won't be sharded but will be mirrored on each replica. <br><br>Post-TF 2.0: <br>w/ Distribution Strategy's API directly: possibly allow sharding; allow being placed on host; or dense update. <br><br>`Heuristics` in Embedding layer to auto-set performance improvement hints.|Pre-TF 2.0: <br>w/ Keras' layer API: won't be sharded but will be mirrored on all replicas, just like a normal layer. <br><br>Post-TF 2.0: w/ Distribution Strategy's API directly: allow being mirrored on each host. <br><br>Heuristics in Embedding layer to auto-place larger layers on host.|
+|Mirrored/ CollectiveAllReduce Strategy|Pre-TF 2.0: <br>w/ Keras' Embedding layer API: won't be sharded but will be mirrored on each replica. <br><br>Post-TF 2.0: <br>w/ Distribution Strategy's API directly: possibly allow sharding. <br><br>Add heuristics in Distribution Strategy to auto-set performance improvement hints, such as whether to place an embedding on host or whether to cast sparse updates to dense tensors.|Pre-TF 2.0: <br>w/ Keras' layer API: won't be sharded but will be mirrored on all replicas, just like a normal layer. <br><br>Post-TF 2.0: w/ Distribution Strategy's API directly: allow being mirrored on each host. <br><br>Add heuristics in Distribution Strategy to place some layers on host.|
 |ParameterServer Strategy|Pre-TF 2.0:<br>w/ Keras' Embedding layer API: probably sharded, according to the `partitioner` passed to its constructor.<br><br>Post-TF 2.0:<br>w/ Distribution Strategy's API directly: allow creating embedding variables with different partitioners.|Pre-TF 2.0:<br>w/ Keras' layer API: probably sharded, according to the `partitioner` passed to its constructor which applies globally to all layers.|
 
 In the `ParameterServerStrategy`, the goal of supporting partitioned variable is to match the existing behavior in 1.x. We will propose its APIs for TF 2.0 below. 
@@ -276,6 +276,10 @@ def embedding_lookup(
 
 We will remove `parition_strategy` from all other library code.
 
+We understand this is not a smooth API transition for users since the default `partition_strategy` of `tf.nn.embedding_lookup` is "mod". Also, the saved model populated by 1.x TensorFlow using "mod" strategy will probably not work in 2.0.
+
+Since `embedding_lookup` won't be a public API in TensorFlow 2.0, we recommend users use Keras' `Embedding` layer, even in `Estimator`'s model function. The other option is to use the legacy `tf.compat.v1` symbol if users have to handle embeddings by themselves.
+
 
 #### Save and Restore
 
@@ -313,6 +317,14 @@ In parameter server architecture, model variables can sometimes be `AggregatingV
 The following is planned to be done after TF 2.0's release. We describe their high-level ideas and their details are subject to change.
 
 
+#### Rebalance Embeddings in Embedding layer
+
+
+The main reason users use "mod" partition strategy is because they would like to use "mod" to achieve their load-balancing goal when their embeddings are not evenly distributed in terms of frequency of being referenced. Therefore in order to accomplish this goal with only "div" partition strategy, we can rebalance embeddings in the Keras Embedding layer, optionally given a frequency map/list, and remember the mapping in a variable or a hash table for lookup.
+
+This task will be prioritized after TF 2.0.
+
+
 #### Add Partitions in `experimental_create_sharded_variable`
 
 
@@ -342,46 +354,12 @@ class ParameterServerStrategyExtended(...):
 ```
 
 
-#### Allow Passing Performance Improvement Hints 
+#### Add Performance Improvement Heuristic 
 
 
-We will allow users to say whether to mirror the variable on host memory or whether to cast their updates to dense tensors or not:
+We will explore adding heuristics to `MirroredStrategy` and `CollectiveAllReduceStrategy` to improve performance related to embeddings.
 
-```python
-class MirroredStrategyExtended(...):
-
-  def experimental_create_sharded_variable(self,
-                                           name,
-                                           shape,
-                                           dtype,
-                                           partitions=None,
-                                           **kwargs):
-    """Returns a Mirrored ShardedVariable.
-
-    Args:
-       name: the name of the variable.
-       shape: the shape of the variable before partitioning.
-       dtype: the data type of the variable.
-       partitions: optional, a list of ints indicating desired number of shards 
-         per dimension for this variable. This argument will be ignored until
-         partitioning is supported in `MirroredStrategy`.
-       **kwargs: other performance improvement arguments:
-           dense_update: whether to cast its updates to dense tensors;
-           on_host: whether to mirror the variable on host. Note, the variable can
-             still be partitioned but all of its partitions are placed on host
-             memory or mirrored on each host.
-    """
-    pass
-
-```
-
-With the Keras' `Embedding` layer API, we don't allow users to pass in these hints but we will add some heuristics in `Embedding` layer to set these hints automatically. For example, when an embedding variable is smaller than some threshold we will cast their gradients to dense tensors; or when an embedding variable is sufficiently large, we will place it on host memory. See the discussion in [Alternative Considered](#Alternative-Considered) section.
-
-
-#### Rebalance Embeddings in Embedding layer
-
-
-The main reason users use "mod" partition strategy is because they would like to use "mod" to achieve their load-balancing goal when their embeddings are not evenly distributed in terms of frequency of being referenced. Therefore in order to accomplish this goal with only "div" partition strategy, we can rebalance embeddings in the Keras Embedding layer, optionally given a frequency map/list, and remember the mapping in a variable or a hash table for lookup.
+For example, when an embedding variable is smaller than some threshold we will cast their gradients to dense tensors; or when an embedding variable is sufficiently large, we will place it on host memory. See the discussion in [Alternative Considered](#Alternative-Considered) section.
 
 
 #### PartitionSpec Allowing Richer Partitioning Information
@@ -412,6 +390,14 @@ class PartitionSpec(
 ```
 
 This `PartitionSpec` can be used in all Distribution Strategies.
+
+
+#### Explore Serializing Embedding Layers and Distribution Strategies
+
+
+Some users have the requirement to load a saved model to a cluster of different number of parameter servers. The checkpoint sees `PartitionedVariable` a single unit, allowing a checkpoint being loaded to a Python program built for different number of shards. However, in addition to a checkpoint, a saved model also has a `GraphDef` which contains ops for each individual shards and manipulating the `GraphDef` and its ops can be extremely hairy.
+
+Therefore, we have plans to serialize `Embedding` layers and Distribution Strategies so that when we load a saved model we would be able to recover these objects and build a new `GraphDef` with new partitioning logic.
 
 
 #### Explore Partitioning in CollectiveAllReduceStrategy
