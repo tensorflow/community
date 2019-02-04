@@ -1,7 +1,7 @@
 # Embedding and Partitioned Variable in TF 2.0
 
 
-| Status        | Proposed                                                                  |
+| Status        | Accepted                                                                  |
 | :------------ | :------------------------------------------------------------------------ |
 | **Author** | Yuefeng Zhou (yuefengz@google.com)                                        |
 |**Sponsors**| Alexandre Passos (apassos@google.com), Martin Wicke (wicke@google.com), Josh Levenberg  (joshl@google.com) |
