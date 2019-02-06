@@ -20,8 +20,9 @@ Archives of the mailing list are publicly accessible.
 
 * SIG IO  mailing list: [io@tensorflow.org](https://groups.google.com/a/tensorflow.org/forum/#!forum/io)
 * Gitter room: [tensorflow/sig-io](https://gitter.im/tensorflow/sig-io)
-* Repository: [github.com/tensorflow/io](https://github.com/tensorflow/io)
-* Python Package Repository: [tensorflow-io](https://pypi.org/project/tensorflow-io)
+* Github repository: [github.com/tensorflow/io](https://github.com/tensorflow/io)
+* Python package repository: [tensorflow-io](https://pypi.org/project/tensorflow-io)
+* R package repository: [tfio](https://cran.r-project.org/package=tfio)
 
 ## Releases
 
