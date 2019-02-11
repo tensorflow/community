@@ -1,10 +1,10 @@
 # Attention for Dense networks on Keras
 
-| Status        | Proposed                                                                   |
+| Status        | Accepted                                                                   |
 :-------------- |:-------------------------------------------------------------------------- |
 | **Author(s)** | Georgios Roumpos (roumposg@google.com)                                     |
 | **Sponsors**  | Karmel Allison (karmel@google.com), Francois Chollet (fchollet@google.com) |
-| **Updated**   | 2019-01-15                                                                 |
+| **Updated**   | 2019-02-11                                                                 |
 
 ## Objective and Motivation
 
@@ -25,14 +25,14 @@ everywhere.
 ### Recurrent Neural Networks
 
 Although not the primary focus of this proposal, the Attention layers in this
-proposal work with some configurations of RNN networks.
-Namely, when users create
+proposal work with some configurations of RNN networks. Namely, when users
+create
 [tf.keras.layers.LSTM](https://www.tensorflow.org/api_docs/python/tf/keras/layers/LSTM)
 with `return_sequences=True`, the rest works the same way as CNN.
 
-Unfortunately, this technique does not cover sequence-to-sequence RNN models.
-In these models, the value is the states of encoder, and the query is the input
-of the decoder. The decoder needs to slide its input based on the timesteps, and
+Unfortunately, this technique does not cover sequence-to-sequence RNN models. In
+these models, the value is the states of encoder, and the query is the input of
+the decoder. The decoder needs to slide its input based on the timesteps, and
 feed them one by one. So, the output of the attention layer at timestep T
 affects the output at T+1.
 
@@ -42,9 +42,9 @@ affects the output at T+1.
 and
 [tf.contrib.seq2seq.BahdanauAttention](https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/BahdanauAttention)
 are implementations of dot-product (Luong) and additive (Bahdanau) Attention
-respectively for RNN in Tensorflow. There is ongoing work to implement those
-as Keras layers. Our proposal will follow the same implementation details,
-namely same mathematical operations, but will work with CNN/Dense networks.
+respectively for RNN in Tensorflow. There is ongoing work to implement those as
+Keras layers. Our proposal will follow the same implementation details, namely
+same mathematical operations, but will work with CNN/Dense networks.
 
 There is an implementation of Attention as a `tf.layers.Layer` subclass under
 https://github.com/tensorflow/models/tree/master/official/transformer,
@@ -72,7 +72,7 @@ Layer. Our proposal will resolve that request.
 https://github.com/keras-team/keras/issues/7803 is a request for a Multi-Head
 Attention Layer. Multi-Head Attention is not covered in this proposal, but can
 be implemented as a follow-up, as discussed in the
-[Multi-Head Attention](#multi-head-attention) section.
+Multi-Head Attention section.
 
 There are a few more issues that request Attention for RNN. They are covered
 either by https://github.com/keras-team/keras/pull/11421 or our proposal:
@@ -89,15 +89,16 @@ We propose to implement the following common attention layers:
     Follows
     [tf.contrib.seq2seq.LuongAttention](https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/LuongAttention).
     The calculation follows the steps:
-    1. Calculate scores with shape `[batch_size, Tq, Tv]` as a query-value
-       dot product: `scores = tf.matmul(query, value, transpose_b=True)`.
-    2. Use scores to calculate a distribution with shape
-       `[batch_size, Tq, Tv]`: `distribution = tf.nn.softmax(scores)`.
-    3. Use `distribution` to create a linear combination of `value` with
-       shape `batch_size, Tq, dim]`:
-       `return tf.matmul(distribution, value)`.
+
+    1.  Calculate scores with shape `[batch_size, Tq, Tv]` as a query-key dot
+        product: `scores = tf.matmul(query, key, transpose_b=True)`.
+    2.  Use scores to calculate a distribution with shape `[batch_size, Tq,
+        Tv]`: `distribution = tf.nn.softmax(scores)`.
+    3.  Use `distribution` to create a linear combination of `value` with shape
+        `batch_size, Tq, dim]`: `return tf.matmul(distribution, value)`.
 
     This attention has two forms.
+
     *   The first is standard dot-product attention, as described in: Minh-Thang
         Luong, Hieu Pham, Christopher D. Manning. "Effective Approaches to
         Attention-based Neural Machine Translation." EMNLP 2015.
@@ -105,21 +106,23 @@ We propose to implement the following common attention layers:
     *   The second is the scaled form inspired partly by the normalized form of
         additive (Bahdanau-style) attention. To enable the second form,
         construct the object with parameter `scale=True`.
+
 *   `AdditiveAttention`: Additive attention, a.k.a. Bahdanau-style attention.
     Follows
     [tf.contrib.seq2seq.BahdanauAttention](https://www.tensorflow.org/api_docs/python/tf/contrib/seq2seq/BahdanauAttention).
     The calculation follows the steps:
-    1. Reshape `query` and `value` into shapes `[batch_size, Tq, 1, dim]`
-       and `[batch_size, 1, Tv, dim]` respectively.
-    2. Calculate scores with shape `[batch_size, Tq, Tv]` as a non-linear
-       sum: `scores = tf.reduce_sum(tf.tanh(query + value), axis=-1)`
-    3. Use scores to calculate a distribution with shape
-       `[batch_size, Tq, Tv]`: `distribution = tf.nn.softmax(scores)`.
-    4. Use `distribution` to create a linear combination of `value` with
-       shape `batch_size, Tq, dim]`:
-       `return tf.matmul(distribution, value)`.
+
+    1.  Reshape `query` and `key` into shapes `[batch_size, Tq, 1, dim]` and
+        `[batch_size, 1, Tv, dim]` respectively.
+    2.  Calculate scores with shape `[batch_size, Tq, Tv]` as a non-linear sum:
+        `scores = tf.reduce_sum(tf.tanh(query + key), axis=-1)`
+    3.  Use scores to calculate a distribution with shape `[batch_size, Tq,
+        Tv]`: `distribution = tf.nn.softmax(scores)`.
+    4.  Use `distribution` to create a linear combination of `value` with shape
+        `batch_size, Tq, dim]`: `return tf.matmul(distribution, value)`.
 
     This attention has two forms.
+
     *   The first is additive attention, as described in: Dzmitry Bahdanau,
         Kyunghyun Cho, Yoshua Bengio. "Neural Machine Translation by Jointly
         Learning to Align and Translate." ICLR 2015.
@@ -137,10 +140,12 @@ https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1184/lectures/lecture11.
 "Given a set of vector values, and a vector query, attention is a technique to
 compute a weighted sum of the values, dependent on the query."
 
-There are four input tensors:
+There are five input tensors:
 
 *   `query` of shape `[batch_size, Tq, dim]`
 *   `value` of shape `[batch_size, Tv, dim]`
+*   `key` (optional) of shape `[batch_size, Tv, dim]`. If not given, will use
+    `value` for both `key` and `value`, which is the most common case.
 *   `query_mask` (optional) of shape `[batch_size, Tq]`. Boolean tensor,
     typically calculated from the query length tensor. Used to mask the output
     tensor. This is similar to the `mask` argument of
@@ -151,8 +156,8 @@ There are four input tensors:
 
 The output is of shape `[batch_size, Tq, dim]`.
 
-Following the pattern of other Keras layers, we pass the list `[query, value]`
-as `inputs` and we pass the list `[query_mask, value_mask]` as the `mask`
+Following the pattern of other Keras layers, we pass the list `[query, value,
+key]` as `inputs` and we pass the list `[query_mask, value_mask]` as the `mask`
 argument. Namely, the interface for `Attention` will be as follows:
 
 ```python
@@ -160,8 +165,8 @@ class Attention(tf.keras.layers.Layer):
   """Basic dot-product attention layer, a.k.a. Luong-style attention.
 
   The calculation follows the steps:
-  1. Calculate scores with shape `[batch_size, Tq, Tv]` as a query-value
-     dot product: `scores = tf.matmul(query, value, transpose_b=True)`.
+  1. Calculate scores with shape `[batch_size, Tq, Tv]` as a query-key dot
+     product: `scores = tf.matmul(query, key, transpose_b=True)`.
   2. Use scores to calculate a distribution with shape
      `[batch_size, Tq, Tv]`: `distribution = tf.nn.softmax(scores)`.
   3. Use `distribution` to create a linear combination of `value` with
@@ -188,6 +193,9 @@ class Attention(tf.keras.layers.Layer):
       inputs: List of the following tensors:
         * query: Query `Tensor` of shape `[batch_size, Tq, dim]`.
         * value: Value `Tensor` of shape `[batch_size, Tv, dim]`.
+        * key: Optional key `Tensor` of shape `[batch_size, Tv, dim]`. If not
+          given, will use `value` for both `key` and `value`, which is the
+          most common case.
       mask: List of the following tensors:
         * query_mask: A boolean mask `Tensor` of shape `[batch_size, Tq]`.
           If given, the output will be zero at the positions where
@@ -207,10 +215,10 @@ class AdditiveAttention(tf.keras.layers.Layer):
   """Additive attention layer, a.k.a. Bahdanau-style attention.
 
   The calculation follows the steps:
-  1. Reshape `query` and `value` into shapes `[batch_size, Tq, 1, dim]`
+  1. Reshape `query` and `key` into shapes `[batch_size, Tq, 1, dim]`
      and `[batch_size, 1, Tv, dim]` respectively.
   2. Calculate scores with shape `[batch_size, Tq, Tv]` as a non-linear
-     sum: `scores = tf.reduce_sum(tf.tanh(query + value), axis=-1)`
+     sum: `scores = tf.reduce_sum(tf.tanh(query + key), axis=-1)`
   3. Use scores to calculate a distribution with shape
      `[batch_size, Tq, Tv]`: `distribution = tf.nn.softmax(scores)`.
   4. Use `distribution` to create a linear combination of `value` with
@@ -237,6 +245,9 @@ class AdditiveAttention(tf.keras.layers.Layer):
       inputs: List of the following tensors:
         * query: Query `Tensor` of shape `[batch_size, Tq, dim]`.
         * value: Value `Tensor` of shape `[batch_size, Tv, dim]`.
+        * key: Optional key `Tensor` of shape `[batch_size, Tv, dim]`. If not
+          given, will use `value` for both `key` and `value`, which is the
+          most common case.
       mask: List of the following tensors:
         * query_mask: A boolean mask `Tensor` of shape `[batch_size, Tq]`.
           If given, the output will be zero at the positions where
@@ -291,8 +302,8 @@ There is a common case that requires special treatment: decoder self-attention.
 In this case, we need to prevent flow of information from the "future" towards
 the "past". So, position `i` cannot attend to positions `j > i`. This can be
 accomplished by masking the attention scores with a
-[lower triangular matrix](https://en.wikipedia.org/wiki/Triangular_matrix).
-This variant is the "Masked attention" in Figure 1 of the
+[lower triangular matrix](https://en.wikipedia.org/wiki/Triangular_matrix). This
+variant is the "Masked attention" in Figure 1 of the
 ["Attention is all you need"](https://arxiv.org/abs/1706.03762) paper.
 
 This is a common case that we should cover. The mask needs to be applied to the
@@ -315,18 +326,39 @@ b. Add special classes for self-attention, namely `SelfAttention` and
    * pro: Safer, easier to understand.
    * con: Requires new classes.
 
+**Decision**: Use argument `use_causal_mask=False` in the proposed attention
+layers and throw an error if sequence lengths are different
+
 ### Multi-Head Attention
 
 This is an Attention variant proposed in
 ["Attention is all you need"](https://arxiv.org/abs/1706.03762). This variant
 can be implemented by using multiple attention layers, one for each head.
 
-If we later decide that we need a cleaner API, we can implement it as a
-feature of attention layers,
-e.g. by adding a `num_heads` argument that defaults to 1. The implementation
-will split the `query` and `value` tensors into `num_heads` tensors, calculate
-attention for each pair, then stack the results. This transformation can be
-implemented as a private method that is reused by all attention layers.
+If we later decide that we need a cleaner API, we can implement it as a feature
+of attention layers, e.g. by adding a `num_heads` argument that defaults to 1.
+The implementation will reshape the `query` and `value` tensors by adding a
+`num_heads` dimension, calculate attention, then reshape the results. This
+transformation can be implemented as a private method that is reused by all
+attention layers. The only requirement by the user is that the last dimension
+`dim` of `query` and `value` tensors be divided by `num_heads`.
+
+Here is an example of how this can be implemented:
+
+```python
+# Reshape to [batch_size, num_heads, T, dim/num_heads]
+query_original_shape = tf.shape(query)
+query = tf.reshape(query, [batch_size, tq, dim / num_heads, num_heads])
+query = tf.transpose(query, [0, 3, 1, 2])
+value = tf.reshape(value, [batch_size, tv, dim / num_heads, num_heads])
+value = tf.transpose(value, [0, 3, 1, 2])
+# Calculate Attention
+…
+# Reshape to original shape
+attention = tf.transpose(attention, [0, 2, 3, 1])
+attention = tf.reshape(attention, query_original_shape)
+return attention
+```
 
 ### Transformer
 
@@ -335,8 +367,41 @@ Transformer is a DNN+Attention network proposed in
 implementation of it under
 https://github.com/tensorflow/models/tree/master/official/transformer, which
 uses a custom Attention implementation. Our proposal will simplify the
-Transformer network constructions, because users can reuse the Attention layers,
-rather than writing custom ones.
+Transformer network constructions, because users can use the proposed Attention
+layers, rather than writing custom ones.
+
+In particular, our proposal will replace the
+[Attention](https://github.com/tensorflow/models/blob/master/official/transformer/model/attention_layer.py)
+layer with the following differences:
+
+* `split_heads` and `combine_heads` methods will not be implemented in the first
+  version of the proposal. In later versions, they can be implemented as
+  discussed in the previous paragraph.
+* The `bias` argument in
+  [Attention](https://github.com/tensorflow/models/blob/master/official/transformer/model/attention_layer.py)
+  is used to mask the `value` tensor. This is replaced by the `mask` argument in
+  our proposal.
+* The `cache` argument in
+  [Attention](https://github.com/tensorflow/models/blob/master/official/transformer/model/attention_layer.py)
+  is only used for convenience, and is dropped in our proposal.
+* [Attention](https://github.com/tensorflow/models/blob/master/official/transformer/model/attention_layer.py)
+  applies a Dense layer to the input tensors. This is dropped in our proposal.
+  Instead, the user will need to apply a Dense layer separately if they need to.
+* [Attention](https://github.com/tensorflow/models/blob/master/official/transformer/model/attention_layer.py)
+  applies optional dropout to attention scores. This can be implemented as a
+  feature in a later version.
+
+Transformer is a complex network, but at its core it is a Dense layer plus
+self-attention. A simplified transformer network is shown in the following
+example:
+
+```python
+def transformer(input_tensor):
+  dense_layer = tf.keras.layers.Dense(hidden_units)
+  attention_layer = tf.keras.layers.Attention()
+  net = dense_layer(input_tensor)
+  return attention_layer([net, net])
+```
 
 ### Position Representations
 
@@ -359,8 +424,9 @@ feature in the Attention API.
 Attention is typically used in 1D sequences, such as text. It is conceivable
 that people may try to use it with 2D, 3D or n-D sequences, such as with the
 outputs of `Conv2D` or `Conv3D` layers. In fact, recent research applies
-self-attention to 2D images https://arxiv.org/abs/1805.08318.
-To make n-D work with the proposed layers, users can follow the example code:
+self-attention to 2D images, see https://arxiv.org/abs/1502.03044 and
+https://arxiv.org/abs/1805.08318. To make n-D work with the proposed layers,
+users can follow the example code:
 
 ```python
 query_orig_shape = tf.shape(query)
@@ -371,8 +437,8 @@ attention = tf.reshape(attention, query_orig_shape)
 ```
 
 Alternatively, we could add the above reshapes inside the `Attention`
-implementation, so that n-D sequences can be supported out of the box. But
-given that this is a rare use case, we will not support it in the first version.
+implementation, so that n-D sequences can be supported out of the box. But given
+that this is a rare use case, we will not support it in the first version.
 
 ## Examples
 
@@ -499,6 +565,9 @@ input_layer = keras.layers.Concatenate()(
 
 ### Base Attention Class
 
+**Decision**: Use this alternative. Come up with naming that distinguishes RNN
+Attention.
+
 We could have a base attention class that implements the
 `apply_attention_scores()` method so that subclasses could reuse that method.
 The base class could be as follows:
@@ -546,6 +615,9 @@ Cons:
 
 ### Query, value and mask arguments
 
+**Decision**: Do not use this alternative, because implicit masks would not
+work, such as those produced by `tf.keras.layers.Embedding`.
+
 An alternative to the `mask` argument would be to pass `query_mask` and
 `value_mask` as separate arguments, namely:
 
@@ -576,14 +648,14 @@ Another variation would be to pass `query` and `value` as named arguments:
 
 Pros:
 
-* Code is self-documenting.
-* Could prevent some user bugs related to the ordering of arguments.
+*   Code is self-documenting.
+*   Could prevent some user bugs related to the ordering of arguments.
 
 Cons:
 
-* Passing arguments as lists is a pattern used in Keras layers, such as
-  `tf.keras.layers.Add`. E.g. see the code in
-  https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/python/keras/layers/merge.py#L205
+*   Passing arguments as lists is a pattern used in Keras layers, such as
+    `tf.keras.layers.Add`. E.g. see the code in
+    https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/python/keras/layers/merge.py#L205
 
 ## Questions and Discussion Topics
 
