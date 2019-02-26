@@ -610,3 +610,19 @@ Tentatively, we have the following plan for deprecating collections
 
 
 1.  Figure out a concrete plan for removing CONCATENABLE_VARIABLES collection.
+
+# Design review notes
+* Going through dependencies of this effort.
+    * Object based checkpointing slated for 2.0. 
+    * V2 metrics are in 2.0 (so old metrics deprecated).
+    * Functional control flow slated for 2.0
+* Question: What is special about tables?
+    * Answer: Tables are immutable, they have to be initialized. We currently handle variables specially in defun, we could generalize that to tables, but haven’t looked into that yet. Tables are not variables today because they have non-Tensor representations (e.g., a std::hash_map)
+* Question: Can immutable tables be variables with a variant in them?
+    * Answer: This is a worthy direction to explore but we might not have enough time to do this.
+* Question: How do we create the “init_op” for serving? Do we need to track tables in tf.Checkpointable like we do variables? 
+    * Answer: Making tables be variables with variants does this automatically. Serialized format (for SavedModel) doesn’t need to change.
+* Question: How do we track all the tables?
+    * Answer: These tables are created by feature columns, which are used to create a Layer object, that Layer object can track all the tables/assets of interest. Make tables Checkpointable, and use the infrastructure for tracking checkpointables. Or a parallel mechanism? For V1, have a table_creator_scope() that can track all created tables
+* Other collections
+    * UPDATE_OPS: defun the layer and it is no longer a problem? This may be problematic for parameter server training if we have to wait for the updates before next iteration. Can be addressed by playing with strictness of function execution.
