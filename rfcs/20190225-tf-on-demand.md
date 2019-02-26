@@ -59,13 +59,13 @@ We propose collaborating with the Red Hat team and leveraging the team's open-so
 
 **Web UI (download.tensorflow.org)**
 
-We propose a simple web interface that allows users to manually enter necessary system specs and desired build options for requesting a custom TF binary. The UI will be straightforward and easy-to-use. A sample mock up UI is shown below:
+We propose a simple web interface that allows users to manually enter necessary system specs and desired build options for requesting a custom TF binary. The UI will be straightforward and easy-to-use. A sample mock up UI is shown below. (Please refer to [PyTorch](https://pytorch.org) download UI as an additional reference.)
 
 ![drawing](https://docs.google.com/drawings/d/1Krze2no7zjfqe7nldOm-ArECOGXVVjgtk0VMXCabzkw/export/png)
 
 Once all fields are filled in, the system backend will check if the corresponding binary has already been built and present in cache. If it exists, then it will provide the user a URL to the binary for download. If it does not exist, then it will ask the user for an email address to receive a link for downloading the newly built binary.
 
-Before sending out the binary, the system will first check whether the binary is supported (or unsupported) by going through what is being tested in CI. It will then inform the users accordingly. 
+Before sending out the binary, the system will first check whether the binary is supported (or unsupported) by going through what is being tested in CI. It will then inform the users accordingly.
 
 **Command Line Tool (TF Downloader Binary)**
 
@@ -186,6 +186,6 @@ PackageCacheDataStore {
 With the complicated build system TF currently has, there is undoubtedly going to be issues when building TF. In such cases, we would like the system to go through a process in which it will:
 
 1.  Prepare full reproduction instructions.
-1.  File the bug to most relevant teams. 
+1.  File the bug to most relevant teams.
     *  e.g. Bugs related to the build system will be filed to appropriate TF teams while server-side bugs will be filed to the Red Hat's support team. (This is just an example and is not final.)
 1.  While the bug is being filed, unblock the user by recommending alternate download options.
