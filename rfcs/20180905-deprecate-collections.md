@@ -1,9 +1,9 @@
 # Deprecating collections 
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
-| **Author(s)** | Rohan Jain (Google) |
-| **Sponsor**   | Asim Shankar (Google)                 |
+| **Author(s)** | Rohan Jain (Google)                                  |
+| **Sponsor**   | Asim Shankar (Google)                                |
 | **Updated**   | 2018-09-05                                           |
 
 
