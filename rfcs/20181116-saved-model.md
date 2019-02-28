@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Allen Lavoie (allenl@google.com), André Susano Pinto (andresp@google.com), Arno Eigenwillig (arnoegw@google.com), Rohan Jain (rohanj@google.com) |
 | **Sponsor**   | Karmel Allison (karmel@google.com) |
-| **Updated**   | 2018-11-15                                           |
+| **Updated**   | 2019-02-28                                           |
 
 
 ## Objective
@@ -112,7 +112,9 @@ tf.saved_model.save(
 
 ```
 # Load the root object from a SavedModel.
-tf.saved_model.load(export_dir: str) : Checkpointable
+tf.saved_model.load(
+  export_dir: str,
+  tags=None : list[str]) : Checkpointable
 ```
 
 
@@ -123,7 +125,7 @@ tf.saved_model.load(export_dir: str) : Checkpointable
 
 This section describes with examples the basic primitives that are needed to load a SavedModel for reusing it in python without depending on its original code. Note that in many cases, reviving the original class would provide much more functionality than what can be serialized.
 
-Those primitive types are: Variable, CheckpointableBase, PolymorphicFunction, TrackableResource, TrackableAsset and any nest of those, including nesting of Checkpointable attributes in an object.
+Those primitive types are: Variable, CheckpointableBase, PolymorphicFunction, TrackableResource, and any nest of those, including nesting of Checkpointable attributes in an object.
 
 Individual examples:
 
@@ -139,7 +141,7 @@ As a preview to the rest of this design, consider the following rough outline of
 
 
 ```
-class Model(tf.train.Checkpoint):
+class Model(tf.Module):
 
   def __init__(self, vocab_file, dim):
     # The table object tracks its asset file automatically
@@ -193,7 +195,7 @@ Concrete functions corresponding to signatures which can not be serialized (see 
 #### Functions
 
 ```
-has_fns = tf.train.Checkpoint()
+has_fns = tf.Module()
 has_fns.v = tf.Variable(1.)
 has_fns.a = tf.function(lambda x: x + has_fns.v + 1.)
 has_fns.b = tf.function(lambda x: x + has_fns.v + 2.)
@@ -239,7 +241,7 @@ training_checkpoint.a  # Attribute error; functions are not restored
 
 
 ```
-class Net(tf.train.Checkpoint):
+class Net(tf.Module):
 
   def __init__(self):
     self.y = None
@@ -330,7 +332,7 @@ See [input signature serialization](#polymorphicfunctions) for details. Addition
 
 
 ```
-class Net(tf.train.Checkpoint):
+class Net(tf.Module):
 
   @tf.function(input_signature=tf.TensorSpec([None, 5], tf.float32))
   def infer(self, x):
@@ -356,7 +358,7 @@ Input signatures need not be specified when using `tf.function` decorators, whic
 
 
 ```
-class Net2(tf.train.Checkpoint):
+class Net2(tf.Module):
 
   @tf.function
   def infer(self, labels, training, x1, x2):
@@ -433,7 +435,7 @@ For example:
 
 
 ```
-class Net(tf.train.Checkpoint):
+class Net(tf.Module):
 
   @tf.function
   def infer(self, x):
@@ -471,9 +473,9 @@ SavedModels exported from the proposed APIs will be importable using TensorFlow 
 
 Using `tf.saved_model.load` on a SavedModel exported from a TensorFlow 1.x API will import each SignatureDef as an individual  `tf.compat.v1.wrap_function` object. This will follow the [same style as for signatures exported using tf.saved_model.save](#imported-representation-of-signatures), with a `.signatures` attribute of the root object containing a mapping from signature keys to `wrap_function` objects. Another attribute will contain variables.
 
-If multiple MetaGraphs exist in the SavedModel, the imported root object will be a list of objects, each corresponding to a MetaGraph. Variables will not be shared between the MetaGraphs. If there is a single MetaGraph, there will be no list wrapping. If memory becomes a concern loading multiple MetaGraphs and their variables simultaneously, they may be loaded lazily.
+If multiple MetaGraphs exist in the SavedModel, the `tf.saved_model.load(..., tags=...)` argument must be specified and must match exactly one MetaGraph. Only one MetaGraph will be loaded per call to `tf.saved_model.load`.
 
-Loading for each MetaGraph will follow the existing procedure for the C++ and Python loader APIs, a checkpoint restore followed by the main op running with asset paths "fed". This procedure will be wrapped in its own `wrap_function` object and executed when `tf.saved_model.load` runs.
+Loading for a MetaGraph will follow the existing procedure for the C++ and Python loader APIs, a checkpoint restore followed by the main op running with asset paths "fed". This procedure will be wrapped in its own `wrap_function` object and executed when `tf.saved_model.load` runs.
 
 Not all existing SavedModels will be loadable to start. Some known tricky issues:
 
@@ -568,7 +570,7 @@ Registrations for revived types will initially be considered implementation deta
 
 
 ```
-class HasPython(tf.train.Checkpoint):
+class HasPython(tf.Module):
 
   @tf.function
   def do(self, x, learning_phase):
@@ -611,7 +613,7 @@ On import, objects are restored and variables set to their checkpointed values. 
 
 
 ```
-class Net(tf.train.Checkpoint):
+class Net(tf.Module):
 
   def __init__(self, units):
     self.units = units
@@ -758,3 +760,57 @@ Probably not. The compatibility section now makes this explicit.
 TensorFlow 1.x SavedModel load APIs have a tag-based selection system for choosing which MetaGraphs to load. Should `load()` take arguments to replicate this behavior, even if they’re not relevant to `save()`? Or is returning a list and lazily loading MetaGraphs sufficient?
 
 Is returning an unwrapped object in the single-MetaGraph case but a list in the multi-MetaGraph case too surprising? If so, do we need a separate API?
+
+## Design Review Notes
+
+Things that changed since doc was sent out
+
+*   Import representation of signatures: attach to root object? Decided to attach to .signatures attribute (see [Imported representation of signatures](#imported-representation-of-signatures))
+
+Two big issues to discuss
+
+
+
+*   Functions in MetaGraph  
+    *   e.g. should train/eval/serving be in the same metagraph? What if train graph has a custom op that can't be loaded into the servo?
+    *   Is it possible to import a subset of the graph?
+        *   If all attributes are imported when the SavedModel is loaded, then this is impossible
+        *   Proposal:
+            *   already in current design=single recursive export
+            *   allow two options during import: entire object vs set of signatures 
+        *   Is it possible to filter at load time? yeah, will need to be implemented
+    *   Proposal: Export entire object graph -and- v1 SavedModel as separate fields
+        *   Two MetaGraphs, shared FunctionDef
+        *   Pros:
+            *   Allows compatibility with V1 tools (ease transition)
+            *   Conceptually consistent for users/library devs: one metagraph=restore, other=serving
+        *   Cons:
+            *   Duplicate information
+            *   Bigger file (there's a 2gb limit?)
+            *   Additional complexity for hypothetical situation
+        *   Decision: Extend metagraph, v1 will only look at some fields
+*   Compatibility story
+    *   What happens when a V2 loader runs into a V1 SavedModel?
+        *   Proposal: Always return an object that represents the single metagraph (default case)
+            *   object has .signatures, .variables attributes
+            *   User must specify tags if there are multiple metagraphs (Error out if not specified)
+    *   Load V2 into Estimator/Graph mode
+        *   Make sure collections are loaded correctly
+        *   Implementable, low priority
+    *   Load V2 into Keras V2 layer
+        *   Should be able to be done, low priority
+
+Distribution Strategy + SavedModels
+
+
+
+*   Day 1: Functions are not device hard-coded, not DistributionStrategy friendly
+*   Options:
+    *   Export Distributed Graph with devices hardcoded
+    *   Load inside DistributionStrategy scope
+        *   If the variables are created and the forward pass is run in the scope, then the model will be distributed
+        *   Look out for bugs in BatchNormalization
+        *   Requires variable annotations in SavedModel
+            *   Aggregation mode
+            *   Sync mode
+
