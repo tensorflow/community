@@ -1,6 +1,6 @@
 ﻿# SavedModel Save/Load in 2.x
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Allen Lavoie (allenl@google.com), André Susano Pinto (andresp@google.com), Arno Eigenwillig (arnoegw@google.com), Rohan Jain (rohanj@google.com) |
 | **Sponsor**   | Karmel Allison (karmel@google.com) |
