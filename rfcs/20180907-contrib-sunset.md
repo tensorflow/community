@@ -267,6 +267,8 @@ formed) will be deleted by default at 2.0.
 | util               |                  | delete (no owner), or move to tools  |
 | verbs              |  (mrry tucker)   | delete (no owner)                    |
 
+For a more detailed and constantly evolving symbol map, please refer to this [document](https://docs.google.com/spreadsheets/d/1FLFJLzg7WNP6JHODX5q8BDgptKafq_slHpnHVbJIteQ/edit?usp=sharing).
+
 
 ## Questions and Discussion Topics
 
