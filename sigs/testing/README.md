@@ -6,9 +6,11 @@ A key element of the evolution of TensorFlow is TF 2.0, which is primarily focus
 * Making TensorFlow more intuitive and easier to debug; and 
 * Continuing to enable scalable production deployment.
 
-**TF 2.0 is just in the beginning of this transition. **
+**TF 2.0 is just in the beginning of this transition.**
 
-You can experiment with the alpha release today! Please let us know what you create, and what the experience is like. Over the next few months, we will be focused on making it RC/production ready both internally and externally; making TF 2.0 compatible with the rest of TensorFlow ecosystem; and sharing that journey with you. _We’d love for you to join us and help us!_
+You can experiment with the alpha release today! Please let us know what you create, and what the experience is like. Over the next few months, we will be focused on making it RC/production ready both internally and externally; making TF 2.0 compatible with the rest of TensorFlow ecosystem; and sharing that journey with you. 
+
+_We’d love for you to join us and help us!_
 
 ## Installation Instructions
 
