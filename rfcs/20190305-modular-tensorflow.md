@@ -11,64 +11,35 @@
 
 TensorFlow is a very successful open source project. Since it has been open sourced, [1800+ contributors](https://github.com/tensorflow/tensorflow) have submitted code into TF from outside Google. However, as more and more developers contribute, it becomes more and more difficult to manage contributions in the single repository.
 
-This project aims to split the TensorFlow codebase into** smaller, more focused**, repositories that can be released and managed separately. These modules will talk to each other using **well defined APIs** that guarantee backwards compatibility. Thanks to the module APIs, these modules are now **managed/owned/released independently.**
+This project aims to split the TensorFlow codebase into **smaller, more focused**, repositories that can be released and managed separately. These modules will talk to each other using **well defined APIs** that guarantee backwards compatibility. Thanks to the module APIs, these modules are now **managed/owned/released independently.**
 
-### Problems
-
+### Problems addressed
 
 #### Spaghetti dependencies
 
-Everything being in a single repository encourages everyone to freely use all other code in the repository, even when this does not make sense. This ensures the library is very difficult to modify later. One example we have for this is the current size of TF, and tf-lite. TF-mobile used to be our initial offering for ml for apps. However, tf mobile required 30+ MBs added to each app, where android apps on the average are [11.5 MBs](https://www.google.com/search?source=hp&ei=82Q-XPfsN5Pj9AORiKmoAw&q=android+average+app+size&btnK=Google+Search&oq=wombat&gs_l=psy-ab.3..0l10.876.1495..3702...0.0..0.76.466.7......0....1..gws-wiz.....0..0i131j0i3.Ij8iLyUMFbE). Thus the TF lite project was  born. However, due to the nature of the core TF runtime, TF lite team decided that it is easier to write an entirely new runtime for mobile.
+Everything being in a single repository encourages everyone to freely use all other code in the repository, even when this does not make sense. This ensures the library is very difficult to modify later.
 
+#### Long build times
 
-#### Long OSS build times
-
-Having a single repository works great for google. This is in part because it is backed by great infrastructure such as distributed source management tools and massively distributed build system. However, in the open source world these tools do not exist. While Google has efforts to make these available, they do not work as well as internal solutions, and they are too costly for many open source contributors. 
-
-Therefore, building open source tensorflow becomes a painful experience. Many volunteers and developers outside google use their laptops for development. On such systems, TF development cycles require building all of tensorflow that takes around 2 hours. While there is an argument to be made that bazel caching should ensure that they build all of TF only once, without forge, bazel caching is not working as [well as expected](https://docs.bazel.build/versions/master/remote-caching.html#known-issues).
-
-This also impacts the TF development team, too. Our Kokoro builds are usually our longest running builds, and we have to disable windows and macos presubmits due to concerns about build times. As soon as the presubmits were disabled, average greenness have plunged for windows and macos builds from over 90% to below 50%.
-
+Many volunteers and developers outside Google use their laptops for development. On such systems, TF development cycles require building all of tensorflow that takes around 2 hours. While there is an argument to be made that bazel caching should ensure that they build all of TF only once, without forge, bazel caching is not working as [well as expected](https://docs.bazel.build/versions/master/remote-caching.html#known-issues).
 
 #### Adding support for new hardware is very difficult and not scalable
 
 The ML ecosystem is constantly expanding. New hardware for accelerating ML applications is being worked on by many teams inside and outside Google. As the most popular machine learning framework, TF is expected to add support for many of these hardware as quickly as possible.
 
-Currently, this means that all such hardware developers need to check in their code into the [main tensorflow repository](http://github.com/tensorflow/tensorflow). This means that all the changes are required to go through TF team's review. This can make merging support for new hardware very very difficult. One glaring example is that AMD has a [fork of tensorflow that can run on AMD GPUs](https://github.com/ROCmSoftwarePlatform/tensorflow-upstream). However, [despite their efforts it has been more than 8 months](https://github.com/tensorflow/tensorflow/pulls?utf8=%E2%9C%93&q=is%3Apr++ROCM) and we still do not have AMD GPU support upstreamed into main TF repo.
-
+Currently, this means that all such hardware developers need to check in their code into the [main tensorflow repository](http://github.com/tensorflow/tensorflow). This means that all the changes are required to go through TF team's review. This can make merging support for new hardware very very difficult.
 
 #### Long PR review queue
 
-TensorFlow is a very successful opensource project. It is the [4th most forked](https://github.com/search?o=desc&q=stars:%3E1&s=forks&type=Repositories) and [5th most starred](https://github.com/search?q=stars%3A%3E0&s=stars&type=Repositories) project on github. This also means that TF receives quite a lot of opensource contributions. The TensorFlow team has to review all contributions to TensorFlow itself. This creates a bottleneck for merging the changes to the main repository. Currently, we have 296 open PRs, 173 of which had no updates in the last week, and even worse, 87 had no updates in the last 2 weeks as of the end of January.
+TensorFlow is a very successful opensource project. It is the [4th most forked](https://github.com/search?o=desc&q=stars:%3E1&s=forks&type=Repositories) and [5th most starred](https://github.com/search?q=stars%3A%3E0&s=stars&type=Repositories) project on github. This also means that TF receives quite a lot of opensource contributions. The TensorFlow team has to review all contributions to TensorFlow itself. This creates a bottleneck for merging the changes to the main repository.
 
-Modularizing TensorFlow  means that:
+#### Flexibility for collaborators
 
-
-
-*   We will enable contributors to own code that we will never use inside of google3. They will be able to host their own code, and work seamlessly with TensorFlow.
-*   We will have smaller repositories with owners having more control over their repositories. Currently, there is no single reviewer who has the full knowledge to confidently review every single change in TF main repository. Smaller repositories will mean that we will have clearer code owners defined with each repository, who will have more expertise about the code they own.
-*   We will avoid giant pull requests. In the past, [we have had 1500+ lines of changes](https://github.com/tensorflow/tensorflow/pull/20277) in single pull requests, which required 10 different reviewers to be able to review and merge the code. With smaller repositories, such changes will be split up into smaller and more manageable changes.
-
-
-#### Flexibility for Collaborators/partners
-
-Currently, any partner or contributor that would like to work with us are subject to all the rules within our repository. Such rules are:
-
-
-
-*   All code has to be reviewed by a member of TensorFlow team
-*   They have to use bazel
-*   They have to sign Google CLA.
-*   They have to open source their code as a part of our repository
-*   They have to wait for our release schedules to make use of their features
-*   They have to rewrite their code based on google style guides.
-
-With modularization, we would like to remove all of these constraints on our partners, at the cost of these plugins being required to use the C APIs we plan to offer.
-
+Currently, any partner or contributor that would like to work with us are subject to all the rules within of the main repository. Some of these can be relaxed through modularization, where work can happen in a separate repository.
 
 #### Large TF support matrix
 
-TF support story is a unique beast. TF support matrix has a lot of orthogonal dimensions. Below are some of the more prominent dimensions:
+The TF support story is a unique beast. Our support matrix has a lot of orthogonal dimensions. Below are some of the more prominent dimensions:
 
 *   Environment (google3, opensource)
 *   Operating system (Linux, windows, macos, mobile)
@@ -77,14 +48,14 @@ TF support story is a unique beast. TF support matrix has a lot of orthogonal di
 *   Compiler (GCC, Clang, MSVC)
 *   Python version (2, 3.4, 3.5, 3.6,  3.7)
 
-More can be added to this list where we have to rebuild tensorflow to support different network architectures, CUDA versions, SIMD instruction sets, etc.
+More can be added to this list where we have to rebuild TensorFlow to support different network architectures, CUDA versions, SIMD instruction sets, etc.
 
-Having a monolithic repository means we need to rebuild all of our code for all of these different combinations. However, it makes no sense to rebuild all of our C++ code if the only difference is the python version. Or rebuild all of our CPU kernels for different CUDA versions. Modularizing our code means we only need to rebuild and test the modules that are directly impacted by the dimensions we are changing in the support matrix.
+Having a monolithic repository means we need to rebuild all of our code for all of these different combinations. However, it makes no sense to rebuild all of our C++ code if the only difference is the Python version. Or rebuild all of our CPU kernels for different CUDA versions. Modularizing our code means we only need to rebuild and test the modules that are directly impacted by the dimensions we are changing in the support matrix.
 
 
 ## Overview
 
-This project aims to split the TensorFlow codebase into **smaller, more focused**, repositories that can be released and managed separately. These modules will talk to each other using **well defined APIs** that guarantee backwards compatibility. Thanks to these APIs, these modules will be **managed/owned/released independently**. There will be different strategies to break apart pieces based on the languages, but below summarizes the approach for C++ and python:
+This project aims to split the TensorFlow codebase into **smaller, more focused**, repositories that can be released and managed separately. These modules will talk to each other using **well defined APIs** that guarantee backwards compatibility. Thanks to these APIs, these modules will be **managed/owned/released independently**. There will be different strategies to break apart pieces based on the languages, but below summarizes the approach for C++ and Python:
 
 
 ![alt_text](20190305-modular-tensorflow/big_picture.png "Overview of modular TensorFlow")
@@ -110,14 +81,12 @@ This section will briefly describe the terms we will use in the rest of this des
 
 **Shared objects:** These are  dll/so/dylib files that can house **one or more** plugins for **one or more **modules.
 
-**Packages: **Python pip packages which may include python files and/or shared objects.
+**Packages: **Python pip packages which may include Python files and/or shared objects.
 
 
 ### C++
 
 This project aims to implement similar plugin architectures for multiple components of TF code. While these will be listed separately, **there will be a lot of shared pieces between these components**. The modules we would like to handle are:
-
-
 
 1.  Networking module, with verbs, gdr plugins initially
 1.  Filesystems module, with GCP, AWS and HDFS support
@@ -133,14 +102,9 @@ Each of these aspects require unique special treatment in addition to the common
 
 This is a high level description of a single module and multiple plugins for this module:
 
-
-
 ![alt_text](20190305-modular-tensorflow/cpp_module.png "C++ module example")
 
-
 The big pieces of this design are:
-
-
 
 1.  Modules: Well defined components within tensorflow that need multiple implementations, and select different code paths at runtime
 1.  Plugins: These will be implementations of each module. Each plug-in will implement an "interface" (i.e., the API defined as C functions rather than a pure virtual class in C++). These will be loaded dynamically at runtime, 
@@ -149,16 +113,16 @@ The big pieces of this design are:
 
 ### Python
 
-Below diagram provides a summary of the proposed tensorflow pip package ecosystem.
+Below diagram provides a summary of the proposed TensorFlow pip package ecosystem.
 
 
 ![alt_text](20190305-modular-tensorflow/py_modules.png "Python module example")
 
 
 
-1.  Tensorflow Base pip package: This provides the core tensorflow functionality all of TF will share. While estimator and keras provide high level neural network primitives, base will provide basic matrix operations these two packages will use to build the high level APIs.
-1.  Required tensorflow addons: These are pieces of tensorflow that has to be included in all TF distributions. Examples to this are Estimator, keras, tensorboard and base. These are pieces of the public API that are promised to exist by our compatibility guarantees.
-1.  TensorFlow Metapackage: This will be a thin package that only defines the composition of tensorflow. Please see the detailed design section for more details on this package.
+1.  TensorFlow Base pip package: This provides the core TensorFlow functionality all of TF will share. While estimator and keras provide high level neural network primitives, base will provide basic matrix operations these two packages will use to build the high level APIs.
+1.  Required TensorFlow addons: These are pieces of TensorFlow that has to be included in all TF distributions. Examples to this are Estimator, Keras, TensorBoard and base. These are pieces of the public API that are promised to exist by our compatibility guarantees.
+1.  TensorFlow Metapackage: This will be a thin package that only defines the composition of TensorFlow. Please see the detailed design section for more details on this package.
 1.  Optional TF packages: These packages will include the optional TF features users may choose to load and enable after they have TF working. Without these, TF will work just fine. Example features we will have as optional packages are GPU support, MKL support, or cloud filesystem support. These will use the C++ modules to load the functions they provide at runtime.
 
 
@@ -166,11 +130,9 @@ Below diagram provides a summary of the proposed tensorflow pip package ecosyste
 
 We will describe each key design element here in detail. To make the points clearer, trivial examples will be created.
 
-
 ### Modularity in C/C++
 
 This section will describe the key design points for C++ modularity.
-
 
 #### Modules
 
@@ -316,7 +278,7 @@ Once this API is ready, header only C++ APIs can be defined using this API.
 
 ### Modularity in Python
 
-This section will describe the key design points for modular python packages for TF.
+This section will describe the key design points for modular Python packages for TF.
 
 
 ### TensorFlow base pip package
@@ -333,7 +295,7 @@ If we discover a violation of this guarantee, that will be treated as a P1 bug, 
 
 ### Required tensorflow addons
 
-These packages are planned to contain high level TF functionality that can be safely split up from TF. Examples for these are tensorboard, estimator and keras. Together with the base TF package, these packages will contain the full python code of TF, except for top level API wiring.
+These packages are planned to contain high level TF functionality that can be safely split up from TF. Examples for these are tensorboard, estimator and keras. Together with the base TF package, these packages will contain the full Python code of TF, except for top level API wiring.
 
 These packages have two constraints:
 
@@ -353,7 +315,7 @@ This package will reconstruct the TF public API from the base and other requirem
 
 Just a simple setup.py file that defines dependencies on specific versions of all required packages and base package, plus an `__init__.py` file that defines the top level tensorflow API.
 
-The python code for tensorflow metapackage will be a single `__init__.py` file that will look like this:
+The Python code for tensorflow metapackage will be a single `__init__.py` file that will look like this:
 
 
 ```
@@ -414,7 +376,7 @@ These shared objects will be automatically loaded by TF core if:
 
 *   **Why do we not use C++ APIs instead of C**: Compilers have no guarantees for ABIs generated for C++ code. Any C++ API used will require each shared object to be compiled with the same compiler, using the same version of the compiler, with the same compiler flags ([See github issue 23561](https://github.com/tensorflow/tensorflow/issues/23561)).
 *   **Why do not we statically link everything**: Single shared object for everything: Anywhere except google does not have access to the massively parallel build system we use here at google. This causes prohibitive build times, causing major developer pain for open source developers. There are many more issues, but the summary is while this is a great solution for google, outside google this is simply infeasible.
-*   **TF will become a suite of multiple packages, built by multiple authorities. What if the bugs get blamed on TF team**: With the modular model, we expect testing of 3rd party code to become easier. This can also be mitigated if the error messages are better, and if they can clearly point out which module the issue stems from. Finally, we can create an apple-swift like testing model, where we run a jenkins setup that people can donate their machines to, and we can run continuous integration tests on their plugins.
+*   **TF will become a suite of multiple packages, built by multiple authorities. What if the bugs get blamed on TF team**: With the modular model, we expect testing of 3rd party code to become easier. This can also be mitigated if the error messages are better, and if they can clearly point out which module the issue stems from. Finally, we can create an apple-swift like testing model, where we run a Jenkins setup that people can donate their machines to, and we can run continuous integration tests on their plugins.
 *   **Why not have APIs but still have a monolithic repository: **When everything is in a single repository, this enables developers to bypass the APIs, and depend on internals. Moreover, we cannot grant full control over different folders on our repository to our partners in a single repository. As long as they are in a single repository, they are still constrained by our build system and license. Finally, in a single repository we do not provide the option of closed source plugins for contributors.
 *   **Why not go with the OSS federation solutions?** OSS federation requires all dependencies to be in the federation before adding a repository. This is simply not possible for tensorflow, as eigen, llvm and many other dependencies will never be a part of the federation.
 *   **Documentation, how/where do we document everything?** With multiple repositories, structure of the documentation will need to be rethought, based on what is a part of "TensorFlow proper" and what is an optional feature.
@@ -434,7 +396,7 @@ We propose the following principles to be followed for testing in a modular worl
 
 ![alt_text](20190305-modular-tensorflow/initial_tf_deps.png "Initial package structure")
 
-In the current setup, we need to test all of the above packages for different python versions, operating systems, accelerators(CPU, GPU), compilers, and more variants combined. In the modularized world, each of these packages only need to be unit tested for the following:
+In the current setup, we need to test all of the above packages for different Python versions, operating systems, accelerators (CPU, GPU), compilers, and more variants combined. In the modularized world, each of these packages only need to be unit tested for the following:
 
 
 *   tensorflow-base: Operating systems, compiler versions and python versions only with CPU 
@@ -450,12 +412,12 @@ On top of the proposed unit testing plan above, we will need package level integ
 
 
 *   Miscellaneous pip utility tests. Build the nightly pip packages, install them. Then make sure you can import TF, run the command line utilities distributed with TF.
-*   Tutorials/notebook tests. Build the "nightly" pip packages for all above components. Then install this package. Finally extract the python code from notebooks and run them as graphs
+*   Tutorials/notebook tests. Build the "nightly" pip packages for all above components. Then install this package. Finally extract the Python code from notebooks and run them as graphs
 *   Models tests: Build and install the nightly pip packages, then run curated models under tensorflow/models for a small amount of steps.
 
 The above will simply check the sanity of TF, just will check if TF can run without crashing. However, TF requires much more testing. We propose expansion and adoption of the following regression tests to nightly TF test suites:
 
-*   Convergence tests: Run a curated set of small models until convergence. measure the time to converge, and steps to converge
+*   Convergence tests: Run a curated set of small models until convergence. Measure the time to converge, and steps to converge
 *   Performance tests: Run a curated set of models for a pre-selected number of steps. Measure steps per second, and for image models images per second.
 
 
