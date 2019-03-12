@@ -2,6 +2,7 @@
 
 ## What is this group for?
 
+Java and other languages running on top of JVMs, such as Kotlin and Scala, are very well establish in small to large enterprises world-wide. It makes them a strategic choice to reach a larger audience of programmers who 
 From the beginning of time, Java has been one of the few languages supported out-of-the-box by TensorFlow, currently having its own client within its main repository. The initial goal was to support inference of pretrained models on JVM-based platforms, such as Android devices. Thereafter, many contributions were made to make Java a good choice even for building, training and serving models. Now most of the development and evolution of this client is driven by the community.
 
 The purpose of this group is to establish an official communication channel for discussions and suggestions related to any TensorFlow client library intended to run on a JVM and synchronizing the efforts of the developers contributing to it.
