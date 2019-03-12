@@ -2,11 +2,11 @@
 
 ## What is this group for?
 
-From the beginning of time, Java has been one of the few languages supported out-of-the-box by TensorFlow, having its own client within its main repository. The initial goal was to support inference of pretrained models on JVM-based platforms, such as Android devices. Thereafter, many contributions were made to make Java a good choice even for building, training and serving models. Now most of the development and evolution of this client is driven by the community.
+From the beginning of time, Java has been one of the few languages supported out-of-the-box by TensorFlow, currently having its own client within its main repository. The initial goal was to support inference of pretrained models on JVM-based platforms, such as Android devices. Thereafter, many contributions were made to make Java a good choice even for building, training and serving models. Now most of the development and evolution of this client is driven by the community.
 
-The purpose of this group is to establish an official communication channel for discussions and suggestions related to the Java TensorFlow client and synchronizing the efforts of the developers contributing to it.
+The purpose of this group is to establish an official communication channel for discussions and suggestions related to any TensorFlow client library intended to run on a JVM and synchronizing the efforts of the developers contributing to it.
 
-In addition, the group will develop and maintain a new set of high-level utility libraries on top of TensorFlow, in distinct Git repositories, for ramping up Java ML development and deliver new features faster with their own release life cycle.
+In addition, the group will develop and maintain a new set of high-level utility libraries on top of TensorFlow, in distinct Git repositories, for ramping up ML development on JVMs and deliver new features faster with their own release life cycle.
 
 ## Who will be part of it?
 
@@ -19,10 +19,10 @@ Members of the [unofficial Java group](https://groups.google.com/forum/#!forum/t
 
 ## What initial problems will the group tackle?
 
-* Providing a new set of high-level API and features in Java
+* Providing a new set of high-level API and features in Java or other languages running on JVMs
     * New repositories under the TensorFlow organization will host the code for the new libraries, with their own release dates
     * Features could be merged faster by allowing some members of the community to do code reviews 
-* Establish an official communication channel for discussion around Java TF topics
+* Establish an official communication channel for discussion related to TensorFlow on JVM
     * Right now, discussions are spread on different channels, such as the unofficial google group or on top of different GitHub issues
     
 The outcome of the initial discussions of this group will be to identify what features should be addressed first. Here is some ideas:
