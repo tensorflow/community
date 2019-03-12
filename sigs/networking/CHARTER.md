@@ -17,7 +17,7 @@ Everybody with an interest in making TensorFlow work (better) on differrent type
 
 ## Contacts
 
-* SIG leads: Bairen Yi [@byronyi](https://github.com/byronyi) - byronyi@clustar.ai, Jeroen Bédorf [@jbedorf](https://github.com/jbedorf) - jeroen@minds.ai
+* SIG leads: Bairen Yi [@byronyi](https://github.com/byronyi) - byronyi@connect.ust.hk, Jeroen Bédorf [@jbedorf](https://github.com/jbedorf) - jeroen@minds.ai
 * TensorFlow technical contact: Paul Tucker [@poxvoculi](https://github.com/poxvoculi) - tucker@google.com
 * For administrative questions, contact Edd Wilder-James [@ewilderj](https://github.com/ewilderj) - ewj at google
 
