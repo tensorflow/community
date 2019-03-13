@@ -2,11 +2,13 @@
 
 ## What is this group for?
 
-From the beginning of time, Java has been one of the few languages supported out-of-the-box by TensorFlow, currently having its own client within its main repository. The initial goal was to support inference of pretrained models on JVM-based platforms, such as Android devices. Thereafter, many contributions were made to make Java a good choice even for building, training and serving models. Now most of the development and evolution of this client is driven by the community.
+As many sources claim, Java is still on of the (if not the) most popular language found in small to large enterprises around the world. For TensorFlow, it makes it a strategic choice to reach a large audience of programmers who are interested to embed machine learning algorithms in their applications.
 
-The purpose of this group is to establish an official communication channel for discussions and suggestions related to any TensorFlow client library intended to run on a JVM and synchronizing the efforts of the developers contributing to it.
+TensorFlow already has a Java client out-of-the-box, which was originaly conceived to support inference on Android devices. As many contributions were made thereafter to make it a good choice even for building, training and serving models, there is still a lot of work to be done before it reaches a level of maturity comparable to Python.
 
-In addition, the group will develop and maintain a new set of high-level utility libraries on top of TensorFlow, in distinct Git repositories, for ramping up ML development on JVMs and deliver new features faster with their own release life cycle.
+The purpose of this group is to establish an official communication channel for discussions and suggestions related to TensorFlow support in Java or any other JVM-based languages, such as Kotlin or Scala.
+
+In addition, the group will develop and maintain a new set of high-level utility libraries on top of TensorFlow for providing better tools to developers interested in machine learning on JVMs, with their own distinct repositories and release life cycles.
 
 ## Who will be part of it?
 
