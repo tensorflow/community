@@ -4,7 +4,7 @@
 
 Establish an official communication channel for discussions and suggestions related to TensorFlow client in Java or any other languages running on JVMs.
 
-Develop and maintain a new set of high-level utility libraries on top of TensorFlow for ramping up ML development on JVMs and deliver new features faster with their own release life cycle.
+Develop and maintain a new set of high-level utility libraries on top of TensorFlow to provide better tools for ML development on JVMs.
 
 ## Membership
 
