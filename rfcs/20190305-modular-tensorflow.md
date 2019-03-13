@@ -79,9 +79,9 @@ This section will briefly describe the terms we will use in the rest of this des
 
 **Plugins:** Plugins are extensions to different modules. For example, filesystem module can have a GCP plugin, an S3 plugin, an HDFS plugin.
 
-**Shared objects:** These are  dll/so/dylib files that can house **one or more** plugins for **one or more **modules.
+**Shared objects:** These are  dll/so/dylib files that can house **one or more** plugins for **one or more** modules.
 
-**Packages: **Python pip packages which may include Python files and/or shared objects.
+**Packages:** Python pip packages which may include Python files and/or shared objects.
 
 
 ### C++
