@@ -8,7 +8,7 @@ TensorFlow already has a Java client out-of-the-box, which was originaly conceiv
 
 The purpose of this group is to establish an official communication channel for discussions and suggestions related to TensorFlow support in Java or any other JVM-based languages, such as Kotlin or Scala.
 
-In addition, the group will develop and maintain a new set of high-level utility libraries on top of TensorFlow for providing better tools to developers interested in machine learning on JVMs, with their own distinct repositories and release life cycles.
+In addition, the group will develop and maintain new high-level utility libraries, with their own repository and release life cycle, to provide a rich set of tools for machine learning development on JVM with TensorFlow.
 
 ## Who will be part of it?
 
