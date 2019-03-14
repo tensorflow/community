@@ -2,13 +2,13 @@
 
 ## What is this group for?
 
-As many sources claim, Java is still on of the (if not the) most popular language found in small to large enterprises around the world. For TensorFlow, it makes it a strategic choice to reach a large audience of programmers who are interested to embed machine learning algorithms in their applications.
+Java is still one of the (if not the) most popular programming language found in small to large enterprises around the world. For TensorFlow, it makes it a strategic choice to reach a large audience of programmers who are interested to embed machine learning algorithms in their applications.
 
-TensorFlow already has a Java client out-of-the-box, which was originaly conceived to support inference on Android devices. As many contributions were made thereafter to make it a good choice even for building, training and serving models, there is still a lot of work to be done before it reaches a level of maturity comparable to Python.
+TensorFlow already has a Java client out-of-the-box, which was originaly conceived to support inference on Android devices. Many contributions were made thereafter to make it a good choice even for building, training and serving models, but there is still a lot of work to be done before it reaches a level of maturity comparable to Python.
 
 The purpose of this group is to establish an official communication channel for discussions and suggestions related to TensorFlow support in Java or any other JVM-based languages, such as Kotlin or Scala.
 
-In addition, the group will develop and maintain new high-level utility libraries, with their own repository and release life cycle, to provide a rich set of tools for machine learning development on JVM with TensorFlow.
+In addition to the current Java client, the group will develop and maintain new high-level artifacts, with their own repository and release life cycle, to provide a rich set of development tools to the end users.
 
 ## Who will be part of it?
 
@@ -21,17 +21,20 @@ Members of the [unofficial Java group](https://groups.google.com/forum/#!forum/t
 
 ## What initial problems will the group tackle?
 
-* Providing a new set of high-level API and features in Java or other languages running on JVMs
-    * New repositories under the TensorFlow organization will host the code for the new libraries, with their own release dates
-    * Features could be merged faster by allowing some members of the community to do code reviews 
+* Providing a new set of high-level API and features for ML development in Java or other languages running on JVMs
+    * Having their own repositories under the TensorFlow organization, these artifacts will be released independently of TensorFlow, which will speed up the deliveries of new features to the end-users.
+    * Pull requests could be merged faster by allowing some members of the community to do code reviews
 * Establish an official communication channel for discussion related to TensorFlow on JVM
     * Right now, discussions are spread on different channels, such as the unofficial google group or on top of different GitHub issues
+* Work with Google team to extract the current Java client out of the main repository
+    * As it has been proposed in [RFC: Modular Tensorflow](https://github.com/tensorflow/community/pull/77), there is an interest to move portions of TensorFlow unrelated to the core out of the main repository.
+    * The actual Java client is a good candidate for gaining his own repository.
     
-The outcome of the initial discussions of this group will be to identify what features should be addressed first. Here is some ideas:
+The outcome of the initial discussions of this group will be to identify what features should be addressed first. Here is some suggestions:
 
-* Eager execution mode in the Java core client
-* `tensorflow-java`: Utility library on top of the core client to simplify usage of TensorFlow in Java, such as multi-dimensional array accessors.
-* `tensorflow-java-models`: Modelisation in Java of pretrained TensorFlow models.
+* Eager execution mode in the Java client
+* `tensorflow-utils` artifact: Utility library on top of the core client to simplify usage of TensorFlow in Java, such as multi-dimensional array accessors.
+* `tensorflow-models` artifact: Modelisation in Java of pretrained TensorFlow models.
 
 ## What modes of communication do you intend to use?
 
