@@ -15,6 +15,7 @@ Everyone interested to promote Java or other JVM languages for training, running
 * Mailing list: TensorFlow JVM Developers (tensorflow-jvm-dev)
 * Repositories: *might change depending on the outcome of the initial discussions*
    * `tensorflow-jvm`: Main repository for new TensorFlow JVM-related projects
+      * `tensorflow`: Actual Java client to be moved out of the main repository
       * `tensorflow-utils`: high-level API and utilities on top of TensorFlow Java client
       * `tensorflow-models`: pretrained models from TensorFlow adapted to Java
 
