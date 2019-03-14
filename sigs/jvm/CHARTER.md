@@ -4,11 +4,11 @@
 
 Establish an official communication channel for discussions and suggestions related to TensorFlow client in Java or any other languages running on JVMs.
 
-Develop and maintain the TensorFlow Java client and a new set of development tools to provide better support for machine learning development on JVMs.
+Develop and maintain the TensorFlow Java client and a set of development tools to provide better support for machine learning development on JVM languages.
 
 ## Membership
 
-Everyone interested to promote Java or other JVM-based languages for training, running or serving TensorFlow models is welcome to join the group, whether it is for contributing to the code or simply for proposing ideas. To participate, request an invitation to join the mailing list. Archives of the mailing list will be publicly accessible.
+Everyone interested to promote Java or other JVM languages for training, running or serving TensorFlow models is welcome to join the group, whether it is for contributing to the code or simply for proposing ideas. To participate, request an invitation to join the mailing list. Archives of the mailing list will be publicly accessible.
 
 ## Resources
 
