@@ -4,7 +4,7 @@
 
 Establish an official communication channel for discussions and suggestions related to TensorFlow client in Java or any other languages running on JVMs.
 
-Develop and maintain a new set of high-level utility libraries on top of TensorFlow to provide better tools for ML development on JVMs.
+Develop and maintain the TensorFlow Java client and a new set of development tools to provide better support for machine learning development on JVMs.
 
 ## Membership
 
@@ -13,9 +13,10 @@ Everyone interested to promote Java or other JVM-based languages for training, r
 ## Resources
 
 * Mailing list: TensorFlow JVM Developers (tensorflow-jvm-dev)
-* Repositories: TBD from the outcome of the initial discussions but we have in mind to start up with 
-    * `tensorflow-java`: high-level API and utilities on top of TensorFlow Java core client
-    * `tensorflow-java-models`: pretrained models from TensorFlow adapted to Java
+* Repositories: 
+   * `tensorflow-jvm`: Main repository for new TensorFlow JVM-related projects
+      * `tensorflow-utils`: high-level API and utilities on top of TensorFlow Java client
+      * `tensorflow-models`: pretrained models from TensorFlow adapted to Java
 
 ## Contacts
 
