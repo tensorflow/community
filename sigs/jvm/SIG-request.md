@@ -34,7 +34,7 @@ The outcome of the initial discussions of this group will be to identify what fe
 
 * Eager execution mode in the Java client
 * `tensorflow-utils` artifact: Utility library on top of the core client to simplify usage of TensorFlow in Java, such as multi-dimensional array accessors.
-* `tensorflow-models` artifact: Modelisation in Java of pretrained TensorFlow models.
+* `tensorflow-models` artifact(s): Modelisation in Java of pretrained TensorFlow models.
 
 ## What modes of communication do you intend to use?
 
