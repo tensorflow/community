@@ -2,7 +2,7 @@
 
 ## What is this group for?
 
-Java is still one of the (if not the) most popular programming language found in small to large enterprises around the world. For TensorFlow, it makes it a strategic choice to reach a large audience of programmers who are interested to embed machine learning algorithms in their applications.
+Java is still one of the (if not the) most popular programming language found in small to large enterprises around the world. For TensorFlow, it makes it a strategic choice to reach a large audience of programmers who are interested to embed machine learning algorithms in their applications, while preserving their current technology stack and expertise.
 
 TensorFlow already has a Java client out-of-the-box, which was originaly conceived to support inference on Android devices. Many contributions were made thereafter to make it a good choice even for building, training and serving models, but there is still a lot of work to be done before it reaches a level of maturity comparable to Python.
 
