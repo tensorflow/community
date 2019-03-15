@@ -4,7 +4,7 @@
 
 Establish an official communication channel for discussions and suggestions related to TensorFlow client in Java or any other languages running on JVMs.
 
-Develop and maintain the TensorFlow Java client and a set of development tools to provide better support for machine learning development on JVM languages.
+Develop and maintain the TensorFlow Java client and a set of additional tools to enhance the support of machine learning development in JVM languages.
 
 ## Membership
 
