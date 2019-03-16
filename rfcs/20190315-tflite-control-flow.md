@@ -86,7 +86,7 @@ how the design guidelines are applied.
 The following diagram illustrates an example which is equivalent to: `a < b ? a
 + b : a * b`
 
-![Example: If operator](20190315-tflite-control-flow/if_model.png){: width=600}
+<img src="20190315-tflite-control-flow/if_model.png" width="600" />
 
 Notes how the guidelines are followed:
 
@@ -216,7 +216,7 @@ The flow of `While` execution will be:
 
 See also the illustration below:
 
-![Example: Buffer hanlding in While op](20190315-tflite-control-flow/while_buffer.png){: width=400}
+<img src="20190315-tflite-control-flow/while_buffer.png" width="400" />
 
 The flow is carefully designed to avoid copying data between subgraphs. Since
 the body subgraph writes to the output buffer of `While` op, no copy is required
