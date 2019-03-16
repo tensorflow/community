@@ -83,8 +83,8 @@ as following:
 In this section, we use a simple example to explain how `If` op is defined and
 how the design guidelines are applied.
 
-The following diagram illustrates an example which is equivalent to: `a < b ? a
-+ b : a * b`
+The following diagram illustrates an example which is equivalent to:
+`a < b ? a + b : a * b`
 
 <img src="20190315-tflite-control-flow/if_model.png" width="600" />
 
