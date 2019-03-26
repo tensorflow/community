@@ -29,7 +29,7 @@ determine appropriate roles and responsibilities for proxy maintainers.
 
 ### Repository Structure
 
-TensorFlow Addons is structured in a into a heirarchy of subpackages 
+TensorFlow Addons is structured in a into a hierarchy of subpackages 
 and submodules as described in the [python docs](https://docs.python.org/3/tutorial/modules.html#packages).
 
 A newly proposed subpackage will be required to have at least one active proxy 
@@ -68,9 +68,9 @@ To date, the `tensorflow/addons` [subpackages](https://github.com/tensorflow/add
 The easiest way to become a proxy maintainer is to respond to our monthly 
 "request for help" emails. Subpackage maintainership will only be 
 granted after substantial contribution has been made in order to limit the 
-number of users with write perission. Contributions can come in the form of 
-issue closings, bug fixes, new code, or optimizing existing code. Submodule 
-maintainership can be granted with a lower barrier for entry as this will not 
+number of users with write permission. Contributions can come in the form of 
+issue closings, bug fixes, documentation, new code, or optimizing existing code. 
+Submodule maintainership can be granted with a lower barrier for entry as this will not 
 include write permissions to the repo.
 
 Additionally, Proxy maintainers are encouraged to co-maintain existing TensorFlow 
