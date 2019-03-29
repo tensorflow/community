@@ -21,7 +21,7 @@ Everyone interested in promoting Java or other JVM languages for training, runni
 
 ## Contacts
 
-* Project lead: Karl Lessard [@karllessard](https://github.com/karllessard) - karllessard at gmail
+* Project lead: Karl Lessard [@karllessard](https://github.com/karllessard) - karl at kubx dot ca
 * Second for the leader: Christian Tzolov [@tzolov](https://github.com/tzolov) - christiantzolov at gmail
 * TensorFlow team technical contact: James Ring [@sjamesr](https://github.com/sjamesr) - sjr at google
 * For administrative questions, contact Edd Wilder-James [@ewilderj](https://github.com/ewilderj) - ewj at google
