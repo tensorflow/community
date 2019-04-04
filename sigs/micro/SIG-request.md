@@ -21,7 +21,6 @@ Membership will be entirely public.
 Prioritize the roadmap for development.
 Divide up high priority work between contributors.
 Share support and help between contributors.
-*List potential goals for the group*
 
 ## What modes of communication do you intend to use?
 
