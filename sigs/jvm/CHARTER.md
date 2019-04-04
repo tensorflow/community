@@ -12,7 +12,8 @@ Everyone interested in promoting Java or other JVM languages for training, runni
 
 ## Resources
 
-* Mailing list: TensorFlow JVM Developers (tensorflow-jvm-dev)
+* Mailing list: TensorFlow SIG JVM [jvm@tensorflow.org](https://groups.google.com/a/tensorflow.org/forum/#!forum/jvm)
+* Gitter chat: [tensorflow/sig-jvm](https://gitter.im/tensorflow/sig-jvm)
 * Repositories: *might change depending on the outcome of the initial discussions*
    * `tensorflow-jvm`: Main repository for new TensorFlow JVM-related projects
       * `tensorflow`: Actual Java client to be moved out of the main repository
