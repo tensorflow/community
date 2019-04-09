@@ -1,6 +1,6 @@
 # TensorFlow On Demand
 
-| Status        | Proposed      |
+| Status        | Accepted      |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Gunhan Gulsoy (gunan@google.com), Hye Soo Yang (hyey@google.com) |
 | **Sponsor**   | Gunhan Gulsoy (gunan@google.com)                |
