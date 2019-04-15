@@ -30,10 +30,13 @@ Everybody with an interest in helping extend TensorFlow with new types of Ops, L
 ## Contacts
 
 * Project leads: Sean Morgan [@seanpmorgan](https://github.com/seanpmorgan),
-  Armando Fandango [@armando-fandango](https://github.com/armando-fandango),
   Yan Facai (颜发才) [@facaiy](https://github.com/facaiy)
 * TensorFlow technical contact [@karmel](https://github.com/karmel) - karmel@google.com
 * For administrative questions, contact Edd Wilder-James [@ewilderj](https://github.com/ewilderj) - ewj at google
+
+## Archive
+
+* Lead Emeritus: Armando Fandango [@armando-fandango](https://github.com/armando-fandango)
 
 ## Code of Conduct
 
