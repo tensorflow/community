@@ -48,7 +48,7 @@ Yes. Estimators will still be available and supported in TF 2.0. Links to the AP
 
 **Can I use TensorBoard with TF 2.0? With Keras in TF 2.0?**
 
-Yes. We even have TensorBoard support in Colab and in Jupyter notebooks. Check it out [here](https://www.tensorflow.org/guide/summaries_and_tensorboard).
+Yes. We even have TensorBoard support in Colab and in Jupyter notebooks. Check it out [here](https://www.tensorflow.org/tensorboard/r2/get_started).
 
 **Is there a 1:1 relationship between stand-alone Keras and tf.keras?**
 
