@@ -2,8 +2,8 @@
 
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
-| **Author(s)** | Zhenyu Tan (tanzheny@google.org)|
-| **Sponsor**   | Francois Chollet (fchollet@google.org), Alexandre Passos (apassos@google.com) |
+| **Author(s)** | Zhenyu Tan (tanzheny@google.com)|
+| **Sponsor**   | Francois Chollet (fchollet@google.com), Alexandre Passos (apassos@google.com) |
 | **Updated**   | 2019-04-25                                           |
 
 ## Objective
