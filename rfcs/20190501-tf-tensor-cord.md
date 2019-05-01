@@ -212,24 +212,24 @@ session.register_session_run_conversion_functions(
 **NOTE** The statement below requires an upcoming PR that allows inlining small
 values inside a `Variant` object.
 
-TL;DR: Creating a TensorCord view of full strings of a DT_STRING tensor is
-1-1.25x more expensive than a direct copy of DT_STRING unless the string lengths
+TL;DR: Creating a TensorCord view of full strings of a `DT_STRING` tensor is
+1-1.25x more expensive than a direct copy of `DT_STRING` unless the string lengths
 are approximately 128 bytes each.  Once string lengths on average are >128
 bytes, the TensorCord approach is more performant.
 
-We are able to match or exceed DT_STRING performance by using a specialized
+We are able to match or exceed `DT_STRING` performance by using a specialized
 implementation of TensorCord and modifications to the `Variant` class:
 
 * TensorCord performs optional inlining and selective referencing of backing
   Tensors (usually for strings < 32 bytes in size).  This requires a specialized
-  constructor that knows about tensorflow::Tensor objects.
+  constructor that knows about `Tensor` objects.
   
 * The Variant object is modified to inline its underlying data if the stored
   value is <= 48 bytes in size (leaving 16 bytes for alignment + additional
   stored Variant data).  This reduces the amount of overhead and indirection in
   storing small values like TensorCord inside Variant and greatly reduces the
   cost of DT_VARIANT tensor destruction.  It keeps the Variant object <= 64
-  bytes, which is the per-element aligned size inside tensorflow::Tensor
+  bytes, which is the per-element aligned size inside `Tensor`
   buffers.
 
 ## Questions and Discussion Topics
