@@ -228,7 +228,7 @@ implementation of TensorCord and modifications to the `Variant` class:
   value is <= 48 bytes in size (leaving 16 bytes for alignment + additional
   stored Variant data).  This reduces the amount of overhead and indirection in
   storing small values like TensorCord inside Variant and greatly reduces the
-  cost of DT_VARIANT tensor destruction.  It keeps the Variant object <= 64
+  cost of `DT_VARIANT` tensor destruction.  It keeps the Variant object <= 64
   bytes, which is the per-element aligned size inside `Tensor`
   buffers.
 
@@ -239,4 +239,4 @@ implementation of TensorCord and modifications to the `Variant` class:
 * Do we need additional Python code to create TensorCord objects from python
   strings?
 * Considerations for TF-Lite if we extend a number of string processing ops to
-  using DT_VARIANT inputs.
+  using `DT_VARIANT` inputs.
