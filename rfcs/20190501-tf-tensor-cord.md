@@ -9,7 +9,7 @@
 ## Objective
 
 This document proposes a new Variant object called TensorCord.  A TensorCord
-contains a collection of strings and release functors / tensor references; and
+contains a list of `absl::string_view` and release functors / tensor references; and
 can be used to store references to other Tensors or other memory locations.  The
 destructor of a TensorCord reduces the count on its referenced releasers; once
 the reference count of a releaser reaches 0, it is executed.
