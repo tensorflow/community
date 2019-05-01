@@ -30,6 +30,8 @@ is propagated through the graph.  Examples are:
   `tf.io.decode_raw`.  `tf.io.encode_raw` would make sense, but it would incur
   the overhead of copying the tensor data into a new string.  A more efficient
   approach is to create a TensorCord pointed at the old tensor.
+* Strings coming in from network I/O are copied out of protos and into
+  tensors, which also incurs a copy overhead.
 
 ## User Benefit
 
