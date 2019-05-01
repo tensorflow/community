@@ -1,6 +1,6 @@
 # TensorCord Variant Object
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)       |
+| Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Eugene Brevdo (ebrevdo@google.com) |
 | **Sponsor**   | Alex Passos (apassos@google.com)                 |
@@ -39,8 +39,8 @@ transparent manner).
 ## Design Proposal
 
 The TensorCord object itself can be implemented using RefCounted objects with a
-constructor that takes an absl::string_view and either a releaser callback or
-a pointer to a Tensor or RefCounted object.
+constructor that takes an `absl::string_view` and either a releaser callback or
+a pointer to a `Tensor` or `RefCounted`.
 
 Below is an example of use:
 
@@ -67,10 +67,11 @@ constructor so users don't accidentally create a `DT_CORD` tensor without
 a releaser.
 
 | Alternatives | TensorCord DT_VARIANT | DT_CORD |
+:------------- |:--------------------- |:------- |
 | Separate releasers per element | Yes | No |
 | Overhead | Higher (each Tensor element keeps a reference; Variant & RunVariantDtor overhead is more costly) | Lower (can have onereleaser per tensor) |
 | Intrusiveness | Lower (use DT_VARIANT) | Higher (add new TF type) |
-| Flexibility | High (elements can point to locations backed by different owners) | Lower (all elements must be backed by data whose lifetime depends a shared set of releasers) |
+| Flexibility | High (elements can point to locations backed by different owners) | Lower (all elements must be backed by data whose lifetime depends a shared set of releasers)
 
 ## Detailed Design
 
@@ -108,17 +109,21 @@ public:
   // is small enough, no reference is created on `tensor`; instead the memory is
   // stored inline.
   explicit TensorCord(absl::string_view view, Tensor* tensor);
+  explicit TensorCord(absl::string_view view, RefCounted* ref_counted);
 
   void Append(const TensorCord& other);
   void Append(absl::string_view view, CordRep::Releaser releaser,
                         void* memory = nullptr);
   void Append(absl::string_view view, Tensor* tensor);
+  void Append(absl::string_view view, RefCounted* ref_counted);
 
   size_t size() const;
   bool empty() const;
 
   explicit operator string() const;
 
+  // Usage example:
+  //  for (absl::string_view s : cord.Chunks()) { ... }
   ChunkRange Chunks() const;
   ChunkIterator chunk_begin() const;
   ChunkIterator chunk_end() const;
