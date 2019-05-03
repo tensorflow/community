@@ -129,9 +129,23 @@ review will be:
 1. Number of active maintainers
 2. Amount of OSS use
 3. Amount of issues or bugs attributed to the code
+4. A better solution becomes available
 
-Because we encourage TF-Addons to be used in production, we'll plan on a 
-graceful deprecation process, instead of a swift removal.
+Functionality within TensorFlow Addons can be categorized into three groups:
+
+* **Suggested**: well-maintained API; use is encouraged.
+* **Discouraged**: a better alternative is available; the API is kept for historic reasons; or the API requires maintenance and is the waiting period to be deprecated.
+* **Deprecated**: use at your own risk; subject to be deleted.
+
+The status change between these three groups is: Suggested <-> Discouraged -> Deprecated.
+
+The period between an API being marked as deprecated and being deleted will be 90 days.
+
+1. In the event that TensorFlow Addons releases monthly, there will be 2-3 releases before an API is deleted. The release notes could give user enough warning.
+
+2. 90 days gives maintainers ample time to fix their code.
+
+3. Google often gives a 90 day window for security fixes, which is a trade off between risk and time to respond. For more comparison of different time window, please see [this link](https://googleprojectzero.blogspot.com/search?q=90+days).
 
 ### Adding a New Subpackage
 
