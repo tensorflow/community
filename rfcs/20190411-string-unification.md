@@ -1,6 +1,6 @@
 # ABI Stable Unified String Tensors
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Dero Gharibian (dero@google.com)                     |
 | **Sponsor**   | Gunhan Gulsoy (gunan@google.com)                     |
@@ -91,10 +91,10 @@ we plan to provide accessors and mutators for string tensors in C, in order to
 simplify language bindings, and ease potential future changes to the byte layout
 of string tensors.
 
-For TFLite, we propose a minor change to the layout of a kTfLiteString; the
+For TFLite, we propose an additional enum for the new string tensor type,
+allowing for backwards compatibility with existing kTfLiteString tensors.  The
 prototypes for string creation and string accessors in `strings_util.h` and
-`strings.h` do not need to change.  Existing exported TFLite string tensors will
-need to be updated.
+`strings.h` do not need to change.
 
 For ABI stability, we propose a new string type that can handle four string
 variants: local “small strings” (`SmallType`), longer heap allocated strings
@@ -295,8 +295,6 @@ and
 
 Since TFLite provides generators and accessors for TFLite string tensors, the
 requisite changes needed to have TFLite conform to the `OffsetType` defined above
-is on the order of a ~20 line CL.  The more difficult task is to find all uses
-of string tensors (internally, and potentially) in flat files, and coordinate
-their migration.  Current exported TFLite string tensors are not marked with a
-version.
-
+is on the order of a ~20 line CL.   Backwards compatibility can be maintained by
+creating a new TFLite enum for tstring separate from the existing
+kTfLiteString enum.
