@@ -127,7 +127,7 @@ These are used sporadically in some kernels and ops or for special cases such as
 very special filesystems or test environments. We can translate these additional
 APIs to use the design presented here, unifying API all across the codebase.
 
-![Filesystem layers](20190502-filesystem-plugin-modular-tensorflow/big_picture.png "Overview of filesystem support")
+![Filesystem layers](20190506-filesystem-plugin-modular-tensorflow/big_picture.png "Overview of filesystem support")
 
 This diagram illustrates this decomposition. Classes are full gray rectangles,
 interfaces are blue shaded ones and functions are rectangles with a dashed
@@ -259,7 +259,7 @@ that type can just error, as in this
 There are multiple filesystems supported by TensorFlow, some of which are
 present in the next diagram:
 
-![Example filesystems](20190502-filesystem-plugin-modular-tensorflow/filesystem.png "Example filesystems")
+![Example filesystems](20190506-filesystem-plugin-modular-tensorflow/filesystem.png "Example filesystems")
 
 #### Cross operating system compatibility
 
@@ -348,7 +348,7 @@ filesystem that match a specific pattern. The default implementation uses
 The following diagram shows several of the implementations of the `Env`
 interface:
 
-![Example environments](20190502-filesystem-plugin-modular-tensorflow/env.png "Example environments")
+![Example environments](20190506-filesystem-plugin-modular-tensorflow/env.png "Example environments")
 
 #### Registering a filesystem to the environment
 
