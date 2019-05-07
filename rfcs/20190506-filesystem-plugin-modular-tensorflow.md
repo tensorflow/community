@@ -211,7 +211,11 @@ class Filesystem {
 ```
 
 In TensorFlow, files are identified by a URI of form
-`[<scheme>://[<host>]]<filename>`. Because sometimes we only need the filename
+`[<scheme>://[<host>]]<filename>` and `scheme` is always used to identify which
+implementation to use for accessing them (for example, a path specified as
+`hdfs:///path/to/file` will use the Hadoop filesystem implementation).
+
+Because sometimes we only need the filename
 part, the FileSystem API defines `TranslateName()` which also ensures that paths
 are canonical, properly resolving `.` and `..` entries that might be present in
 the path. Although filesystems can reimplement this, by default
