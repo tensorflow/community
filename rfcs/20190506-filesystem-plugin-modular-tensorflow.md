@@ -810,7 +810,7 @@ During registration we can check all of the fields and store some for later use
 
 
 [modular_rfc]: https://github.com/tensorflow/community/pull/77 "RFC: Modular TensorFlow"
-[filesystem appendix]: 20190506-filesystem-plugin-modular-tensorflow/existing_filesystem_review.png "A detailed presentation of TensorFlow's filesystem support"
+[filesystem appendix]: 20190506-filesystem-plugin-modular-tensorflow/existing_filesystem_review.md "A detailed presentation of TensorFlow's filesystem support"
 
 [class FileSystem]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/file_system.h#L46 "class FileSystem"
 [class RandomAccessFile]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/file_system.h#L232 "class RandomAccessFile"
