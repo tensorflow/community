@@ -10,7 +10,7 @@
 
 TensorFlow has grown large since its introduction and we are currently working
 on ensuring a better development workflow by a team-wide effort designed to make
-TensorFlow more modular according to the [current RFC][modular_rfc].
+TensorFlow more modular according to the [current proposal][modular_rfc].
 
 A major module of the modular TensorFlow involves all operations regarding files
 and the filesystem. Saving models, checkpointing, reading files as input to
@@ -70,7 +70,7 @@ needed:
    built at one version of TensorFlow core to be loaded by a range of TensorFlow
    core versions. If integration tests for API compatibility between version A
    of the plugin and version Z of TensorFlow core pass, as detailed on [modular
-   TensorFlow RFC][modular_rfc], then version A of the plugin should be allowed
+   TensorFlow proposal][modular_rfc], then version A of the plugin should be allowed
    to work with version Z of TensorFlow core and mandatory metadata should allow
    this. If integration tests between version B of plugin and version Y of core
    fail then the metadata must forbid this combination.
@@ -160,11 +160,11 @@ registering).
 
 #### The filesystem implementation
 
-A new filesystem is currently implemented by subclassing 4 interfaces: one for
-the filesystem operation ([`FileSystem`][class FileSystem]), two for the file
-operations ([`RandomAccessFile`][class RandomAccessFile], [`WritableFile`][class
-WritableFile]) and one for read only memory mapped files
-([`ReadOnlyMemoryRegion`][class ReadOnlyMemoryRegion]).
+In the world before this proposal, a new filesystem is implemented by
+subclassing 4 interfaces: one for the filesystem operation ([`FileSystem`][class
+FileSystem]), two for the file operations ([`RandomAccessFile`][class
+RandomAccessFile], [`WritableFile`][class WritableFile]) and one for read only
+memory mapped files ([`ReadOnlyMemoryRegion`][class ReadOnlyMemoryRegion]).
 
 The `Filesystem` interface is needed to define common functionality to create or
 delete files and directories as well as manipulating directory contents and
@@ -551,7 +551,7 @@ In this subclass, the `Read()` and `ReadUpTo()` methods are implemented in terms
 of their corresponding locked methods. Furthermore, descendants of this class
 only need to implement `ReadLocked()`, the only pure virtual member of the API.
 
-Currently, there are 7 descendants of `ReaderBase` and they are used to
+Before this proposal, there are 7 descendants of `ReaderBase` and they are used to
 implement kernels and ops. All of these kernels inherit from
 [`ReaderOpKernel`][class ReaderOpKernel] which handles access to the source to
 be read from. Whereas [`TextLineReader`][class TextLineReader],
@@ -565,9 +565,9 @@ previously ([`FixedLengthRecordReader`][class FixedLengthRecordReader]).
 
 In the modular design, most of these descendants will be converted for free. The
 only class that might not be trivial to transfer to the new API might be
-`BigQueryReader`. But, since currently it completely ignores the filesystem
-APIs, we can continue with this design ignoring it for now and converting it in
-the future.
+`BigQueryReader`. But, since before this proposal this class completely
+ignores the filesystem APIs, we can continue with this design ignoring it for
+the moment.
 
 #### `SummaryWriterInterface`
 
@@ -718,9 +718,9 @@ added/removed. This, in turn results in compatibility being harder to maintain,
 which is something we don’t want.
 
 Instead, we provide 3 different data structures to act as function tables, to
-hold function pointers for files and the filesystem. Currently, these structures
-are filled with the functionality already present in the existing filesystem
-API:
+hold function pointers for files and the filesystem. For this proposal, these
+structures are filled with the functionality already present in the existing
+filesystem API, but we can expand them as the review progresses:
 
 ```cpp
 // Operations on a TF_RandomAccessFile
@@ -896,10 +896,10 @@ Similarly, we will have to implement a subclass of the `FileSystem` class,
 `ModularFileSystem`, in the same vein.
 
 Another change we have to do is to `FileSystemRegistry`: the `Register()` call
-now uses a `unique_ptr<FileSystem>` argument instead of the existing
-`Factory`-based implementation since the constructor of `ModularFileSystem`
-needs to take as argument the function tables for the operations supported by
-the filesystem.
+after this proposal will use a `unique_ptr<FileSystem>` argument instead of the
+existing `Factory`-based implementation since the constructor of
+`ModularFileSystem` needs to take as argument the function tables for the
+operations supported by the filesystem.
 
 Because of this change, we also need a new subclass of `Env`, as each instance
 of `Env` has the `FileSystemRegistry` baked in at construction time. Actually,
