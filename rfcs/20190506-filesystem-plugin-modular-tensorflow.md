@@ -712,7 +712,8 @@ To increase the range of compatibility, we will give a guarantee that, except on
 new major versions, new methods will only be added to the end of each of these
 structures and that no method will be deleted from the table. Changing the
 signature of a method will be handled by adding the method with the new
-signature to the end of the table and marking the old method as deprecated.
+signature to the end of the table and marking the old method as deprecated as
+well as ensuring that the new method will call the old one where needed.
 
 Deprecation of a method will be done in two parts. First, we will add compiler
 pragmas to warn the users compiling against the interface and relying on
