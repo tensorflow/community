@@ -771,6 +771,44 @@ During registration we can check all of the fields and store some for later use
 (e.g., for displaying better error message, localizing the plugin in error).
 
 
+## Questions and comments raised during review
+
+1. **Should we make the function tables public or hide them and only offer
+   allocate/free/set/get methods??** The proposed API above uses public
+   structures for simplicity but both can be implemented. A benefit of using
+   private structures is that we get some extra memory safety guarantees as
+   plugin code won't be able to directly access fields of the structure and
+   won't be required to keep track of structure size during
+   allocation/deallocation. The downside of having private structures is that
+   there is slightly more code needed at plugin initialization both on the
+   plugin side (calling all the setters instead of just filling in a structure
+   using initializer lists) as well as on core side (ensuring that once a
+   pointer has been set it won't be set again). Having structures public serves
+   as a quick documentation of the API that needs to be provided, documentation
+   which is much clearer than reading through several setters of function
+   pointers. After analyzing the cost/benefits, we're leaning towards
+   **private**.
+
+1. **Should we use the size of the structures or the number of methods in the
+   structures as versioning information?** If the structures are private, we can
+   do either. If the structures are public storing the size helps in memory
+   safety. Leaning towards **size**.
+
+1. **Should we enforce file ops to also take a pointer to the filesystem?** (for
+   example `Read` in `TF_RandomAccessFileOps` should take both a pointer to
+   `TF_RandomAccessFile` and a pointer to `TF_Filesystem` or only the first
+   pointer? Having a direct pointer to `TF_Filesystem` allows storing the state
+   of the filesystem but we argue that this is not needed for all filesystem
+   implementations and in the cases where is needed the plugin can store a
+   pointer to the filesystem inside of the memory pointed to by the
+   `TF_RandomAccessFile` pointer. Leaning towards **NO**.
+
+1. **Should we pass plugin structs by value during registration?** Doing so
+   makes ownership clear and prevents memory allocation bugs. Passing them by
+   value results in a copy but we need a copy for security reasons anyway. We're
+   leaning towards **YES**.
+
+
 [modular_rfc]: https://github.com/tensorflow/community/pull/77 "RFC: Modular TensorFlow"
 [filesystem appendix]: 20190506-filesystem-plugin-modular-tensorflow/existing_filesystem_review.png "A detailed presentation of TensorFlow's filesystem support"
 
