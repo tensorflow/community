@@ -647,10 +647,13 @@ existing `Factory`-based implementation since the constructor of
 operations supported by the filesystem.
 
 Because of this change, we also need a new subclass of `Env`, as each instance
-of `Env` has the `FileSystemRegistry` baked in at construction time. Actually,
-since most of the functionality calls `Env::Default()` to obtain the static
-instance of `Env` and then extract the filesystem from there, we can get rid of
-the level of indirection via `Env` and create a static instance of
+of `Env` has the `FileSystemRegistry` baked in at construction time. In fact, we
+can just change the existing class to have two lookup layers for the two
+registries.
+
+Furthermore, since most of the functionality calls `Env::Default()` to obtain
+the static instance of `Env` and then extract the filesystem from there, we can
+get rid of the level of indirection via `Env` and create a static instance of
 `ModularFileSystem`. This will be possible only after all filesystems use the
 modular approach, after the changes mentioned in the next section.
 
