@@ -801,12 +801,12 @@ During registration we can check all of the fields and store some for later use
    of the filesystem but we argue that this is not needed for all filesystem
    implementations and in the cases where is needed the plugin can store a
    pointer to the filesystem inside of the memory pointed to by the
-   `TF_RandomAccessFile` pointer. Leaning towards **NO**.
+   `TF_RandomAccessFile` pointer. Leaning towards **No**.
 
 1. **Should we pass plugin structs by value during registration?** Doing so
    makes ownership clear and prevents memory allocation bugs. Passing them by
    value results in a copy but we need a copy for security reasons anyway. We're
-   leaning towards **YES**.
+   leaning towards **Yes**.
 
 
 [modular_rfc]: https://github.com/tensorflow/community/pull/77 "RFC: Modular TensorFlow"
