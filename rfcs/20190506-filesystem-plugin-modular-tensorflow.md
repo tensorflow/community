@@ -458,7 +458,7 @@ filesystem API, but we can expand them as the review progresses:
 ```cpp
 // Operations on a TF_RandomAccessFile
 typedef struct TF_RandomAccessFileOps {
-  // versioning information ellided for now
+  // versioning information elided for now
   // ...
   // API information below
   size_t (*const Read)(const TF_RandomAccessFile*, uint64, size_t, char*, TF_Status*);
@@ -467,7 +467,7 @@ typedef struct TF_RandomAccessFileOps {
 
 // Operations on a TF_WritableFile
 typedef struct TF_WritableFileOps {
-  // versioning information ellided for now
+  // versioning information elided for now
   // ...
   // API information below
   void (*const Append)(const TF_WritableFile*, const char*, size_t, TF_Status*);
@@ -481,7 +481,7 @@ typedef struct TF_WritableFileOps {
 
 // Operations on a TF_ReadOnlyMemoryRegion
 typedef struct TF_ReadOnlyMemoryRegionOps {
-  // versioning information ellided for now
+  // versioning information elided for now
   // ...
   // API information below
   const void* (*const Data)(const TF_ReadOnlyMemoryRegion*);
@@ -492,7 +492,7 @@ typedef struct TF_ReadOnlyMemoryRegionOps {
 
 // Operations on a TF_Filesystem
 typedef struct TF_FilesystemOps {
-  // versioning information ellided for now
+  // versioning information elided for now
   // ...
   // API information below
   void (*const NewRandomAccessFile)(const TF_Filesystem*, const char*, TF_RandomAccessFile*, TF_Status*);
