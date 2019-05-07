@@ -70,10 +70,10 @@ needed:
    built at one version of TensorFlow core to be loaded by a range of TensorFlow
    core versions. If integration tests for API compatibility between version A
    of the plugin and version Z of TensorFlow core pass, as detailed on [modular
-   TensorFlow proposal][modular_rfc], then version A of the plugin should be allowed
-   to work with version Z of TensorFlow core and mandatory metadata should allow
-   this. If integration tests between version B of plugin and version Y of core
-   fail then the metadata must forbid this combination.
+   TensorFlow proposal][modular_rfc], then version A of the plugin should be
+   allowed to work with version Z of TensorFlow core and mandatory metadata
+   should allow this. If integration tests between version B of plugin and
+   version Y of core fail then the metadata must forbid this combination.
 
 1. Furthermore, it is ideal to have compilation failures when trying to compile
    plugins against an old API interface which will surely fail the version
@@ -122,9 +122,9 @@ needed:
 
 ## Existing implementation
 
-The existing implementation of a filesystem support in TensorFlow is hairy, due
-to the complexity of operations that needs to be provided. This section is an
-overview of the existing architecture.
+The implementation of a filesystem support in TensorFlow is hairy, due to the
+complexity of operations that needs to be provided. This section is an overview
+of the architecture.
 
 In short summary, TensorFlow’s support for filesystems can be decomposed into 3
 types of API:
@@ -148,6 +148,10 @@ interfaces are blue shaded ones and functions are rectangles with a dashed
 border. Arrows represent inheritance and the line between `Env` and `FileSystem`
 illustrates the coupling between these two structures as will be described in
 the next subsection.
+
+For a better understanding of this proposal, we will present only the low level
+details here as these are the ones that we propose to change. The rest of the
+filesystem implementation is moved to [the appendix][filesystem appendix].
 
 ### Low level filesystem API
 
@@ -215,16 +219,6 @@ In TensorFlow, files are identified by a URI of form
 implementation to use for accessing them (for example, a path specified as
 `hdfs:///path/to/file` will use the Hadoop filesystem implementation).
 
-Because sometimes we only need the filename
-part, the FileSystem API defines `TranslateName()` which also ensures that paths
-are canonical, properly resolving `.` and `..` entries that might be present in
-the path. Although filesystems can reimplement this, by default
-[`tensorflow::lib::io::CleanPath()`][CleanPath] is used.
-
-The default `CopyFile()` implementation just calls the
-[`FileSystemCopyFile()`][FileSystemCopyFile] helper method using the same
-`FileSystem` argument for both source and target.
-
 The [`FileStatistics`][class FileStatistics] class is just a value class
 containing information related to a dentry:
 
@@ -271,8 +265,8 @@ the rest of TensorFlow.
 
 If a filesystem doesn’t support one of the file types, then we don’t need to
 implement the corresponding interface. Instead, the method creating the file of
-that type can just error, as in this
-[HadoopFileSystem][HadoopFileSystem] example.
+that type can just error, as in this [HadoopFileSystem][HadoopFileSystem]
+example.
 
 There are multiple filesystems supported by TensorFlow, some of which are
 present in the next diagram:
@@ -354,15 +348,6 @@ obtained from `GetFileSystemForFile()`. In fact, most of the default
 implementations of the methods above use `GetFileSystemForFile()` and then
 delegate to the filesystem.
 
-Note that in the case of `RenameFile()` and `CopyFile()` the target and the
-source files might be in a different filesystem. Renaming results in an error
-(as it is currently not implemented), whereas copying is done via the
-`FileSystemCopyFile()` helper introduced in the previous section.
-
-The `GetMatchingPaths()` call can be used to identify all paths in the current
-filesystem that match a specific pattern. The default implementation uses
-[`GetMatchingPaths()`][GetMatchingPaths]:
-
 The following diagram shows several of the implementations of the `Env`
 interface:
 
@@ -392,264 +377,8 @@ class FileSystemRegistry {
 };
 ```
 
-### Convenience API
-
-All the functionality presented until this point is enough to transparently
-operate with files across filesystems and operating systems. However, each such
-operation requires getting the environment via Env::Default() then accessing the
-needed functionality from a method of that class. This quickly becomes
-repetitive, so TensorFlow has some convenience API that can be used. For
-example, there are these helper methods:
-
-```cpp
-Status ReadFileToString(Env* env, const string& fname, string* data);
-Status ReadBinaryProto(Env* env, const string& fname, MessageLite* proto);
-Status ReadTextProto(Env* env, const string& fname, protobuf::Message* proto);
-
-Status WriteStringToFile(Env* env, const string& fname, const StringPiece& data);
-Status WriteBinaryProto(Env* env, const string& fname, const protobuf::MessageLite& proto);
-Status WriteTextProto(Env* env, const string& fname, const protobuf::Message& proto);
-```
-
-#### Buffered (streaming) support
-
-Furthermore, as some files can be large, we need a way to stream the data from
-them. There are several options that we can use:
-
-An [`InputBuffer`][class InputBuffer] is a buffer on top of a RandomAccessFile
-passed to the constructor. Its API is simple:
-
-```cpp
-class InputBuffer {
-  Status ReadLine(string* result);
-  Status ReadNBytes(int64 bytes_to_read, string* result);
-  Status ReadNBytes(int64 bytes_to_read, char* result, size_t* read);
-  Status ReadVarint32(uint32* result);
-  Status ReadVarint64(uint64* result);
-  Status SkipNBytes(int64 bytes_to_skip);
-  Status Seek(int64 position);
-  int64 Tell() const;
-};
-```
-
-However, the `InputBuffer` interface is too tied to a `RandomAccessFile` and
-thus it is only being used in one place, by the `TextLineReaderOp` kernel.
-
-A replacement method is provided by [`InputStreamInterface`][class
-InputStreamInterface]:
-
-```cpp
-class InputStreamInterface {
-  virtual Status ReadNBytes(int64 bytes_to_read, string* result) = 0;
-  virtual Status SkipNBytes(int64 bytes_to_skip);
-  virtual int64 Tell() const = 0;
-  virtual Status Reset() = 0;
-};
-```
-
-A [`RandomAccessInputStream`][class RandomAccessInputStream] object is an
-`InputStreamInterface` object which wraps a `RandomAccessFile`. To provide more
-functionality (e.g., `ReadLine()`, `Seek()`), this can be wrapped by a
-[`BufferedInputStream`][class BufferedInputStream].
-
-#### File compression APIs
-
-Another descendant of `InputStreamInterface` is [`MemoryInputStream`][class
-MemoryInputStream] which wraps a memory buffer and is used in
-`DecodeCompressedOp`. This doesn’t use filesystem operations, although it can be
-implemented in terms of `ReadOnlyMemoryRegion` if needed.
-
-There are two more relevant compression APIs built from `InputStreamInterface`.
-First, [`SnappyInputBuffer`][class SnappyInputBuffer] provides access to files
-compressed using Snappy and represented as `RandomAccessFile` objects. There is
-also a [`SnappyOutputBuffer`][class SnappyOutputBuffer] class to write
-compressed input, but there is no `OutputStreamInterface`.
-
-The second compression API is given by [`ZlibInputStream`][class
-ZlibInputStream]. Similar to the `RandomAccessInputStream` case, this just wraps
-an  `InputStreamInterface`. To write to compressed zlib files, we can use
-[`ZlibOutputBuffer`][class ZlibOutputBuffer] to wrap around a `WritableFile`.
-
-### High level filesystem API
-
-Building on top of the convenience API, TensorFlow code has several custom
-classes and helpers to provide high level access to the filesystem.
-
-For example `tf.data` uses `TFRecord` support provided by [`RecordReader`][class
-RecordReader], [`RecordWriter`][class RecordWriter] and
-[`SequentialRecordReader`][class SequentialRecordReader] to build the
-[`FileDataset`][class FileDataset] and [`FileIterator`][class FileIterator]
-abstractions (and subclasses such as [`FileWriterIterator`][class
-FileWriterIterator], [`FileReaderIterator`][class FileReaderIterator]). Then,
-kernels and ops such as [`TextLineDatasetOp`][class TextLineDatasetOp] and
-[`TFRecordDatasetOp`][class TFRecordDatasetOp] are built and then used in Python
-APIs.
-
-Other examples include:
-
-* [`DumpGraphDefToFile`][DumpGraphDefToFile],
-  [`DumpGraphToFile`][DumpGraphToFile],
-  [`DumpFunctionDefToFile`][DumpFunctionDefToFile];
-* [`Table`][class Table] - immutable mapping from strings to strings backed up
-  by a file;
-* [`BundleWriter`][class BundleWriter], [`BundleReader`][class BundleReader] -
-  checkpointing;
-* [`TensorSliceWriter`][class TensorSliceWriter], [`TensorSliceReader`][class
-  TensorSliceReader] - checkpointing partitioned variables;
-* [`LoadSavedModel`][LoadSavedModel]  - `SavedModel` loading;
-* [`EventsWriter`][class EventsWriter];
-* [`DebugFileIO`][class DebugFileIO];
-* API generation tools inside TensorFlow.
-
-### Additional APIs
-
-For some special cases or due to historical reasons, TensorFlow has a set of
-filesystem APIs which cannot be directly mapped on the hierarchy described so
-far. We will mention them here for completeness, but it turns out we can either
-ignore them for the rest of the design as they don’t require many changes.
-
-#### `FileBlockCache`
-
-The [`FileBlockCache`][class FileBlockCache] class can be used by filesystems to
-cache files at the block level. Each entry in the cache is keyed by the filename
-and the offset of the block in the file. Filesystem implementations are free to
-ignore this class, but we’re mentioning it in this document as it is being used
-by the cloud filesystems.
-
-In the new filesystem design, filesystems needing this functionality can just
-import the corresponding targets. Since this is an implementation detail, the
-caching information doesn’t need to cross the module boundary.
-
-#### `ReaderInterface`
-
-The [`ReaderInterface`][class ReaderInterface] and its subclasses provides an
-alternative method of reading records from files in a TensorFlow graph. It has
-the following API:
-
-```cpp
-class ReaderInterface : public ResourceBase {
-  // Reads one single record
-  virtual void Read(QueueInterface* queue, string* key, string* value, OpKernelContext* context) = 0;
-  // Reads up to num_records
-  virtual int64 ReadUpTo(const int64 num_records, QueueInterface* queue, std::vector<string>* keys, std::vector<string>* values, OpKernelContext* context) = 0;
-
-  // Misc
-  virtual Status Reset() = 0;
-  virtual int64 NumRecordsProduced() = 0;
-  virtual Status SerializeState(string* state) = 0;
-  virtual Status RestoreState(const string& state) = 0;
-};
-```
-
-The only subclass in TensorFlow is [`ReaderBase`][class ReaderBase], which adds
-API entry-points for reading while a mutex is being held:
-
-```cpp
-class ReaderBase : public ReaderInterface {
-  virtual Status ReadLocked(string* key, string* value, bool* produced, bool* at_end) = 0;
-  virtual Status ReadUpToLocked(int64 num_records, std::vector<string>* keys, std::vector<string>* values, int64* num_read, bool* at_end);
-};
-```
-
-In this subclass, the `Read()` and `ReadUpTo()` methods are implemented in terms
-of their corresponding locked methods. Furthermore, descendants of this class
-only need to implement `ReadLocked()`, the only pure virtual member of the API.
-
-Before this proposal, there are 7 descendants of `ReaderBase` and they are used to
-implement kernels and ops. All of these kernels inherit from
-[`ReaderOpKernel`][class ReaderOpKernel] which handles access to the source to
-be read from. Whereas [`TextLineReader`][class TextLineReader],
-[`TFRecordReader`][class TFRecordReader] and [`WholeFileReader`][class
-WholeFileReader] access the filesystem using the environment approach
-illustrated above, the other subclasses either work with in-memory data
-([`IdentityReader`][class IdentityReader], [`LMDBReader`][class LMDBReader]),
-with data obtained from a remote call ([`BigQueryReader`][class BigQueryReader])
-or with data that is read using the `InputStreamInterface` mechanism described
-previously ([`FixedLengthRecordReader`][class FixedLengthRecordReader]).
-
-In the modular design, most of these descendants will be converted for free. The
-only class that might not be trivial to transfer to the new API might be
-`BigQueryReader`. But, since before this proposal this class completely
-ignores the filesystem APIs, we can continue with this design ignoring it for
-the moment.
-
-#### `SummaryWriterInterface`
-
-A [`SummaryWriterInterface`][class SummaryWriterInterface] allows writing
-TensorFlow resources to a summary file, being a subclass of `ResourceBase`, just
-like `ReaderInterface`.
-
-```cpp
-class SummaryWriterInterface : public ResourceBase {
-  virtual Status Flush() = 0;
-  virtual Status WriteTensor(int64 global_step, Tensor t, const string& tag, const string& serialized_metadata) = 0;
-  virtual Status WriteScalar(int64 global_step, Tensor t, const string& tag) = 0;
-  virtual Status WriteHistogram(int64 global_step, Tensor t, const string& tag) = 0;
-  virtual Status WriteImage(int64 global_step, Tensor t, const string& tag, int max_images, Tensor bad_color) = 0;
-  virtual Status WriteAudio(int64 global_step, Tensor t, const string& tag, int max_outputs_, float sample_rate) = 0;
-  virtual Status WriteGraph(int64 global_step, std::unique_ptr<GraphDef> graph) = 0;
-  virtual Status WriteEvent(std::unique_ptr<Event> e) = 0;
-};
-```
-
-When writing to files, we use the [`SummaryFileWriter`][class SummaryFileWriter]
-subclass which uses the `Env` method. However, the other subclass,
-[`SummaryDbWriter`][class SummaryDbWriter], uses an `Sqlite` object to talk to a
-SQL database. Similar to the `BigQueryReader` case from the previous section, we
-can postpone converting this to the new filesystem API until a later time.
-
-### IO from external libraries or other languages
-
-To provide functionality to read/write image/audio files, TensorFlow uses some
-external libraries. Although they can do their own IO, there is glue code for
-[gif][gif io], [jpeg][jpeg io], [png][png io] and [wav][wav io] files. This glue
-ensures that the calls into the library use strings representing file contents
-instead of letting the library do its own IO. This way, the filesystem support
-that TensorFlow does is the only one accessing files on disk.
-
-However, there is nothing stopping future code development from directly reading
-from a file on the disk (for example), either in the C/C++ code or in the Python
-code. Preventing this is out of scope for the current design document.
-
-### Existing C API implementation
-
-There is an [existing C API for filesystems][c api] which we might reuse in this
-design. We cannot build on top of this API as it only offers C entry points
-which then call the existing C++ API functions. But, it gives us an indication
-on what API we should provide, at the minimum:
-
-```cpp
-typedef struct TF_FileStatistics {
-  int64_t length;
-  int64_t mtime_nsec;
-  bool is_directory;
-} TF_FileStatistics;
-
-// filesystem manipulation
-TF_CAPI_EXPORT extern void TF_CreateDir(const char* dirname, TF_Status* status);
-TF_CAPI_EXPORT extern void TF_DeleteDir(const char* dirname, TF_Status* status);
-TF_CAPI_EXPORT extern void TF_DeleteRecursively(const char* dirname, int64_t* undeleted_file_count, int64_t* undeleted_dir_count, TF_Status* status);
-TF_CAPI_EXPORT extern void TF_DeleteFile(const char* filename, TF_Status* status);
-TF_CAPI_EXPORT extern void TF_FileStat(const char* filename, TF_FileStatistics* stats, TF_Status* status);
-
-// writable files API
-TF_CAPI_EXPORT extern void TF_NewWritableFile(const char* filename, TF_WritableFileHandle** handle, TF_Status* status);
-TF_CAPI_EXPORT extern void TF_CloseWritableFile(TF_WritableFileHandle** handle, TF_Status* status);
-TF_CAPI_EXPORT extern void TF_SyncWritableFile(TF_WritableFileHandle** handle, TF_Status* status);
-TF_CAPI_EXPORT extern void TF_FlushWritableFile(TF_WritableFileHandle** handle, TF_Status* status);
-TF_CAPI_EXPORT extern void TF_AppendWritableFile(TF_WritableFileHandle** handle, const char* data, size_t length, TF_Status* status);
-```
-
-This API is very incomplete, for example it lacks support for random access
-files and memory mapped files.  Furthermore, the `TF_WritableFileHandle` object
-is just an opaque struct (in C-land) which maps over a `WritableFile` pointer
-from the C++ implementation.
-
-Since this has to be pure C, Status objects are replaced by pointers to a
-`TF_Status` structure. There is code to convert from one to the other. Moreover,
-these APIs assume that the `TF_Status` object is created and managed from the
-calling code, instead of returning the status from every function call. We will
-follow a similar design in this proposal.
+For the rest of the filesystem related implementations that TensorFlow offers,
+consult [the appendix][filesystem appendix].
 
 ## Proposed implementation
 
@@ -1026,8 +755,8 @@ During registration we can check all of the fields and store some for later use
 (e.g., for displaying better error message, localizing the plugin in error).
 
 
-
 [modular_rfc]: https://github.com/tensorflow/community/pull/77 "RFC: Modular TensorFlow"
+[filesystem appendix]: 20190506-filesystem-plugin-modular-tensorflow/existing_filesystem_review.png "A detailed presentation of TensorFlow's filesystem support"
 
 [class FileSystem]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/file_system.h#L46 "class FileSystem"
 [class RandomAccessFile]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/file_system.h#L232 "class RandomAccessFile"
@@ -1037,64 +766,10 @@ During registration we can check all of the fields and store some for later use
 [class FileSystemRegistry]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/file_system.h#L360 "class FileSystemRegistry"
 [class FileStatistics]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/file_statistics.h#L23 "class FileStatistics"
 [struct TF_FileStatistics]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/c/env.h#L36 "struct TF_FileStatistics"
-[class InputBuffer]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/inputbuffer.h#L32 "class InputBuffer"
-[class InputStreamInterface]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/inputstream_interface.h#L27 "class InputStreamInterface"
-[class RandomAccessInputStream]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/random_inputstream.h#L27 "class RandomAccessInputStream"
-[class BufferedInputStream]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/buffered_inputstream.h#L27 "class BufferedInputStream"
-[class MemoryInputStream]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/decode_compressed_op.cc#L30 "class MemoryInputStream"
-[class SnappyInputBuffer]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/snappy/snappy_inputbuffer.h#L35 "class SnappyInputBuffer"
-[class SnappyOutputBuffer]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/snappy/snappy_outputbuffer.h#L46 "class SnappyOutputBuffer"
-[class ZlibInputStream]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/zlib_inputstream.h#L40 "class ZlibInputStream"
-[class ZlibOutputBuffer]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/zlib_outputbuffer.h#L38i "class ZlibOutputBuffer"
-[class RecordReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/record_reader.h#L59 "class RecordReader"
-[class RecordWriter]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/record_writer.h#L50 "class RecordWriter"
-[class SequentialRecordReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/record_reader.h#L120 "class SequentialRecordReader"
-[class FileDataset]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/data/cache_dataset_ops.cc#L50 "class FileDataset"
-[class FileIterator]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/data/cache_dataset_ops.cc#L112 "class FileIterator"
-[class FileWriterIterator]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/data/cache_dataset_ops.cc#L195 "class FileWriterIterator"
-[class FileReaderIterator]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/data/cache_dataset_ops.cc#L439 "class FileReaderIterator"
-[class TextLineDatasetOp]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/data/reader_dataset_ops.cc#L35 "class TextLineDatasetOp"
-[class TFRecordDatasetOp]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/data/reader_dataset_ops.cc#L740 "class TFRecordDatasetOp"
-[class Table]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/table.h#L34 "class Table"
-[class BundleWriter]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/util/tensor_bundle/tensor_bundle.h#L108 "class BundleWriter"
-[class BundleReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/util/tensor_bundle/tensor_bundle.h#L182 "class BundleReader"
-[class TensorSliceWriter]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/util/tensor_slice_writer.h#L43 "class TensorSliceWriter"
-[class TensorSliceReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/util/tensor_slice_reader.h#L54 "class TensorSliceReader"
-[class EventsWriter]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/util/events_writer.h#L31 "class EventsWriter"
-[class DebugFileIO]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/debug/debug_io_utils.h#L147 "class DebugFileIO"
-[class FileBlockCache]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/cloud/file_block_cache.h#L39 "class FileBlockCache"
-[class ReaderInterface]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/framework/reader_interface.h#L44 "class ReaderInterface"
-[class ReaderBase]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/framework/reader_base.h#L30 "class ReaderBase"
-[class ReaderOpKernel]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/framework/reader_op_kernel.h#L35 "class ReaderOpKernel"
-[class TextLineReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/text_line_reader_op.cc#L28 "class TextLineReader"
-[class TFRecordReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/tf_record_reader_op.cc#L28 "class TFRecordReader"
-[class WholeFileReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/whole_file_read_ops.cc#L45 "class WholeFileReader"
-[class IdentityReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/identity_reader_op.cc#L29 "class IdentityReader"
-[class LMDBReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/lmdb_reader_op.cc#L27 "class LMDBReader"
-[class BigQueryReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/contrib/cloud/kernels/bigquery_reader_ops.cc#L52 "class BigQueryReader"
-[class FixedLengthRecordReader]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/fixed_length_record_reader_op.cc#L33 "class FixedLengthRecordReader"
-[class SummaryWriterInterface]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/kernels/summary_interface.h#L30 "class SummaryWriterInterface"
-[class SummaryFileWriter]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/summary/summary_file_writer.cc#L30 "class SummaryFileWriter"
-[class SummaryDbWriter]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/summary/summary_db_writer.cc#L875 "class SummaryDbWriter"
-
-[CleanPath]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/io/path.h#L74 "tensorflow::lib::io::CleanPath()"
-[FileSystemCopyFile]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/env.h#L430 "FileSystemCopyFile()"
-[GetMatchingPaths]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/file_system_helper.h#L45 "GetMatchingPaths()"
-[DumpGraphDeftoFile]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/util/dump_graph.h#L36 "DumpGraphDefToFile()"
-[DumpGraphToFile]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/util/dump_graph.h#L41 "DumpGraphToFile()"
-[DumpFunctionDefToFile]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/util/dump_graph.h#L47 "DumpFunctionDefToFile()"
-[LoadSavedModel]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/cc/saved_model/loader.h#L50 "LoadSaveDModel()"
 
 [HadoopFileSystem]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/hadoop/hadoop_file_system.cc#L368-L377 "HadoopFileSystem::NewReadOnlyMemoryRegionFromFile()"
 [FileSystemRegistry init]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/env.cc#L93 "initialization of FileSystemRegistry"
 
 [REGISTER_FILE_SYSTEM]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/platform/env.h#L480 "REGISTER_FILE_SYSTEM(scheme, factory)"
-
-[gif io]: https://github.com/tensorflow/tensorflow/tree/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/gif
-[jpeg io]: https://github.com/tensorflow/tensorflow/tree/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/jpeg
-[png io]: https://github.com/tensorflow/tensorflow/tree/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/png
-[wav io]: https://github.com/tensorflow/tensorflow/tree/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/core/lib/wav
-
-[c api]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/c/env.h
 
 [load_library]: https://github.com/tensorflow/tensorflow/blob/69bd23af10506b0adae9b9795a00d4dc05b8a7fd/tensorflow/python/framework/load_library.py#L132
