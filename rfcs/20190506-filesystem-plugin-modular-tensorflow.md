@@ -68,14 +68,24 @@ needed:
 
 1. The mandatory metadata must guarantee _binary compatibility_: allow plugins
    built at one version of TensorFlow core to be loaded by a range of TensorFlow
-   core versions, provided tests for API compatibility based on version metadata
-   pass.
+   core versions. If integration tests for API compatibility between version A
+   of the plugin and version Z of TensorFlow core pass, as detailed on [modular
+   TensorFlow RFC][modular_rfc], then version A of the plugin should be allowed
+   to work with version Z of TensorFlow core and mandatory metadata should allow
+   this. If integration tests between version B of plugin and version Y of core
+   fail then the metadata must forbid this combination.
 
 1. Furthermore, it is ideal to have compilation failures when trying to compile
    plugins against an old API interface which will surely fail the version
-   metadata tests. When that is not possible we should give users good error
-   messages at runtime. In other words, _source compatibility_ is guaranteed
-   only as best effort.
+   metadata tests. For example, if a method's signature changes this will break
+   integration tests but will also be caught during compilation of plugin.
+   However, something that might not be caught at compile time is when an
+   optional method becomes required or a new method is added. We can maintain
+   _source compatibility_ by always increasing version numbers when a method
+   changes from being optional to being required and by always adding new
+   methods as optionals. But since version changes might be mistakenly
+   forgotten, we only guarantee it as best effort, providing users with clear
+   runtime error messages when compatibility is accidentally broken.
 
 1. We should minimize the number of times we need to cross module boundaries to
    implement a filesystem functionality. Each time the boundary is crossed we
