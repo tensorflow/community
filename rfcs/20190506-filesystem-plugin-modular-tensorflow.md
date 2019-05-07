@@ -774,7 +774,7 @@ During registration we can check all of the fields and store some for later use
 ## Questions and comments raised during review
 
 1. **Should we make the function tables public or hide them and only offer
-   allocate/free/set/get methods??** The proposed API above uses public
+   allocate/free/set/get methods?** The proposed API above uses public
    structures for simplicity but both can be implemented. A benefit of using
    private structures is that we get some extra memory safety guarantees as
    plugin code won't be able to directly access fields of the structure and
