@@ -19,9 +19,13 @@ tasks that TensorFlow has to support.
 
 While users can use the underlying operating system’s API (such as calling fopen
 and friends on Posix environments, for example), it is definitely better to have
-a cross-platform, cross-environment API that can be used everywhere. TensorFlow
-provides such an API at the moment but it results in compiling code for all
-known filesystems in the final binary. We propose a new design where all
+a cross-platform, cross-environment API that can be used everywhere. This
+becomes more evident when we consider cloud environments: a user of TensorFlow
+should not have to compile support for all existing cloud environments if the
+program only touches local files.
+
+TensorFlow provides such an API at the moment but it results in compiling code
+for all known filesystems in the final binary. We propose a new design where all
 filesystems are implemented as plugins and only the required ones are added at
 runtime. To do so, we will first need to design a C API for the filesystems and
 then integrate this with the rest of the modularization effort.
