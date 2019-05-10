@@ -28,10 +28,18 @@ Now that eager execution environment is (almost) supported by the Java client, i
 I/O operations between the tensor buffers and the JVM are efficient enough to let the users peek at and, 
 in some situation, modify their data without a important performance hit.
 
+By developing a new set of I/O utility classes, we can allow the user to access directly the tensor data 
+buffers while still preventing mistakes that could break their internal format (the main reason why the
+tensor buffer is not publicly exposed at this moment). Also, those utilities will help navigating into 
+multidimensional arrays flattened into tensor buffers, using indexation features similar to NumPy.
+
 ## User Benefit
 
-How will users (or other contributors) benefit from this work? What would be the
-headline in the release notes or blog post?
+Users who are actually using factories and read/write methods from `Tensors/Tensor` might observe great 
+performance improvements after switching to the new set of I/O utilities.
+
+Users executing their operations in an eager environment will also find very useful and performant 
+to access directly the tensor data without the need of copying their buffer.
 
 ## Design Proposal
 
