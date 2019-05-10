@@ -19,7 +19,7 @@ multi-dimensional arrays, they make heavy use of reflection techniques to extrac
 the shape and the size of the tensors to allocate. This results in poor performances,
 as discussed in [this issue](https://github.com/tensorflow/tensorflow/issues/8244).
 
-Reading tensor data uses a [similar approach](https://github.com/tensorflow/tensorflow/blob/c23fd17c3781b21bd3309faa13fad58472c78e93/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L449) and faces also performances issues. 
+Reading tensor data uses a [similar approach](https://github.com/tensorflow/tensorflow/blob/c23fd17c3781b21bd3309faa13fad58472c78e93/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L449) and faces also performance issues. 
 In addition, it requires in some cases that the user allocates a new buffer on the heap
 into which the tensor data is copied (see [`writeTo()`](https://github.com/tensorflow/tensorflow/blob/c23fd17c3781b21bd3309faa13fad58472c78e93/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L483) methods, for example), which is not convenient when dealing
 with large tensors.
