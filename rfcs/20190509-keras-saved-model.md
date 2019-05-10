@@ -29,6 +29,7 @@ be saved/loaded without having the original code (currently required by the HDF5
 
 - Serializing custom training loops. Only the standard `model.compile` to 
   `model.fit` use case is covered.
+- Changing existing serialization formats
 
 ## Motivation
 
@@ -218,6 +219,8 @@ When reconstructing a Keras model, the saved attributes are remapped to the orig
 
 1. Do we all agree on the API changes?
 2. Are there other aspects of the model that should be serialized/deserialized?
+3. Should `tf.saved_model.load` return a generic object or Keras model?
+4. Syncing common endpoints with tf.module
 
 
 
