@@ -49,10 +49,13 @@ Ideally, when creating tensors, we should work with a single copy of the data. C
 temporary buffers allocated by the user to be copied to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). 
 This can be avoided by writing initial tensor data directly into the native tensor buffer.
 
-* Knowing in advance the size in bytes of a tensor to avoid increasing its capacity
-  * The size in bytes of a tensor should be known when allocating its buffer so we won't need to increase
-its capacity.
-  * For variable-length data types, like strings, this requires to 
+To achieve this, since tensor buffers are not resizable, the size in bytes of a tensor must be known
+at its creation time. If the shape of the tensor is predetermine and its datatype length is fixed (like
+any numeric type), this is quite trivial. For variable-length datatypes though (like strings), this is 
+more a challenge as the values of the tensor elements has an impact on the required memory space.
+
+
+
 
 Also, since data of a tensor must be linear, we should also know 
 know in advance what is its size in bytes before allocating its buffer. This way, we could avoid large chunk 
