@@ -35,10 +35,10 @@ multidimensional arrays flattened into tensor buffers, using indexation features
 
 ## User Benefit
 
-Users who are actually using factories and read/write methods from `Tensors/Tensor` might observe great 
+Users who are actually using factories and read/write methods from `Tensors/Tensor` classes might observe great 
 performance improvements after switching to the new set of I/O utilities.
 
-Users executing their operations in an eager environment will also find very useful and performant 
+Users executing their operations in an eager environment will also find very useful and efficient 
 to access directly the tensor data without the need of copying their buffer.
 
 ## Design Proposal
