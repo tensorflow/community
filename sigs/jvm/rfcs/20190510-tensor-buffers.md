@@ -1,24 +1,32 @@
-# Title of RFC
+# Java Tensor Buffers
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)       |
+| Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
-| **Author(s)** | My Name (me@example.org), AN Other (you@example.org) |
-| **Sponsor**   | A N Expert (whomever@tensorflow.org)                 |
-| **Updated**   | YYYY-MM-DD                                           |
-| **Obsoletes** | TF-RFC it replaces, else remove this header          |
+| **Author(s)** | Karl Lessard (karl@kubx.ca) |
+| **Updated**   | 2019-05-10                                           |
 
 ## Objective
 
-What are we doing and why? What problem will this solve? What are the goals and
-non-goals? This is your executive summary; keep it short, elaborate below.
+Simplify and improve performances of creating tensors in Java by writing and reading 
+directly to/from their allocated native buffers, in respect to their internal format.
 
 ## Motivation
 
-Why this is a valuable problem to solve? What background information is needed
-to show how this design addresses the problem?
+Currently, the easiest way to create tensors in Java is by invoking one of the
+factory methods exposed by the [`Tensors`](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/java/src/main/java/org/tensorflow/Tensors.java)
+class. While their signatures are elegant, by accepting concrete Java objects and 
+multi-dimensional arrays, they make heavy use of reflection techniques to extract 
+the shape and the size of the tensors to allocate. This results in poor performances,
+as discussed in [this issue](https://github.com/tensorflow/tensorflow/issues/8244).
 
-Which users are affected by the problem? Why is it a problem? What data supports
-this? What related work exists?
+Reading tensor data uses a [similar approach](https://github.com/tensorflow/tensorflow/blob/c23fd17c3781b21bd3309faa13fad58472c78e93/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L449) and faces also performances issues. 
+In addition, it requires in some cases that the user allocates a new buffer on the heap
+into which the tensor data is copied (see [`writeTo()`](https://github.com/tensorflow/tensorflow/blob/c23fd17c3781b21bd3309faa13fad58472c78e93/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L483) methods, for example), which is not convenient when dealing
+with large tensors.
+
+Now that eager execution environment is (almost) supported by the Java client, it is imperative that the 
+I/O operations between the tensor buffers and the JVM are efficient enough to let the users peek at and, 
+in some situation, modify their data without a important performance hit.
 
 ## User Benefit
 
