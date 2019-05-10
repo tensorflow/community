@@ -25,8 +25,8 @@ into which the tensor data is copied (see [`writeTo()`](https://github.com/tenso
 with large tensors.
 
 Now that eager execution environment is (almost) supported by the Java client, it is imperative that the 
-I/O operations between the tensor buffers and the JVM are efficient enough to let the users peek at and, 
-in some situation, modify their data without a important performance hit.
+I/O operations between the native tensor buffers and the JVM are efficient enough to let the users peek at 
+their data and, in some cases, modify it without an important performance hit.
 
 By developing a new set of I/O utility classes, we can allow the user to access directly the tensor data 
 buffers while still preventing mistakes that could break their internal format (the main reason why the
