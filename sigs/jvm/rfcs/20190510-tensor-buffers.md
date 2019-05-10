@@ -8,7 +8,7 @@
 ## Objective
 
 Simplify and improve performances of creating tensors in Java by writing and reading 
-directly to/from their allocated native buffers, in respect to their internal format.
+directly to/from their native buffers, while preserving their internal format.
 
 ## Motivation
 
