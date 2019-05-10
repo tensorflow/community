@@ -45,12 +45,11 @@ to access directly the tensor data without the need of copying their buffer.
 
 ### Creating Tensors from Data
 
-Ideally, when creating tensors, we should work with a single copy of the data and avoid copies of large chunk of memory,
-link in [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example. 
+Ideally, when creating tensors, we should work with a single copy of the data. Current implementation requires
+temporary buffers allocated by the user to be copied to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). 
+This can be avoided by writing initial tensor data directly into the native tensor buffer.
 
-* Write initial tensor data directly into the native tensor buffer
-  * Actual initialization requires user-allocated buffers that are copied to the tensor memory, 
-* Avoid unnecessary memory relocation
+* Knowing in advance the size in bytes of a tensor to avoid increasing its capacity
   * The size in bytes of a tensor should be known when allocating its buffer so we won't need to increase
 its capacity.
   * For variable-length data types, like strings, this requires to 
