@@ -1,4 +1,4 @@
-# SIG-Micro - TensorFlow Embedded Group
+# SIG Micro - TensorFlow Embedded Group
 
 ## Objective
 

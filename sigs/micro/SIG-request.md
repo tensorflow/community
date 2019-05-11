@@ -13,18 +13,19 @@ Describe:
 * Neil Tan from Arm will lead the group.
 * Pete Warden from Google will act as his second.
 * Multiple hardware and toolchain partners have expressed interest in joining the group.
+* Anyone interested in building embedded solutions with TensorFlow is welcome.
 
 Membership will be entirely public.
 
 ## What initial problems will the group tackle?
 
-Prioritize the roadmap for development.
+Create and prioritize the roadmap for development.
 Divide up high priority work between contributors.
 Share support and help between contributors.
 
 ## What modes of communication do you intend to use?
 
-We have a mailing list, will arrange a monthly VC call, and will be asking one of our partners to set up a Slack channel (since the process at Google is involved).
+We have a mailing list, will arrange a monthly VC call, and will be use the Gitter chat channel at https://gitter.im/tensorflow/sig-micro
 
 ## Launch plan
 
