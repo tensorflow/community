@@ -43,23 +43,35 @@ to access directly the tensor data without the need of copying their buffer.
 
 ## Design Proposal
 
-### Creating Tensors from Data
+*Note: This design proposal assumes that we run in a Java >= 8 environment, which is not the case with
+current client that is set to compile in Java 7 for supporting older Android devices. We need to confirm
+with Android team if it is ok now to switch to Java 8.*
 
-Ideally, when creating tensors, we should work with a single copy of the data. Current implementation requires
-temporary buffers allocated by the user to be copied to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). 
-This can be avoided by writing initial tensor data directly into the native tensor buffer.
+### Initializing Tensor Data
 
-To achieve this, since tensor buffers are not resizable, the size in bytes of a tensor must be known
-at its creation time. If the shape of the tensor is predetermine and its datatype length is fixed (like
-any numeric type), this is quite trivial. For variable-length datatypes though (like strings), this is 
-more a challenge as the values of the tensor elements has an impact on the required memory space.
+Currently, when creating tensors, temporary buffers must be allocated by the user to collect the initial data
+and copy it to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). 
+In most cases, temporary buffers won't be required anymore by writing the initial tensor data directly into the 
+native tensor buffer.
+
+Since tensor buffers are not resizable, the size in bytes of a tensor must be known at its creation time. 
+This is quite trival for tensors with fixed-length datatype (like any numeric type). For variable-length 
+datatypes though (like strings), this represents more a challenge as the values of the tensor elements 
+has an impact on the required memory space.
+
+Following factory will be added to the `Tensor` class:
+```
+public static <T> Tensor<T> create(Class<T> type, long[] shape, Consumer<TensorWriter<T>> dataInit);
+```
+If the size in bytes of the tensor can be determined, it first create an empty `Tensor` and then 
+invoke the `dataInit` function to initialize the tensor data, using the provided `TensorWriter<T>` 
+(which interface will be described later in this document).
+
+If the size in bytes of the tensor cannot be determined, the only difference is that the `TensorWriter<T>`
+will first collect all data in temporary buffers and then create the initialized `Tensor` with the 
+right computed size.
 
 
-
-
-Also, since data of a tensor must be linear, we should also know 
-know in advance what is its size in bytes before allocating its buffer. This way, we could avoid large chunk 
-of memory to be relocated when increasing the capacity of the buffer.
 
 
 
