@@ -1,6 +1,6 @@
 # Sustainability of TensorFlow Addons
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Paige Bailey (webpaige@google.com), Sean Morgan (seanmorgan@outlook.com), Yan Facai (facai.yan@gmail.com) |
 | **Sponsor**   | Karmel Allison (karmel@google.com)                 |
