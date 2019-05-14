@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Paige Bailey (webpaige@google.com), Sean Morgan (seanmorgan@outlook.com), Yan Facai (facai.yan@gmail.com) |
 | **Sponsor**   | Karmel Allison (karmel@google.com)                 |
-| **Updated**   | 2019-03-23                                         |
+| **Updated**   | 2019-05-13                                         |
 
 ## Objective
  
@@ -52,14 +52,14 @@ To date, the `tensorflow/addons` [subpackages](https://github.com/tensorflow/add
 
 | Subpackage    | Maintainers  | Contact Info                        |
 |:----------------------- |:----------- |:----------------------------|
-| tfa.activations | SIG-Addons | addons@tensorflow.org    |
-| tfa.image |  |                                   |
-| tfa.layers | SIG-Addons |     addons@tensorflow.org |
-| tfa.losses | SIG-Addons |     addons@tensorflow.org |
-| tfa.optimizers | SIG-Addons | addons@tensorflow.org |
-| tfa.seq2seq | Google | [@qlzh727](https://github.com/qlzh727) | 
-| tfa.text |  |  |
-
+| tfa.activations | SIG-Addons | @facaiy @seanpmorgan | 
+| tfa.image | SIG-Addons | @windqaq @facaiy |
+| tfa.layers | SIG-Addons | @seanpmorgan @facaiy |
+| tfa.losses | SIG-Addons | @facaiy @windqaq   |
+| tfa.optimizers | SIG-Addons | @facaiy @windqaq |
+| tfa.rnn | Google | @qlzh727 |
+| tfa.seq2seq | Google | @qlzh727 |
+| tfa.text |  SIG-Addons |  @seanpmorgan @facaiy |
 
 ## Maintainership 
 
