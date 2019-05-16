@@ -214,6 +214,9 @@ GenericObject obj → .variables, .trainable_variables, etc.
 
 When reconstructing a Keras model, the saved attributes are remapped to the original names. The exception is the call function, which uses `call_and_return_conditional_losses` instead of `__call__`.
 
+### Compatibility Guarantees
+Keras SavedModels are backward and forward compatible across minor TensorFlow versions. Therefore, checkpointable object and tf.function attributes are not removed from the SavedModel. New attributes may be added if additional serialization is requested.
+
 ## Questions and Discussion Topics
 
 1. Do we all agree on the API changes?
