@@ -27,8 +27,7 @@ be saved/loaded without having the original code (currently required by the HDF5
 
 **Non-goals:**
 
-- Serializing custom training loops. Only the standard `model.compile` to 
-  `model.fit` use case is covered.
+- Serializing custom training loops. Only the standard `model.compile` to `model.fit` use case is covered. Custom training loops may still be saved by wrapping it in a tf.function, and passing it to the `signatures` argument or setting it as an attribute of the model (e.g. model.train_loop = ...). 
 - Changing existing serialization formats
 
 ## Motivation
