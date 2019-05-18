@@ -63,12 +63,12 @@ Following factory will be added to the `Tensor` class:
 ```
 public static <T> Tensor<T> create(Class<T> type, long[] shape, Consumer<TensorWriter<T>> dataInit);
 ```
-If the size in bytes of the tensor can be determined, it first create an empty `Tensor` and then 
+If the size in bytes of the tensor can be determined, the method first creates an empty `Tensor` and then 
 invoke the `dataInit` function to initialize the tensor data, using the provided `TensorWriter<T>` 
 (which interface will be described later in this document).
 
 If the size in bytes of the tensor cannot be determined, the only difference is that the `TensorWriter<T>`
-will first collect all data in temporary buffers and then create the initialized `Tensor` with the 
+will first collect all data in a temporary buffer and then create a `Tensor` from this data with the 
 right computed size.
 
 
