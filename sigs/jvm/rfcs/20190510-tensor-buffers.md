@@ -1,4 +1,4 @@
-# Java Tensor Buffers
+# Java Tensor NIO
 
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
