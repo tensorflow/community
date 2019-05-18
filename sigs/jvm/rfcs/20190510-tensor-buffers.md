@@ -49,8 +49,7 @@ with Android team if it is ok now to switch to Java 8.*
 
 ### Initializing Tensor Data
 
-Currently, when creating tensors, temporary buffers must be allocated by the user to collect the initial data
-and copy it to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). 
+Currently, when creating tensors, temporary buffers that contains the initial data are allocated by the user and copied to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). 
 In most cases, temporary buffers won't be required anymore by writing the initial tensor data directly into the 
 native tensor buffer.
 
