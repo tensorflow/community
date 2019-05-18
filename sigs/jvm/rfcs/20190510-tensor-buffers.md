@@ -49,19 +49,27 @@ with Android team if it is ok now to switch to Java 8.*
 
 ### Initializing Tensor Data
 
-Currently, when creating tensors, temporary buffers that contains the initial data are allocated by the user and copied to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). 
-In most cases, temporary buffers won't be required anymore by writing the initial tensor data directly into the 
-native tensor buffer.
+Currently, when creating tensors, temporary buffers that contains the initial data are allocated by the user and copied to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). We can avoid this data copy and additional memory allocation by accessing tensor data buffers directly at the initialization of the tensor.
 
 Since tensor buffers are not resizable, the size in bytes of a tensor must be known at its creation time. 
 This is quite trival for tensors with fixed-length datatype (like any numeric type). For variable-length 
 datatypes though (like strings), this represents more a challenge as the values of the tensor elements 
 has an impact on the required memory space.
 
-Following factory will be added to the `Tensor` class:
-```
+Following factories will be added to the `Tensor` class:
+```java
 public static <T> Tensor<T> create(Class<T> type, long[] shape, Consumer<TensorWriter<T>> dataInit);
+
+
+public static Tensor<Float> createFloat(long[] shape, Consumer<TensorWriter<Float>> dataInit);
+public static Tensor<Double> createDouble(long[] shape, Consumer<TensorWriter<Float>> dataInit);
+public static Tensor<Integer> createInt(long[] shape, Consumer<TensorWriter<Int>> dataInit);
+public static Tensor<Long> createLong(long[] shape, Consumer<TensorWriter<Long>> dataInit);
+public static Tensor<Boolean> createBoolean(long[] shape, Consumer<TensorWriter<Boolean>> dataInit);
+public static Tensor<UInt8> createUInt8(long[] shape, Consumer<TensorWriter<Byte>> dataInit);
+public static Tensor<String> createString(long[] shape, Consumer<BufferedTensorWriter<String>> dataInit);
 ```
+
 If the size in bytes of the tensor can be determined, the method first creates an empty `Tensor` and then 
 invoke the `dataInit` function to initialize the tensor data, using the provided `TensorWriter<T>` 
 (which interface will be described later in this document).
@@ -72,6 +80,20 @@ right computed size.
 
 
 
+
+```java
+class TensorWriter<T> {
+  void write(T value);
+  void write(T[] values);
+  void write(Stream<T> valueStream);
+  void slice(Object... indices);
+}
+
+class BufferedTensorWriter<T> extends TensorWriter<T> {
+  void ensureCapacity(long minCapacity);
+  void increaseBy(long growthSize);
+}
+```
 
 
 This is the meat of the document, where you explain your proposal. If you have
