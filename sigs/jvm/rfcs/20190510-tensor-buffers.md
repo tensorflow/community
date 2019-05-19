@@ -161,10 +161,14 @@ class DoubleData {
   
   t.data().at(0, 2, 1).get();
   t.data().at(0, 2).get(1);
-  t.data().at(0, all()).at(2).get(1);
+  t.data().at(0).at(2).get(1);
+  t.data().at(0).at(2).at(1).get();
   
-  for (TensorData data : t.data().at(0, all(), 1)) {
-    print(data.get()); // prints (0, 0, 1), (0, 1, 1) and (0, 2, 1)
+  for (TensorData data : t.data().at(0, 2)) {
+    System.out.println(data.get()); // prints (0, 2, 0), (0, 2, 1)
+  }
+  for (TensorData data : t.data().at(0)) {
+    System.out.println(data.get(1)); // prints (0, 0, 1), (0, 1, 1), (0, 2, 1)
   }
   
   t.data().at(0).get(2); // fails, non-scalar
@@ -174,10 +178,48 @@ class DoubleData {
   
   
   
+  t.data().get(); // for points only 
+  t.data().get(0, 2, 1);
+  t.data().at(0, 2).get(1);
+  t.data().at(0).get(2, 1);
+  t.data().at(0).at(2).get(1);
+  
+  for (TensorData data : t.data().at(0, 2)) {
+    System.out.println(point.get()); // prints (0, 2, 0), (0, 2, 1)
+  }
+  for (TensorData data : t.data().slice(0)) {
+    System.out.println(data.point(1).get()); // prints (0, 0, 1), (0, 1, 1), (0, 2, 1)
+  }
+  
+ 
+ 
+  t.data().at(0, 2, 1).point().get();
+  t.data().at(0, 2).vector().get(1);
+  t.data().at(0).at(2).vector().get(1);
+  t.data().at(0).at(2).at(1).point().get();
+  
+  for (TensorDataPoint point : t.data().at(0, 2).vector()) {
+    System.out.println(point.get()); // prints (0, 2, 0), (0, 2, 1)
+  }
+  for (TensorData data : t.data().at(0)) {
+    System.out.println(data.vector().get(1)); // prints (0, 0, 1), (0, 1, 1), (0, 2, 1)
+  } 
+  
+  
+  
+  
+  
+  
   t.data().scalar(0, 2, 1);
   t.data().vector(0, 2).get(1);
   t.data().at(0, all()).vector(2).get(1);
   t.data().at(0, all()).scalar(2, 1);
+  
+  
+  t.data().vector().get(0);
+  t.data().get(0);
+  t.data().
+  
   
   long position();
   double get();
