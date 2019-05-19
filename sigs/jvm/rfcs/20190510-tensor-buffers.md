@@ -49,35 +49,56 @@ with Android team if it is ok now to switch to Java 8.*
 
 ### Initializing Tensor Data
 
-Currently, when creating tensors, temporary buffers that contains the initial data are allocated by the user and copied to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). We can avoid this data copy and additional memory allocation by accessing tensor data buffers directly at the initialization of the tensor.
+Currently, when creating tensors, temporary buffers that contains the initial data are allocated by the user 
+and copied to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). This data copy and additional memory allocation will be avoided by accessing tensor buffer 
+directly at the initialization of the tensor.
 
 Since tensor buffers are not resizable, the size in bytes of a tensor must be known at its creation time. 
 This is quite trival for tensors with fixed-length datatype (like any numeric type). For variable-length 
 datatypes though (like strings), this represents more a challenge as the values of the tensor elements 
 has an impact on the required memory space.
 
-Following factories will be added to the `Tensor` class:
+Following factories will be added to the `Tensors` class:
 ```java
-public static <T> Tensor<T> create(Class<T> type, long[] shape, Consumer<TensorWriter<T>> dataInit);
-
-
-public static Tensor<Float> createFloat(long[] shape, Consumer<TensorWriter<Float>> dataInit);
-public static Tensor<Double> createDouble(long[] shape, Consumer<TensorWriter<Float>> dataInit);
-public static Tensor<Integer> createInt(long[] shape, Consumer<TensorWriter<Int>> dataInit);
-public static Tensor<Long> createLong(long[] shape, Consumer<TensorWriter<Long>> dataInit);
-public static Tensor<Boolean> createBoolean(long[] shape, Consumer<TensorWriter<Boolean>> dataInit);
-public static Tensor<UInt8> createUInt8(long[] shape, Consumer<TensorWriter<Byte>> dataInit);
-public static Tensor<String> createString(long[] shape, Consumer<BufferedTensorWriter<String>> dataInit);
+public static Tensor<Float> createFloat(long[] shape, Consumer<FloatTensorWriter> dataInit);
+public static Tensor<Double> createDouble(long[] shape, Consumer<DoubleTensorWriter> dataInit);
+public static Tensor<Integer> createInt(long[] shape, Consumer<IntTensorWriter> dataInit);
+public static Tensor<Long> createLong(long[] shape, Consumer<LongTensorWriter> dataInit);
+public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanTensorWriter> dataInit);
+public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteTensorWriter> dataInit);
+public static Tensor<String> createString(long[] shape, Consumer<StringTensorWriter> dataInit);
 ```
 
-If the size in bytes of the tensor can be determined, the method first creates an empty `Tensor` and then 
-invoke the `dataInit` function to initialize the tensor data, using the provided `TensorWriter<T>` 
-(which interface will be described later in this document).
+All methods except `createString` creates an empty `Tensor` first that is then initialized by invoking the 
+`dataInit` function, passing it an appropriate writer (which interface is described later in this document).
 
-If the size in bytes of the tensor cannot be determined, the only difference is that the `TensorWriter<T>`
-will first collect all data in a temporary buffer and then create a `Tensor` from this data with the 
-right computed size.
+Since the size in bytes of a string tensor cannot be determined before retrieving its data, `createString` will 
+collect and storeall the string values in a temporary buffer (or list) before creating and initializing a `Tensor` 
+of the right size.
 
+Once created, Tensors are immutable and their data could not be modified anymore.
+
+### Reading Tensor Data
+
+Currently, in order to read a tensor, the user needs to create a temporary buffer into which its data is copied. 
+Once again, this data copy and additional memory allocation will be avoided by accessing the tensor buffer 
+directly when reading its data.
+
+The following methods will be added to the `Tensor` class:
+```java
+public FloatTensorReader floatData();
+public DoubleTensorReader doubleData();
+public IntTensorReader intData();
+public LongTensorReader longData();
+public BooleanTensorReader booleanData();
+public ByteTensorReader uInt8Data();
+public StringTensorReader stringData();
+```
+
+It is up to the user to know which of these methods should be called on a tensor of a given type, similar
+to the `*Value()` methods of the same class.
+
+###
 
 
 
