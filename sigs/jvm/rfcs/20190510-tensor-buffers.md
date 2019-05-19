@@ -119,7 +119,6 @@ class DoubleOutputBuffer {
 class DoubleTensorData {
   DoubleTensorData at(Object... indices);
   long numElements();
-  long position();
   double get();
   double get(long index);
   void get(double[] dst);
@@ -145,24 +144,27 @@ Here is a summary of what consist each of these methods:
 
 
 ```java
-class DoubleVector {
-  double get();
-  double get(long index);
-  void get(double[] dst);
-  DoubleStream stream();
+class DoubleTensor {
+  DoubleTensor at(Object... indices);
+  DoubleVector vector(Object... indices);
+  double scalar(Object... indices);
 }
 
-class DoubleData {
-  DoubleTensorData slice(Object... indices);
-  long numElements();
-  double scalar();
-  DoubleVector vector();
-}
+class DoubleVector
+
+
+
+
+  t.booleanData().
   
-  t.data().at(0, 2, 1).get();
-  t.data().at(0, 2).get(1);
-  t.data().at(0).at(2).get(1);
-  t.data().at(0).at(2).at(1).get();
+  
+ 
+  t.floatData().at(0, 2, 1).get();
+  t.floatData().at(0, 2).get(1);
+  t.floatData().at(0).at(2).get(1);
+  t.floatData().at(0).at(2).at(1).get();
+  
+  t.floatData().at(0, 2).vector().get(1);
   
   for (TensorData data : t.data().at(0, 2)) {
     System.out.println(data.get()); // prints (0, 2, 0), (0, 2, 1)
