@@ -85,13 +85,13 @@ directly when reading its data.
 
 The following methods will be added to the `Tensor` class:
 ```java
-public FloatInputBuffer floatData();
-public DoubleInputBuffer doubleData();
-public IntInputBuffer intData();
-public LongInputBuffer longData();
-public BooleanInputBuffer booleanData();
-public ByteInputBuffer uInt8Data();
-public StringInputBuffer stringData();
+public FloatTensorData floatData();
+public DoubleTensorData doubleData();
+public IntTensorData intData();
+public LongTensorData longData();
+public BooleanTensorData booleanData();
+public ByteTensorData uInt8Data();
+public StringTensorData stringData();
 ```
 It is up to the user to know which of these methods should be called on a tensor of a given type, similar
 to the `*Value()` methods of the same class.
@@ -116,8 +116,8 @@ class DoubleOutputBuffer {
   void copyFrom(DoubleBuffer buffer);
 }
 
-class DoubleInputBuffer {
-  DoubleInputBuffer slice(Object... indices);
+class DoubleTensorData {
+  DoubleTensorData at(Object... indices);
   long numElements();
   long position();
   double get();
@@ -142,6 +142,53 @@ Here is a summary of what consist each of these methods:
 * `copyFrom(DoubleBuffer buffer)`, `copyTo(DoubleBuffer buffer)`: Sets/gets all values of this buffer from/to a standard
   Java NIO buffer.
 
+
+
+```java
+class DoubleVector {
+  double get();
+  double get(long index);
+  void get(double[] dst);
+  DoubleStream stream();
+}
+
+class DoubleData {
+  DoubleTensorData slice(Object... indices);
+  long numElements();
+  double scalar();
+  DoubleVector vector();
+}
+  
+  t.data().at(0, 2, 1).get();
+  t.data().at(0, 2).get(1);
+  t.data().at(0, all()).at(2).get(1);
+  
+  for (TensorData data : t.data().at(0, all(), 1)) {
+    print(data.get()); // prints (0, 0, 1), (0, 1, 1) and (0, 2, 1)
+  }
+  
+  t.data().at(0).get(2); // fails, non-scalar
+  t.data().at(0, 2).get(); // fails, non-scalar
+  t.data().at(0, 2).get(array);
+  t.data().at(0, 2).stream();
+  
+  
+  
+  t.data().scalar(0, 2, 1);
+  t.data().vector(0, 2).get(1);
+  t.data().at(0, all()).vector(2).get(1);
+  t.data().at(0, all()).scalar(2, 1);
+  
+  long position();
+  double get();
+  double get(long index);
+  void get(double[] dst);
+  
+  
+  DoubleStream stream();
+  void copyTo(DoubleBuffer buffer);
+}
+```
 
 
 This is the meat of the document, where you explain your proposal. If you have
