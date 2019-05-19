@@ -60,17 +60,16 @@ has an impact on the required memory space.
 
 Following factories will be added to the `Tensors` class:
 ```java
-public static Tensor<Float> createFloat(long[] shape, Consumer<FloatTensorWriter> dataInit);
-public static Tensor<Double> createDouble(long[] shape, Consumer<DoubleTensorWriter> dataInit);
-public static Tensor<Integer> createInt(long[] shape, Consumer<IntTensorWriter> dataInit);
-public static Tensor<Long> createLong(long[] shape, Consumer<LongTensorWriter> dataInit);
-public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanTensorWriter> dataInit);
-public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteTensorWriter> dataInit);
-public static Tensor<String> createString(long[] shape, Consumer<StringTensorWriter> dataInit);
+public static Tensor<Float> createFloat(long[] shape, Consumer<FloatOutputBuffer> dataInit);
+public static Tensor<Double> createDouble(long[] shape, Consumer<DoubleOutputBuffer> dataInit);
+public static Tensor<Integer> createInt(long[] shape, Consumer<IntOutputBuffer> dataInit);
+public static Tensor<Long> createLong(long[] shape, Consumer<LongOutputBuffer> dataInit);
+public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanOutputBuffer> dataInit);
+public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteOutputBuffer> dataInit);
+public static Tensor<String> createString(long[] shape, Consumer<StringOutputBuffer> dataInit);
 ```
-
 All methods except `createString` creates an empty `Tensor` first that is then initialized by invoking the 
-`dataInit` function, passing it an appropriate writer (which interface is described later in this document).
+`dataInit` function (the `*OutputBuffer` interface is described later in this document).
 
 Since the size in bytes of a string tensor cannot be determined before retrieving its data, `createString` will 
 collect and storeall the string values in a temporary buffer (or list) before creating and initializing a `Tensor` 
@@ -86,35 +85,63 @@ directly when reading its data.
 
 The following methods will be added to the `Tensor` class:
 ```java
-public FloatTensorReader floatData();
-public DoubleTensorReader doubleData();
-public IntTensorReader intData();
-public LongTensorReader longData();
-public BooleanTensorReader booleanData();
-public ByteTensorReader uInt8Data();
-public StringTensorReader stringData();
+public FloatInputBuffer floatData();
+public DoubleInputBuffer doubleData();
+public IntInputBuffer intData();
+public LongInputBuffer longData();
+public BooleanInputBuffer booleanData();
+public ByteInputBuffer uInt8Data();
+public StringInputBuffer stringData();
 ```
-
 It is up to the user to know which of these methods should be called on a tensor of a given type, similar
 to the `*Value()` methods of the same class.
 
-###
+### Tensor Input/Output Buffers
 
+There is a specific `*OutputBuffer` and `*InputBuffer` class for each datatype. The reason for not using only
+with a generic parameterized interface (e.g. `OutputBuffer<T>`) is mainly because we want to allow the user to work
+with primitive Java types, which take less memory-consuming and provide better performances that working exclusively
+with their autoboxing wrapper.
 
-
+These classes mimic those found in the `java.nio` package, with the distinction that output and input operation are 
+split into two different interfaces. For simplicity, only the `Double` variant is presented:
 ```java
-class TensorWriter<T> {
-  void write(T value);
-  void write(T[] values);
-  void write(Stream<T> valueStream);
-  void slice(Object... indices);
+class DoubleOutputBuffer {
+  DoubleOutputBuffer slice(Object... indices);
+  long position();
+  void put(double d);
+  void put(long index, double d);
+  void put(double[] array);
+  void put(DoubleStream stream);
+  void copyFrom(DoubleBuffer buffer);
 }
 
-class BufferedTensorWriter<T> extends TensorWriter<T> {
-  void ensureCapacity(long minCapacity);
-  void increaseBy(long growthSize);
+class DoubleInputBuffer {
+  DoubleInputBuffer slice(Object... indices);
+  long numElements();
+  long position();
+  double get();
+  double get(long index);
+  void get(double[] dst);
+  DoubleStream stream();
+  void copyTo(DoubleBuffer buffer);
 }
 ```
+Here is a summary of what consist each of these methods:
+* `slice(Object... indices)`: Returns a partial view of the tensor across all its dimensions. 
+  More details on this in the next section
+* `put(double d)`, `get()`: Sets/gets the next value in this buffer. The behaviour varies depending on 
+  the size of the last dimension of this buffer
+  * If size of last dimension is 0 (scalar), it sets/gets the value of this element
+  * Else, it sets/gets the value of the current element and position is moved to the next element in the last dimension
+* `put(long index, double d)`, `get(long index)`: Sets/gets the value at the given index. Only valid if the size
+  of last dimension is greater than 0 (i.e. not a scalar)
+* `put(double[] array)`, `put(DoubleStream stream)`, `get(double[] dst)`, `stream()`: Sets/gets all the values of the 
+  last dimension of this buffer from/as an array or a stream. Only valid if the size of last dimension is greater 
+  than 0 (i.e. not a scalar)
+* `copyFrom(DoubleBuffer buffer)`, `copyTo(DoubleBuffer buffer)`: Sets/gets all values of this buffer from/to a standard
+  Java NIO buffer.
+
 
 
 This is the meat of the document, where you explain your proposal. If you have
