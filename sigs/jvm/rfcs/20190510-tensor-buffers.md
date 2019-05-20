@@ -153,8 +153,10 @@ Tensor<Float> vector = Tensor.createFloat(new long[]{4}, data -> {
 });
 
 Tensor<Integer> matrix = Tensor.createInt(new long[]{2, 3}, data -> {
-  // Setting first
+  // Setting first row from stream
   data.slice(0).copy(IntStream.range(5, 8));
+  
+  // Setting second row partially from array, then setting directly last missing element
   data.slice(1).copy(new int[] {10, 20});
   data.set(30, 1, 2);
 });
