@@ -119,7 +119,7 @@ class DoubleNdArray {
   void copyTo(DoubleNdArray array);  // copy values of this array into `array`
   
   // Write operations
-  void set(double value, Object... indices);  // set the scalar value of this rank-0 array (or a slice of)
+  void put(double value, Object... indices);  // set the scalar value of this rank-0 array (or a slice of)
   void copy(DoubleStream stream);  // copy elements of `stream` into this array
   void copy(DoubleBuffer buffer);  // copy elements of `buffer` into this array
   void copy(double[] array);  // copy elements of `array` into this array
@@ -129,7 +129,7 @@ class DoubleNdArray {
 class DoubleNdArrayIterator {
   boolean hasNext();  // true if there is more elements
   double get();  // return next element value and increment current position
-  void set(double value);  // sets next element value and increment current position
+  void put(double value);  // sets next element value and increment current position
 }
 ```
 See the next section for detailed examples of usage of these classes.
@@ -140,26 +140,27 @@ See the next section for detailed examples of usage of these classes.
 
 Tensor<Boolean> scalar = Tensor.createBoolean(new long[0], data -> {
   // Setting scalar value directly
-  data.set(true);
+  data.put(true);
 });
 
-Tensor<Float> vector = Tensor.createFloat(new long[]{4}, data -> {
-  // Using iterator to set values sequentially
-  DoubleNdArrayIterator iterator = data.iterator();
-  float value = 1.0f;
-  while (iterator.hasNext()) {
-    iterator.set(value++);
-  }
+Tensor<Integer> vector = Tensor.createInt(new long[]{4}, data -> {
+  // Setting first elements from stream
+  data.put(IntStream.rangeClosed(1, 3), 0);
+  // Setting last element directly
+  data.put(4, 3); 
 });
 
-Tensor<Integer> matrix = Tensor.createInt(new long[]{2, 3}, data -> {
-  // Setting first row from stream
-  data.slice(0).copy(IntStream.range(5, 8));
-  
-  // Setting second row partially from array, then setting directly last missing element
-  data.slice(1).copy(new int[] {10, 20});
-  data.set(30, 1, 2);
+Tensor<Float> matrix = Tensor.createFloat(new long[]{2, 3}, data -> {
+  // Initializing data with cursors
+  DoubleNdArrayCursor rows = data.cursor();
+  rows.put(new int[] {0.0f, 5.0f, 10.0f});
+  DoubleNdArrayCursor secondRow = rows.cursor();
+  secondRow.put(15.0f);
+  secondRow.put(20.0f);
+  secondRow.put(25.0f);
 });
+
+Tensor<
 
 // Show general info
 
@@ -178,11 +179,11 @@ matrix.totalSize();  // 6
 // Reading data
 
 scalar.get();  // true
-vector.get(0);  // 1.0f
-matrix.get(0, 0);  // 5
+vector.get(0);  // 1
+matrix.get(0, 1);  // 5.0f
 
-vector.stream();  // 1.0f, 2.0f, 3.0f, 4.0f
-matrix.stream();  // 5, 6, 7, 10, 20 30
+vector.stream();  // 1, 2, 3, 4
+matrix.stream();  // 0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f
 
 // Working with slices
 
