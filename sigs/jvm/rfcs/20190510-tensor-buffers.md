@@ -98,12 +98,90 @@ to the `*Value()` methods of the same class.
 
 ### Tensor Input/Output Buffers
 
-There is a specific `*OutputBuffer` and `*ReadOnlyNdArray` class for each datatype. This allow the user to
+There is a specific `*OutputBuffer` and `*NdArray` class for each datatype. This allow the user to
 work with primitive Java types, which are less memory-consuming and provide better performances that working 
 exclusively with their autoboxed version.
 
 For simplicity, only the `Double` variant is presented:
 ```java
+class DoubleNdArray {
+
+  int rank();  // number of dimensions in this array
+  long size(int dimension);  // number of elements in the given dimension
+  long totalSize();  // total number of elements in this array
+  DoubleNdArray slice(Object... indices);  // returns a slice of this array across one or more dimensions
+  DoubleNdArrayIterator iterator();  // iterates through values of this array
+
+  // Read operations
+  double get(Object... indices);  // get this rank-0 array (or a slice of) as a scalar value
+  DoubleStream stream();  // get values of this array as a stream
+  void copyTo(DoubleBuffer buffer);  // copy values of this array into `buffer`
+  void copyTo(DoubleNdArray array);  // copy values of this array into `array`
+  
+  // Write operations
+  void set(double value, Object... indices);  // set the scalar value of this rank-0 array (or a slice of)
+  void copy(DoubleStream stream);  // copy elements of `stream` into this array
+  void copy(DoubleBuffer buffer);  // copy elements of `buffer` into this array
+  void copy(double[] array);  // copy elements of `array` into this array
+  void copy(DoubleNdArray array);  // copy elements of `array` into this array
+}
+
+class DoubleNdArrayIterator {
+  boolean hasNext();  // true if there is more elements
+  double get();  // return next element value and increment current position
+  void set(double value);  // sets next element value and increment current position
+}
+```
+See the next section for detailed examples of usage of these classes.
+
+```java
+
+// Create tensors
+
+Tensor<Boolean> scalar = Tensor.createBoolean(new long[0], data -> {
+  // Setting scalar value directly
+  data.set(42);
+});
+
+Tensor<Float> vector = Tensor.createFloat(new long[]{4}, data -> {
+  // Using iterator to set values sequentially
+  DoubleNdArrayIterator iterator = data.iterator();
+  float value = 1.0f;
+  while (iterator.hasNext()) {
+    iterator.set(value++);
+  }
+});
+
+Tensor<Integer> matrix = Tensor.createInt(new long[]{2, 3}, data -> {
+  // Setting first
+  data.slice(0).copy(IntStream.range(5, 8));
+  data.slice(1).copy(new int[] {10, 20});
+  data.set(30, 1, 2);
+});
+
+// Show general info
+
+scalar.rank();  // 0
+scalar.size(0);  // error
+scalar.totalSize();  // 1
+
+vector.rank();  // 1
+vector.size(0);  // 4
+vector.totalSize();  // 4
+
+matrix.rank();  // 2
+matrix.size(0);  // 2
+matrix.totalSize();  // 6
+
+
+
+```
+
+
+
+
+
+
 class DoubleNdArray {
   
   // Read
