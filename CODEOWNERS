@@ -12,7 +12,7 @@ sigs/addons/ @martinwicke @ewilderj @karmel @seanpmorgan @armando-fandango
 sigs/networking/ @martinwicke @ewilderj @byronyi @jbedorf @poxvoculi
 sigs/io/ @martinwicke @ewilderj @mrry @yongtang @dmitrievanthony
 sigs/jvm/ @martinwicke @ewilderj @sjamesr @karllessard @tzolov
-sigs/micro/ @martinwicke@ @ewilderj @petewarden
+sigs/micro/ @martinwicke @ewilderj @petewarden
 sigs/testing/ @ewilderj @dynamicwebpaige
 
 # RFCs
