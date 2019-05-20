@@ -140,7 +140,7 @@ See the next section for detailed examples of usage of these classes.
 
 Tensor<Boolean> scalar = Tensor.createBoolean(new long[0], data -> {
   // Setting scalar value directly
-  data.set(42);
+  data.set(true);
 });
 
 Tensor<Float> vector = Tensor.createFloat(new long[]{4}, data -> {
@@ -175,6 +175,11 @@ matrix.rank();  // 2
 matrix.size(0);  // 2
 matrix.totalSize();  // 6
 
+// Reading data
+
+scalar.get();  // true
+vector.get(0);  // 1.0f
+matrix.get(0, 0);  // 5
 
 
 ```
