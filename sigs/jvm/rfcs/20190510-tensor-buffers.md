@@ -181,6 +181,8 @@ scalar.get();  // true
 vector.get(0);  // 1.0f
 matrix.get(0, 0);  // 5
 
+vector.stream();  // 1.0f, 2.0f, 3.0f, 4.0f
+matrix.stream();  // 5, 6, 7, 10, 20 30
 
 ```
 
