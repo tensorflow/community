@@ -12,7 +12,7 @@ Archives of the mailing list will be publicly available.
 
 ## Resources
 
-* [sig-micro mailing list](https://groups.google.com/a/tensorflow.org/forum/#!forum/micro)
+* [SIG Micro mailing list](https://groups.google.com/a/tensorflow.org/forum/#!forum/micro)
 * [TensorFlow Micro code](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/experimental/micro)
 
 ## Contacts
@@ -23,6 +23,6 @@ Archives of the mailing list will be publicly available.
 
 ## Code of Conduct
 
-As with all forums and spaces related to TensorFlow, SIG-Micro is subject to
+As with all forums and spaces related to TensorFlow, SIG Micro is subject to
 the [TensorFlow Code of
 Conduct](https://github.com/tensorflow/tensorflow/blob/master/CODE_OF_CONDUCT.md).
