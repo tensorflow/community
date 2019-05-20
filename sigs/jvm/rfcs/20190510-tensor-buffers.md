@@ -184,6 +184,11 @@ matrix.get(0, 0);  // 5
 vector.stream();  // 1.0f, 2.0f, 3.0f, 4.0f
 matrix.stream();  // 5, 6, 7, 10, 20 30
 
+// Working with slices
+
+scalar.slice(0);  // error
+vector.slice(0).get();  // rank-0 array 
+
 ```
 
 
