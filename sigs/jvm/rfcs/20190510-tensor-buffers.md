@@ -60,13 +60,13 @@ has an impact on the required memory space.
 
 Following factories will be added to the `Tensors` class:
 ```java
-public static Tensor<Float> createFloat(long[] shape, Consumer<FloatOutputBuffer> dataInit);
-public static Tensor<Double> createDouble(long[] shape, Consumer<DoubleOutputBuffer> dataInit);
-public static Tensor<Integer> createInt(long[] shape, Consumer<IntOutputBuffer> dataInit);
-public static Tensor<Long> createLong(long[] shape, Consumer<LongOutputBuffer> dataInit);
-public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanOutputBuffer> dataInit);
-public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteOutputBuffer> dataInit);
-public static Tensor<String> createString(long[] shape, Consumer<StringOutputBuffer> dataInit);
+public static Tensor<Float> createFloat(long[] shape, Consumer<FloatNdArray> dataInit);
+public static Tensor<Double> createDouble(long[] shape, Consumer<DoubleNdArray> dataInit);
+public static Tensor<Integer> createInt(long[] shape, Consumer<IntNdArray> dataInit);
+public static Tensor<Long> createLong(long[] shape, Consumer<LongNdArray> dataInit);
+public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanNdArray> dataInit);
+public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteNdArray> dataInit);
+public static Tensor<String> createString(long[] shape, Consumer<StringNdArray> dataInit);
 ```
 All methods except `createString` creates an empty `Tensor` first that is then initialized by invoking the 
 `dataInit` function (the `*OutputBuffer` interface is described later in this document).
@@ -85,67 +85,73 @@ directly when reading its data.
 
 The following methods will be added to the `Tensor` class:
 ```java
-public FloatTensorData floatData();
-public DoubleTensorData doubleData();
-public IntTensorData intData();
-public LongTensorData longData();
-public BooleanTensorData booleanData();
-public ByteTensorData uInt8Data();
-public StringTensorData stringData();
+public FloatNdArray floatData();
+public DoubleNdArray doubleData();
+public IntNdArray intData();
+public LongNdArray longData();
+public BooleanNdArray booleanData();
+public ByteNdArray uInt8Data();
+public StringNdArray stringData();
 ```
 It is up to the user to know which of these methods should be called on a tensor of a given type, similar
 to the `*Value()` methods of the same class.
 
 ### Tensor Input/Output Buffers
 
-There is a specific `*OutputBuffer` and `*InputBuffer` class for each datatype. The reason for not using only
-with a generic parameterized interface (e.g. `OutputBuffer<T>`) is mainly because we want to allow the user to work
-with primitive Java types, which take less memory-consuming and provide better performances that working exclusively
-with their autoboxing wrapper.
+There is a specific `*OutputBuffer` and `*ReadOnlyNdArray` class for each datatype. This allow the user to
+work with primitive Java types, which are less memory-consuming and provide better performances that working 
+exclusively with their autoboxed version.
 
-These classes mimic those found in the `java.nio` package, with the distinction that output and input operation are 
-split into two different interfaces. For simplicity, only the `Double` variant is presented:
+For simplicity, only the `Double` variant is presented:
 ```java
-class DoubleOutputBuffer {
-  DoubleOutputBuffer slice(Object... indices);
-  long position();
-  void put(double d);
-  void put(long index, double d);
-  void put(double[] array);
-  void put(DoubleStream stream);
-  void copyFrom(DoubleBuffer buffer);
+class DoubleNdArray {
+  
+  // Read
+  DoubleNdArray slice(Object... indices);  // returns a slice of this array across one or more dimensions
+  DoubleVector vector();  // get this rank-1 array as a vector
+  double scalar();  // get the scalar value of this rank-0 array
+  long numElements();  // number of elements in this array
+  DoubleStream stream();  // returns elements of this array as a stream
+  void copyTo(DoubleBuffer buffer);  // copy elements of this array into `buffer`
+  void copyTo(DoubleNdArray array);  // copy elements of this array into `array`
+  
+  // Write
+  void scalar(double value);  // set the scalar value of this rank-0 array
+  void copyFrom(DoubleStream stream);  // copy elements of `stream` into this array
+  void copyFrom(DoubleBuffer buffer);  // copy elements of `buffer` into this array
+  void copyFrom(DoubleNdArray array);  // copy elements of `array` into this array
 }
 
-class DoubleTensorData {
-  DoubleTensorData at(Object... indices);
-  long numElements();
-  double get();
-  double get(long index);
-  void get(double[] dst);
-  DoubleStream stream();
-  void copyTo(DoubleBuffer buffer);
+class DoubleVector {
+  
+  // Read
+  double get(int idx);  // return `idx`th value of this vector
+  double get();  // return next value in this vector and increment current position
+  void get(double[] dst);  // return values from the current position in `dst` array and increment current position
+  long position();  // returns current position
+  void position(int idx);  // resets current position to `idx`
+  void reset();  // resets current position to `0`
+  long numElements();  // number of elements in this vector
+  DoubleStream stream();  // returns values of this vector as a stream
+  void copyTo(DoubleBuffer buffer);  // copy elements of this vector to `buffer`
+  void copyTo(DoubleVector vector);  // copy elements of this vector into `vector`
+
+  // Write
+  void set(int idx);  // sets `idx`th value of this vector
+  void set(double value);  // sets next value in this vector and increment current position
+  void set(double[] array);  // set values from the current position and increment current position
+  void copyFrom(DoubleStream stream);  // copy elements of `stream` into this vector
+  void copyFrom(DoubleBuffer buffer);  // copy elements of `buffer` into this vector
+  void copyFrom(DoubleVector vector);  // copy elements of `vector` into this vector
 }
 ```
-Here is a summary of what consist each of these methods:
-* `slice(Object... indices)`: Returns a partial view of the tensor across all its dimensions. 
-  More details on this in the next section
-* `put(double d)`, `get()`: Sets/gets the next value in this buffer. The behaviour varies depending on 
-  the size of the last dimension of this buffer
-  * If size of last dimension is 0 (scalar), it sets/gets the value of this element
-  * Else, it sets/gets the value of the current element and position is moved to the next element in the last dimension
-* `put(long index, double d)`, `get(long index)`: Sets/gets the value at the given index. Only valid if the size
-  of last dimension is greater than 0 (i.e. not a scalar)
-* `put(double[] array)`, `put(DoubleStream stream)`, `get(double[] dst)`, `stream()`: Sets/gets all the values of the 
-  last dimension of this buffer from/as an array or a stream. Only valid if the size of last dimension is greater 
-  than 0 (i.e. not a scalar)
-* `copyFrom(DoubleBuffer buffer)`, `copyTo(DoubleBuffer buffer)`: Sets/gets all values of this buffer from/to a standard
-  Java NIO buffer.
+
 
 
 
 ```java
-class DoubleTensor {
-  DoubleTensor at(Object... indices);
+class DoubleNdArray {
+  DoubleNdArray slice(Object... indices);
   DoubleVector vector(Object... indices);
   double scalar(Object... indices);
 }
@@ -231,6 +237,51 @@ class DoubleVector
   
   DoubleStream stream();
   void copyTo(DoubleBuffer buffer);
+  
+  data.at(i, h, w, 0) = image.pixel(w + (h * w)).red();
+  
+  
+            Tensor.createFloat(batch.shape(784), data -> {
+            for (float[] image : batch.images()) {
+              data.put(image);
+            }
+          });
+          Tensor.createFloat(batch.shape(28, 28, 3) data -> {
+            for (int i = 0; i < batchSize; ++i) {
+              Image image = batch.nextImage();
+              for (int h = 0; h < image.height; ++h) {
+                for (int w = 0; w < image.width; ++w) {
+                  Pixel pixel = image.pixel(w + (h*w));
+                  FloatVector vector = data.vector(i, h, w);
+                  FloatVector vector = data.slice(i, h, w).vector();
+                  vector.put(pixel.red());
+                  vector.put(pixel.green());
+                  vector.put(pixel.blue());
+                  
+                  float red = vector.get();
+                  float green = vector.get();
+                  float blue = vector.get();
+                }
+              }
+            }
+          });
+          Tensor.createFloat(batch.shape(28, 28, 3) data -> {
+            for (int i = 0; i < batchSize; ++i) {
+              Image image = batch.nextImage();
+              for (int h = 0; h < image.height; ++h) {
+                for (int w = 0; w < image.width; ++w) {
+                  Pixel pixel = image.pixel(w + (h*w));
+                  FloatNdArray slice = data.slice(i, h, w);
+                  slice.put(pixel.red());
+                  slice.put(pixel.green());
+                  slice.put(pixel.blue());
+                }
+              }
+            }
+          });
+          Tensor.createFloat(Shape.scalar, data -> {
+            data.scalar(42);
+          });
 }
 ```
 
