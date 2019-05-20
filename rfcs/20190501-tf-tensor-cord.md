@@ -46,7 +46,7 @@ a pointer to a `Tensor` or `RefCounted`.
 
 Below is an example of use:
 
-```python
+```c++
 auto t = strings.flat<string>();
 // old way via copy:
 Tensor copy = tensor::DeepCopy(strings);
