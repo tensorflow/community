@@ -227,8 +227,8 @@ Tensor<Float> matrix3d = Tensor.createDouble(new long[]{2, 2, 3}, data -> {
 });
 
 matrix3d.rank();  // 3
-matrix.size(0);  // 2
-matrix.totalSize();  // 12
+matrix3d.size(0);  // 2
+matrix3d.totalSize();  // 12
 
 Tensor<String> text = Tensor.createString(new long[]{-1}, data -> {
   // Initializing data from input stream, where `values.txt` contains following modified UTF-8 strings:
