@@ -197,14 +197,15 @@ matrix.rank();  // 2
 matrix.size(0);  // 2
 matrix.totalSize();  // 6
 
-Tensor<Float> matrix3d = Tensor.createDouble(new long[]{2, 2, 2}, data -> {
-  // Initialize all data from a flat 3d matrix
-  data.put(new double[] {10.0, 10.1, 11.0, 11.1, 20.0, 20.1, 21.0, 21.1}); 
+Tensor<Float> matrix3d = Tensor.createDouble(new long[]{2, 2, 3}, data -> {
+  // Initialize all data from a flat 3d matrix: 
+  // {{{10.0, 10.1, 10.2}, {11.0, 11.1, 11.2}}, {{20.0, 20.1, 20.1}, {21.0, 21.1, 21.2}}}
+  data.put(new double[] {10.0, 10.1, 10.2, 11.0, 11.1, 11.2, 20.0, 20.1, 20.2, 21.0, 21.1, 21.2}); 
 });
 
 matrix3d.rank();  // 3
 matrix.size(0);  // 2
-matrix.totalSize();  // 8
+matrix.totalSize();  // 12
 
 Tensor<String> text = Tensor.createString(new long[]{-1}, data -> {
   // Initializing data from input stream, where `values.txt` is written in modified UTF-8 and has following content:
@@ -228,7 +229,8 @@ IntBuffer buffer = IntBuffer.allocate(vector.numElements());
 vector.get(buffer);  // 1, 2, 3, 4
 matrix.stream();  // 0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f
 
-matrix3d.cursor().whileNext(c -> c.stream());  // returns 2 flat matrices: [10.0, 10.1, 11.0, 11.1], [20.0, 20.1, 21.0, 21.1] 
+matrix3d.cursor().whileNext(c -> c.stream());  // returns 2 flat matrices: [10.0, 10.1, 10.2, 11.0, 11.1, 11.2], 
+                                               //                          [20.0, 20.1, 20.2, 21.0, 21.1, 21.2] 
 text.cursor().whileNext(c -> System.out.println(c.get()));  // prints 3 individual strings: "In the town", "where I was", "born"
 
 // Working with slices
@@ -236,195 +238,16 @@ text.cursor().whileNext(c -> System.out.println(c.get()));  // prints 3 individu
 scalar.slice(0);  // error
 vector.slice(0);  // {1} (rank-0 slice)
 matrix.slice(1, 1);  // {20.0f} (rank-0 slice)
+
 matrix3d.slice(0, 0);  // {10.0, 10.1} (rank-1 slice)
-matrix3d.slice(all(), 0);  // {{10.0, 10.1}, {20.0, 20.1}} (rank-2 slice)
+matrix3d.slice(all(), 0);  // {{10.0, 10.1, 10.2}, {20.0, 20.1, 20.2}} (rank-2 slice)
+matrix3d.slice(all(), 0, 0);  // {10.0, 20.0} (rank-1 slice)
+matrix3d.slice(all(), 0, only(0, 2));  // {{10.0, 10.2}, {20.0, 20.2}} (rank-2 slice)
+matrix3d.slice(all(), all(), skip(1));  // {{{10.0, 10.2}, {11.0, 11.2}}, {{20.0, 20.2}, {21.0, 21.2}}} (rank-3 slice)
+
+text.slice(tf.constant(1));  // {"where I was"} (rank-0 slice)
 ```
 
-
-
-
-
-
-class DoubleNdArray {
-  
-  // Read
-  DoubleNdArray slice(Object... indices);  // returns a slice of this array across one or more dimensions
-  DoubleVector vector();  // get this rank-1 array as a vector
-  double scalar();  // get the scalar value of this rank-0 array
-  long numElements();  // number of elements in this array
-  DoubleStream stream();  // returns elements of this array as a stream
-  void copyTo(DoubleBuffer buffer);  // copy elements of this array into `buffer`
-  void copyTo(DoubleNdArray array);  // copy elements of this array into `array`
-  
-  // Write
-  void scalar(double value);  // set the scalar value of this rank-0 array
-  void copyFrom(DoubleStream stream);  // copy elements of `stream` into this array
-  void copyFrom(DoubleBuffer buffer);  // copy elements of `buffer` into this array
-  void copyFrom(DoubleNdArray array);  // copy elements of `array` into this array
-}
-
-class DoubleVector {
-  
-  // Read
-  double get(int idx);  // return `idx`th value of this vector
-  double get();  // return next value in this vector and increment current position
-  void get(double[] dst);  // return values from the current position in `dst` array and increment current position
-  long position();  // returns current position
-  void position(int idx);  // resets current position to `idx`
-  void reset();  // resets current position to `0`
-  long numElements();  // number of elements in this vector
-  DoubleStream stream();  // returns values of this vector as a stream
-  void copyTo(DoubleBuffer buffer);  // copy elements of this vector to `buffer`
-  void copyTo(DoubleVector vector);  // copy elements of this vector into `vector`
-
-  // Write
-  void set(int idx);  // sets `idx`th value of this vector
-  void set(double value);  // sets next value in this vector and increment current position
-  void set(double[] array);  // set values from the current position and increment current position
-  void copyFrom(DoubleStream stream);  // copy elements of `stream` into this vector
-  void copyFrom(DoubleBuffer buffer);  // copy elements of `buffer` into this vector
-  void copyFrom(DoubleVector vector);  // copy elements of `vector` into this vector
-}
-```
-
-
-
-
-```java
-class DoubleNdArray {
-  DoubleNdArray slice(Object... indices);
-  DoubleVector vector(Object... indices);
-  double scalar(Object... indices);
-}
-
-class DoubleVector
-
-
-
-
-  t.booleanData().
-  
-  
- 
-  t.floatData().at(0, 2, 1).get();
-  t.floatData().at(0, 2).get(1);
-  t.floatData().at(0).at(2).get(1);
-  t.floatData().at(0).at(2).at(1).get();
-  
-  t.floatData().at(0, 2).vector().get(1);
-  
-  for (TensorData data : t.data().at(0, 2)) {
-    System.out.println(data.get()); // prints (0, 2, 0), (0, 2, 1)
-  }
-  for (TensorData data : t.data().at(0)) {
-    System.out.println(data.get(1)); // prints (0, 0, 1), (0, 1, 1), (0, 2, 1)
-  }
-  
-  t.data().at(0).get(2); // fails, non-scalar
-  t.data().at(0, 2).get(); // fails, non-scalar
-  t.data().at(0, 2).get(array);
-  t.data().at(0, 2).stream();
-  
-  
-  
-  t.data().get(); // for points only 
-  t.data().get(0, 2, 1);
-  t.data().at(0, 2).get(1);
-  t.data().at(0).get(2, 1);
-  t.data().at(0).at(2).get(1);
-  
-  for (TensorData data : t.data().at(0, 2)) {
-    System.out.println(point.get()); // prints (0, 2, 0), (0, 2, 1)
-  }
-  for (TensorData data : t.data().slice(0)) {
-    System.out.println(data.point(1).get()); // prints (0, 0, 1), (0, 1, 1), (0, 2, 1)
-  }
-  
- 
- 
-  t.data().at(0, 2, 1).point().get();
-  t.data().at(0, 2).vector().get(1);
-  t.data().at(0).at(2).vector().get(1);
-  t.data().at(0).at(2).at(1).point().get();
-  
-  for (TensorDataPoint point : t.data().at(0, 2).vector()) {
-    System.out.println(point.get()); // prints (0, 2, 0), (0, 2, 1)
-  }
-  for (TensorData data : t.data().at(0)) {
-    System.out.println(data.vector().get(1)); // prints (0, 0, 1), (0, 1, 1), (0, 2, 1)
-  } 
-  
-  
-  
-  
-  
-  
-  t.data().scalar(0, 2, 1);
-  t.data().vector(0, 2).get(1);
-  t.data().at(0, all()).vector(2).get(1);
-  t.data().at(0, all()).scalar(2, 1);
-  
-  
-  t.data().vector().get(0);
-  t.data().get(0);
-  t.data().
-  
-  
-  long position();
-  double get();
-  double get(long index);
-  void get(double[] dst);
-  
-  
-  DoubleStream stream();
-  void copyTo(DoubleBuffer buffer);
-  
-  data.at(i, h, w, 0) = image.pixel(w + (h * w)).red();
-  
-  
-            Tensor.createFloat(batch.shape(784), data -> {
-            for (float[] image : batch.images()) {
-              data.put(image);
-            }
-          });
-          Tensor.createFloat(batch.shape(28, 28, 3) data -> {
-            for (int i = 0; i < batchSize; ++i) {
-              Image image = batch.nextImage();
-              for (int h = 0; h < image.height; ++h) {
-                for (int w = 0; w < image.width; ++w) {
-                  Pixel pixel = image.pixel(w + (h*w));
-                  FloatVector vector = data.vector(i, h, w);
-                  FloatVector vector = data.slice(i, h, w).vector();
-                  vector.put(pixel.red());
-                  vector.put(pixel.green());
-                  vector.put(pixel.blue());
-                  
-                  float red = vector.get();
-                  float green = vector.get();
-                  float blue = vector.get();
-                }
-              }
-            }
-          });
-          Tensor.createFloat(batch.shape(28, 28, 3) data -> {
-            for (int i = 0; i < batchSize; ++i) {
-              Image image = batch.nextImage();
-              for (int h = 0; h < image.height; ++h) {
-                for (int w = 0; w < image.width; ++w) {
-                  Pixel pixel = image.pixel(w + (h*w));
-                  FloatNdArray slice = data.slice(i, h, w);
-                  slice.put(pixel.red());
-                  slice.put(pixel.green());
-                  slice.put(pixel.blue());
-                }
-              }
-            }
-          });
-          Tensor.createFloat(Shape.scalar, data -> {
-            data.scalar(42);
-          });
-}
-```
 
 
 This is the meat of the document, where you explain your proposal. If you have
