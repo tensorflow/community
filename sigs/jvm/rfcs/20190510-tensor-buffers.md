@@ -98,8 +98,8 @@ to the `*Value()` methods of the same class.
 
 ### MultiDimensional Arrays
 
-In TensorFlow, tensor data is represented by multidimensional arrays. There is no common utilities to manipulate such
-structure in Java (like NumPy for Python) so they will be added to TensorFlow directly. For each tensor datatype supported
+In TensorFlow, dense tensors are represented by multidimensional arrays. As there is no common utilities to manipulate such
+structure in Java (like NumPy for Python) they need be provided by TensorFlow directly. For each tensor datatype supported
 by the Java client, an implementation of `*NdArray` and `*NdArrayCursor` will be available. Having distinct implementation
 per datatype (instead of a generic parameterized one) allows users to work with Java primitive types, which tends to be less 
 memory-consuming and provide better performances than their autoboxed equivalent.
@@ -108,7 +108,7 @@ For simplicity, only the interfaces for the `Double` variant are presented below
 ```java
 class DoubleNdArray {
 
-  int rank();  // number of dimensions of this array
+  int rank();  // number of dimensions (or rank) of this array
   long size(int dimension);  // number of elements in the given dimension
   long totalSize();  // total number of elements in this array
   DoubleNdArrayCursor cursor();  // iterates through the elements of this array
@@ -122,6 +122,7 @@ class DoubleNdArray {
   void get(double[] array, int... indices);  // get values of this array (or a slice of) into `array`
   void get(DoubleBuffer buffer, int... indices);  // copy values of this array (or a slice of) into `buffer`
   void get(DoubleNdArray array, int... indices);  // copy values of this array (or a slice of) into `array`
+  void read(OutputStream ostream);  // read elements of this array into `ostream`, up to `totalSize()` 
   
   // Write operations
   void put(double value, int... indices);  // set the scalar value of this rank-0 array (or a slice of)
@@ -129,15 +130,18 @@ class DoubleNdArray {
   void put(DoubleBuffer buffer, int... indices);  // copy elements of `buffer` into this array
   void put(double[] array, int... indices);  // copy elements of `array` into this array
   void put(DoubleNdArray array, int... indices);  // copy elements of `array` into this array
+  void write(InputStream istream);  // write elements of this array from `istream`, up to `totalSize()`
 }
 
 class DoubleNdArrayCursor {
 
-  boolean hasNext();  // true if there is more elements
-  DoubleNdArray next();  // returns the current element and increment position
+  DoubleNdArray array();  // returns the backing NdArray this cursor is iterating into
   long position();  // position of the current element in the initial sequence
   void position(long value);  // resets position of this cursor
-  void array();  // returns the NdArray this cursor is iterating to
+  boolean hasNext();  // true if there is more elements
+  DoubleNdArray next();  // returns the current element and increment position
+  DoubleNdArrayCursor cursor();  // returns a cursors to the current element and increment position
+  void whileNext(Consumer<DoubleNdArrayCursor> func);
   
   // Read operations
   double get();  // get the scalar value of the current element and increment position
@@ -157,13 +161,16 @@ class DoubleNdArrayCursor {
 See the next section for detailed examples of usage of these classes.
 
 ```java
-
-// Create tensors
+// Creating tensors and writing data
 
 Tensor<Boolean> scalar = Tensor.createBoolean(new long[0], data -> {
   // Setting scalar value directly
   data.put(true);
 });
+
+scalar.rank();  // 0
+scalar.size(0);  // error
+scalar.totalSize();  // 1
 
 Tensor<Integer> vector = Tensor.createInt(new long[]{4}, data -> {
   // Setting first elements from stream
@@ -172,46 +179,65 @@ Tensor<Integer> vector = Tensor.createInt(new long[]{4}, data -> {
   data.put(4, 3); 
 });
 
+vector.rank();  // 1
+vector.size(0);  // 4
+vector.totalSize();  // 4
+
 Tensor<Float> matrix = Tensor.createFloat(new long[]{2, 3}, data -> {
   // Initializing data using cursors
   DoubleNdArrayCursor rows = data.cursor();
-  rows.put(new int[] {0.0f, 5.0f, 10.0f});  // inits data at the current row (0)
+  rows.put(new int[]{0.0f, 5.0f, 10.0f});  // inits data at the current row (0)
   DoubleNdArrayCursor secondRow = rows.cursor();  // returns a new cursor at the current row (1)
   secondRow.put(15.0f);  // inits each scalar of the second row individually...
   secondRow.put(20.0f);
   secondRow.put(25.0f);
 });
 
-Tensor<
-
-// Show general info
-
-scalar.rank();  // 0
-scalar.size(0);  // error
-scalar.totalSize();  // 1
-
-vector.rank();  // 1
-vector.size(0);  // 4
-vector.totalSize();  // 4
-
 matrix.rank();  // 2
 matrix.size(0);  // 2
 matrix.totalSize();  // 6
+
+Tensor<Float> matrix3d = Tensor.createDouble(new long[]{2, 2, 2}, data -> {
+  // Initialize all data from a flat 3d matrix
+  data.put(new double[] {10.0, 10.1, 11.0, 11.1, 20.0, 20.1, 21.0, 21.1}); 
+});
+
+matrix3d.rank();  // 3
+matrix.size(0);  // 2
+matrix.totalSize();  // 8
+
+Tensor<String> text = Tensor.createString(new long[]{-1}, data -> {
+  // Initializing data from input stream, where `values.txt` is written in modified UTF-8 and has following content:
+  // "in the town", "where I was", "born"
+  data.write(new FileInputStream("values.txt"));
+});
+
+text.rank();  // 1
+text.size(0);  // 3
+text.totalSize();  // 3
 
 // Reading data
 
 scalar.get();  // true
 vector.get(0);  // 1
 matrix.get(0, 1);  // 5.0f
+matrix3d.get(1, 1, 1);  // 21.1
+text.get(2);  // "born"
 
-vector.stream();  // 1, 2, 3, 4
+IntBuffer buffer = IntBuffer.allocate(vector.numElements());
+vector.get(buffer);  // 1, 2, 3, 4
 matrix.stream();  // 0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f
+
+matrix3d.cursor().whileNext(c -> c.stream());  // returns 2 flat matrices: [10.0, 10.1, 11.0, 11.1], [20.0, 20.1, 21.0, 21.1] 
+text.cursor().whileNext(c -> System.out.println(c.get()));  // prints 3 individual strings: "In the town", "where I was", "born"
 
 // Working with slices
 
 scalar.slice(0);  // error
-vector.slice(0).get();  // rank-0 array 
-
+vector.slice(0);  // {1} (rank-0 slice)
+matrix.slice(1, 1);  // {20.0f} (rank-0 slice)
+matrix3d.slice(0, 0);  // {10.0, 10.1} (rank-1 slice)
+matrix3d.slice(all(), 0);  // {{10.0, 10.1}, {20.0, 20.1}} (rank-2 slice)
 ```
 
 
