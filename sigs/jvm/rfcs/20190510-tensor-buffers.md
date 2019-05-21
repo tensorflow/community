@@ -69,7 +69,7 @@ public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteNdArray> data
 public static Tensor<String> createString(long[] shape, Consumer<StringNdArray> dataInit);
 ```
 All methods except `createString` creates an empty `Tensor` first that is then initialized by invoking the 
-`dataInit` function (the `*OutputBuffer` interface is described later in this document).
+`dataInit` function (the `*NdArray` type is described later in this document).
 
 Since the size in bytes of a string tensor cannot be determined before retrieving its data, `createString` will 
 collect and storeall the string values in a temporary buffer (or list) before creating and initializing a `Tensor` 
@@ -96,40 +96,62 @@ public StringNdArray stringData();
 It is up to the user to know which of these methods should be called on a tensor of a given type, similar
 to the `*Value()` methods of the same class.
 
-### Tensor Input/Output Buffers
+### MultiDimensional Arrays
 
-There is a specific `*OutputBuffer` and `*NdArray` class for each datatype. This allow the user to
-work with primitive Java types, which are less memory-consuming and provide better performances that working 
-exclusively with their autoboxed version.
+In TensorFlow, tensor data is represented by multidimensional arrays. There is no common utilities to manipulate such
+structure in Java (like NumPy for Python) so they will be added to TensorFlow directly. For each tensor datatype supported
+by the Java client, an implementation of `*NdArray` and `*NdArrayCursor` will be available. Having distinct implementation
+per datatype (instead of a generic parameterized one) allows users to work with Java primitive types, which tends to be less 
+memory-consuming and provide better performances than their autoboxed equivalent.
 
-For simplicity, only the `Double` variant is presented:
+For simplicity, only the interfaces for the `Double` variant are presented below:
 ```java
 class DoubleNdArray {
 
-  int rank();  // number of dimensions in this array
+  int rank();  // number of dimensions of this array
   long size(int dimension);  // number of elements in the given dimension
   long totalSize();  // total number of elements in this array
-  DoubleNdArray slice(Object... indices);  // returns a slice of this array across one or more dimensions
-  DoubleNdArrayIterator iterator();  // iterates through values of this array
+  DoubleNdArrayCursor cursor();  // iterates through the elements of this array
+  DoubleNdArray slice(int... indices);  // returns a slice of this array across one or more of its dimensions
+  DoubleNdArray slice(Object... indices);  // returns a slice of this array across one or more of its dimensions, 
+                                           // using various types of index
 
   // Read operations
-  double get(Object... indices);  // get this rank-0 array (or a slice of) as a scalar value
-  DoubleStream stream();  // get values of this array as a stream
-  void copyTo(DoubleBuffer buffer);  // copy values of this array into `buffer`
-  void copyTo(DoubleNdArray array);  // copy values of this array into `array`
+  double get(int... indices);  // get this rank-0 array (or a slice of) as a scalar value
+  DoubleStream stream(int... indices);  // get values of this array (or a slice of) as a stream
+  void get(double[] array, int... indices);  // get values of this array (or a slice of) into `array`
+  void get(DoubleBuffer buffer, int... indices);  // copy values of this array (or a slice of) into `buffer`
+  void get(DoubleNdArray array, int... indices);  // copy values of this array (or a slice of) into `array`
   
   // Write operations
-  void put(double value, Object... indices);  // set the scalar value of this rank-0 array (or a slice of)
-  void copy(DoubleStream stream);  // copy elements of `stream` into this array
-  void copy(DoubleBuffer buffer);  // copy elements of `buffer` into this array
-  void copy(double[] array);  // copy elements of `array` into this array
-  void copy(DoubleNdArray array);  // copy elements of `array` into this array
+  void put(double value, int... indices);  // set the scalar value of this rank-0 array (or a slice of)
+  void put(DoubleStream stream, int... indices);  // copy elements of `stream` into this array
+  void put(DoubleBuffer buffer, int... indices);  // copy elements of `buffer` into this array
+  void put(double[] array, int... indices);  // copy elements of `array` into this array
+  void put(DoubleNdArray array, int... indices);  // copy elements of `array` into this array
 }
 
-class DoubleNdArrayIterator {
+class DoubleNdArrayCursor {
+
   boolean hasNext();  // true if there is more elements
-  double get();  // return next element value and increment current position
-  void put(double value);  // sets next element value and increment current position
+  DoubleNdArray next();  // returns the current element and increment position
+  long position();  // position of the current element in the initial sequence
+  void position(long value);  // resets position of this cursor
+  void array();  // returns the NdArray this cursor is iterating to
+  
+  // Read operations
+  double get();  // get the scalar value of the current element and increment position
+  void get(double[] array);  // copy values of the current element into `array` and increment position
+  DoubleStream stream();  // get values of the current element as a stream and increment position
+  void get(DoubleBuffer buffer);  // copy values of the current element into `buffer` and increment position
+  void get(DoubleNdArray array);  // copy values of the current element into `array` and increment position
+  
+  // Write operations
+  void put(double value);  // set the scalar value of the current element and increment position
+  void put(double[] array);  // copy elements of `array` into the current element and increment position
+  void put(DoubleStream stream);  // copy elements of `stream` into the current element and increment position
+  void put(DoubleBuffer buffer);  // copy elements of `buffer` into the current element and increment position
+  void put(DoubleNdArray array);  // copy elements of `array` into the current element and increment position
 }
 ```
 See the next section for detailed examples of usage of these classes.
@@ -151,11 +173,11 @@ Tensor<Integer> vector = Tensor.createInt(new long[]{4}, data -> {
 });
 
 Tensor<Float> matrix = Tensor.createFloat(new long[]{2, 3}, data -> {
-  // Initializing data with cursors
+  // Initializing data using cursors
   DoubleNdArrayCursor rows = data.cursor();
-  rows.put(new int[] {0.0f, 5.0f, 10.0f});
-  DoubleNdArrayCursor secondRow = rows.cursor();
-  secondRow.put(15.0f);
+  rows.put(new int[] {0.0f, 5.0f, 10.0f});  // inits data at the current row (0)
+  DoubleNdArrayCursor secondRow = rows.cursor();  // returns a new cursor at the current row (1)
+  secondRow.put(15.0f);  // inits each scalar of the second row individually...
   secondRow.put(20.0f);
   secondRow.put(25.0f);
 });
