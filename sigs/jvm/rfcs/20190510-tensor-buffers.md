@@ -231,7 +231,7 @@ matrix.size(0);  // 2
 matrix.totalSize();  // 12
 
 Tensor<String> text = Tensor.createString(new long[]{-1}, data -> {
-  // Initializing data from input stream, where `values.txt` is written in modified UTF-8 and has following content:
+  // Initializing data from input stream, where `values.txt` contains following modified UTF-8 strings:
   // "in the town", "where I was", "born"
   data.write(new FileInputStream("values.txt"));
 });
@@ -252,21 +252,21 @@ IntBuffer buffer = IntBuffer.allocate(vector.numElements());
 vector.get(buffer);  // 1, 2, 3, 4
 matrix.stream();  // 0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f
 
-matrix3d.cursor().whileNext(c -> c.stream());  // returns 2 flat matrices: [10.0, 10.1, 10.2, 11.0, 11.1, 11.2], 
-                                               //                          [20.0, 20.1, 20.2, 21.0, 21.1, 21.2] 
-text.cursor().whileNext(c -> System.out.println(c.get()));  // prints 3 individual strings: "In the town", "where I was", "born"
+matrix3d.cursor().whileNext(c -> c.stream());  // [10.0, 10.1, 10.2, 11.0, 11.1, 11.2], 
+                                               // [20.0, 20.1, 20.2, 21.0, 21.1, 21.2] 
+text.cursor().whileNext(c -> System.out.println(c.get()));  // "In the town", "where I was", "born"
 
 // Working with slices
 
 scalar.slice(0);  // error
-vector.slice(0);  // {1} (rank-0 slice)
-matrix.slice(1, 1);  // {20.0f} (rank-0 slice)
+vector.slice(0);  // {1} (rank-0)
+matrix.slice(1, 1);  // {20.0f} (rank-0)
 
-matrix3d.slice(0, 0);  // {10.0, 10.1} (rank-1 slice)
-matrix3d.slice(all(), 0);  // {{10.0, 10.1, 10.2}, {20.0, 20.1, 20.2}} (rank-2 slice)
-matrix3d.slice(all(), 0, 0);  // {10.0, 20.0} (rank-1 slice)
-matrix3d.slice(all(), 0, only(0, 2));  // {{10.0, 10.2}, {20.0, 20.2}} (rank-2 slice)
-matrix3d.slice(all(), all(), skip(1));  // {{{10.0, 10.2}, {11.0, 11.2}}, {{20.0, 20.2}, {21.0, 21.2}}} (rank-3 slice)
+matrix3d.slice(0, 0);  // {10.0, 10.1} (rank-1)
+matrix3d.slice(all(), 0);  // {{10.0, 10.1, 10.2}, {20.0, 20.1, 20.2}} (rank-2)
+matrix3d.slice(all(), 0, 0);  // {10.0, 20.0} (rank-1)
+matrix3d.slice(all(), 0, only(0, 2));  // {{10.0, 10.2}, {20.0, 20.2}} (rank-2)
+matrix3d.slice(all(), all(), skip(1));  // {{{10.0, 10.2}, {11.0, 11.2}}, {{20.0, 20.2}, {21.0, 21.2}}} (rank-3)
 
 text.slice(tf.constant(1));  // {"where I was"} (rank-0 slice)
 ```
