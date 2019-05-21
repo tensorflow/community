@@ -65,7 +65,8 @@ Related works:
 
 - `tf.keras.models.load_model`: Currently only loads h5 files. This will be 
   modified to automatically detect SavedModels. In both cases, a Keras model 
-  object is returned.
+  object is returned. The root object in the SavedModel must at least contain
+  [shared endpoints](#shared-endpoints), otherwise, an error is raised. 
 - `tf.saved_model.save` and `tf.keras.models.save_model` and `model.save`: 
   additional dependencies/functions are serialized to the SavedModel. See
   [Serialization coverage](#serialization-coverage)
@@ -176,6 +177,7 @@ The following checkpointable objects and functions are attached to the saved Ker
 - `_variables`: List of all variables owned by this object (and not sublayers)
 - `__call__`: Returns the outputs of the call function.
 - `call_and_return_conditional_losses`: Returns the outputs of the call function, as well as a list input-dependent losses (does not include the activity regularizer loss).
+- `call_and_return_all_conditional_losses`: A function that calls the model and returns returns outputs and returns all input-dependent losses. Unlike `call_and_return_conditional_losses`, the losses returned in this function includes the activity regularizer and any compiled losses.
 - `activity_regularizer_fn`: Activity regularization function
 - `compile_loss_functions`: List of loss functions added during `model.compile`.
 - `compile_metrics`: List of metric objects added during `model.compile`.
@@ -192,17 +194,6 @@ The public attributes are exported so that the all variables/trainable variables
 
 Two versions of the call function are exported. Exporting `__call__` enables the `model(inputs)` function to be retained in the generic object created by `tf.saved_model.load`. `call_and_return_conditional_losses` is exported for model deserialization.
 
-**Common endpoints**
-
-The following properties were proposed by arnoegw@google.com and andresp@google.com, from the TF Hub team, as common endpoints shared by all modules:
-
-- `__call__`: Accepts inputs to the model and returns outputs
-- `variables`: List of all variables in the model
-- `trainable_variables`: List of all trainable variables in the model
-- `regularization_losses`: List of callables that return a scalar tensor.
-
-Having shared endpoints allows models to be used interchangeably between different frameworks. These endpoints are defined above.
-
 ### Deserialization details
 The generic loader, `tf.saved_model.load`, creates a generic object with attributes as saved in the SavedModel. Loading the saved Keras model (with added checkpointable objects and functions as listed above) will produce:
 
@@ -214,15 +205,33 @@ GenericObject obj → .variables, .trainable_variables, etc.
 
 When reconstructing a Keras model, the saved attributes are remapped to the original names. The exception is the call function, which uses `call_and_return_conditional_losses` instead of `__call__`.
 
+### Shared endpoints
+
+Having shared endpoints allows models to be used interchangeably between different frameworks. The following properties were proposed by arnoegw@google.com and andresp@google.com, from the TF Hub team, as common endpoints shared by all modules:
+
+- `__call__`: A function that takes inputs to the model and returns outputs
+- `variables`: List of all variables in the model
+- `trainable_variables`: List of all trainable variables in the model
+- `regularization_losses`: List of callables that return a scalar tensor.
+- `call_and_return_all_conditional_losses`: A function that calls the model and returns returns outputs and returns all input-dependent losses. Unlike `call_and_return_conditional_losses`, the losses returned in this function includes the activity regularizer and any compiled losses.
+
+All losses contained in the model are split between `regularization_losses` and `call_and_return_all_conditional_losses`. 
+
+Any SavedModel with these endpoints defined may be loaded as a Keras model using `tf.keras.models.load_model`.
+
 ### Compatibility Guarantees
 Keras SavedModels are backward and forward compatible across minor TensorFlow versions. Therefore, checkpointable object and tf.function attributes will not be removed from the SavedModel. New attributes can be added if additional serialization is requested.
 
 ## Questions and Discussion Topics
 
 1. Do we all agree on the API changes?
+   - Regarding the `include_optimizer` argument: If this is set to False, then the optimizer will not be included. If the model has been compiled, then the eval graphs.
+   - Should we always save the default model signature? No (at least not initially). This can be added later on, but the change should also be added to `tf.saved_model.save`.
 2. Are there other aspects of the model that should be serialized/deserialized?
+   - Add an additional method that includes all input-dependent losses (`call_and_return_all_conditional_losses`). This combines the losses generated from `call_and_return_conditional_losses`, `compile_losses`, and `activity_regularizer_fn`.
 3. Should `tf.saved_model.load` return a generic object or Keras model?
+   **Generic object**
 4. Syncing common endpoints with tf.module
-
+   tf.module is extremely open-ended, so just the `.variables` attribute should be synced between tf.module SavedModel and Keras SavedModel. Note about `.trainable_variables` -- Keras layers and tf.modules have different definitions of trainable variables.
 
 
