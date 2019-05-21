@@ -166,27 +166,27 @@ Only Tensorflow checkpointable objects and functions can be serialized to SavedM
 
 The following checkpointable objects and functions are attached to the saved Keras model:
 
-- `variables`: List of all variables in this layer and submodules.
-- `trainable_variables`: List of all trainable variables in this layer and submodules.
-- `non_trainable_variables`: List of all non-trainable variables in this layer and submodules.
+- `variables`: List of all variables in this layer and sublayers.
+- `trainable_variables`: List of all trainable variables in this layer and sublayers.
+- `non_trainable_variables`: List of all non-trainable variables in this layer and sublayers.
 - `regularization_losses`: List of unconditional loss functions in this layer 
-  and submodules. Each function takes no arguments, and returns a scalar 
+  and sublayers. Each function takes no arguments, and returns a scalar 
   tensor. 
-- `submodules`: Flat list of all sublayers (does not include metrics, even though Metric subclasses Layer).
+- `layers`: Flat list of all sublayers (does not include metrics, even though Metric subclasses Layer).
 - `metrics`: List of all metric layers attached to this layer and sublayers.
 - `_variables`: List of all variables owned by this object (and not sublayers)
 - `__call__`: Returns the outputs of the call function.
 - `call_and_return_conditional_losses`: Returns the outputs of the call function, as well as a list input-dependent losses (does not include the activity regularizer loss).
 - `call_and_return_all_conditional_losses`: A function that calls the model and returns returns outputs and returns all input-dependent losses. Unlike `call_and_return_conditional_losses`, the losses returned in this function includes the activity regularizer and any compiled losses.
 - `activity_regularizer_fn`: Activity regularization function
-- `compile_loss_functions`: List of loss functions added during `model.compile`.
+- `compile_losses`: List of loss functions added during `model.compile`.
 - `compile_metrics`: List of metric objects added during `model.compile`.
 
 The optimizer is a checkpointable object, so it is automatically saved to the SavedModel.
 
 **Public vs private variables (variables vs _variables)**
 
-The public attributes are exported so that the all variables/trainable variables/etc. may be accessed without the Keras python logic to recursively traverse all the submodules. The private variable attribute is exported so that when the model is deserialized:
+The public attributes are exported so that the all variables/trainable variables/etc. may be accessed without the Keras python logic to recursively traverse all the sublayers. The private variable attribute is exported so that when the model is deserialized:
 1. it is clear which objects own variables
 2. variables are guaranteed to be in the same order. This is important for Keras models, which uses layer and weight order for certain operations (e.g. saving/loading to HDF5).
 
