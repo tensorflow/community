@@ -72,7 +72,7 @@ All methods except `createString` creates an empty `Tensor` first that is then i
 `dataInit` function (the `*NdArray` type is described later in this document).
 
 Since the size in bytes of a string tensor cannot be determined before retrieving its data, `createString` will 
-collect and storeall the string values in a temporary buffer (or list) before creating and initializing a `Tensor` 
+first collect the string values in a temporary nd-array before creating and initializing a `Tensor` 
 of the right size.
 
 Once created, Tensors are immutable and their data could not be modified anymore.
