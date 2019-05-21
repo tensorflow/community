@@ -196,9 +196,8 @@ scalar.size(0);  // error
 scalar.totalSize();  // 1
 
 Tensor<Integer> vector = Tensor.createInt(new long[]{4}, data -> {
-  // Setting first elements from stream
-  data.put(IntStream.rangeClosed(1, 3), 0);
-  // Setting last element directly
+  // Setting first elements from array and add last element directly
+  data.put(new int[]{1, 2, 3}, 0);
   data.put(4, 3); 
 });
 
@@ -223,7 +222,7 @@ matrix.totalSize();  // 6
 Tensor<Float> matrix3d = Tensor.createDouble(new long[]{2, 2, 3}, data -> {
   // Initialize all data from a flat 3d matrix: 
   // {{{10.0, 10.1, 10.2}, {11.0, 11.1, 11.2}}, {{20.0, 20.1, 20.1}, {21.0, 21.1, 21.2}}}
-  data.put(new double[] {10.0, 10.1, 10.2, 11.0, 11.1, 11.2, 20.0, 20.1, 20.2, 21.0, 21.1, 21.2}); 
+  data.put(DoubleStream.of(10.0, 10.1, 10.2, 11.0, 11.1, 11.2, 20.0, 20.1, 20.2, 21.0, 21.1, 21.2)); 
 });
 
 matrix3d.rank();  // 3
