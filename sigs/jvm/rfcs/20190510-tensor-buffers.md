@@ -47,9 +47,9 @@ to access directly the tensor data without the need of copying their buffer.
 current client that is set to compile in Java 7 for supporting older Android devices. We need to confirm
 with Android team if it is ok now to switch to Java 8.*
 
-### Initializing Tensor Data
+### Creating Dense Tensors
 
-Currently, when creating tensors, temporary buffers that contains the initial data are allocated by the user 
+Currently, when creating dense tensors, temporary buffers that contains the initial data are allocated by the user 
 and copied to the tensor memory (see [this link](https://github.com/tensorflow/tensorflow/blob/a6003151399ba48d855681ec8e736387960ef06e/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L187) for example). This data copy and additional memory allocation will be avoided by accessing tensor buffer 
 directly at the initialization of the tensor.
 
@@ -60,13 +60,13 @@ has an impact on the required memory space.
 
 Following factories will be added to the `Tensors` class:
 ```java
-public static Tensor<Float> createFloat(long[] shape, Consumer<FloatNdArray> dataInit);
-public static Tensor<Double> createDouble(long[] shape, Consumer<DoubleNdArray> dataInit);
-public static Tensor<Integer> createInt(long[] shape, Consumer<IntNdArray> dataInit);
-public static Tensor<Long> createLong(long[] shape, Consumer<LongNdArray> dataInit);
-public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanNdArray> dataInit);
-public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteNdArray> dataInit);
-public static Tensor<String> createString(long[] shape, Consumer<StringNdArray> dataInit);
+public static Tensor<Float> createDenseFloat(long[] shape, Consumer<FloatNdArray> dataInit);
+public static Tensor<Double> createDenseDouble(long[] shape, Consumer<DoubleNdArray> dataInit);
+public static Tensor<Integer> createDenseInt(long[] shape, Consumer<IntNdArray> dataInit);
+public static Tensor<Long> createDenseLong(long[] shape, Consumer<LongNdArray> dataInit);
+public static Tensor<Boolean> createDenseBoolean(long[] shape, Consumer<BooleanNdArray> dataInit);
+public static Tensor<UInt8> createDenseUInt8(long[] shape, Consumer<ByteNdArray> dataInit);
+public static Tensor<String> createDenseString(long[] shape, Consumer<StringNdArray> dataInit);
 ```
 All methods except `createString` creates an empty `Tensor` first that is then initialized by invoking the 
 `dataInit` function (the `*NdArray` type is described later in this document).
@@ -76,6 +76,30 @@ first collect the string values in a temporary nd-array before creating and init
 of the right size.
 
 Once created, Tensors are immutable and their data could not be modified anymore.
+
+### Creating Sparse Tensors
+
+A sparse tensor is a collection of 3 dense tensors (indices, values and dense shape). Actually there is no
+other way in TF Java to allocate such tensor than allocating individually the 3 tensors and managing the
+indices with their values manually.
+
+We can simplify this process by following the same approach as dense tensors and adding those
+factories to the `Tensors` class:
+```java
+public static SparseTensor<Float> createSparseFloat(long[] shape, Consumer<FloatNdArray> dataInit);
+public static SparseTensor<Double> createSparseDouble(long[] shape, Consumer<DoubleNdArray> dataInit);
+public static SparseTensor<Integer> createSparseInt(long[] shape, Consumer<IntNdArray> dataInit);
+public static SparseTensor<Long> createSparseLong(long[] shape, Consumer<LongNdArray> dataInit);
+public static SparseTensor<Boolean> createSparseBoolean(long[] shape, Consumer<BooleanNdArray> dataInit);
+public static SparseTensor<UInt8> createSparseUInt8(long[] shape, Consumer<ByteNdArray> dataInit);
+public static SparseTensor<String> createSparseString(long[] shape, Consumer<StringNdArray> dataInit);
+```
+The same `*NdArray` interfaces can be reused to write (or read) sparse data. In this case, the backing 
+implementation class keeps track of elements that are set by writing down their index in a tensor and their
+value in another.
+
+The returned type `SparseTensor` just act as a container for the 3 tensors that compose a sparse tensor,
+where each of them can be retrieved individually to feed operands to an sparse operation like `SparseAdd`.
 
 ### Reading Tensor Data
 
@@ -98,15 +122,15 @@ to the `*Value()` methods of the same class.
 
 ### MultiDimensional Arrays
 
-In TensorFlow, dense tensors are represented by multidimensional arrays. As there is no common utilities to manipulate such
-structure in Java (like NumPy for Python) they need be provided by TensorFlow directly. For each tensor datatype supported
+In TensorFlow, tensors are represented by multidimensional arrays. Since there is no common library to manipulate such
+structure in Java (like NumPy for Python), they need be provided by TensorFlow directly. For each tensor datatype supported
 by the Java client, an implementation of `*NdArray` and `*NdArrayCursor` will be available. Having distinct implementation
 per datatype (instead of a generic parameterized one) allows users to work with Java primitive types, which tends to be less 
 memory-consuming and provide better performances than their autoboxed equivalent.
 
 For simplicity, only the interfaces for the `Double` variant are presented below:
 ```java
-class DoubleNdArray {
+interface DoubleNdArray {
 
   int rank();  // number of dimensions (or rank) of this array
   long size(int dimension);  // number of elements in the given dimension
@@ -186,7 +210,7 @@ Factors to consider include:
 ```java
 // Creating tensors and writing data
 
-Tensor<Boolean> scalar = Tensor.createBoolean(new long[0], data -> {
+Tensor<Boolean> scalar = Tensors.createBoolean(new long[0], data -> {
   // Setting scalar value directly
   data.put(true);
 });
@@ -195,7 +219,7 @@ scalar.rank();  // 0
 scalar.size(0);  // error
 scalar.totalSize();  // 1
 
-Tensor<Integer> vector = Tensor.createInt(new long[]{4}, data -> {
+Tensor<Integer> vector = Tensors.createInt(new long[]{4}, data -> {
   // Setting first elements from array and add last element directly
   data.put(new int[]{1, 2, 3}, 0);
   data.put(4, 3); 
@@ -205,7 +229,7 @@ vector.rank();  // 1
 vector.size(0);  // 4
 vector.totalSize();  // 4
 
-Tensor<Float> matrix = Tensor.createFloat(new long[]{2, 3}, data -> {
+Tensor<Float> matrix = Tensors.createFloat(new long[]{2, 3}, data -> {
   // Initializing data using cursors
   DoubleNdArrayCursor rows = data.cursor();
   rows.put(new int[]{0.0f, 5.0f, 10.0f});  // inits data at the current row (0)
@@ -219,7 +243,7 @@ matrix.rank();  // 2
 matrix.size(0);  // 2
 matrix.totalSize();  // 6
 
-Tensor<Float> matrix3d = Tensor.createDouble(new long[]{2, 2, 3}, data -> {
+Tensor<Float> matrix3d = Tensors.createDouble(new long[]{2, 2, 3}, data -> {
   // Initialize all data from a flat 3d matrix: 
   // {{{10.0, 10.1, 10.2}, {11.0, 11.1, 11.2}}, {{20.0, 20.1, 20.1}, {21.0, 21.1, 21.2}}}
   data.put(DoubleStream.of(10.0, 10.1, 10.2, 11.0, 11.1, 11.2, 20.0, 20.1, 20.2, 21.0, 21.1, 21.2)); 
@@ -229,7 +253,7 @@ matrix3d.rank();  // 3
 matrix3d.size(0);  // 2
 matrix3d.totalSize();  // 12
 
-Tensor<String> text = Tensor.createString(new long[]{-1}, data -> {
+Tensor<String> text = Tensors.createString(new long[]{-1}, data -> {
   // Initializing data from input stream, where `values.txt` contains following modified UTF-8 strings:
   // "in the town", "where I was", "born"
   data.write(new FileInputStream("values.txt"));
