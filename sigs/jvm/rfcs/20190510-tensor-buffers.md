@@ -52,12 +52,17 @@ of such data structure, the following tools will be provided by the Java client:
 * `NdArray`: An index-based interface representing a multidimensional array.
 * `NdArrayCursor`: An sequence-based class to iterate in a `NdArray`.
 
-There will be a variant of those classes for each tensor datatype supported in Java. This will allow users to work with 
-Java primitive types, which tends to be less memory-consuming and provide better performances than their autoboxed equivalent.
+There will be a variant of those classes and interfaces for each tensor datatype supported in Java. This will allow 
+users to work with Java primitive types, which tends to be less memory-consuming and provide better performances 
+than their autoboxed equivalent. 
 
 For simplicity, only the classes for the `Double` variant are presented below:
 ```java
-interface DoubleNdArray {
+interface NdArray {
+  void copyTo(ByteBuffer buffer);  // serialize whole content of this array to a buffer
+}
+
+interface DoubleNdArray extends NdArray {
 
   int rank();  // number of dimensions (or rank) of this array
   long size(int dimension);  // number of elements in the given dimension
@@ -111,6 +116,15 @@ class DoubleNdArrayCursor {
 ```
 See the next section for some detailed examples of usage.
 
+Also, multiple implementations will be available for each `NdArray` variant, depending on how data is stored. 
+The creation of those arrays will be made through the factory class `NdArrays`:
+```java
+class NdArrays {
+  DoubleNdArray createDouble(ByteBuffer buffer);  // maps contiguous memory, like tensor buffers, to a nd-array
+  DoubleNdArray createDouble(int capacity);  // create a growable array whose capacity is increased by `capacity`
+}
+```
+
 ### Creating Dense Tensors
 
 Currently, when creating dense tensors, temporary buffers that contains the initial data are allocated by the user 
@@ -122,36 +136,24 @@ variable-length datatypes (like strings), data must be first collected in order 
 
 Following factories will be added to the `Tensors` class:
 ```java
-public static Tensor<Float> createDenseFloat(long[] shape, Consumer<FloatNdArray> dataInit);
-public static Tensor<Float> createDenseFloat(FloatNdArray data);
+public static Tensor<Float> createFloat(long[] shape, Consumer<FloatNdArray> dataInit);
+public static Tensor<Double> createDouble(long[] shape, Consumer<DoubleNdArray> dataInit);
+public static Tensor<Integer> createInt(long[] shape, Consumer<IntNdArray> dataInit);
+public static Tensor<Long> createLong(long[] shape, Consumer<LongNdArray> dataInit);
+public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanNdArray> dataInit);
+public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteNdArray> dataInit);
+public static Tensor<String> createString(long[] shape, int elementLength, byte paddingValue, Consumer<StringNdArray> dataInit);
 
-public static Tensor<Double> createDenseDouble(long[] shape, Consumer<DoubleNdArray> dataInit);
-public static Tensor<Double> createDenseDouble(DoubleNdArray data);
-
-public static Tensor<Integer> createDenseInt(long[] shape, Consumer<IntNdArray> dataInit);
-public static Tensor<Integer> createDenseInt(IntNdArray data);
-
-public static Tensor<Long> createDenseLong(long[] shape, Consumer<LongNdArray> dataInit);
-public static Tensor<Long> createDenseLong(LongNdArray data);
-
-public static Tensor<Boolean> createDenseBoolean(long[] shape, Consumer<BooleanNdArray> dataInit);
-public static Tensor<Boolean> createDenseBoolean(BooleanNdArray data);
-
-public static Tensor<UInt8> createDenseUInt8(long[] shape, Consumer<ByteNdArray> dataInit);
-public static Tensor<UInt8> createDenseUInt8(ByteNdArray data);
-
-public static Tensor<String> createDenseString(long[] shape, int elementLength, byte paddingValue, Consumer<StringNdArray> dataInit);
-public static Tensor<String> createDenseString(StringNdArray data);
+public static Tensor<T> create(Class<T> type, NdArray data);
 ```
-All methods taking a shape in parameter first create an empty `Tensor` whose memory is then directly mapped to a `NdArray` 
+The first group of factories create an empty `Tensor` whose memory is then directly mapped to a `NdArray` 
 and passed to the `dataInit` function to initialize its data. Note that for strings, this is only possible if all elements 
 can be padded to the same length.
 
-Other factories are offered in case the shape or element length is unknown. The user can still work with `NdArray` by first 
-creating a "resizable" array to collect the tensor elements and copy the data to the tensor at creation time. This resizable
-array can be created by invoking `*NdArray.create(int initialCapacity);`. Note that those factories could be used as well
-to copy the data of a tensor to a new tensor in Java (e.g. `Tensors.createDenseFloat(t.floatData())`, as described later in this
-document).
+The last factory is available in case the shape or element length is unknown or when dealing with
+variable-length datatypes. In this case, the user is responsible of allocating a "resizable" `NdArray`, initialize its data
+and pass it to the factory, which will copy its content to the tensor buffer. This is similar to current behaviour 
+but it allows users to work with multidimensional arrays instead of a flat NIO buffer view.
 
 Once created, Tensors are immutable and their data could not be modified anymore.
 
@@ -165,13 +167,13 @@ We can simplify this process by following the same approach as dense tensors and
 factories to the `Tensors` class:
 ```java
 public static SparseTensor<Float> createSparseFloat(long[] shape, int numValues, Consumer<FloatNdArray> dataInit);
-
 public static SparseTensor<Double> createSparseDouble(long[] shape, int numValues, Consumer<DoubleNdArray> dataInit);
 public static SparseTensor<Integer> createSparseInt(long[] shape, int numValues, Consumer<IntNdArray> dataInit);
 public static SparseTensor<Long> createSparseLong(long[] shape, int numValues, Consumer<LongNdArray> dataInit);
 public static SparseTensor<Boolean> createSparseBoolean(long[] shape, int numValues, Consumer<BooleanNdArray> dataInit);
 public static SparseTensor<UInt8> createSparseUInt8(long[] shape, int numValues, Consumer<ByteNdArray> dataInit);
 public static SparseTensor<String> createSparseString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringNdArray> dataInit);
+
 ```
 The same `*NdArray` interfaces can be reused to write (or read) sparse data. In this case, the backing 
 implementation class keeps track of elements that are set by writing down their index in a tensor and their
