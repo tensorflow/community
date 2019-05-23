@@ -58,11 +58,7 @@ than their autoboxed equivalent.
 
 For simplicity, only the classes for the `Double` variant are presented below:
 ```java
-interface NdArray {
-  void copyTo(ByteBuffer buffer);  // serialize whole content of this array to a buffer
-}
-
-interface DoubleNdArray extends NdArray {
+interface DoubleNdArray {
 
   int rank();  // number of dimensions (or rank) of this array
   long size(int dimension);  // number of elements in the given dimension
@@ -116,15 +112,6 @@ class DoubleNdArrayCursor {
 ```
 See the next section for some detailed examples of usage.
 
-Also, multiple implementations will be available for each `NdArray` variant, depending on how data is stored. 
-The creation of those arrays will be made through the factory class `NdArrays`:
-```java
-class NdArrays {
-  DoubleNdArray createDouble(ByteBuffer buffer);  // maps contiguous memory, like tensor buffers, to a nd-array
-  DoubleNdArray createDouble(int capacity);  // create a growable array whose capacity is increased by `capacity`
-}
-```
-
 ### Creating Dense Tensors
 
 Currently, when creating dense tensors, temporary buffers that contains the initial data are allocated by the user 
@@ -143,17 +130,15 @@ public static Tensor<Long> createLong(long[] shape, Consumer<LongNdArray> dataIn
 public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanNdArray> dataInit);
 public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteNdArray> dataInit);
 public static Tensor<String> createString(long[] shape, int elementLength, byte paddingValue, Consumer<StringNdArray> dataInit);
-
-public static Tensor<T> create(Class<T> type, NdArray data);
+public static Tensor<String> createString(long[] shape, Consumer<StringNdArray> dataInit);
 ```
-The first group of factories create an empty `Tensor` whose memory is then directly mapped to a `NdArray` 
+The first n-1 factories create an empty `Tensor` whose memory is then directly mapped to a `NdArray` 
 and passed to the `dataInit` function to initialize its data. Note that for strings, this is only possible if all elements 
 can be padded to the same length.
 
-The last factory is available in case the shape or element length is unknown or when dealing with
-variable-length datatypes. In this case, the user is responsible of allocating a "resizable" `NdArray`, initialize its data
-and pass it to the factory, which will copy its content to the tensor buffer. This is similar to current behaviour 
-but it allows users to work with multidimensional arrays instead of a flat NIO buffer view.
+The last factory allows the creation of string tensors with variable element length. The array passed to the
+`dataInit` method will first buffered all string elements before allocating a tensor buffer of the right
+size.
 
 Once created, Tensors are immutable and their data could not be modified anymore.
 
@@ -177,7 +162,7 @@ public static SparseTensor<String> createSparseString(long[] shape, int numValue
 ```
 The same `*NdArray` interfaces can be reused to write (or read) sparse data. In this case, the backing 
 implementation class keeps track of elements that are set by writing down their index in a tensor and their
-value in another.
+value in another. `numValues` is the number of values actually set in the sparse tensor.
 
 The returned type `SparseTensor` just act as a container for the 3 tensors that compose a sparse tensor,
 where each of them can be retrieved individually to feed operands to an sparse operation like `SparseAdd`.
