@@ -56,23 +56,6 @@ There will be a variant of those classes and interfaces for each tensor datatype
 users to work with Java primitive types, which tends to be less memory-consuming and provide better performances 
 than their autoboxed equivalent.
 
-While `*Tensor` classes try to replicate standard ND array in java using indices, `*TensorCursor` classes can be
-used to easily iterates in their values. e.g.
-```java
-// replicates to matrix[x][y]
-tensor.get(x, y);  
-
-// replicates
-// for (int x = 0; x < matrix.length; ++x) {
-//  for (int y = 0; y < matrix[x].length; ++i) {
-//    System.out.println(matrix[0][y]);
-//  }
-//}
-tensor.cursor().whileNext(r -> 
-  r.cursor().whileNext(System.out::println);
-);
-```  
-
 For simplicity, only the classes for the `Double` variant are presented below:
 ```java
 interface DoubleTensor {
@@ -102,14 +85,15 @@ interface DoubleTensor {
   void write(InputStream istream);  // write elements of this tensor from `istream`, up to `totalSize()`
 }
 
-class DoubleTensorCursor {
+class DoubleTensorCursor implements Iterator<DoubleTensor> {
+
+  boolean hasNext();  // true if there is more elements
+  DoubleTensor next();  // returns the current element and increment position
 
   DoubleTensor tensor();  // returns the tensor this cursor is iterating into
   long position();  // position of the current element in the initial sequence
   void position(long value);  // resets position of this cursor
-  boolean hasNext();  // true if there is more elements
-  DoubleTensor next();  // returns the current element and increment position
-  DoubleTensorCursor cursor();  // returns a cursors to the current element and increment position
+  DoubleTensorCursor cursor();  // returns a cursor of the current element and increment position
   void whileNext(Consumer<DoubleTensorCursor> func);
   
   // Read operations
@@ -127,7 +111,28 @@ class DoubleTensorCursor {
   void put(DoubleTensor tensor);  // copy elements of `tensor` into the current element and increment position
 }
 ```
-See the next section for some detailed examples of usage.
+While `*Tensor` classes try to replicate standard ND array in java using indices, `*TensorCursor` classes can be
+used to easily iterates in their values. e.g.
+```java
+// matrix[x][y]
+tensor.get(x, y);
+
+// for (int x = 0; x < matrix.length; ++x) {
+//  for (int y = 0; y < matrix[x].length; ++i) {
+//    System.out.println(matrix[x][y]);
+//  }
+//}
+tensor.cursor().whileNext(r -> 
+  r.cursor().whileNext(System.out::println);
+);
+```
+Also, `*Tensor` classes supports special types of index allowing to slice a given tensor in any direction. For 
+example, to retrieve in depth all first elements of a rank-3 tensor, it is possible to do this:
+```
+tensor.slice(all(), 0, 0).get(array);
+```
+
+See the next section for some more detailed examples of their usage.
 
 ### Creating Dense Tensors
 
