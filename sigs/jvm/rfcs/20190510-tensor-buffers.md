@@ -44,70 +44,87 @@ to access directly the tensor data without the need of copying their buffer.
 current client that is set to compile in Java 7 for supporting older Android devices. We need to confirm
 with Android team if it is ok now to switch to Java 8.*
 
-### MultiDimensional Arrays
+### Tensor Data Mapping
 
-In TensorFlow, tensors are represented by multidimensional arrays but stored in contiguous memory. To facilitate the usage
-of such data structure, the following tools will be provided by the Java client:
+In TensorFlow, tensors are represented by multidimensional arrays stored in contiguous memory. To ease the task
+of accessing data in such structure, following utilities will be provided by TF Java:
 
-* `NdArray`: An index-based interface representing a multidimensional array.
-* `NdArrayCursor`: An sequence-based class to iterate in a `NdArray`.
+* `*Tensor`: An index-based interface mapping a tensor as a multidimensional array. 
+* `*TensorCursor`: An sequence-based class to iterate in a `*Tensor`.
 
 There will be a variant of those classes and interfaces for each tensor datatype supported in Java. This will allow 
 users to work with Java primitive types, which tends to be less memory-consuming and provide better performances 
-than their autoboxed equivalent. 
+than their autoboxed equivalent.
+
+While `*Tensor` classes try to replicate standard ND array in java using indices, `*TensorCursor` classes can be
+used to easily iterates in their values. e.g.
+```java
+// replicates to matrix[x][y]
+tensor.get(x, y);  
+
+// replicates
+// for (int x = 0; x < matrix.length; ++x) {
+//  for (int y = 0; y < matrix[x].length; ++i) {
+//    System.out.println(matrix[0][y]);
+//  }
+//}
+tensor.cursor().whileNext(r -> 
+  r.cursor().whileNext(System.out::println);
+);
+```  
 
 For simplicity, only the classes for the `Double` variant are presented below:
 ```java
-interface DoubleNdArray {
+interface DoubleTensor {
 
-  int rank();  // number of dimensions (or rank) of this array
+  int rank();  // number of dimensions (or rank) of this tensor
   long size(int dimension);  // number of elements in the given dimension
-  long totalSize();  // total number of elements in this array
-  DoubleNdArrayCursor cursor();  // iterates through the elements of this array
-  DoubleNdArray slice(int... indices);  // returns a slice of this array across one or more of its dimensions
-  DoubleNdArray slice(Object... indices);  // returns a slice of this array across one or more of its dimensions, 
-                                           // using various types of index
+  long totalSize();  // total number of elements in this tensor
+  DoubleTensorCursor cursor();  // iterates through the elements of this tensor
+  DoubleTensor slice(int... indices);  // returns a slice of this tensor across one or more of its dimensions
+  DoubleTensor slice(Object... indices);  // returns a slice of this array across one or more of its dimensions, 
+                                          // using various types of index
 
   // Read operations
-  double get(int... indices);  // get this rank-0 array (or a slice of) as a scalar value
-  DoubleStream stream(int... indices);  // get values of this array (or a slice of) as a stream
-  void get(double[] array, int... indices);  // get values of this array (or a slice of) into `array`
-  void get(DoubleBuffer buffer, int... indices);  // copy values of this array (or a slice of) into `buffer`
-  void get(DoubleNdArray array, int... indices);  // copy values of this array (or a slice of) into `array`
-  void read(OutputStream ostream);  // read elements of this array into `ostream`, up to `totalSize()` 
+  double get(int... indices);  // get this rank-0 tensor (or a slice of) as a scalar value
+  DoubleStream stream(int... indices);  // get values of this tensor (or a slice of) as a stream
+  void get(double[] array, int... indices);  // get values of this tensor (or a slice of) into `array`
+  void get(DoubleBuffer buffer, int... indices);  // copy values of this tensor (or a slice of) into `buffer`
+  void get(DoubleTensor array, int... indices);  // copy values of this tensor (or a slice of) into `tensor`
+  void read(OutputStream ostream);  // read elements of this tensor into `ostream`, up to `totalSize()` 
   
   // Write operations
-  void put(double value, int... indices);  // set the scalar value of this rank-0 array (or a slice of)
-  void put(DoubleStream stream, int... indices);  // copy elements of `stream` into this array
-  void put(DoubleBuffer buffer, int... indices);  // copy elements of `buffer` into this array
-  void put(double[] array, int... indices);  // copy elements of `array` into this array
-  void put(DoubleNdArray array, int... indices);  // copy elements of `array` into this array
-  void write(InputStream istream);  // write elements of this array from `istream`, up to `totalSize()`
+  void put(double value, int... indices);  // set the scalar value of this rank-0 tensor (or a slice of)
+  void put(DoubleStream stream, int... indices);  // copy elements of `stream` into this tensor
+  void put(DoubleBuffer buffer, int... indices);  // copy elements of `buffer` into this tensor
+  void put(double[] array, int... indices);  // copy elements of `array` into this tensor
+  void put(DoubleTensor tensor, int... indices);  // copy elements of `tensor` into this tensor
+  void write(InputStream istream);  // write elements of this tensor from `istream`, up to `totalSize()`
 }
 
-class DoubleNdArrayCursor {
+class DoubleTensorCursor {
 
-  DoubleNdArray array();  // returns the backing NdArray this cursor is iterating into
+  DoubleTensor tensor();  // returns the tensor this cursor is iterating into
   long position();  // position of the current element in the initial sequence
   void position(long value);  // resets position of this cursor
   boolean hasNext();  // true if there is more elements
-  DoubleNdArray next();  // returns the current element and increment position
-  DoubleNdArrayCursor cursor();  // returns a cursors to the current element and increment position
-  void whileNext(Consumer<DoubleNdArrayCursor> func);
+  DoubleTensor next();  // returns the current element and increment position
+  DoubleTensorCursor cursor();  // returns a cursors to the current element and increment position
+  void whileNext(Consumer<DoubleTensorCursor> func);
   
   // Read operations
   double get();  // get the scalar value of the current element and increment position
   void get(double[] array);  // copy values of the current element into `array` and increment position
   DoubleStream stream();  // get values of the current element as a stream and increment position
   void get(DoubleBuffer buffer);  // copy values of the current element into `buffer` and increment position
-  void get(DoubleNdArray array);  // copy values of the current element into `array` and increment position
+  void get(DoubleTensor tensor);  // copy values of the current element into `tensor` and increment position
   
   // Write operations
   void put(double value);  // set the scalar value of the current element and increment position
   void put(double[] array);  // copy elements of `array` into the current element and increment position
   void put(DoubleStream stream);  // copy elements of `stream` into the current element and increment position
   void put(DoubleBuffer buffer);  // copy elements of `buffer` into the current element and increment position
-  void put(DoubleNdArray array);  // copy elements of `array` into the current element and increment position
+  void put(DoubleTensor tensor);  // copy elements of `tensor` into the current element and increment position
 }
 ```
 See the next section for some detailed examples of usage.
