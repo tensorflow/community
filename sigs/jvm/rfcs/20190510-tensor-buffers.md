@@ -52,6 +52,9 @@ of accessing data in such structure, following utilities will be provided by TF 
 * `*Tensor`: An index-based interface mapping a tensor as a multidimensional array. 
 * `*TensorCursor`: An sequence-based class to iterate in a `*Tensor`.
 
+*It might be confusing that those new classes are named `*Tensor` but it is the right name as they represent
+a real tensor with its data, while the actual `Tensor<*>` class in TF Java is in fact just a handle to a tensor*
+
 There will be a variant of those classes and interfaces for each tensor datatype supported in Java. This will allow 
 users to work with Java primitive types, which tends to be less memory-consuming and provide better performances 
 than their autoboxed equivalent.
@@ -155,16 +158,16 @@ variable-length datatypes (like strings), data must be first collected in order 
 
 Following factories will be added to the `Tensors` class:
 ```java
-public static Tensor<Float> createFloat(long[] shape, Consumer<FloatNdArray> dataInit);
-public static Tensor<Double> createDouble(long[] shape, Consumer<DoubleNdArray> dataInit);
-public static Tensor<Integer> createInt(long[] shape, Consumer<IntNdArray> dataInit);
-public static Tensor<Long> createLong(long[] shape, Consumer<LongNdArray> dataInit);
-public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanNdArray> dataInit);
-public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteNdArray> dataInit);
-public static Tensor<String> createString(long[] shape, int elementLength, byte paddingValue, Consumer<StringNdArray> dataInit);
-public static Tensor<String> createString(long[] shape, Consumer<StringNdArray> dataInit);
+public static Tensor<Float> createFloat(long[] shape, Consumer<FloatTensor> dataInit);
+public static Tensor<Double> createDouble(long[] shape, Consumer<DoubleTensor> dataInit);
+public static Tensor<Integer> createInt(long[] shape, Consumer<IntTensoe> dataInit);
+public static Tensor<Long> createLong(long[] shape, Consumer<LongTensor> dataInit);
+public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanTensor> dataInit);
+public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteTensor> dataInit);
+public static Tensor<String> createString(long[] shape, int elementLength, byte paddingValue, Consumer<StringTensor> dataInit);
+public static Tensor<String> createString(long[] shape, Consumer<StringTensor> dataInit);
 ```
-The first n-1 factories create an empty `Tensor` whose memory is then directly mapped to a `NdArray` 
+The first n-1 factories create an empty `Tensor` whose memory is then directly mapped to a `*Tensor` 
 and passed to the `dataInit` function to initialize its data. Note that for strings, this is only possible if all elements 
 can be padded to the same length.
 
@@ -183,13 +186,13 @@ indices with their values manually.
 We can simplify this process by following the same approach as dense tensors and adding those
 factories to the `Tensors` class:
 ```java
-public static SparseTensor<Float> createSparseFloat(long[] shape, int numValues, Consumer<FloatNdArray> dataInit);
-public static SparseTensor<Double> createSparseDouble(long[] shape, int numValues, Consumer<DoubleNdArray> dataInit);
-public static SparseTensor<Integer> createSparseInt(long[] shape, int numValues, Consumer<IntNdArray> dataInit);
-public static SparseTensor<Long> createSparseLong(long[] shape, int numValues, Consumer<LongNdArray> dataInit);
-public static SparseTensor<Boolean> createSparseBoolean(long[] shape, int numValues, Consumer<BooleanNdArray> dataInit);
-public static SparseTensor<UInt8> createSparseUInt8(long[] shape, int numValues, Consumer<ByteNdArray> dataInit);
-public static SparseTensor<String> createSparseString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringNdArray> dataInit);
+public static SparseTensor<Float> createSparseFloat(long[] shape, int numValues, Consumer<FloatTensor> dataInit);
+public static SparseTensor<Double> createSparseDouble(long[] shape, int numValues, Consumer<DoubleTensor> dataInit);
+public static SparseTensor<Integer> createSparseInt(long[] shape, int numValues, Consumer<IntTensor> dataInit);
+public static SparseTensor<Long> createSparseLong(long[] shape, int numValues, Consumer<LongTensor> dataInit);
+public static SparseTensor<Boolean> createSparseBoolean(long[] shape, int numValues, Consumer<BooleanTensor> dataInit);
+public static SparseTensor<UInt8> createSparseUInt8(long[] shape, int numValues, Consumer<ByteTensor> dataInit);
+public static SparseTensor<String> createSparseString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringTensor> dataInit);
 
 ```
 The same `*NdArray` interfaces can be reused to write (or read) sparse data. In this case, the backing 
@@ -207,13 +210,13 @@ directly when reading its data.
 
 The following methods will be added to the `Tensor` class:
 ```java
-public FloatNdArray floatData();
-public DoubleNdArray doubleData();
-public IntNdArray intData();
-public LongNdArray longData();
-public BooleanNdArray booleanData();
-public ByteNdArray uInt8Data();
-public StringNdArray stringData();
+public FloatTensor floatData();
+public DoubleTensor doubleData();
+public IntTensor intData();
+public LongTensor longData();
+public BooleanTensor booleanData();
+public ByteTensor uInt8Data();
+public StringTensor stringData();
 ```
 It is up to the user to know which of these methods should be called on a tensor of a given type, similar
 to the `*Value()` methods of the same class.
