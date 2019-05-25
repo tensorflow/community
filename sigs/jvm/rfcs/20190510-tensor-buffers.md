@@ -52,14 +52,14 @@ of accessing data in such structure, following utilities will be provided by TF 
 * `*Tensor`: An index-based interface mapping a tensor as a multidimensional array. 
 * `*TensorCursor`: An sequence-based class to iterate in a `*Tensor`.
 
-*Note: It might be confusing that those new classes are named `*Tensor` but it is the right name as they represent
-a real tensor with its data, while the actual `Tensor<*>` class in TF Java is in fact just a handle to a tensor.*
+*Note: `*Tensor` , which represent a real local tensor with its data, should not be confused with the existing 
+`Tensor<>` class in TF Java, which is in fact just a handle to a given tensor.*
 
-There will be a variant of those classes and interfaces for each tensor datatype supported in Java. This will allow 
+There is a variant of those classes and interfaces for each tensor datatype supported in Java. This allows 
 users to work with Java primitive types, which tends to be less memory-consuming and provide better performances 
 than their autoboxed equivalent.
 
-For simplicity, only the classes for the `Double` variant are presented below:
+For readability, only the `Double` variant of those classes is shown below:
 ```java
 interface DoubleTensor {
 
@@ -114,18 +114,19 @@ class DoubleTensorCursor implements Iterator<DoubleTensor> {
   void put(DoubleTensor tensor);  // copy elements of `tensor` into the current element and increment position
 }
 ```
-`*Tensor` classes goal is to replicate standard multidimensional arrays in java using indexation. For example, 
-to access a value in a rank-2 tensor, it is possible to do:
+`*Tensor` classes goal is to replicate standard multidimensional arrays in java, using indexation. For example, 
+to access a value in a rank-2 tensor in `x`, `y`, it is possible to simply do:
 ```java
-tensor.get(x, y);  // equivalent to matrix[x][y]
+tensor.get(0);  // returns vector at x=0 (== matrix[0])
+tensor.get(0, 0);  // returns value at x=0, y=0 (== matrix[0][0])
 ```
 `*Tensor` classes also allows to work with a slice of a given tensor in any direction, using special selectors 
 as indices. For example, for a given rank-3 tensor in `z`, `x`, `y`, it is possible to visit all values in any 
 of those axis.
 ```java
-tensor.slice(0);  // returns rank-2 tensor at z=0
-tensor.slice(all(), 0, 0);  // returns rank-1 vector at x=0, y=0
-tensor.slice(0, all(), 0);  // returns rank-1 vector at z=0, y=0
+tensor.slice(0);  // returns matrix at z=0 (== cube[0])
+tensor.slice(all(), 0, 0);  // returns vector at x=0, y=0 (no equivalent in java)
+tensor.slice(0, all(), 0);  // returns vector at z=0, y=0 (no equivalent in java)
 ```
 Here's a list of some of those special selectors:
 * `all()`: matches all elements in the given dimension
@@ -134,7 +135,7 @@ Here's a list of some of those special selectors:
 * `even()`, `odd()`, `mod(int m)`, etc.
 
 While `*Tensor` classes focuses on tensor indexation, `*TensorCursor` can be used to easily iterate in the values
-of a given tensor, e.g. for a given rank-2 tensor in `x`, `y`:
+of a given tensor. For example:
 ```java
 // for (int x = 0; x < matrix.length; ++x) {
 //   for (int y = 0; y < matrix[x].length; ++i) {
