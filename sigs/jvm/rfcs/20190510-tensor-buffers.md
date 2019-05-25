@@ -111,27 +111,37 @@ class DoubleTensorCursor implements Iterator<DoubleTensor> {
   void put(DoubleTensor tensor);  // copy elements of `tensor` into the current element and increment position
 }
 ```
-While `*Tensor` classes try to replicate standard ND array in java using indices, `*TensorCursor` classes can be
-used to easily iterates in their values. e.g.
+`*Tensor` classes goal is to replicate standard multidimensional arrays in java using indexation. For example, 
+to access a value in a rank-2 tensor, it is possible to do:
 ```java
-// matrix[x][y]
-tensor.get(x, y);
+tensor.get(x, y);  // equivalent to matrix[x][y]
+```
+`*Tensor` classes also allows to work with a slice of a given tensor in any direction, using special selectors 
+as indices. For example, for a given rank-3 tensor in `z`, `x`, `y`, it is possible to visit all values in any 
+of those axis.
+```java
+tensor.slice(0);  // returns rank-2 tensor at z=0
+tensor.slice(all(), 0, 0);  // returns rank-1 vector at x=0, y=0
+tensor.slice(0, all(), 0);  // returns rank-1 vector at z=0, y=0
+```
+Here's a list of some of those special selectors:
+* `all()`: matches all elements in the given dimension
+* `seq(int i...)`: matches all elements at the given indices
+* `range(int start, int end)`: matches all elements whose indices is in the given range
+* `even()`, `odd()`, `mod(int m)`, etc.
 
+While `*Tensor` classes focuses on tensor indexation, `*TensorCursor` can be used to easily iterate in the values
+of a given tensor, e.g. for a given rank-2 tensor in `x`, `y`:
+```java
 // for (int x = 0; x < matrix.length; ++x) {
-//  for (int y = 0; y < matrix[x].length; ++i) {
-//    System.out.println(matrix[x][y]);
-//  }
-//}
+//   for (int y = 0; y < matrix[x].length; ++i) {
+//     System.out.println(matrix[x][y]);
+//   }
+// }
 tensor.cursor().whileNext(r -> 
-  r.cursor().whileNext(System.out::println);
+  r.cursor().whileNext(c -> System.out::println(c.get());
 );
 ```
-Also, `*Tensor` classes supports special types of index allowing to slice a given tensor in any direction. For 
-example, to retrieve in depth all first elements of a rank-3 tensor, it is possible to do this:
-```
-tensor.slice(all(), 0, 0).get(array);
-```
-
 See the next section for some more detailed examples of their usage.
 
 ### Creating Dense Tensors
