@@ -52,8 +52,8 @@ of accessing data in such structure, following utilities will be provided by TF 
 * `*Tensor`: An index-based interface mapping a tensor as a multidimensional array. 
 * `*TensorCursor`: An sequence-based class to iterate in a `*Tensor`.
 
-*It might be confusing that those new classes are named `*Tensor` but it is the right name as they represent
-a real tensor with its data, while the actual `Tensor<*>` class in TF Java is in fact just a handle to a tensor*
+*Note: It might be confusing that those new classes are named `*Tensor` but it is the right name as they represent
+a real tensor with its data, while the actual `Tensor<*>` class in TF Java is in fact just a handle to a tensor.*
 
 There will be a variant of those classes and interfaces for each tensor datatype supported in Java. This will allow 
 users to work with Java primitive types, which tends to be less memory-consuming and provide better performances 
