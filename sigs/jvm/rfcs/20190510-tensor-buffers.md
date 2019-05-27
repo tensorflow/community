@@ -47,11 +47,12 @@ with Android team if it is ok now to switch to Java 8.*
 ### Tensor Data Utils
 
 A new set of utilities will be distributed with TensorFlow to improve read and write operations in a tensor, often represented
-as a multidimensional array. At the root of this set is the `[Type]Tensor` interfaces (not to be confused with the existing 
+as a multidimensional array. At the root of this set is the <code><i>Type</i>Tensor</code> interfaces (not to be confused with the existing 
 `Tensor<>` class in TF Java, which is in fact just a symbolic handle to a given tensor).
 
-For each tensor datatype supported in Java, a variant of `[Type]Tensor` interface is provided to allow users to work with Java 
-primitive types, which tends to be less memory-consuming and provide better performances than their autoboxed equivalent.
+For each tensor datatype supported in Java, a variant of <code><i>Type</i>Tensor</code> interface is 
+provided to allow users to work with Java primitive types, which tends to be less memory-consuming and 
+provide better performances than their autoboxed equivalent.
 
 For readability, only the `Double` variant of this interface is shown below:
 ```java
@@ -88,9 +89,14 @@ class DoubleIterator {
   void forEach(DoubleConsumer func);  // consume all remaining elements
   void onEach(DoubleSupplier func);  // supply all remaining elements
 }
+
+interface SparseDoubleTensor extends DoubleTensor {
+  IntTensor indices();  // returns tensor holding indices of the values in this sparse tensor
+  DoubleTensor values();  // returns values of this sparse tensor
+}
 ```
-The `[Type]Tensor` interfaces tends to replicate indexation used with arrays in java. For example, to access a value in a 
-rank-2 tensor in `y`, `x`:
+The <code><i>Type</i>Tensor</code> interfaces tends to replicate indexation used with arrays in java. 
+For example, to access a value in a rank-2 tensor in `y`, `x`:
 ```java
 tensor.get(0, 0);  // returns scalar at y=0, x=0
 tensor.put(10.0, 0, 0);  // sets scalar at y=0, x=0
@@ -155,17 +161,21 @@ public static Tensor<Boolean> create(BooleanTensor data);
 public static Tensor<UInt8> create(ByteTensor data);
 public static Tensor<String> create(StringTensor data);
 ```
-The first block of factories create an empty tensor whose memory is then directly mapped to a `[Type]Tensor` by the
-`Dense[Type]Tensor` class. This data structure is then passed to the `dataInit` function for initialization. 
-Note that for strings, this is only possible if all elements can be padded to the same length.
+The first block of factories create an empty tensor whose memory is then directly mapped to a 
+<code><i>Type</i>Tensor</code> by the <code>Dense<i>Type</i>Tensor</code> class. This data structure is 
+then passed to the `dataInit` function for initialization. Note that for strings, this is only possible 
+if all elements can be padded to the same length.
 
 The last block of factories allows the registration of tensors in TensorFlow from tensor data that has been allocated
 and initialized by the user. This is useful when the user does not have all required information to use one factory
 method of the previous block, in which case we need to collect all data before knowing what the size of the chunk of
-contiguous memory we need to allocate for the dense tensor. This is often the case when working in variable-length datatypes,
-like strings. 
+contiguous memory we need to allocate for the dense tensor. This is often the case when working in variable-length 
+datatypes, like strings. 
 
-An `ArrayList[Type]Tensor` could be an example of a naive implementation of a `[Type]Tensor` that can grow in size.
+In case, we need a different type of <code><i>Type</i>Tensor</code> implementation, that is instantiated by the user
+and simply keeps all its elements on the JVM memory heap. An <code>NdArray<i>Type</i>Tensor</code> could be a first
+naive representation of such tensor, where all elements are kept in a Java multidimensional array that can grow in size 
+if needed.
 
 ### Creating Sparse Tensors
 
@@ -183,19 +193,62 @@ public static SparseTensor<Long> createSparseLong(long[] shape, int numValues, C
 public static SparseTensor<Boolean> createSparseBoolean(long[] shape, int numValues, Consumer<BooleanTensor> dataInit);
 public static SparseTensor<UInt8> createSparseUInt8(long[] shape, int numValues, Consumer<ByteTensor> dataInit);
 public static SparseTensor<String> createSparseString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringTensor> dataInit);
+
+public static SparseTensor<Float> create(SparseFloatTensor data);
+public static SparseTensor<Double> create(SparseDoubleTensor data);
+public static SparseTensor<Integer> create(SparseIntTensor data);
+public static SparseTensor<Long> create(SparseLongTensor data);
+public static SparseTensor<Boolean> create(SparseBooleanTensor data);
+public static SparseTensor<UInt8> create(SparseByteTensor data);
+public static SparseTensor<String> create(SparseStringTensor data);
 ```
-The same `[Type]Tensor` interfaces can be reused to initialize sparse data. In this case, the backing 
-implementation class `Sparse[Type]Tensor` keeps track of elements that are set by writing down their index in a dense tensor 
-and their value in another. `numValues` is the number of values actually set in the sparse tensor.
+The same <code><i>Type</i>Tensor</code> interfaces can be used to initialize sparse data. In this case, the backing implementation class <code>Sparse<i>Type</i>Tensor</code> keeps track of elements that are set by writing down their 
+index in a dense tensor and their value in another. `numValues` is the number of values actually set in the sparse tensor.
 
 The returned type `SparseTensor<>` just act as a container for the 3 dense tensors that compose a sparse tensor,
 where each of them can be retrieved individually to feed operands to an sparse operation like `SparseAdd`.
 
+If the number of values initialized is unknown, we need to take a similar approach as with dense tensors where user
+must allocate and initialize the data before creating the tensor in TensorFlow, e.g. by instantiating a 
+<code>SparseNdArray<i>Type</i>Tensor<code>.
+
+### Creating Ragged Tensors
+
+A ragged tensor is a tensor that is composed of one or more ragged or dense tensors. Ragged tensors allow
+users to work with variable-length elements in any dimension (except of the first). 
+
+To support those tensors as well, following factories can be added to the `Tensors` class:
+```java
+public static RaggedTensor<Float> createRaggedFloat(long[] shape, Consumer<FloatTensor> dataInit);
+public static RaggedTensor<Double> createRaggedDouble(long[] shape, Consumer<DoubleTensor> dataInit);
+public static RaggedTensor<Integer> createRaggedInt(long[] shape, Consumer<IntTensor> dataInit);
+public static RaggedTensor<Long> createRaggedLong(long[] shape, Consumer<LongTensor> dataInit);
+public static RaggedTensor<Boolean> createRaggedBoolean(long[] shape, Consumer<BooleanTensor> dataInit);
+public static RaggedTensor<UInt8> createRaggedUInt8(long[] shape, Consumer<ByteTensor> dataInit);
+public static RaggedTensor<String> createRaggedString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringTensor> dataInit);
+
+public static SparseTensor<Float> create(SparseFloatTensor data);
+public static SparseTensor<Double> create(SparseDoubleTensor data);
+public static SparseTensor<Integer> create(SparseIntTensor data);
+public static SparseTensor<Long> create(SparseLongTensor data);
+public static SparseTensor<Boolean> create(SparseBooleanTensor data);
+public static SparseTensor<UInt8> create(SparseByteTensor data);
+public static SparseTensor<String> create(SparseStringTensor data);
+```
+The same <code><i>Type</i>Tensor</code> interfaces can be used to initialize sparse data. In this case, the backing implementation class <code>Sparse<i>Type</i>Tensor</code> keeps track of elements that are set by writing down their 
+index in a dense tensor and their value in another. `numValues` is the number of values actually set in the sparse tensor.
+
+The returned type `SparseTensor<>` just act as a container for the 3 dense tensors that compose a sparse tensor,
+where each of them can be retrieved individually to feed operands to an sparse operation like `SparseAdd`.
+
+If the number of values initialized is unknown, we need to take a similar approach as with dense tensors where user
+must allocate and initialize the data before creating the tensor in TensorFlow, e.g. by instantiating a 
+<code>SparseNdArray<i>Type</i>Tensor<code>.
+
 ### Reading Tensor Data
 
-Note that once created, Tensors are immutable and their data could not be modified anymore.
-
-Currently, in order to read a tensor, the user needs to create a temporary buffer into which its data is copied. 
+Note that once created, Tensors are immutable and their data could not be modified anymore. But right now, to read
+data from a tensor, the user needs to create a temporary buffer into which its data is copied. 
 Once again, this data copy and additional memory allocation will be avoided by accessing the tensor buffer 
 directly when reading its data.
 
