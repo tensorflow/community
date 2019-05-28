@@ -321,7 +321,7 @@ matrix.stream();  // 0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f
 
 matrix3d.elements().forEach(c -> c.stream());  // [10.0, 10.1, 10.2, 11.0, 11.1, 11.2], 
                                                // [20.0, 20.1, 20.2, 21.0, 21.1, 21.2] 
-text.scalars().forEach(System.out::println);  // "In the town", "where I was", "born"
+text.scalars().forEach(System.out::println);  // "in the town", "where I was", "born"
 
 // Working with slices
 
@@ -343,6 +343,7 @@ SparseTensor<Float> sparseTensor = Tensors.createSparseFloat(new long[]{2, 4}, 3
   data.put(10.0f, 0, 0);
   data.put(20.0f, 0, 3);
   data.put(30.0f, 1, 1);
+  data.put(40.0f, 2, 1);  // fails, index oob
 });
 
 sparseTensor.get(0, 0);  // 10.0f
@@ -362,7 +363,7 @@ RaggedTensor<Float> raggedTensor = Tensors.createRaggedFloat(new long[]{3, -1}, 
 
 raggedTensor.get(0, 1);  // 20.0f
 raggedTensor.get(1, 0);  // 40.0f
-raggedTensor.get(1, 1);  // fails, IndexOutOfBoundException
+raggedTensor.get(1, 1);  // fails, index oob
 raggedTensor.elements().forEach(e -> e.stream());  // [10.0f, 20.0f, 30.0f], [40.0f], [50.0f, 60.0f]
 ```
 
