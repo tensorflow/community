@@ -91,11 +91,6 @@ class DoubleIterator {
   void forEach(DoubleConsumer func);  // consume all remaining elements
   void onEach(DoubleSupplier func);  // supply all remaining elements
 }
-
-interface SparseDoubleTensor extends DoubleTensor {
-  IntTensor indices();  // returns tensor holding indices of the values in this sparse tensor
-  DoubleTensor values();  // returns values of this sparse tensor
-}
 ```
 The <code><i>Type</i>Tensor</code> interfaces tends to replicate indexation used with arrays in java. 
 For example, to access a value in a rank-2 tensor in `y`, `x`:
@@ -154,30 +149,14 @@ public static Tensor<Long> createLong(long[] shape, Consumer<LongTensor> dataIni
 public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanTensor> dataInit);
 public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteTensor> dataInit);
 public static Tensor<String> createString(long[] shape, int elementLength, byte paddingValue, Consumer<StringTensor> dataInit);
-
-public static Tensor<Float> create(FloatTensor data);
-public static Tensor<Double> create(DoubleTensor data);
-public static Tensor<Integer> create(IntTensor data);
-public static Tensor<Long> create(LongTensor data);
-public static Tensor<Boolean> create(BooleanTensor data);
-public static Tensor<UInt8> create(ByteTensor data);
-public static Tensor<String> create(StringTensor data);
+public static Tensor<String> createString(long[] shape, Consumer<StringTensor> dataInit);
 ```
-The first block of factories create an empty tensor whose memory is then directly mapped to a 
-<code><i>Type</i>Tensor</code> by the <code>Dense<i>Type</i>Tensor</code> class. This data structure is 
-then passed to the `dataInit` function for initialization. Note that for strings, this is only possible 
-if all elements can be padded to the same length.
+All factories except the last create an empty tensor whose memory is then directly mapped to a 
+<code><i>Type</i>Tensor</code>. This data structure is then passed to the `dataInit` function for 
+initialization. Note that for strings, this is only possible if all elements can be padded to the same length.
 
-The last block of factories allows the registration of tensors in TensorFlow from tensor data that has been allocated
-and initialized by the user. This is useful when the user does not have all required information to use one factory
-method of the previous block, in which case we need to collect all data before knowing what the size of the chunk of
-contiguous memory we need to allocate for the dense tensor. This is often the case when working in variable-length 
-datatypes, like strings. 
-
-In case, we need a different type of <code><i>Type</i>Tensor</code> implementation, that is instantiated by the user
-and simply keeps all its elements on the JVM memory heap. An <code>NdArray<i>Type</i>Tensor</code> could be a first
-naive representation of such tensor, where all elements are kept in a Java multidimensional array that can grow in size 
-if needed.
+The last factory allow the creation of tensors of variable-length strings. The `StringTensor` passed in parameter to
+`dataInit` first collects all data before allocating a tensor buffer of the right size and initializing its data.
 
 ### Creating Sparse Tensors
 
@@ -195,24 +174,14 @@ public static SparseTensor<Long> createSparseLong(long[] shape, int numValues, C
 public static SparseTensor<Boolean> createSparseBoolean(long[] shape, int numValues, Consumer<BooleanTensor> dataInit);
 public static SparseTensor<UInt8> createSparseUInt8(long[] shape, int numValues, Consumer<ByteTensor> dataInit);
 public static SparseTensor<String> createSparseString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringTensor> dataInit);
-
-public static SparseTensor<Float> create(SparseFloatTensor data);
-public static SparseTensor<Double> create(SparseDoubleTensor data);
-public static SparseTensor<Integer> create(SparseIntTensor data);
-public static SparseTensor<Long> create(SparseLongTensor data);
-public static SparseTensor<Boolean> create(SparseBooleanTensor data);
-public static SparseTensor<UInt8> create(SparseByteTensor data);
-public static SparseTensor<String> create(SparseStringTensor data);
+public static SparseTensor<String> createSparseString(long[] shape, int numValues, Consumer<StringTensor> dataInit);
 ```
-The same <code><i>Type</i>Tensor</code> interfaces can be used to initialize sparse data. In this case, the backing implementation class <code>Sparse<i>Type</i>Tensor</code> keeps track of elements that are set by writing down their 
-index in a dense tensor and their value in another. `numValues` is the number of values actually set in the sparse tensor.
+The same <code><i>Type</i>Tensor</code> interfaces can be used to initialize sparse data. In this case, the backing implementation classes keep track of the elements that are set by writing down their 
+index in a dense tensor and their value in another. `numValues` is the number of values actually set in the 
+sparse tensor.
 
-The returned type `SparseTensor<>` just act as a container for the 3 dense tensors that compose a sparse tensor,
-where each of them can be retrieved individually to feed operands to an sparse operation like `SparseAdd`.
-
-If the number of values initialized is unknown, we need to take a similar approach as with dense tensors where user
-must allocate and initialize the data before creating the tensor in TensorFlow, e.g. by instantiating a 
-<code>SparseNdArray<i>Type</i>Tensor<code>.
+Like with dense tensors, in case of a tensor of variable-length strings, the data will be first collect before the 
+tensor buffers are allocated and initialized.
 
 ### Creating Ragged Tensors
 
@@ -227,16 +196,14 @@ public static RaggedTensor<Integer> createRaggedInt(long[] shape, Consumer<IntTe
 public static RaggedTensor<Long> createRaggedLong(long[] shape, Consumer<LongTensor> dataInit);
 public static RaggedTensor<Boolean> createRaggedBoolean(long[] shape, Consumer<BooleanTensor> dataInit);
 public static RaggedTensor<UInt8> createRaggedUInt8(long[] shape, Consumer<ByteTensor> dataInit);
-public static RaggedTensor<String> createRaggedString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringTensor> dataInit);
-
-public static SparseTensor<Float> create(SparseFloatTensor data);
-public static SparseTensor<Double> create(SparseDoubleTensor data);
-public static SparseTensor<Integer> create(SparseIntTensor data);
-public static SparseTensor<Long> create(SparseLongTensor data);
-public static SparseTensor<Boolean> create(SparseBooleanTensor data);
-public static SparseTensor<UInt8> create(SparseByteTensor data);
-public static SparseTensor<String> create(SparseStringTensor data);
+public static RaggedTensor<String> createRaggedString(long[] shape, Consumer<StringTensor> dataInit);
 ```
+All ragged dimensions in the tensor have a value of `-1` in the `shape` attribute. Since it is always 
+working with variable-length values, data is always first collected before the tensor buffer is allocated 
+and initialized. 
+
+Another thing that differs from the other type of tensors is that the size of a ragged dimension will automatically 
+grow as elements are inserted in the tensor.
 
 ### Reading Tensor Data
 
@@ -261,10 +228,8 @@ to the `*Value()` methods of the same class.
 
 
 - usage of tensors as index
-- implementation for user-allocated tensor data (Buffered[Type]Tensor?)
-- allow creation of sparse tensor from user-allocated tensor data
-- ragged tensors (tensor of other tensors or other ragged tensors)
-
+- mention of support for creation of tensors copied from user-allocated data tensors 
+- add suggested class diagram
 
 This is the meat of the document, where you explain your proposal. If you have
 multiple alternatives, be sure to use sub-sections for better separation of the
@@ -371,6 +336,34 @@ matrix3d.slice(all(), 0, incl(0, 2));  // {{10.0, 10.2}, {20.0, 20.2}} (rank-2)
 matrix3d.slice(all(), all(), excl(1));  // {{{10.0, 10.2}, {11.0, 11.2}}, {{20.0, 20.2}, {21.0, 21.2}}} (rank-3)
 
 text.slice(tf.constant(1));  // {"where I was"} (rank-0 slice)
+
+// Sparse tensors
+
+SparseTensor<Float> sparseTensor = Tensors.createSparseFloat(new long[]{2, 4}, 3, data -> {
+  data.put(10.0f, 0, 0);
+  data.put(20.0f, 0, 3);
+  data.put(30.0f, 1, 1);
+});
+
+sparseTensor.get(0, 0);  // 10.0f
+sparseTensor.get(0, 1);  // 0.0f
+sparseTensor.stream();  // [10.0f, 0.0f, 0.0f, 20.0f, 0.0f, 30.0f, 0.0f, 0.0f]
+
+// Ragged tensors
+
+RaggedTensor<Float> raggedTensor = Tensors.createRaggedFloat(new long[]{3, -1}, data -> {
+  data.put(10.0f, 0, 0);    
+  data.put(20.0f, 0, 1);
+  data.put(30.0f, 0, 2); 
+  data.put(40.0f, 1, 0);
+  data.put(50.0f, 2, 0);
+  data.put(60.0f, 2, 1);
+});
+
+raggedTensor.get(0, 1);  // 20.0f
+raggedTensor.get(1, 0);  // 40.0f
+raggedTensor.get(1, 1);  // fails, IndexOutOfBoundException
+raggedTensor.elements().forEach(e -> e.stream());  // [10.0f, 20.0f, 30.0f], [40.0f], [50.0f, 60.0f]
 ```
 
 ## Questions and Discussion Topics
