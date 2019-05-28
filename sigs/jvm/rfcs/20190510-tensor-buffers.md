@@ -46,11 +46,13 @@ with Android team if it is ok now to switch to Java 8.*
 
 ### Tensor Data Utils
 
-A new set of utilities will be distributed with TensorFlow to improve read and write operations in a tensor, often represented
-as a multidimensional array. At the root of this set is the <code><i>Type</i>Tensor</code> interfaces (not to be confused with the existing 
-`Tensor<>` class in TF Java, which is in fact just a symbolic handle to a given tensor).
+A new set of utilities will be distributed with TensorFlow to improve read and write operations in a tensor, 
+often represented as a multidimensional array. Note that some of those utilities could also be delivered in a 
+seperate artifact as they present a generic interface to represent data tensors, independently from TensorFlow.
 
-For each tensor datatype supported in Java, a variant of <code><i>Type</i>Tensor</code> interface is 
+At the root of this set is the <code><i>Type</i>Tensor</code> interfaces (not to be confused with the existing 
+`Tensor<>` class in TF Java, which is in fact just a symbolic handle to a given tensor). For each tensor datatype 
+supported in Java, a variant of <code><i>Type</i>Tensor</code> interface is 
 provided to allow users to work with Java primitive types, which tends to be less memory-consuming and 
 provide better performances than their autoboxed equivalent.
 
@@ -235,15 +237,6 @@ public static SparseTensor<Boolean> create(SparseBooleanTensor data);
 public static SparseTensor<UInt8> create(SparseByteTensor data);
 public static SparseTensor<String> create(SparseStringTensor data);
 ```
-The same <code><i>Type</i>Tensor</code> interfaces can be used to initialize sparse data. In this case, the backing implementation class <code>Sparse<i>Type</i>Tensor</code> keeps track of elements that are set by writing down their 
-index in a dense tensor and their value in another. `numValues` is the number of values actually set in the sparse tensor.
-
-The returned type `SparseTensor<>` just act as a container for the 3 dense tensors that compose a sparse tensor,
-where each of them can be retrieved individually to feed operands to an sparse operation like `SparseAdd`.
-
-If the number of values initialized is unknown, we need to take a similar approach as with dense tensors where user
-must allocate and initialize the data before creating the tensor in TensorFlow, e.g. by instantiating a 
-<code>SparseNdArray<i>Type</i>Tensor<code>.
 
 ### Reading Tensor Data
 
