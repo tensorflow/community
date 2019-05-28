@@ -53,6 +53,7 @@ Related works:
   ```
   model.save(path, include_optimizer=None, save_format=None, signatures=None)
   ```
+  - include_optimizer: (for SavedModel format) Whether or not the SavedModel should contain the optimizer. Note that even if this argument is `False`, any compiled losses and metrics are saved, since they are separate from the optimizer.
   - save_format: Either `h5` or `tf`. Specifies the format for saving the
     model. If left as None, the save format will default to tf unless the 
     path ends with `.h5`, `.hdf5`, or `.keras`.
@@ -67,8 +68,7 @@ Related works:
   modified to automatically detect SavedModels. In both cases, a Keras model 
   object is returned. The root object in the SavedModel must at least contain
   [shared endpoints](#shared-endpoints), otherwise, an error is raised. 
-- `tf.saved_model.save` and `tf.keras.models.save_model` and `model.save`: 
-  additional dependencies/functions are serialized to the SavedModel. See
+- `tf.saved_model.save` and `tf.keras.models.save_model` and `model.save`: These functions have consistent saving results. Additional dependencies/functions are serialized to the SavedModel. See
   [Serialization coverage](#serialization-coverage)
 
 **Note**
@@ -125,6 +125,8 @@ And later, loading the SavedModel:
 model = tf.keras.load_model('/tmp/keras_model')
 model.signatures  #  {'classify' → tf.function, 'predict' → tf.function} 
 ```
+
+If the `signatures` argument is left empty, then a default signature is created with the traced model call function. In the future, we may consider always exporting the default signature (even if the `signatures` argument is set).
 
 ### Serialization coverage
 
@@ -220,7 +222,7 @@ All losses contained in the model are split between `regularization_losses` and 
 Any SavedModel with these endpoints defined may be loaded as a Keras model using `tf.keras.models.load_model`.
 
 ### Compatibility Guarantees
-Keras SavedModels are backward and forward compatible across minor TensorFlow versions. Therefore, checkpointable object and tf.function attributes will not be removed from the SavedModel. New attributes can be added if additional serialization is requested.
+Keras SavedModels are backward and forward compatible across minor TensorFlow versions (similar to [GraphDef](https://www.tensorflow.org/alpha/guide/version_compat)). Therefore, checkpointable object and tf.function attributes will not be removed from the SavedModel. New attributes can be added if additional serialization is requested. 
 
 ## Questions and Discussion Topics
 
@@ -233,5 +235,3 @@ Keras SavedModels are backward and forward compatible across minor TensorFlow ve
    **Generic object**
 4. Syncing common endpoints with tf.module
    tf.module is extremely open-ended, so just the `.variables` attribute should be synced between tf.module SavedModel and Keras SavedModel. Note about `.trainable_variables` -- Keras layers and tf.modules have different definitions of trainable variables.
-
-
