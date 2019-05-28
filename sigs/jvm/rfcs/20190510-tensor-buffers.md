@@ -48,7 +48,7 @@ with Android team if it is ok now to switch to Java 8.*
 
 A new set of utilities will be distributed with TensorFlow to improve read and write operations in a tensor, 
 often represented as a multidimensional array. Note that some of those utilities could also be delivered in a 
-seperate artifact as they present a generic interface to represent data tensors, independently from TensorFlow.
+seperate library as they present a generic interface to represent data tensors, independently from TensorFlow.
 
 At the root of this set is the <code><i>Type</i>Tensor</code> interfaces (not to be confused with the existing 
 `Tensor<>` class in TF Java, which is in fact just a symbolic handle to a given tensor). For each tensor datatype 
@@ -108,13 +108,13 @@ tensor.slice(all(), 0, 0);  // returns vector at y=0, x=0 (on z axis)
 tensor.slice(0, all(), 0);  // returns vector at z=0, x=0 (on y axis)
 tensor.slice(all(), even());  // returns all (y,x) matrices but only retaining even rows (y)
 ```
-Here's a (not exhaustive) list of special selectors:
+The following lists some possible special selectors that could be added to the library:
 * `all()`: matches all elements in the given dimension
 * `incl(int i...)`: matches only elements at the given indices
 * `excl(int i...)`: matches all elements but those at the given indices
 * `range(int start, int end)`: matches all elements whose indices is between `start` and `end`
 * `even()`, `odd()`: matches only elements at even/odd indices
-* `mod(int m)`: matches only elements whose indices is a multiple of `m``
+* `mod(int m)`: matches only elements whose indices is a multiple of `m`
 
 Finally, the `elements()` and `scalars()` methods simplifies sequential operation on a tensor. For example, 
 for a given rank-3 tensor:
