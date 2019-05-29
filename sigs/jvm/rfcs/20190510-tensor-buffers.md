@@ -238,7 +238,7 @@ to the `*Value()` methods of the same class.
 
 This RFC focuses on tensors allocated by the TensorFlow runtime library. But it is ready to accept other
 implementations of <code><i>Type</i>Tensor</code> that let the user allocate its own tensor and read/write
-its data, such as a <code>NdArray<i>Type</i>Tensor<code> which is backed with standard Java multidimensional
+its data, such as a <code>NdArray<i>Type</i>Tensor</code> which is backed with standard Java multidimensional
 arrays.
 
 It should be possible then to create a TF Tensor from one of the pre-allocated tensor, which will
