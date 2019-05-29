@@ -1,10 +1,10 @@
-# RFC: Tokenization API Conventions & Initial Implementations
+# RFC: Tokenization API & Initial Implementations
 
 Status        | Proposed
 :------------ | :-----------------------------------
 **Author(s)** | Robby Neale (Google)
 **Sponsor**   | Mark Omernick (Google), Greg Billock (Google)
-**Updated**   | 2019-05-22
+**Updated**   | 2019-05-29
 
 ## Objective {#objective}
 
