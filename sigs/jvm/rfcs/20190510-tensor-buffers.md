@@ -7,53 +7,55 @@
 
 ## Objective
 
-Simplify and improve performances of creating tensors in Java by writing and reading 
-directly to/from their native buffers, while preserving their internal format.
+Simplify and improve performances of creating and reading tensor data in Java with non-blocking I/O
+access to their native buffers.
 
 ## Motivation
 
-Currently, the easiest way to create tensors in Java is by invoking one of the
+Currently, the most common way to create tensors in Java is by invoking one of the
 factory methods exposed by the [`Tensors`](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/java/src/main/java/org/tensorflow/Tensors.java)
-class. While their signatures are elegant, they make heavy use of reflection techniques to extract 
-the shape and the size of the tensors to allocate. This results in poor performances,
-as discussed in [this issue](https://github.com/tensorflow/tensorflow/issues/8244).
+class. While the signature of those methods are pretty elegant, by accepting a simple multidimensional Java array 
+as an argument, they make heavy use of reflection techniques to extract the shape and the size of the tensors 
+to allocate and result in multiple data copies. This results in poor performances, as discussed in [this issue](https://github.com/tensorflow/tensorflow/issues/8244).
 
-Reading tensor data uses [similar techniques](https://github.com/tensorflow/tensorflow/blob/c23fd17c3781b21bd3309faa13fad58472c78e93/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L449) and faces also performance issues. It is also possible to copy the data in the tensor to a user-allocated
-buffer in order to read (see [`writeTo()`](https://github.com/tensorflow/tensorflow/blob/c23fd17c3781b21bd3309faa13fad58472c78e93/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L483) methods, for example), which of course is not convenient when dealing with large tensors.
+Reading tensor data uses [similar techniques](https://github.com/tensorflow/tensorflow/blob/c23fd17c3781b21bd3309faa13fad58472c78e93/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L449) and faces the same performance issues. It can also result in multiple data copies, which
+is not convenient when dealing with large tensors (e.g. see [`writeTo()`](https://github.com/tensorflow/tensorflow/blob/c23fd17c3781b21bd3309faa13fad58472c78e93/tensorflow/java/src/main/java/org/tensorflow/Tensor.java#L483) methods, for example).
 
-Now that eager execution environment is supported by the Java client, it is imperative that the 
-I/O operations between the native tensor buffers and the JVM are efficient enough to let the users peek at 
-their data and, in some cases, modify it without an important performance hit.
+Now that it is possible to run eagerly TensorFlow operations in Java, it is imperative that the 
+I/O access to the tensor memory is efficient enough to let the users peek at the data without a significant
+performance hit.
 
-By developing a new set of I/O utility classes, we can allow the user to access directly the tensor data 
-buffers while still preventing mistakes that could break their internal format (the main reason why the
-tensor buffer is not publicly exposed at this moment). Also, those utilities will help navigating into 
-multidimensional arrays flattened into tensor buffers, using indexation features similar to NumPy.
+By developing a new set of I/O utility classes, we can allow the user to access directly the tensor native
+buffers, avoiding data copies, while still preventing mistakes that could break their internal format. Also, 
+those utilities can help to improve the manipulation of n-dimension data structures in Java in general.
 
 ## User Benefit
 
-Users who are actually using factories and read/write methods from `Tensors/Tensor` classes might observe great 
+Users who are actually using factories and read/write methods from `Tensors/Tensor` classes should notice great 
 performance improvements after switching to the new set of I/O utilities.
 
-Users executing their operations in an eager environment will also find very useful and efficient 
+Users executing their operations in an eager environment will also find it very useful and efficient 
 to access directly the tensor data without the need of copying their buffer.
+
+In addition, we will take advantage of those new utilities to help the creation of two other types of tensors in
+TensorFlow (sparse and ragged) that is not explicitly supported right now by the Java client.
 
 ## Design Proposal
 
 *Note: This design proposal assumes that we run in a Java >= 8 environment, which is not the case with
-current client that is set to compile in Java 7 for supporting older Android devices. We need to confirm
-with Android team if it is ok now to switch to Java 8.*
+current client that is configured to compile in Java 7, for supporting older Android devices. We need to confirm
+with Android team if it is ok now to switch to Java 8 if the TF Java remains in the main repository.*
 
-### Tensor Data Utils
+### Tensor I/O Utilities
 
-A new set of utilities will be distributed with TensorFlow to improve read and write operations in a tensor, 
-often represented as a multidimensional array. Note that some of those utilities could also be delivered in a 
-seperate library as they present a generic interface to represent data tensors, independently from TensorFlow.
+A new utility library (`org.tensorflow:tensorflow-util`) will be distributed with the TensorFlow Java client and
+will include a series of interfaces and classes that improve read and write operations in a tensor data structure,
+normally represented as a multidimensional arrays.
 
-At the root of this set is the <code><i>Type</i>Tensor</code> interfaces (not to be confused with the existing 
-`Tensor<>` class in TF Java, which is in fact just a symbolic handle to a given tensor). For each tensor datatype 
-supported in Java, a variant of <code><i>Type</i>Tensor</code> interface is 
-provided to allow users to work with Java primitive types, which tends to be less memory-consuming and 
+The <code><i>Type</i>Tensor</code> interfaces are the center of this new set of utilities (should not to be confused 
+with the existing `Tensor<>` class in TF Java, which is in fact just a symbolic handle to a tensor allocated by
+TensorFlow). For each tensor datatype supported in Java, a <code><i>Type</i>Tensor</code> interface variant is 
+provided, allowing users to work with Java primitive types which tends to be less memory-consuming and 
 provide better performances than their autoboxed equivalent.
 
 For readability, only the `Double` variant of this interface is shown below:
@@ -92,19 +94,21 @@ class DoubleIterator {
   void onEach(DoubleSupplier func);  // supply all remaining elements
 }
 ```
-The <code><i>Type</i>Tensor</code> interfaces tends to replicate indexation used with arrays in java. 
-Ex: let `tensor` be a matrix on `(x, y)`:
+The <code><i>Type</i>Tensor</code> interfaces support normal integer indexation, similar to Java arrays. 
+
+Ex: let `tensor` be a matrix on `(x, y)`
 ```java
-tensor.get(0, 0);  // returns scalar at x=0, y=0
-tensor.put(10.0, 0, 0);  // sets scalar at x=0, y=0
+tensor.get(0, 0);  // returns scalar at x=0, y=0 (similar to array[0][0])
+tensor.put(10.0, 0, 0);  // sets scalar at x=0, y=0 (similar to array[0][0] = 10.0)
 tensor.stream(0);  // returns vector at x=0 as a stream
 ```
-It is also possible to work with slices. The first variant of `slice()` accept usual integer indices to
-slice at a specific element in the tensor. The second variant accepts special indices, which can cut for example
-the tensor on any axis or retrieve indices from another tensor.
+It is also possible to create slices of a tensor, to work with a reduced view of its elements. The first variant 
+of `slice()` accept usual integer indices, to slice at a specific element in the tensor. The second variant 
+accepts special indices, which offer more flexibility like iterating through the elements of a tensor on any 
+of its axis or use values of another tensor as indices.
 
-The following lists some possible special indices that could be added to the library, exposed as static
-methods that returns a `TensorIndex`:
+Here is a non-exhaustive list of special indices that could be possibly created. Each of them are exposed as static
+methods in `TensorIndex`, which return an instance of the same class:
 * `at(int i)`: match element at index `i`
 * `all()`: matches all elements in the given dimension
 * `incl(int i...)`: matches only elements at the given indices
@@ -112,9 +116,10 @@ methods that returns a `TensorIndex`:
 * `range(int start, int end)`: matches all elements whose indices is between `start` and `end`
 * `even()`, `odd()`: matches only elements at even/odd indices
 * `mod(int m)`: matches only elements whose indices is a multiple of `m`
-* `IntTensor` and `LongTensor` will also implement the `TensorIndex` interface
+Note that `IntTensor` and `LongTensor` will also implement the `TensorIndex` interface, to allow indexation
+using rank-0 or rank-1 tensors.
 
-Ex: let `t` be a 3D matrix on `(x, y, z)`:
+Ex: let `t` be a 3D matrix on `(x, y, z)`
 ```java
 tensor.slice(0);  // returns matrix at x=0
 tensor.slice(0, 0);  // returns vector at x=0, y=0 (on z axis)
@@ -125,8 +130,10 @@ tensor.slice(scalar);  // return slice at x=scalar.get()
 tensor.slice(vector);  // return slice at x=vector.get(0), y=vector.get(1)
 tensor.slice(at(0), vector);  // return slice at x=0, y=vector.get(0), z=vector.get(1)
 ```
-Finally, the `elements()` and `scalars()` methods simplifies sequential operation on a tensor. For example, 
-for a given rank-3 tensor:
+Finally, the `elements()` and `scalars()` methods simplifies sequential operation over the elements of a tensor,
+avoiding the user to increment manually an iterator.
+
+Ex: for a given rank-3 tensor
 ```java
 double d = 0.0;
 for (DoubleTensor vector: tensor.elements()) {
@@ -135,8 +142,9 @@ for (DoubleTensor vector: tensor.elements()) {
 for (DoubleTensor vector: tensor.elements()) {
   vector.scalars().forEach(System.out::println);
 }
+tensor.slice(0).put(10.0f).put(20.0f).put(30.0f);
 ```
-See the next section for some more detailed examples of the usage of such utilities.
+See the last section for some more usage examples.
 
 ### Creating Dense Tensors
 
@@ -170,8 +178,7 @@ The last factory allow the creation of tensors of variable-length strings. The `
 ### Creating Sparse Tensors
 
 A sparse tensor is a collection of 3 dense tensors (indices, values and dense shape). Actually there is no
-other way in TF Java to allocate such tensor than allocating individually the 3 tensors and managing the
-indices with their values manually.
+other way in TF Java to allocate such tensor than allocating and manipulating individually the 3 tensors.
 
 We can simplify this process by following the same approach as dense tensors and adding those
 factories to the `Tensors` class:
@@ -207,18 +214,18 @@ public static RaggedTensor<Boolean> raggedBoolean(long[] shape, Consumer<Boolean
 public static RaggedTensor<UInt8> raggedUInt8(long[] shape, Consumer<ByteTensor> dataInit);
 public static RaggedTensor<String> raggedString(long[] shape, Consumer<StringTensor> dataInit);
 ```
-All ragged dimensions in the tensor have a value of `-1` in the `shape` attribute. Since it is always 
-working with variable-length values, data is always first collected before the tensor buffer is allocated 
+All ragged dimensions in the tensor have a value of `-1` in the `shape` attribute. Since ragged tensors always 
+work with variable-length values, data must be first collected before the tensor buffer is allocated 
 and initialized. 
 
-Another thing that differs from the other type of tensors is that the size of a ragged dimension will automatically 
-grow as elements are inserted in the tensor.
+It is also important to note that in contrary to other tensors which fail if writing an element out of
+the bound of the current shape, ragged dimensions will automatically grow as elements are inserted to the tensor.
 
 ### Reading Tensor Data
 
-Note that once created, Tensors are immutable and their data could not be modified anymore. But right now, to read
-data from a tensor, the user needs to create a temporary buffer into which its data is copied. 
-Once again, this data copy and additional memory allocation will be avoided by accessing the tensor buffer 
+Once created, Tensors are immutable and their data could not be modified anymore. But right now, to read
+data from a tensor, the user needs to create a temporary buffer into which its data is copied. Again, this 
+data copy and additional memory allocation can be avoided by accessing the tensor buffer 
 directly when reading its data.
 
 The following methods will be added to the `Tensor` class:
@@ -234,25 +241,38 @@ public StringTensor stringData();
 It is up to the user to know which of these methods should be called on a tensor of a given type, similar
 to the `*Value()` methods of the same class.
 
+The returned tensor data should only be used for read operations and all attempt to modify the data will result
+in an error.
+
+*Note: an alternative solution would be to split the TypeTensor interfaces and classes in two types: one for 
+read-only operations and another inheriting from it for read & write. This gives more control at compile time to 
+ensure that users won't attempt to modify a read-only tensor. But it will also increase the size and the 
+complexity of the code in the utilities.*
+
 ### User-allocated Tensors
 
-This RFC focuses on tensors allocated by the TensorFlow runtime library. But it is ready to accept other
-implementations of <code><i>Type</i>Tensor</code> that let the user allocate its own tensor and read/write
-its data, such as a <code>NdArray<i>Type</i>Tensor</code> which is backed with standard Java multidimensional
-arrays.
+This RFC focuses on tensors allocated by the TensorFlow runtime library. But it prepares to solution to accept other
+implementations of <code><i>Type</i>Tensor</code> that let the user allocate a tensor outside TensorFlow and 
+read/write to its data (e.g. a <code>Array<i>Type</i>Tensor</code> could be backed with a standard Java 
+array).
 
-It should be possible then to create a TF Tensor from one of the pre-allocated tensor, which will
-result in a data copy like we are observing right now. For example:
+It would be possible then to create a tensor in TensorFlow based on the data from a user-allocated tensor, similar
+to the data copy solution already present in the TF Java client. For example:
 ```java
-public Tensor<Int> create(IntTensor tensor);
-public Tensor<String> create(StringTensor tensor);
+public static Tensor<Float> create(FloatTensor data);
+public static Tensor<Double> create(DoubleTensor data);
+public static Tensor<Integer> create(IntTensor data);
+public static Tensor<Long> create(LongTensor data);
+public static Tensor<Boolean> create(BooleanTensor data);
+public static Tensor<UInt8> create(ByteTensor data);
+public static Tensor<String> create(StringTensor data);
 ```
-The implementation of such could/should be delivered by the utility library containing the interfaces, as it
-does not depend on TensorFlow core.
+The implementation of such tensors could (and should) be delivered by the utility library as it does not depend 
+on any TensorFlow core types.
 
 ## Detailed Design
 
-### Suggested class diagram (overview, `double` only)
+### Suggested class diagram (overview, double only)
 
 ![Class Diagram](images/20190510-tensor-data-nio-cd.png)
 
@@ -376,4 +396,5 @@ raggedTensor.elements().forEach(e -> e.stream());  // [10.0f, 20.0f, 30.0f], [40
 
 ## Questions and Discussion Topics
 
-Seed this with open questions you require feedback on from the RFC process.
+* Should we split the <code><i>Type</i>Tensor</code> into distinct interfaces for read-only and read-write tensors?
+* Should we plan now user-allocated tensors or can we live with TensorFlow tensors only for now?
