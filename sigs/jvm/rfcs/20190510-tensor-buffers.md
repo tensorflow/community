@@ -63,7 +63,7 @@ interface DoubleTensor {
   long size(int dimension);  // number of elements in the given dimension
   long totalSize();  // total number of elements in this tensor
   DoubleTensor slice(int... indices);  // returns a slice of this tensor
-  DoubleTensor slice(Object... indices);  // returns a slice of this tensor, using various types of indices
+  DoubleTensor slice(TensorIndex... indices);  // returns a slice of this tensor, using various types of indices
   Iterable<DoubleTensor> elements();  // iterates through the elements of the first axis of this tensor
   DoubleIterator scalars();  // iterates through the elements of a rank-1 tensor
 
@@ -93,29 +93,38 @@ class DoubleIterator {
 }
 ```
 The <code><i>Type</i>Tensor</code> interfaces tends to replicate indexation used with arrays in java. 
-For example, to access a value in a rank-2 tensor in `y`, `x`:
+Ex: let `tensor` be a matrix on `(x, y)`:
 ```java
-tensor.get(0, 0);  // returns scalar at y=0, x=0
-tensor.put(10.0, 0, 0);  // sets scalar at y=0, x=0
-tensor.stream(0);  // returns vector at y=0 as a stream
+tensor.get(0, 0);  // returns scalar at x=0, y=0
+tensor.put(10.0, 0, 0);  // sets scalar at x=0, y=0
+tensor.stream(0);  // returns vector at x=0 as a stream
 ```
-It is also possible to work with slices, which can cut a given tensor in any of its axis by the use 
-of special selectors. For example, for a given rank-3 tensor in `z`, `y`, `x`:
-```java
-tensor.slice(0);  // returns matrix at z=0
-tensor.slice(0, 0);  // returns vector at z=0, y=0 (on x axis)
-tensor.slice(all(), 0, 0);  // returns vector at y=0, x=0 (on z axis)
-tensor.slice(0, all(), 0);  // returns vector at z=0, x=0 (on y axis)
-tensor.slice(all(), even());  // returns all (y,x) matrices but only retaining even rows (y)
-```
-The following lists some possible special selectors that could be added to the library:
+It is also possible to work with slices. The first variant of `slice()` accept usual integer indices to
+slice at a specific element in the tensor. The second variant accepts special indices, which can cut for example
+the tensor on any axis or retrieve indices from another tensor.
+
+The following lists some possible special indices that could be added to the library, exposed as static
+methods that returns a `TensorIndex`:
+* `at(int i)`: match element at index `i`
 * `all()`: matches all elements in the given dimension
 * `incl(int i...)`: matches only elements at the given indices
 * `excl(int i...)`: matches all elements but those at the given indices
 * `range(int start, int end)`: matches all elements whose indices is between `start` and `end`
 * `even()`, `odd()`: matches only elements at even/odd indices
 * `mod(int m)`: matches only elements whose indices is a multiple of `m`
+* `IntTensor` and `LongTensor` will also implement the `TensorIndex` interface
 
+Ex: let `t` be a 3D matrix on `(x, y, z)`:
+```java
+tensor.slice(0);  // returns matrix at x=0
+tensor.slice(0, 0);  // returns vector at x=0, y=0 (on z axis)
+tensor.slice(all(), at(0), at(0));  // returns vector at y=0, z=0 (on x axis)
+tensor.slice(at(0), all(), at(0));  // returns vector at x=0, z=0 (on y axis)
+tensor.slice(even());  // returns all (y,z) matrices for all even values of x
+tensor.slice(scalar);  // return slice at x=scalar.get()
+tensor.slice(vector);  // return slice at x=vector.get(0), y=vector.get(1)
+tensor.slice(at(0), vector);  // return slice at x=0, y=vector.get(0), z=vector.get(1)
+```
 Finally, the `elements()` and `scalars()` methods simplifies sequential operation on a tensor. For example, 
 for a given rank-3 tensor:
 ```java
@@ -142,14 +151,14 @@ variable-length datatypes (like strings), data must be first collected in order 
 
 Following factories will be added to the `Tensors` class:
 ```java
-public static Tensor<Float> createFloat(long[] shape, Consumer<FloatTensor> dataInit);
-public static Tensor<Double> createDouble(long[] shape, Consumer<DoubleTensor> dataInit);
-public static Tensor<Integer> createInt(long[] shape, Consumer<IntTensor> dataInit);
-public static Tensor<Long> createLong(long[] shape, Consumer<LongTensor> dataInit);
-public static Tensor<Boolean> createBoolean(long[] shape, Consumer<BooleanTensor> dataInit);
-public static Tensor<UInt8> createUInt8(long[] shape, Consumer<ByteTensor> dataInit);
-public static Tensor<String> createString(long[] shape, int elementLength, byte paddingValue, Consumer<StringTensor> dataInit);
-public static Tensor<String> createString(long[] shape, Consumer<StringTensor> dataInit);
+public static Tensor<Float> denseFloat(long[] shape, Consumer<FloatTensor> dataInit);
+public static Tensor<Double> denseDouble(long[] shape, Consumer<DoubleTensor> dataInit);
+public static Tensor<Integer> denseInt(long[] shape, Consumer<IntTensor> dataInit);
+public static Tensor<Long> denseLong(long[] shape, Consumer<LongTensor> dataInit);
+public static Tensor<Boolean> denseBoolean(long[] shape, Consumer<BooleanTensor> dataInit);
+public static Tensor<UInt8> denseUInt8(long[] shape, Consumer<ByteTensor> dataInit);
+public static Tensor<String> denseString(long[] shape, int elementLength, byte paddingValue, Consumer<StringTensor> dataInit);
+public static Tensor<String> denseString(long[] shape, Consumer<StringTensor> dataInit);
 ```
 All factories except the last create an empty tensor whose memory is then directly mapped to a 
 <code><i>Type</i>Tensor</code>. This data structure is then passed to the `dataInit` function for 
@@ -167,14 +176,14 @@ indices with their values manually.
 We can simplify this process by following the same approach as dense tensors and adding those
 factories to the `Tensors` class:
 ```java
-public static SparseTensor<Float> createSparseFloat(long[] shape, int numValues, Consumer<FloatTensor> dataInit);
-public static SparseTensor<Double> createSparseDouble(long[] shape, int numValues, Consumer<DoubleTensor> dataInit);
-public static SparseTensor<Integer> createSparseInt(long[] shape, int numValues, Consumer<IntTensor> dataInit);
-public static SparseTensor<Long> createSparseLong(long[] shape, int numValues, Consumer<LongTensor> dataInit);
-public static SparseTensor<Boolean> createSparseBoolean(long[] shape, int numValues, Consumer<BooleanTensor> dataInit);
-public static SparseTensor<UInt8> createSparseUInt8(long[] shape, int numValues, Consumer<ByteTensor> dataInit);
-public static SparseTensor<String> createSparseString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringTensor> dataInit);
-public static SparseTensor<String> createSparseString(long[] shape, int numValues, Consumer<StringTensor> dataInit);
+public static SparseTensor<Float> sparseFloat(long[] shape, int numValues, Consumer<FloatTensor> dataInit);
+public static SparseTensor<Double> sparseDouble(long[] shape, int numValues, Consumer<DoubleTensor> dataInit);
+public static SparseTensor<Integer> sparseInt(long[] shape, int numValues, Consumer<IntTensor> dataInit);
+public static SparseTensor<Long> sparseLong(long[] shape, int numValues, Consumer<LongTensor> dataInit);
+public static SparseTensor<Boolean> sparseBoolean(long[] shape, int numValues, Consumer<BooleanTensor> dataInit);
+public static SparseTensor<UInt8> sparseUInt8(long[] shape, int numValues, Consumer<ByteTensor> dataInit);
+public static SparseTensor<String> sparseString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringTensor> dataInit);
+public static SparseTensor<String> sparseString(long[] shape, int numValues, Consumer<StringTensor> dataInit);
 ```
 The same <code><i>Type</i>Tensor</code> interfaces can be used to initialize sparse data. In this case, the backing implementation classes keep track of the elements that are set by writing down their 
 index in a dense tensor and their value in another. `numValues` is the number of values actually set in the 
@@ -190,13 +199,13 @@ users to work with variable-length elements in any dimension (except of the firs
 
 To support those tensors as well, following factories can be added to the `Tensors` class:
 ```java
-public static RaggedTensor<Float> createRaggedFloat(long[] shape, Consumer<FloatTensor> dataInit);
-public static RaggedTensor<Double> createRaggedDouble(long[] shape, Consumer<DoubleTensor> dataInit);
-public static RaggedTensor<Integer> createRaggedInt(long[] shape, Consumer<IntTensor> dataInit);
-public static RaggedTensor<Long> createRaggedLong(long[] shape, Consumer<LongTensor> dataInit);
-public static RaggedTensor<Boolean> createRaggedBoolean(long[] shape, Consumer<BooleanTensor> dataInit);
-public static RaggedTensor<UInt8> createRaggedUInt8(long[] shape, Consumer<ByteTensor> dataInit);
-public static RaggedTensor<String> createRaggedString(long[] shape, Consumer<StringTensor> dataInit);
+public static RaggedTensor<Float> raggedFloat(long[] shape, Consumer<FloatTensor> dataInit);
+public static RaggedTensor<Double> raggedDouble(long[] shape, Consumer<DoubleTensor> dataInit);
+public static RaggedTensor<Integer> raggedInt(long[] shape, Consumer<IntTensor> dataInit);
+public static RaggedTensor<Long> raggedLong(long[] shape, Consumer<LongTensor> dataInit);
+public static RaggedTensor<Boolean> raggedBoolean(long[] shape, Consumer<BooleanTensor> dataInit);
+public static RaggedTensor<UInt8> raggedUInt8(long[] shape, Consumer<ByteTensor> dataInit);
+public static RaggedTensor<String> raggedString(long[] shape, Consumer<StringTensor> dataInit);
 ```
 All ragged dimensions in the tensor have a value of `-1` in the `shape` attribute. Since it is always 
 working with variable-length values, data is always first collected before the tensor buffer is allocated 
@@ -225,29 +234,27 @@ public StringTensor stringData();
 It is up to the user to know which of these methods should be called on a tensor of a given type, similar
 to the `*Value()` methods of the same class.
 
+### User-allocated Tensors
 
+This RFC focuses on tensors allocated by the TensorFlow runtime library. But it is ready to accept other
+implementations of <code><i>Type</i>Tensor</code> that let the user allocate its own tensor and read/write
+its data, such as a <code>NdArray<i>Type</i>Tensor<code> which is backed with standard Java multidimensional
+arrays.
 
-- usage of tensors as index
-- mention of support for creation of tensors copied from user-allocated data tensors 
-- add suggested class diagram
-
-This is the meat of the document, where you explain your proposal. If you have
-multiple alternatives, be sure to use sub-sections for better separation of the
-idea, and list pros/cons to each approach. If there are alternatives that you
-have eliminated, you should also list those here, and explain why you believe
-your chosen approach is superior.
-
-Factors to consider include:
-
-* performance implications
-* dependencies
-* maintenance
-* platforms and environments impacted (e.g. hardware, cloud, other software
-  ecosystems)
-* [compatibility](https://www.tensorflow.org/programmers_guide/version_compat)
-* how will this change impact users, and how will that be managed?
+It should be possible then to create a TF Tensor from one of the pre-allocated tensor, which will
+result in a data copy like we are observing right now. For example:
+```java
+public Tensor<Int> create(IntTensor tensor);
+public Tensor<String> create(StringTensor tensor);
+```
+The implementation of such could/should be delivered by the utility library containing the interfaces, as it
+does not depend on TensorFlow core.
 
 ## Detailed Design
+
+### Suggested class diagram (overview, `double` only)
+
+
 
 ### Example of usage for NdArrays
 
@@ -330,9 +337,9 @@ vector.slice(0);  // {1} (rank-0)
 matrix.slice(1, 1);  // {20.0f} (rank-0)
 
 matrix3d.slice(0, 0);  // {10.0, 10.1} (rank-1)
-matrix3d.slice(all(), 0);  // {{10.0, 10.1, 10.2}, {20.0, 20.1, 20.2}} (rank-2)
-matrix3d.slice(all(), 0, 0);  // {10.0, 20.0} (rank-1)
-matrix3d.slice(all(), 0, incl(0, 2));  // {{10.0, 10.2}, {20.0, 20.2}} (rank-2)
+matrix3d.slice(all(), at(0));  // {{10.0, 10.1, 10.2}, {20.0, 20.1, 20.2}} (rank-2)
+matrix3d.slice(all(), at(0), at(0));  // {10.0, 20.0} (rank-1)
+matrix3d.slice(all(), at(0), incl(0, 2));  // {{10.0, 10.2}, {20.0, 20.2}} (rank-2)
 matrix3d.slice(all(), all(), excl(1));  // {{{10.0, 10.2}, {11.0, 11.2}}, {{20.0, 20.2}, {21.0, 21.2}}} (rank-3)
 
 text.slice(tf.constant(1));  // {"where I was"} (rank-0 slice)
