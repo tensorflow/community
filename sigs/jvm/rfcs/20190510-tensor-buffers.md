@@ -254,7 +254,7 @@ does not depend on TensorFlow core.
 
 ### Suggested class diagram (overview, `double` only)
 
-
+![Class Diagram](images/20190510-tensor-buffers-cd.png)
 
 ### Example of usage for NdArrays
 
