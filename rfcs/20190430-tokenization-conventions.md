@@ -4,7 +4,7 @@ Status        | Proposed
 :------------ | :-----------------------------------
 **Author(s)** | Robby Neale (Google)
 **Sponsor**   | Mark Omernick (Google), Greg Billock (Google)
-**Updated**   | 2019-05-06
+**Updated**   | 2019-05-22
 
 ## Objective {#objective}
 
@@ -292,7 +292,38 @@ update conventions doc -_tokens), (num_unicode_chars)]
 
 ## Appendix {#appendix}
 
-### Appendix A - Other tokenizers {#appendix-a-other-tokenizers}
+### Appendix A - TF.Data example {#appendix-a}
+
+A very common use case will be using Tokenizers in the [tf.data
+API](https://www.tensorflow.org/guide/datasets). With the recent (in tf-nightly)
+support for RaggedTensors in tf.data, this should be straight-forward for
+anybody familiar with tf.data and pose no problems. A simple example is provided
+below showing how this could look.
+
+```python
+docs = tf.data.Dataset.from_tensor_slices([['Never tell me the odds.'],
+                                           ["It's a trap!"]])
+tokenizer = text.WhitespaceTokenizer()
+tokenized_docs = docs.map(lambda x: tokenizer.tokenize(x))
+iterator = tokenized_docs.make_one_shot_iterator()
+tokenized_doc = iterator.get_next()
+```
+
+### Appendix B - Keras Preprocessing {#appendix-a}
+
+Keras provides its own set of preprocessing layers, one which tokenizes,
+normalizes, and vectorizes the text. An equivalent tokenizer (most likely the
+WhitespaceTokenizer described above) will be provided for anybody wanting to
+duplicate the tokenization functionality.
+
+Because of the simplified nature of the Keras tokenization and that the
+tokenizer API described above is to be included in a TensorFlow library outside
+of core, these tokenizers will not be used from within the Keras preprocessing
+layers to prevent the extra dependency from within Keras. However, more
+full-featured Keras tokenization layers will be provided in the same library as
+these tokenizers and use the API internally.
+
+### Appendix C - Other tokenizers {#appendix-c}
 
 Here we will briefly describe other tokenization methods that could extend the
 same base classes despite not being Tensorflow ops.
