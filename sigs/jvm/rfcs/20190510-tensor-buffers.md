@@ -246,8 +246,8 @@ in an error.
 
 *Note: an alternative solution would be to split the TypeTensor interfaces and classes in two types: one for 
 read-only operations and another inheriting from it for read & write. This gives more control at compile time to 
-ensure that users won't attempt to modify a read-only tensor. But it will also increase the size and the 
-complexity of the code in the utilities.*
+ensure that users won't attempt to modify a read-only tensor. But it will also double the number of interfaces
+and classes in the utility library.*
 
 ### User-allocated Tensors
 
@@ -269,6 +269,42 @@ public static Tensor<String> create(StringTensor data);
 ```
 The implementation of such tensors could (and should) be delivered by the utility library as it does not depend 
 on any TensorFlow core types.
+
+### TensorFlow Operations
+
+Right now, the creation of [constant operands](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/java/src/main/java/org/tensorflow/op/core/Constant.java) 
+in Java uses the same reflection techniques as with tensors. A simple fix is to add a new factory that takes a `Tensor<>`
+in input (which is already done internally by this class).
+```java
+Constant<T> create(Tensor<T> tensor);
+```
+This factory will be mapped to the `Ops` class as any other factory, so it could be invoked like this:
+```java
+Ops tf = Ops.create();
+tf.constant(Tensor.denseFloat(...));
+```
+Note that in this case, there is no need to close explicitly the `Tensor<>` (or with a `try-with-resource` block), 
+because eager execution environments already take care of closing discardable resources automatically.
+
+Unlike NumPy in Python, the <code><i>Type</i>Tensor</code> interface do not expose per design linear algebra operations 
+(e.g. matrix addition, substraction, etc.). Since eager execution in Java is supported, users who wants to execute
+such operation can simply use TensorFlow directly. e.g.
+```java
+Ops tf = Ops.create();
+
+Constant<Float> matrix1 = tf.constant(Tensors.denseFloat(...));
+Constant<Float> matrix2 = tf.constant(Tensors.denseFloat(...));
+
+Add<Float> sum = tf.math.add(matrix1, matrix2);
+```
+Some other JVM languages offer more tools to create a rich API for calling those operations on top of the interfaces
+proposed in this document and their implementation is postponed as a future development. For example, in Kotlin,
+it could be possible to do the following:
+```kotlin
+operator fun <T> Operand<T>.plus(tensor: Operand<T>): Operand<T> {
+        return tf.math.add(this, tensor)
+    }
+```
 
 ## Detailed Design
 
