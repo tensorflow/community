@@ -119,7 +119,7 @@ methods in `TensorIndex`, which return an instance of the same class:
 Note that `IntTensor` and `LongTensor` will also implement the `TensorIndex` interface, to allow indexation
 using rank-0 or rank-1 tensors.
 
-Ex: let `t` be a 3D matrix on `(x, y, z)`
+Ex: let `tensor` be a 3D matrix on `(x, y, z)`
 ```java
 tensor.slice(0);  // returns matrix at x=0
 tensor.slice(0, 0);  // returns vector at x=0, y=0 (on z axis)
@@ -133,7 +133,7 @@ tensor.slice(at(0), vector);  // return slice at x=0, y=vector.get(0), z=vector.
 Finally, the `elements()` and `scalars()` methods simplifies sequential operation over the elements of a tensor,
 avoiding the user to increment manually an iterator.
 
-Ex: for a given rank-3 tensor
+Ex: let `tensor` be a 3D matrix
 ```java
 double d = 0.0;
 for (DoubleTensor vector: tensor.elements()) {
