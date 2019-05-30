@@ -1,6 +1,6 @@
 # Modular Filesystems C API
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Mihai Maruseac (mihaimaruseac@google.com)            |
 | **Sponsor**   | Gunhan Gulsoy (gunan@google.com)                     |
