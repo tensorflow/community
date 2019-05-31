@@ -29,6 +29,11 @@ By developing a new set of I/O utility classes, we can allow the user to access 
 buffers, avoiding data copies, while still preventing mistakes that could break their internal format. Also, 
 those utilities can help to improve the manipulation of n-dimension data structures in Java in general.
 
+Note that the intent of the current RFC is not to present a rich API to execute linear algebra operations on tensors, the way
+NumPy does, but to offer high-performance I/O accesses to tensor data. Some JVM languages offer better tools than Java to 
+create a rich API for calling those operations on top of TF Java client (e.g. using Kotlin/Scala custom operators, infix methods, etc.) 
+and the conception of such high-level API will be part of a future development.
+
 ## User Benefit
 
 Users who are actually using factories and read/write methods from `Tensors/Tensor` classes should notice great 
@@ -48,33 +53,30 @@ with Android team if it is ok now to switch to Java 8 if the TF Java remains in 
 
 ### Tensor I/O Utilities
 
-A new utility library (`org.tensorflow:tensorflow-util`) will be distributed with the TensorFlow Java client and
-will include a series of interfaces and classes that improve read and write operations in a tensor data structure,
-normally represented as a multidimensional arrays.
+A set of utilities will be distributed with the TensorFlow Java client that includes a series of interfaces and classes to 
+improve read and write operations in a tensor data structure, normally represented as a multidimensional arrays.
 
-The <code><i>Type</i>Tensor</code> interfaces are the center of this new set of utilities (should not to be confused 
-with the existing `Tensor<>` class in TF Java, which is in fact just a symbolic handle to a tensor allocated by
-TensorFlow). For each tensor datatype supported in Java, a <code><i>Type</i>Tensor</code> interface variant is 
-provided, allowing users to work with Java primitive types which tends to be less memory-consuming and 
-provide better performances than their autoboxed equivalent.
+The <code><i>Type</i>TensorData</code> interfaces are the core of this new framework. For each tensor datatype supported in 
+Java, a <code><i>Type</i>TensorData</code> interface variant is provided, allowing users to work with Java primitive types which 
+tends to be less memory-consuming and provide better performances than their autoboxed equivalent.
 
 For readability, only the `Double` variant of this interface is shown below:
 ```java
-interface DoubleTensor {
-  int rank();  // number of dimensions (or rank) of this tensor
+interface DoubleTensorData {
+  int rank();  // number of dimensions (or rank) of the tensor
   long size(int dimension);  // number of elements in the given dimension
-  long totalSize();  // total number of elements in this tensor
-  DoubleTensor slice(int... indices);  // returns a slice of this tensor
-  DoubleTensor slice(TensorIndex... indices);  // returns a slice of this tensor, using various types of indices
-  Iterable<DoubleTensor> elements();  // iterates through the elements of the first axis of this tensor
-  DoubleIterator scalars();  // iterates through the elements of a rank-1 tensor
+  long totalSize();  // total number of elements in the tensor
+  DoubleTensorData slice(int... indices);  // returns a slice of this tensor
+  DoubleTensorData slice(TensorIndex... indices);  // returns a slice of this tensor, using various types of indices
+  Iterable<DoubleTensorData> elements();  // iterates through the elements of the first axis of the tensor
+  DoubleTensorIterator scalars();  // iterates through the elements of a rank-1 tensor
 
   // Read operations
   double get(int... indices);  // get the scalar value of a rank-0 tensor (or a slice of)
   DoubleStream stream(int... indices);  // get values of this tensor (or a slice of) as a stream
   void get(double[] array, int... indices);  // get values of this tensor (or a slice of) into `array`
   void get(DoubleBuffer buffer, int... indices);  // copy values of this tensor (or a slice of) into `buffer`
-  void get(DoubleTensor array, int... indices);  // copy values of this tensor (or a slice of) into `tensor`
+  void get(DoubleTensorData tensor, int... indices);  // copy values of this tensor (or a slice of) into `tensor`
   void read(OutputStream ostream);  // read elements of this tensor across all dimensions into `ostream` 
   
   // Write operations
@@ -82,11 +84,11 @@ interface DoubleTensor {
   void put(DoubleStream stream, int... indices);  // copy elements of `stream` into this tensor
   void put(DoubleBuffer buffer, int... indices);  // copy elements of `buffer` into this tensor
   void put(double[] array, int... indices);  // copy elements of `array` into this tensor
-  void put(DoubleTensor tensor, int... indices);  // copy elements of `tensor` into this tensor
+  void put(DoubleTensorData tensor, int... indices);  // copy elements of `tensor` into this tensor
   void write(InputStream istream);  // write elements of this tensor across all dimensions from `istream`
 }
 
-class DoubleIterator {
+class DoubleTensorIterator {
   boolean hasMoreElements();  // true if there is more elements
   double get();  // returns the current element and increment position
   void put(double value);  // sets the current element and increment position
@@ -94,7 +96,7 @@ class DoubleIterator {
   void onEach(DoubleSupplier func);  // supply all remaining elements
 }
 ```
-The <code><i>Type</i>Tensor</code> interfaces support normal integer indexation, similar to Java arrays. 
+The <code><i>Type</i>TensorBuffer</code> interfaces support normal integer indexation, similar to Java arrays. 
 
 Ex: let `tensor` be a matrix on `(x, y)`
 ```java
@@ -102,9 +104,9 @@ tensor.get(0, 0);  // returns scalar at x=0, y=0 (similar to array[0][0])
 tensor.put(10.0, 0, 0);  // sets scalar at x=0, y=0 (similar to array[0][0] = 10.0)
 tensor.stream(0);  // returns vector at x=0 as a stream
 ```
-It is also possible to create slices of a tensor, to work with a reduced view of its elements. The first variant 
-of `slice()` accept usual integer indices, to slice at a specific element in the tensor. The second variant 
-accepts special indices, which offer more flexibility like iterating through the elements of a tensor on any 
+It is also possible to create slices of a buffer, to work with a reduced view of its elements. The first variant 
+of `slice()` accept usual integer indices, to slice at a specific element in the buffer. The second variant 
+accepts special indices, which offer more flexibility like iterating through the elements of a buffer on any 
 of its axis or use values of another tensor as indices.
 
 Here is a non-exhaustive list of special indices that could be possibly created. Each of them are exposed as static
@@ -116,7 +118,7 @@ methods in `TensorIndex`, which return an instance of the same class:
 * `range(int start, int end)`: matches all elements whose indices is between `start` and `end`
 * `even()`, `odd()`: matches only elements at even/odd indices
 * `mod(int m)`: matches only elements whose indices is a multiple of `m`
-Note that `IntTensor` and `LongTensor` will also implement the `TensorIndex` interface, to allow indexation
+Note that `IntTensorData` and `LongTensorData` will also implement the `TensorIndex` interface, to allow indexation
 using rank-0 or rank-1 tensors.
 
 Ex: let `tensor` be a 3D matrix on `(x, y, z)`
@@ -136,10 +138,10 @@ avoiding the user to increment manually an iterator.
 Ex: let `tensor` be a 3D matrix
 ```java
 double d = 0.0;
-for (DoubleTensor vector: tensor.elements()) {
+for (DoubleTensorData vector: tensor.elements()) {
   vector.scalars().onEach(() -> d++);
 }
-for (DoubleTensor vector: tensor.elements()) {
+for (DoubleTensorData vector: tensor.elements()) {
   vector.scalars().forEach(System.out::println);
 }
 tensor.slice(0).put(10.0f).put(20.0f).put(30.0f);
@@ -159,17 +161,17 @@ variable-length datatypes (like strings), data must be first collected in order 
 
 Following factories will be added to the `Tensors` class:
 ```java
-public static Tensor<Float> denseFloat(long[] shape, Consumer<FloatTensor> dataInit);
-public static Tensor<Double> denseDouble(long[] shape, Consumer<DoubleTensor> dataInit);
-public static Tensor<Integer> denseInt(long[] shape, Consumer<IntTensor> dataInit);
-public static Tensor<Long> denseLong(long[] shape, Consumer<LongTensor> dataInit);
-public static Tensor<Boolean> denseBoolean(long[] shape, Consumer<BooleanTensor> dataInit);
-public static Tensor<UInt8> denseUInt8(long[] shape, Consumer<ByteTensor> dataInit);
-public static Tensor<String> denseString(long[] shape, int elementLength, byte paddingValue, Consumer<StringTensor> dataInit);
-public static Tensor<String> denseString(long[] shape, Consumer<StringTensor> dataInit);
+public static Tensor<Float> denseFloat(long[] shape, Consumer<FloatTensorData> dataInit);
+public static Tensor<Double> denseDouble(long[] shape, Consumer<DoubleTensorData> dataInit);
+public static Tensor<Integer> denseInt(long[] shape, Consumer<IntTensorData> dataInit);
+public static Tensor<Long> denseLong(long[] shape, Consumer<LongTensorData> dataInit);
+public static Tensor<Boolean> denseBoolean(long[] shape, Consumer<BooleanTensorData> dataInit);
+public static Tensor<UInt8> denseUInt8(long[] shape, Consumer<ByteTensorData> dataInit);
+public static Tensor<String> denseString(long[] shape, int elementLength, byte paddingValue, Consumer<StringTensorData> dataInit);
+public static Tensor<String> denseString(long[] shape, Consumer<StringTensorData> dataInit);
 ```
 All factories except the last create an empty tensor whose memory is then directly mapped to a 
-<code><i>Type</i>Tensor</code>. This data structure is then passed to the `dataInit` function for 
+<code><i>Type</i>TensorData</code>. This data structure is then passed to the `dataInit` function for 
 initialization. Note that for strings, this is only possible if all elements can be padded to the same length.
 
 The last factory allow the creation of tensors of variable-length strings. The `StringTensor` passed in parameter to
@@ -183,16 +185,17 @@ other way in TF Java to allocate such tensor than allocating and manipulating in
 We can simplify this process by following the same approach as dense tensors and adding those
 factories to the `Tensors` class:
 ```java
-public static SparseTensor<Float> sparseFloat(long[] shape, int numValues, Consumer<FloatTensor> dataInit);
-public static SparseTensor<Double> sparseDouble(long[] shape, int numValues, Consumer<DoubleTensor> dataInit);
-public static SparseTensor<Integer> sparseInt(long[] shape, int numValues, Consumer<IntTensor> dataInit);
-public static SparseTensor<Long> sparseLong(long[] shape, int numValues, Consumer<LongTensor> dataInit);
-public static SparseTensor<Boolean> sparseBoolean(long[] shape, int numValues, Consumer<BooleanTensor> dataInit);
-public static SparseTensor<UInt8> sparseUInt8(long[] shape, int numValues, Consumer<ByteTensor> dataInit);
-public static SparseTensor<String> sparseString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringTensor> dataInit);
-public static SparseTensor<String> sparseString(long[] shape, int numValues, Consumer<StringTensor> dataInit);
+public static SparseTensor<Float> sparseFloat(long[] shape, int numValues, Consumer<FloatTensorData> dataInit);
+public static SparseTensor<Double> sparseDouble(long[] shape, int numValues, Consumer<DoubleTensorData> dataInit);
+public static SparseTensor<Integer> sparseInt(long[] shape, int numValues, Consumer<IntTensorData> dataInit);
+public static SparseTensor<Long> sparseLong(long[] shape, int numValues, Consumer<LongTensorData> dataInit);
+public static SparseTensor<Boolean> sparseBoolean(long[] shape, int numValues, Consumer<BooleanTensorData> dataInit);
+public static SparseTensor<UInt8> sparseUInt8(long[] shape, int numValues, Consumer<ByteTensorData> dataInit);
+public static SparseTensor<String> sparseString(long[] shape, int numValues, int elementLength, int paddingValue, Consumer<StringTensorData> dataInit);
+public static SparseTensor<String> sparseString(long[] shape, int numValues, Consumer<StringTensorData> dataInit);
 ```
-The same <code><i>Type</i>Tensor</code> interfaces can be used to initialize sparse data. In this case, the backing implementation classes keep track of the elements that are set by writing down their 
+The same <code><i>Type</i>TensorData</code> interfaces can be used to initialize sparse data. In this case, the backing 
+implementation classes keep track of the elements that are set by writing down their 
 index in a dense tensor and their value in another. `numValues` is the number of values actually set in the 
 sparse tensor.
 
@@ -206,13 +209,13 @@ users to work with variable-length elements in any dimension (except of the firs
 
 To support those tensors as well, following factories can be added to the `Tensors` class:
 ```java
-public static RaggedTensor<Float> raggedFloat(long[] shape, Consumer<FloatTensor> dataInit);
-public static RaggedTensor<Double> raggedDouble(long[] shape, Consumer<DoubleTensor> dataInit);
-public static RaggedTensor<Integer> raggedInt(long[] shape, Consumer<IntTensor> dataInit);
-public static RaggedTensor<Long> raggedLong(long[] shape, Consumer<LongTensor> dataInit);
-public static RaggedTensor<Boolean> raggedBoolean(long[] shape, Consumer<BooleanTensor> dataInit);
-public static RaggedTensor<UInt8> raggedUInt8(long[] shape, Consumer<ByteTensor> dataInit);
-public static RaggedTensor<String> raggedString(long[] shape, Consumer<StringTensor> dataInit);
+public static RaggedTensor<Float> raggedFloat(long[] shape, Consumer<FloatTensorData> dataInit);
+public static RaggedTensor<Double> raggedDouble(long[] shape, Consumer<DoubleTensorData> dataInit);
+public static RaggedTensor<Integer> raggedInt(long[] shape, Consumer<IntTensorData> dataInit);
+public static RaggedTensor<Long> raggedLong(long[] shape, Consumer<LongTensorData> dataInit);
+public static RaggedTensor<Boolean> raggedBoolean(long[] shape, Consumer<BooleanTensorData> dataInit);
+public static RaggedTensor<UInt8> raggedUInt8(long[] shape, Consumer<ByteTensorData> dataInit);
+public static RaggedTensor<String> raggedString(long[] shape, Consumer<StringTensorData> dataInit);
 ```
 All ragged dimensions in the tensor have a value of `-1` in the `shape` attribute. Since ragged tensors always 
 work with variable-length values, data must be first collected before the tensor buffer is allocated 
@@ -230,13 +233,13 @@ directly when reading its data.
 
 The following methods will be added to the `Tensor` class:
 ```java
-public FloatTensor floatData();
-public DoubleTensor doubleData();
-public IntTensor intData();
-public LongTensor longData();
-public BooleanTensor booleanData();
-public ByteTensor uInt8Data();
-public StringTensor stringData();
+public FloatTensorData floatData();
+public DoubleTensorData doubleData();
+public IntTensorData intData();
+public LongTensorData longData();
+public BooleanTensorData booleanData();
+public ByteTensorData uInt8Data();
+public StringTensorData stringData();
 ```
 It is up to the user to know which of these methods should be called on a tensor of a given type, similar
 to the `*Value()` methods of the same class.
@@ -244,31 +247,29 @@ to the `*Value()` methods of the same class.
 The returned tensor data should only be used for read operations and all attempt to modify the data will result
 in an error.
 
-*Note: an alternative solution would be to split the TypeTensor interfaces and classes in two types: one for 
+*Note: an alternative solution would be to split the TypeTensorData interfaces and classes in two types: one for 
 read-only operations and another inheriting from it for read & write. This gives more control at compile time to 
-ensure that users won't attempt to modify a read-only tensor. But it will also double the number of interfaces
-and classes in the utility library.*
+ensure that users won't attempt to modify a read-only tensor. But it will also double up the number of data interfaces
+and classes.*
 
 ### User-allocated Tensors
 
 This RFC focuses on tensors allocated by the TensorFlow runtime library. But it prepares to solution to accept other
-implementations of <code><i>Type</i>Tensor</code> that let the user allocate a tensor outside TensorFlow and 
-read/write to its data (e.g. a <code>Array<i>Type</i>Tensor</code> could be backed with a standard Java 
+implementations of <code><i>Type</i>TensorData</code> that let the user allocate a tensor outside TensorFlow and 
+read/write to its data (e.g. a <code>Array<i>Type</i>TensorData</code> could be backed with a standard Java 
 array).
 
 It would be possible then to create a tensor in TensorFlow based on the data from a user-allocated tensor, similar
 to the data copy solution already present in the TF Java client. For example:
 ```java
-public static Tensor<Float> create(FloatTensor data);
-public static Tensor<Double> create(DoubleTensor data);
-public static Tensor<Integer> create(IntTensor data);
-public static Tensor<Long> create(LongTensor data);
-public static Tensor<Boolean> create(BooleanTensor data);
-public static Tensor<UInt8> create(ByteTensor data);
-public static Tensor<String> create(StringTensor data);
+public static Tensor<Float> create(FloatTensorData data);
+public static Tensor<Double> create(DoubleTensorData data);
+public static Tensor<Integer> create(IntTensorData data);
+public static Tensor<Long> create(LongTensorData data);
+public static Tensor<Boolean> create(BooleanTensorData data);
+public static Tensor<UInt8> create(ByteTensorData data);
+public static Tensor<String> create(StringTensorData data);
 ```
-The implementation of such tensors could (and should) be delivered by the utility library as it does not depend 
-on any TensorFlow core types.
 
 ### TensorFlow Operations
 
@@ -286,9 +287,9 @@ tf.constant(Tensor.denseFloat(...));
 Note that in this case, there is no need to close explicitly the `Tensor<>` (or with a `try-with-resource` block), 
 because eager execution environments already take care of closing discardable resources automatically.
 
-Unlike NumPy in Python, the <code><i>Type</i>Tensor</code> interface do not expose per design linear algebra operations 
-(e.g. matrix addition, substraction, etc.). Since eager execution in Java is supported, users who wants to execute
-such operation can simply use TensorFlow directly. e.g.
+As mentioned previously, the <code><i>Type</i>TensorData</code> interfaces do not expose linear algebra operations 
+(e.g. matrix addition, substraction, etc.) per design. Users who wants to execute such operation can easily do it by
+invoking TensorFlow directly in an eager execution environment. For example:
 ```java
 Ops tf = Ops.create();
 
@@ -296,14 +297,6 @@ Constant<Float> matrix1 = tf.constant(Tensors.denseFloat(...));
 Constant<Float> matrix2 = tf.constant(Tensors.denseFloat(...));
 
 Add<Float> sum = tf.math.add(matrix1, matrix2);
-```
-Some other JVM languages offer more tools to create a rich API for calling those operations on top of the interfaces
-proposed in this document and their implementation is postponed as a future development. For example, in Kotlin,
-it could be possible to do the following:
-```kotlin
-operator fun <T> Operand<T>.plus(tensor: Operand<T>): Operand<T> {
-        return tf.math.add(this, tensor)
-    }
 ```
 
 ## Detailed Design
@@ -321,20 +314,22 @@ Tensor<Boolean> scalar = Tensors.createBoolean(new long[0], data -> {
   // Setting scalar value directly
   data.put(true);
 });
+BooleanTensorData scalarData = scalar.booleanData();
 
-scalar.rank();  // 0
-scalar.size(0);  // error
-scalar.totalSize();  // 1
+scalarData.rank();  // 0
+scalarData.size(0);  // error
+scalarData.totalSize();  // 1
 
 Tensor<Integer> vector = Tensors.createInt(new long[]{4}, data -> {
   // Setting first elements from array and add last element directly
   data.put(new int[]{1, 2, 3}, 0);
   data.put(4, 3); 
 });
+IntTensorData vectorData = vector.intData();
 
-vector.rank();  // 1
-vector.size(0);  // 4
-vector.totalSize();  // 4
+vectorData.rank();  // 1
+vectorData.size(0);  // 4
+vectorData.totalSize();  // 4
 
 Tensor<Float> matrix = Tensors.createFloat(new long[]{2, 3}, data -> {
   // Initializing data using iterators
@@ -345,60 +340,63 @@ Tensor<Float> matrix = Tensors.createFloat(new long[]{2, 3}, data -> {
   secondRow.put(20.0f);
   secondRow.put(25.0f);
 });
+FloatTensorData matrixData = matrix.floatData();
 
-matrix.rank();  // 2
-matrix.size(0);  // 2
-matrix.totalSize();  // 6
+matrixData.rank();  // 2
+matrixData.size(0);  // 2
+matrixData.totalSize();  // 6
 
 Tensor<Float> matrix3d = Tensors.createDouble(new long[]{2, 2, 3}, data -> {
   // Initialize all data from a flat 3d matrix: 
   // {{{10.0, 10.1, 10.2}, {11.0, 11.1, 11.2}}, {{20.0, 20.1, 20.1}, {21.0, 21.1, 21.2}}}
   data.put(DoubleStream.of(10.0, 10.1, 10.2, 11.0, 11.1, 11.2, 20.0, 20.1, 20.2, 21.0, 21.1, 21.2)); 
 });
+FloatTensorData matrix3dData = matrix3d.floatData();
 
-matrix3d.rank();  // 3
-matrix3d.size(0);  // 2
-matrix3d.totalSize();  // 12
+matrix3dData.rank();  // 3
+matrix3dData.size(0);  // 2
+matrix3dData.totalSize();  // 12
 
 Tensor<String> text = Tensors.createString(new long[]{-1}, data -> {
   // Initializing data from input stream, where `values.txt` contains following modified UTF-8 strings:
   // "in the town", "where I was", "born"
   data.write(new FileInputStream("values.txt"));
 });
+StringTensorData textData = text.stringData();
 
-text.rank();  // 1
-text.size(0);  // 3
-text.totalSize();  // 3
+textData.rank();  // 1
+textData.size(0);  // 3
+textData.totalSize();  // 3
 
 // Reading data
 
-scalar.get();  // true
-vector.get(0);  // 1
-matrix.get(0, 1);  // 5.0f
-matrix3d.get(1, 1, 1);  // 21.1
-text.get(2);  // "born"
+scalarData.get();  // true
+vectorData.get(0);  // 1
+matrixData.get(0, 1);  // 5.0f
+matrix3dData.get(1, 1, 1);  // 21.1
+textData.get(2);  // "born"
 
-IntBuffer buffer = IntBuffer.allocate(vector.numElements());
-vector.get(buffer);  // 1, 2, 3, 4
-matrix.stream();  // 0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f
+IntBuffer buffer = IntBuffer.allocate(vectorData.numElements());
+vectorData.get(buffer);  // 1, 2, 3, 4
+matrixData.stream();  // 0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f
 
-matrix3d.elements().forEach(c -> c.stream());  // [10.0, 10.1, 10.2, 11.0, 11.1, 11.2], 
-                                               // [20.0, 20.1, 20.2, 21.0, 21.1, 21.2] 
-text.scalars().forEach(System.out::println);  // "in the town", "where I was", "born"
+matrix3dData.elements().forEach(c -> c.stream());  // [10.0, 10.1, 10.2, 11.0, 11.1, 11.2], 
+                                                   // [20.0, 20.1, 20.2, 21.0, 21.1, 21.2] 
+textData.scalars().forEach(System.out::println);  // "in the town", "where I was", "born"
 
 // Working with slices
 
-scalar.slice(0);  // error
-vector.slice(0);  // {1} (rank-0)
-matrix.slice(1, 1);  // {20.0f} (rank-0)
+scalarData.slice(0);  // error
+vectorData.slice(0);  // {1} (rank-0)
+matrixData.slice(1, 1);  // {20.0f} (rank-0)
 
-matrix3d.slice(0, 0);  // {10.0, 10.1} (rank-1)
-matrix3d.slice(all(), at(0));  // {{10.0, 10.1, 10.2}, {20.0, 20.1, 20.2}} (rank-2)
-matrix3d.slice(all(), at(0), at(0));  // {10.0, 20.0} (rank-1)
-matrix3d.slice(all(), at(0), incl(0, 2));  // {{10.0, 10.2}, {20.0, 20.2}} (rank-2)
-matrix3d.slice(all(), all(), excl(1));  // {{{10.0, 10.2}, {11.0, 11.2}}, {{20.0, 20.2}, {21.0, 21.2}}} (rank-3)
+matrix3dData.slice(0, 0);  // {10.0, 10.1} (rank-1)
+matrix3dData.slice(all(), at(0));  // {{10.0, 10.1, 10.2}, {20.0, 20.1, 20.2}} (rank-2)
+matrix3dData.slice(all(), at(0), at(0));  // {10.0, 20.0} (rank-1)
+matrix3dData.slice(all(), at(0), incl(0, 2));  // {{10.0, 10.2}, {20.0, 20.2}} (rank-2)
+matrix3dData.slice(all(), all(), excl(1));  // {{{10.0, 10.2}, {11.0, 11.2}}, {{20.0, 20.2}, {21.0, 21.2}}} (rank-3)
 
-text.slice(tf.constant(1));  // {"where I was"} (rank-0 slice)
+textData.slice(tf.constant(1));  // {"where I was"} (rank-0 slice)
 
 // Sparse tensors
 
@@ -408,10 +406,11 @@ SparseTensor<Float> sparseTensor = Tensors.createSparseFloat(new long[]{2, 4}, 3
   data.put(30.0f, 1, 1);
   data.put(40.0f, 2, 1);  // fails, index oob
 });
+FloatTensorData sparseData = sparseTensor.floatData();
 
-sparseTensor.get(0, 0);  // 10.0f
-sparseTensor.get(0, 1);  // 0.0f
-sparseTensor.stream();  // [10.0f, 0.0f, 0.0f, 20.0f, 0.0f, 30.0f, 0.0f, 0.0f]
+sparseData.get(0, 0);  // 10.0f
+sparseData.get(0, 1);  // 0.0f
+sparseData.stream();  // [10.0f, 0.0f, 0.0f, 20.0f, 0.0f, 30.0f, 0.0f, 0.0f]
 
 // Ragged tensors
 
@@ -423,14 +422,15 @@ RaggedTensor<Float> raggedTensor = Tensors.createRaggedFloat(new long[]{3, -1}, 
   data.put(50.0f, 2, 0);
   data.put(60.0f, 2, 1);
 });
+FloatTensorData raggedData = raggedTensor.floatData();
 
-raggedTensor.get(0, 1);  // 20.0f
-raggedTensor.get(1, 0);  // 40.0f
-raggedTensor.get(1, 1);  // fails, index oob
-raggedTensor.elements().forEach(e -> e.stream());  // [10.0f, 20.0f, 30.0f], [40.0f], [50.0f, 60.0f]
+raggedData.get(0, 1);  // 20.0f
+raggedData.get(1, 0);  // 40.0f
+raggedData.get(1, 1);  // fails, index oob
+raggedData.elements().forEach(e -> e.stream());  // [10.0f, 20.0f, 30.0f], [40.0f], [50.0f, 60.0f]
 ```
 
 ## Questions and Discussion Topics
 
-* Should we split the <code><i>Type</i>Tensor</code> into distinct interfaces for read-only and read-write tensors?
+* Should we split the <code><i>Type</i>TensorData</code> into distinct interfaces for read-only and read-write tensors?
 * Should we plan now user-allocated tensors or can we live with TensorFlow tensors only for now?
