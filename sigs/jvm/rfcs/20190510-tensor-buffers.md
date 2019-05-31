@@ -96,7 +96,7 @@ class DoubleTensorIterator {
   void onEach(DoubleSupplier func);  // supply all remaining elements
 }
 ```
-The <code><i>Type</i>TensorBuffer</code> interfaces support normal integer indexation, similar to Java arrays. 
+The <code><i>Type</i>TensorData</code> interfaces support normal integer indexation, similar to Java arrays. 
 
 Ex: let `tensor` be a matrix on `(x, y)`
 ```java
