@@ -118,7 +118,7 @@ methods in `TensorIndex`, which return an instance of the same class:
 * `range(int start, int end)`: matches all elements whose indices is between `start` and `end`
 * `even()`, `odd()`: matches only elements at even/odd indices
 * `mod(int m)`: matches only elements whose indices is a multiple of `m`
-Note that `IntTensorData` and `LongTensorData` will also implement the `TensorIndex` interface, to allow indexation
+* `IntTensorData` and `LongTensorData` will also implement the `TensorIndex` interface, to allow indexation
 using rank-0 or rank-1 tensors.
 
 Ex: let `tensor` be a 3D matrix on `(x, y, z)`
