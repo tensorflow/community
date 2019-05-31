@@ -289,14 +289,16 @@ because eager execution environments already take care of closing discardable re
 
 As mentioned previously, the <code><i>Type</i>TensorData</code> interfaces do not expose linear algebra operations 
 (e.g. matrix addition, substraction, etc.) per design. Users who wants to execute such operation can easily do it by
-invoking TensorFlow directly in an eager execution environment. For example:
+invoking TensorFlow directly in an eager execution environment. To facilitate the access to tensor data from an
+eager operation result, the same `*Data()` methods found in the `Tensor<>` class will also be added to the `Operand<>` class,
+so we can do:
 ```java
 Ops tf = Ops.create();
 
 Constant<Float> matrix1 = tf.constant(Tensors.denseFloat(...));
 Constant<Float> matrix2 = tf.constant(Tensors.denseFloat(...));
 
-Add<Float> sum = tf.math.add(matrix1, matrix2);
+FloatTensorData sum = tf.math.add(matrix1, matrix2).floatData();
 ```
 
 ## Detailed Design
@@ -433,4 +435,15 @@ raggedData.elements().forEach(e -> e.stream());  // [10.0f, 20.0f, 30.0f], [40.0
 ## Questions and Discussion Topics
 
 * Should we split the <code><i>Type</i>TensorData</code> into distinct interfaces for read-only and read-write tensors?
+
 * Should we plan now user-allocated tensors or can we live with TensorFlow tensors only for now?
+
+* The repetition of all new tensor factories and method for each supported datatype pollutes a bit the namespace of the classes
+they are being added to and are more prone to mistakes if user picks the wrong variant.<br>A solution would be to use generic TF types
+instead of standard Java types in the declaration of our tensor, so we can retrieve automatically the appropriate <code>
+<i>Type</i>TensorData</code> variant for a given tensor. For instance, instead of `Tensor<Double>`,
+we could have `Tensor<TFDouble>`, where `TFDouble` extends from `TFType<DoubleTensorData>`. This way, we could only 
+invoke `tensor.data()` on a given tensor.<br>There are also other advantages of using 
+custom TF types (that can be discussed about) and such solution has already been suggested and evaluated when generics were 
+initially added to TF Java classes. But Java types were chosen because they are more intuitive for programmers.<br>Should we 
+reconsider it?
