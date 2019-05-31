@@ -305,7 +305,7 @@ Add<Float> sum = tf.math.add(matrix1, matrix2);
 
 ![Class Diagram](images/20190510-tensor-data-nio-cd.png)
 
-### Example of usage for NdArrays
+### Example of usage of tensor NIO utilities
 
 ```java
 // Creating tensors and writing data
