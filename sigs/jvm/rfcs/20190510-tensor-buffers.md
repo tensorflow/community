@@ -438,9 +438,9 @@ raggedData.elements().forEach(e -> e.stream());  // [10.0f, 20.0f, 30.0f], [40.0
 
 * Should we plan now user-allocated tensors or can we live with TensorFlow tensors only for now?
 
-* The repetition of all new tensor factories and method for each supported datatype pollutes a bit the namespace of the classes
-they are being added to and are more prone to mistakes if user picks the wrong variant.<br>A solution would be to use generic TF types
-instead of standard Java types in the declaration of our tensor, so we can retrieve automatically the appropriate <code>
+* The multiplicity of all new tensor factories and methods for each supported datatype pollutes a bit the namespace of the classes
+they are being added to and are prone to user mistakes by letting him choose the right variant.<br>A solution would be to use generic 
+TF types instead of standard Java types in the declaration of our tensor, so we can retrieve automatically the appropriate <code>
 <i>Type</i>TensorData</code> variant for a given tensor. For instance, instead of `Tensor<Double>`,
 we could have `Tensor<TFDouble>`, where `TFDouble` extends from `TFType<DoubleTensorData>`. This way, we could only 
 invoke `tensor.data()` on a given tensor.<br>There are also other advantages of using 
