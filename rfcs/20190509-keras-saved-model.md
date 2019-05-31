@@ -1,10 +1,10 @@
 # Keras SavedModel saving/loading 
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Kathy Wu (kathywu@google.com)                        |
 | **Sponsor**   | Karmel (karmel@google.com)                           |
-| **Updated**   | 2019-05-21                                           |
+| **Updated**   | 2019-05-30                                           |
 
 ## Objective
 
