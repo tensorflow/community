@@ -4,7 +4,15 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Eugene Brevdo (ebrevdo@google.com) |
 | **Sponsor**   | Alex Passos (apassos@google.com)                 |
-| **Updated**   | 2019-05-01
+| **Updated**   | 2019-06-05
+
+## An update on `TensorCord Variant Object` RFC.
+
+After some internal discussion, we have decided to merge this RFC into another
+planned update to how TensorFlow runtime represents and handles strings.  When
+that updated proposal is available, it will include a section on transparently
+representing rope-like objects (without having to use `Variant` for this
+behavior).
 
 ## Objective
 
