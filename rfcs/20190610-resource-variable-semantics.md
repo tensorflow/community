@@ -1,6 +1,6 @@
 # Concurrency Semantics For TensorFlow Resource Variables
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)       |
+| Status        | Implemented                                          |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Sanjoy Das (sanjoy@google.com)                       |
 | **Sponsor**   | Alexandre Passos (apassos@google.com)                |
