@@ -1,6 +1,6 @@
 # Keras pre-made models
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Zhenyu Tan (tanzheny@google.com)|
 | **Sponsor**   | Francois Chollet (fchollet@google.com), Alexandre Passos (apassos@google.com) |
@@ -135,13 +135,21 @@ SparseFeatures(Layer):
     """tf.keras.layers.SparseFeatures
 
     Args:
-      feature_columns: An iterable containing all the feature columns used by the model. All items in the set should be instances of classes derived from `FeatureColumn`.
+      feature_columns: An iterable containing all the feature columns used by the model. 
+        All items in the set should be instances of classes derived from `FeatureColumn`.
       sparse_combiner: A string spcifying how to reduce if a categorical column is multivalent. "mean", "sqrtn", and "sum" are supported.
       name: Name of the layer
     """
     pass
 
   def call(self, features):
+    """
+    Args:
+      features: Mapping from keys to tensors. `FeatureColumn`s look up via
+        these keys. For example `numeric_column('price')` will look at 'price'
+        key in this dict. Values can be a `SparseTensor` or a `Tensor` depends
+        on corresponding `FeatureColumn`.
+    """
     pass
 
 def get_config(self): serialize the configuration of feature columns.
@@ -150,7 +158,7 @@ def from_config(self): deserialize the feature columns from config.
 ```
 
 ### Linear Models
-We provide linear models for classification and regression, where users can customize the loss and metrics. These linear models support mini-batch training. For large models, model parallelism needs to be performed via sharding the model properly, see [partition strategy in 2.0](https://github.com/tensorflow/community/blob/master/rfcs/20190116-embedding-partitioned-variable.md).
+These linear models support mini-batch training. For large models, model parallelism needs to be performed via sharding the model properly, see [partition strategy in 2.0](https://github.com/tensorflow/community/blob/master/rfcs/20190116-embedding-partitioned-variable.md).
 
 #### Linear Regression
 For linear regression models, mean squared error loss is used by default. Metrics can be customized.
