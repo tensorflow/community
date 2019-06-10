@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Zhenyu Tan (tanzheny@google.com)|
 | **Sponsor**   | Francois Chollet (fchollet@google.com), Alexandre Passos (apassos@google.com) |
-| **Updated**   | 2019-04-29                                           |
+| **Updated**   | 2019-06-10                                           |
 
 ## Objective
 
@@ -34,7 +34,7 @@ Given these considerations, we propose the following pre-made models as a starti
 2. Wide-Deep models including Wide-Deep Regression and Wide-Deep Classification
 3. BoostedTree models including BoostedTree Regression and BoostedTree Classification
 
-Users can use [feature_columns](https://www.tensorflow.org/guide/feature_columns) with pre-made models for feature engineering. We use **pre-made** and **canned** interchangeably in this doc.
+Users can use [feature_columns](https://www.tensorflow.org/guide/feature_columns) with pre-made models for feature engineering.
 
 Several side notes: This document should serve as a foundation for other pre-made models that are not included in this proposal, such as Kmeans, random forest, collaborate filtering, which are yet to come; Detailed design regarding implementation details for BoostedTree, such as distributed training, saving & restoring, acceleration, supported feature columns should live in separate docs. 
 
@@ -42,11 +42,11 @@ Several side notes: This document should serve as a foundation for other pre-mad
 
 ### Challenges
 
-Many canned models, including BoostedTrees, KMeans (as well as WideDeep and many others more in the future) are highly complicated and do not follow the simple foward & backprop workflow, an assumption heavily relied on by Keras. Building such models, while not compromising the basic composability of Keras (i.e., compose layers on top of layers), is the main challenge we need to resolve in this document. Another challenge is that these models can have multiple training phases (such as collaborative filtering models). We propose the following two approaches to address them:
+Many premade models, including BoostedTrees, KMeans (as well as WideDeep and many others more in the future) are highly complicated and do not follow the simple foward & backprop workflow, an assumption heavily relied on by Keras. Building such models, while not compromising the basic composability of Keras (i.e., compose layers on top of layers), is the main challenge we need to resolve in this document. Another challenge is that these models can have multiple training phases (such as collaborative filtering models). We propose the following two approaches to address them:
 
 ### Proposal 1: Customized training function & composability
 
-We propose to let each subclassed pre-made model override the training function. It is optional to provide a special subclass `CannedModel` if other methods such as `compile` and `fit` needs to be overriden as well. In traditional Keras models, such training function is dominated by autodiff - given the forward pass of the model, the gradients for each Operation is generated and backprop computation is automatically laid out for the entire model. However such assumption is only valid for neural network based supervised learning architecture. For many other scenarios, we would need to break this assumption:
+We propose to let each subclassed pre-made model override the training function. It is optional to provide a special subclass `PremadeModel` if other methods such as `compile` and `fit` needs to be overriden as well. In traditional Keras models, such training function is dominated by autodiff - given the forward pass of the model, the gradients for each Operation is generated and backprop computation is automatically laid out for the entire model. However such assumption is only valid for neural network based supervised learning architecture. For many other scenarios, we would need to break this assumption:
 
 1. gradients may not be used, e.g., any un-supervised learning tasks
 2. gradients may only be used partially, e.g., tree based models
@@ -64,14 +64,13 @@ Our proposal is to split each phase into separate sub-training phases, and relie
 Combining the above proposals, below is an example (pseudo) code snippet for BoostedTrees:
 
 ```python
-class BoostedTreesClassifier(Model):
+BoostedTreesClassifier(Model):
 
-def __init__(self, feature_columns, num_classes=2, num_trees=10, learning_rate=0.1,
-             max_depth=None, min_samples_split=2, min_samples_leaf=1, partial_data=1.)
+def __init__(self, n_batches_per_update, num_classes=2, num_trees=10, learning_rate=0.1,
+             l1=0., l2=0., max_depth=None, min_samples_split=2, min_samples_leaf=1)
   self._quantile_accumulator = QuantileAccumulator()
   self._stats_accumulator = StatsAccumulator()
   self._tree_ensemble = TreeEnsemble(num_classes, num_trees, max_depth)
-  self._input_layer = tf.keras.layers.DenseFeatures(feature_columns)
   self._are_quantiles_ready = tf.Variable(False, dtype=tf.bool)
   self._center_bias_ready = tf.Variable(False, dtype=tf.bool)
   self._cond_accumulator = tf.ConditionalAccumulator(dtype=tf.int32)
@@ -100,7 +99,7 @@ def _grow_tree_phase(self, inputs, targets):
   while (self._center_bias_ready is False):
     self._center_bias_phase()
   return self._tree_ensemble.grow_tree(stats_summary)
-
+  
 @autograph.convert()
 def _quantile_phase(self, inputs, targets):
   del targets
@@ -120,79 +119,76 @@ Note this is a single machine version of implementation. For distributed trainin
 
 ## Detailed Design
 
-This section describes the API signatures of the canned models that we propose.
+This section describes the API signatures of the premade models that we propose.
+
+### SparseFeatures Layer
+The SparseFeatures layer will be responsible for preprocessing categorical feature columns and serve as input to Premade models. Just as DenseFeatures (which is undergoing implementation changes), the interface is:
+```python
+`tf.keras.layers.SparseFeatures`
+SparseFeatures(Layer):
+
+  def __init__(self, 
+               feature_columns=None, 
+               sparse_combiner="sum", 
+               name=None, 
+               **kwargs):
+    """tf.keras.layers.SparseFeatures
+
+    Args:
+      feature_columns: An iterable containing all the feature columns used by the model. All items in the set should be instances of classes derived from `FeatureColumn`.
+      sparse_combiner: A string spcifying how to reduce if a categorical column is multivalent. "mean", "sqrtn", and "sum" are supported.
+      name: Name of the layer
+    """
+    pass
+
+  def call(self, features):
+    pass
+
+def get_config(self): serialize the configuration of feature columns.
+def from_config(self): deserialize the feature columns from config.
+
+```
 
 ### Linear Models
-
-We provide linear models for classification and regression, where users can customize the loss and metrics. These linear models support mini-batch training. For large models, model parallelism needs to be performed via sharding the model properly, see [partition strategy in 2.0](https://github.com/tensorflow/community/blob/master/rfcs/20190116-embedding-partitioned-variable.md). 
-
-`LinearRegressor` and `LinearClassifier` are different from `tf.keras.layer.Dense`. It accepts feature columns and creates variables separately for each feature column provided. The user is able to get the trained weights for each column.
-
+We provide linear models for classification and regression, where users can customize the loss and metrics. These linear models support mini-batch training. For large models, model parallelism needs to be performed via sharding the model properly, see [partition strategy in 2.0](https://github.com/tensorflow/community/blob/master/rfcs/20190116-embedding-partitioned-variable.md).
 
 #### Linear Regression
-
 For linear regression models, mean squared error loss is used by default. Metrics can be customized.
-
 ```python
 LinearRegressor(Model):
 
   def __init__(self,
                output_dim=1,
                use_bias=True,
-               kernel_regularizer=None,
-               bias_regularizer=None,
-               input_dim=None,
-               feature_columns=None,
-               merge_mode="sum",
+               kernel_regularizer=None, 
+               bias_regularizer=None, 
                *args, **kwargs):
-    """tf.keras.canned.LinearRegressor
+    """tf.keras.premade.LinearRegressor
 
     Args:
-      output_dim: Dimensionality of the output vector (scalar regression is the default).
+      output_dim: Dimensionality of the output vector (scalar regression is the default)
       use_bias: whether to calculate the bias/intercept for this model.
-        If set to False, no bias/intercept will be used in calculations, e.g., the data is already centered.
+          If set to False, no bias/intercept will be used in calculations, e.g., the data is already centered.
       kernel_regularizer: Regularizer instance to use on kernel matrix.
       bias_regularizer: Regularizer instance to use on bias vector.
-      input_dim: Optional. Mutually exclusive with `feature_columns`. Dimensionality of the inputs.
-      feature_columns: Optional. An iterable containing the feature columns used as inputs of the model.
-        All items in the set should be instances of classes derived from `FeatureColumn`.
-      merge_mode: String. This argument is only valid if "feature_columns" is not None.
-        Specifies how to combine multiple features together.
-        One of 'sum', 'mul', 'avg'.
     """
     pass
 
   def compile(self, optimizer="rmsprop", loss="mse", metrics=None):
     pass
-
-  def get_weights(self, feature_columns=None)
-    """Get weight values for the linear model.
-    """
-    pass
-
-  def set_weights(self, weights, feature_columns=None)
-    """Set weight values for the linear model.
-    """
-    pass
 ```
-
 #### Logistic Regression
-
 For logistic regression models, binary or categorical cross entropy loss is used by default. Metrics can be customized.
-
 ```python
-class LinearClassifier(Model):
+LinearClassifier(Model):
 
   def __init__(self,
-               num_classes=2,
-               use_bias=True,
+               num_classes=2, 
+               use_bias=True, 
                kernel_regularizer=None,
                bias_regularizer=None,
-               input_dim=None,
-               feature_columns=None,
-               merge_mode="sum",
                *args, **kwargs):
-    """tf.keras.canned.LinearClassifier
+    """tf.keras.premade.LinearClassifier
 
     Args:
       num_classes: Number of output classes (>=2).
@@ -200,154 +196,205 @@ class LinearClassifier(Model):
         If set to False, no bias/intercept will be used in calculations, e.g., the data is already centered.
       kernel_regularizer: Regularizer instance to use on kernel matrix.
       bias_regularizer: Regularizer instance to use on bias vector.
-      input_dim: Optional. Mutually exclusive with `feature_columns`. Dimensionality of the inputs.
-      feature_columns: Optional. An iterable containing the feature columns used as inputs of the model.
-        All items in the set should be instances of classes derived from `FeatureColumn`.
-      merge_mode: String. This argument is only valid if "feature_columns" is not None.
-        Specifies how to combine multiple features together.
-        One of 'sum', 'mul', 'avg'.
     """
     pass
 
-  def compile(self, optimizer="rmsprop", loss="sparse_categorical_crossentropy", metrics=None):
+  def compile(self, optimizer="sgd", loss="categorical_crossentropy", metrics=None):
     pass
 
-  def get_weights(self, feature_columns=None)
-    """Get weight values for the linear model.
-    """
-    pass
+*Only binary classification is supported for sdca.
+```
 
-  def set_weights(self, weights, feature_columns=None)
-    """Set weight values for the linear model.
-    """
+### DNN Models
+The model is not exposed as public tf endpoints, but simply implementation that users can import.
+
+#### DNN Regression
+For dnn regression models, mean squared error loss is used by default. Metrics can be customized.
+```python
+DNNRegressor(Model):
+
+  def __init__(self, 
+               hidden_units,
+               output_dim=1,
+               activation="relu", 
+               dropout=None, 
+               batch_norm=False,
+               *args, **kwargs):
+  """
+    Args:
+      hidden_units: List of hidden units.
+      output_dim: Dimensionality of output vector, scalar by default.
+      activation: Activation for each dense layer.
+      batch_norm: Bool to indicate whether add batch norm after each activation layer.
+      dropout: dropout layer to add after batch norm layer.
+  """
+
+  def compile(self, optimizer="sgd", loss="mse", metrics=None)
+    pass
+```
+#### DNN Classification
+For dnn classification models, binary or categorical cross entropy loss is used by default. Metrics can be customized.
+```python
+DNNClassifier(Model):
+
+  def __init__(self, 
+               hidden_units, 
+               num_classes=2, 
+               activation="relu", 
+               dropout=None, 
+               batch_norm=False, 
+               *args, **kwargs):
+  """
+    Args:
+      hidden_units: List of hidden units.
+      num_classes: Number of classes.
+      activation: Activation for each dense layer.
+      batch_norm: Bool to indicate whether add batch norm after each activation layer.
+      dropout: dropout layer to add after batch norm layer.
+  """
+
+  def compile(self, optimizer="sgd", loss="categorical_crossentropy", metrics=None)
     pass
 ```
 
 ### Wide and Deep Models
-
 #### Wide-Deep Regression
 
 Mean squared error loss is used by default. The FTRL optimizer is used by default for the linear branch, and the Adagrad optimizer is used by default for the deep branch. Metrics can be customized.
-
 ```python
-class WideDeepRegressor(Model):
-  """`tf.keras.canned.WideDeepRegressor`
+DNNLinearRegressor(Model):
 
-  Args:
-    linear_model: Uncompiled instance of `LinearRegressor`.
-    deep_model: Uncompiled instance of a Sequential model starting starting with a `DenseFeatures` layer.
-      Its output must match the output of the linear model.
-  """
-
-  def __init__(self, linear_model, deep_model, *args, **kwargs):
+  def __init__(self, linear_model, dnn_model, *args, **kwargs):
+    """`tf.keras.premade.DNNLinearRegressor`
+    Args:
+      linear_model: Uncompiled instance of a Sequential model starting with a `SparseFeatures` layer and followed by `LinearRegressor`.
+      dnn_model: Uncompiled instance of a Sequential model starting with a `DenseFeatures` layer, its outputs must match the output of the linear model.
+    """
     pass
 
-  def compile(self, linear_optimizer="ftrl", deep_optimizer="adagrad", loss="mse", metrics=None):
+  def compile(self, linear_optimizer="ftrl", dnn_optimizer="adagrad", loss="mse", 
+              metrics=None)
     pass
 ```
-
 #### Wide-Deep Classification
-
 ```python
-class WideDeepClassifier(Model):
-  """`tf.keras.canned.WideDeepClassifier`
+DNNLinearClassifier(DNNLinearModel):
 
-  Args:
-    linear_model: Uncompiled instance of `LinearRegressor`.
-    deep_model: Uncompiled instance of a Sequential model starting starting with a `DenseFeatures` layer.
-      Its output must match the output of the linear model.
-  """
-
-  def __init__(self, linear_model, deep_model, *args, **kwargs):
+  def __init__(self, linear_model, dnn_model, *args, **kwargs):
+    """`tf.keras.premade.DNNLinearClassifier`
+    Args:
+      linear_model: Uncompiled instance of a Sequential model starting with a `SparseFeatures` layer and followed by `LinearRegressor`.
+      dnn_model: Uncompiled instance of a Sequential model starting with a `DenseFeatures` layer, its outputs must match the output of the linear model.
+    """
     pass
 
-  def compile(self, linear_optimizer="ftrl", deep_optimizer="adagrad", loss="sparse_categorical_crossentropy", metrics=None):
+  def compile(self, linear_optimizer="ftrl", dnn_optimizer="adagrad", loss="categorical_crossentropy", 
+              metrics=None)
     pass
 ```
 
 ### BoostedTrees
-
 #### BoostedTrees Regression
-
 For GDBT regressor, mean squared error loss is used by default. Metrics can be customized.
-
 ```python
-class BoostedTreesRegressor(Model):
+BoostedTreesRegressor(Model):
 
-  def __init__(self, output_dim=1,
-               num_trees=10,
-               learning_rate=0.1,
+  def __init__(self,
+               n_batches_per_update, 
+               output_dim=1, 
+               num_trees=10, 
+               learning_rate=0.1, 
                regularizer=None,
-               min_node_weight=0.,
-               max_depth=None,
-               min_split_samples=2,
-               min_leaf_samples=1,
-               feature_columns=None):
-    """tf.keras.canned.BoostedTreesRegressor.
+               min_node_weight=0., 
+               max_depth=None, 
+               min_samples_split=2, 
+               min_samples_leaf=1):
+    """tf.keras.premade.BoostedTreesRegressor.
 
     Args:
+      n_batches_per_update: the number of batches to run per tree update.
       output_dim: Dimensionality of the output vector (scalar regression is the default).
-      num_trees: The number of boosting trees to perform.
+      num_trees: The number of boosted trees to perform.
       learning_rate: Shrinkage parameter to be used when a tree added to the model.
       regularizer: Regularizer instance.
       min_node_weight: Minimum sum hessian per leaf.
-      max_depth: The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.
-      min_split_samples: The minimum number of samples required to split an internal nodel.
-      min_leaf_samples: The minimum number of samples required to be at a leaf node.
-      feature_columns: An iterable containing all the feature columns used by the model. All items in the set should be instances of classes derived from `FeatureColumn`.
+      max_depth: The maximum depth of the tree. If None, then nodes are expanded until all leaves
+        are pure or until all leaves contain less than min_samples_split samples.
+      min_samples_split: The minimum number of samples required to split an internal nodel.
+      min_samples_leaf: The minimum number of samples required to be at a leaf node.
     """
     pass
 
-  def compile(self, loss="mse", metrics=None):
+  def compile(self, loss=None, loss="mse", metrics=None)
     pass
 ```
 
 #### BoostedTrees Classification
 
 For GDBT classifier, binary or categorical cross entropy loss is used by default. Metrics can be customized.
-
 ```python
-class BoostedTreesClassifier(Model):
+BoostedTreesRegressor(Model):
 
-  def __init__(self, num_classes=2,
-               num_trees=10,
-               learning_rate=0.1,
+  def __init__(self,
+               n_batches_per_update, 
+               num_classes=1, 
+               num_trees=10, 
+               learning_rate=0.1, 
                regularizer=None,
-               min_node_weight=0.,
-               max_depth=None,
-               min_split_samples=2,
-               min_leaf_samples=1,
-               feature_columns=None):
-    """tf.keras.canned.BoostedTreesRegressor.
+               min_node_weight=0., 
+               max_depth=None, 
+               min_samples_split=2, 
+               min_samples_leaf=1):
+    """tf.keras.premade.BoostedTreesRegressor.
 
     Args:
-      num_classes: Number of output classes (>=2).
-      num_trees: The number of boosting trees to perform.
+      n_batches_per_update: the number of batches to run per tree update.
+      num_classes: Number of classes.
+      num_trees: The number of boosted trees to perform.
       learning_rate: Shrinkage parameter to be used when a tree added to the model.
       regularizer: Regularizer instance.
       min_node_weight: Minimum sum hessian per leaf.
-      max_depth: The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all leaves contain less than min_samples_split samples.
-      min_split_samples: The minimum number of samples required to split an internal nodel.
-      min_leaf_samples: The minimum number of samples required to be at a leaf node.
-      feature_columns: An iterable containing all the feature columns used by the model. All items in the set should be instances of classes derived from `FeatureColumn`.
+      max_depth: The maximum depth of the tree. If None, then nodes are expanded until all leaves
+        are pure or until all leaves contain less than min_samples_split samples.
+      min_samples_split: The minimum number of samples required to split an internal nodel.
+      min_samples_leaf: The minimum number of samples required to be at a leaf node.
     """
     pass
 
-  def compile(self, loss="categorical_crossentropy", metrics=None):
+  def compile(self, loss=None, loss="categorical_crossentropy", metrics=None)
     pass
 ```
 
-## CannedEstimators
+## Using Premade models with Keras Feature layers and Processing layers
+```python
+// usage for feature columns.
+age = tf.feature_column.numeric_column('age')
+occupation = tf.feature_column.categorical_column_with_vocab_list('occupation', ['doctor', 'teacher', 'engineer'])
+bucketized_age = tf.feature_column.bucketized_column(age, num_buckets=5)
+feature_columns = [bucketized_age, occupation]
+sparse_feature_layer = tf.keras.layers.SparseFeatures(feature_columns)
+model = tf.keras.Sequential()
+model.add(sparse_feature_layer)
+model.add(tf.keras.premade.LinearRegressor())
 
-These are set as non goals but nice to have.
-1. Compatibility: We propose to provde backward checkpoint compatibility with CannedEstimators so that users can restore a Keras CannedModel from existing checkpoints.
-2. Reusability: We propose to reuse CannedModel.call() in CannedEstimator model_fn, and reuse CannedModel.make_train_function() in CannedEstimator Head.create_estimator_spec_train_op
+dftrain = pd.read_csv('storage.googleapis.com/tf-datasets/titanic/train.csv')
+y_train = dftrain.pop('survived')
+ds = tf.data.Dataset.from_tensor_slices(dict(dftrain), y_train)
+model.train(ds, epochs=10)
 
+// usage for processing layers.
+age = tf.keras.Input(shape=(1,), dtype=tf.float32, name='age')
+bucketized_age = tf.keras.Discretize(age, num_buckets=5)
+occupation = tf.keras.Input(shape=(None,), dtype=tf.string, name='occupation')
+occupation_id = tf.keras.VocabLookup(vocabulary_list)(occupation)
+processing_stage = tf.keras.ProcessingStage(
+    inputs=[age, occupation], outputs=[bucketized_age, occupation_id])
 
-## Questions and Discussion Topics
+premade_model = tf.keras.premade.LinearClassifier()
+output = premade_model(processing_stage.outputs)
+model = tf.keras.Model(inputs=processing_stage.inputs, outputs=[output])
 
-### Discussion with TFX
-
-1. TFX requires getting weights using feature column.
-Status: Supported in the doc.
-2. Should we have a `DNNClassifier`/`DNNRegressor` class? This is normally supported in Keras via a Sequential model that starts with a `DenseFeatures` layer.
+dftrain = pd.read_csv('storage.googleapis.com/tf-datasets/titanic/train.csv')
+y_train = dftrain.pop('survived')
+model.train(ds, epochs=10)
+```
