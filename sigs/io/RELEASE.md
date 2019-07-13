@@ -23,18 +23,18 @@ At the moment Python package (whl files) is created automatically,
 upon each successful Travis CI on master branch. At the end of
 each Travis CI build on master branch, all whl files
 (2.7, 3.4, 3.5, 3.6, 3.7 on Linux and 2.7 on macOS) are pushed to
-Bintray and are available in:
+Dropbox and are available in:
 
-https://dl.bintray.com/tensorflow-io/tensorflow-io-nightly/
+https://www.dropbox.com/sh/dg0npidir5v1xki/AACor-91kbJh1ScqAdYpxdEca?dl=0
 
 To perform a release in PyPI, first make sure the binary whl files
 are the correct one from corresponding Travis CI build number.
 This could be verified by checking the Travis CI history where at
 the end of the log, the sha256 of all whl files are calculated and displayed.
 The sha256 of each file displayed on Travis CI log should match the sha256
-of the files downloaded from Bintray.
+of the files downloaded from Dropbox.
 
-Once sha256 are verified against every whl files on Bintray, perform
+Once sha256 are verified against every whl files on Dropbox, perform
 a sanity check, then upload all of the whl files
 (2.7, 3.4, 3.5, 3.6, 3.7 on Linux and 2.7 on macOS) to PyPI.org:
 
