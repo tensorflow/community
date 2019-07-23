@@ -17,6 +17,7 @@ Anyone involved in or interested in high performance compilers and their applica
 
 * Mailing list: [mlir@tensorflow.org](https://groups.google.com/a/tensorflow.org/forum/#!forum/mlir)
 * GitHub repo: [tensorflow/mlir](https://github.com/tensorflow/mlir)
+* [Agenda document](https://docs.google.com/document/d/1y_9f1AbfgcoVdJh4_aM6-BaSHvrHl8zuA5G4jv_94K8) containing the meeting notes and recordings. 
 
 ## Collaboration
 
