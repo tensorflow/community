@@ -32,7 +32,7 @@ The following diagram gives an overview of TensorFlow Lite training road map.
 Yellow blocks are deliverables. Blue blocks are technical tasks to unblock the
 deliverables. The details of technical tasks will be explained below.
 
-![Example: Roadmap](20190722-tflite-training/roadmap.png){: width=600}
+<img src="20190722-tflite-training/roadmap.png" width="600" />
 
 ## Goals & Non-Goals
 
@@ -319,7 +319,7 @@ ops and add ops like `Transpose` or `ReorderAxis` in the same transformation
 rule. If it's converted to a constant, In TensorFlow Lite converter can further
 perform constant folding and optimize the execution:
 
-![Example: Transformation example](20190722-tflite-training/trans1.png){: width=600}
+<img src="20190722-tflite-training/trans1.png" width="600" />
 
 However, the constant folding step can't be done if the weights are not frozen,
 and the `Transpose` op will remain in the graph. This means **enabling training
@@ -335,7 +335,7 @@ same as when training is disabled. In high level, one way to achieve this is:
 *   Implement specialized graph transformation rules to move complexity from
     inference graph to initialization graph
 
-![Example: Transformation example](20190722-tflite-training/trans2.png){: width=600}
+<img src="20190722-tflite-training/trans2.png" width="600" />
 
 ### Control Flow
 
