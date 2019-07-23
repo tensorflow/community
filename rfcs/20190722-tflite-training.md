@@ -32,7 +32,7 @@ The following diagram gives an overview of TensorFlow Lite training road map.
 Yellow blocks are deliverables. Blue blocks are technical tasks to unblock the
 deliverables. The details of technical tasks will be explained below.
 
-<img src="20190722-tflite-training/roadmap.png" width="600" />
+<img src="20190722-tflite-training/roadmap.png" />
 
 ## Goals & Non-Goals
 
