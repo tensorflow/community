@@ -45,10 +45,9 @@ prepend the package’s name to the op’s name and separate with a ‘>’. An 
 for example.
 
 The string used for a package’s component name is any valid op name, but should
-be unique to the package.
-
-This allows different packages to experiment with ops without needing a central
-coordinator to assign unique operation names.
+be unique to the package. This allows different packages to experiment with ops
+without needing a central coordinator to assign unique operation names. Failing
+to use unique names will mean two packages are potentially incompatible.
 
 If a third-party-developed operation is to be integrated in TensorFlow core, it
 should be renamed to have no prefix, creating a new op name, and removing any
