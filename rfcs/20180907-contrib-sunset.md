@@ -2,11 +2,11 @@
 
 ![Tranquil Sunset](https://www.publicdomainpictures.net/pictures/30000/velka/sunset-15.jpg)
 
-| Status        | *Proposed*                                           |
+| Status        | *Accepted*                                           |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Martin Wicke (wicke@tensorflow.org)                  |
 | **Sponsor**   | Edd Wilder-James (ewj@tensorflow.org)                |
-| **Updated**   | 2018-08-20                                           |
+| **Updated**   | 2019-04-09                                           |
 
 ## Objective
 
@@ -101,10 +101,10 @@ reasonably focused (e.g., only ops, Layers, Metrics, Optimizers, Initializers)
 as to allow its maintainers to actually maintain the code.
 
 While the exact operating modalities for this repository will be up to the SIG,
-we propose to create the repository `tensorflow/contrib`. The TensorFlow team
+we propose to create the repository `tensorflow/addons`. The TensorFlow team
 will provide test infrastructure similar to what is running for TensorFlow
 (though potentially with reduced platform coverage, TBD). The code in
-`tensorflow/contrib` should be written against an installed version of
+`tensorflow/addons` should be written against an installed version of
 TensorFlow (i.e., using `import tensorflow as tf`, not the direct file imports
 used currently), and using only public APIs.
 
@@ -148,7 +148,7 @@ interest in this, but who are not owners.
 If you have an interest in one of these projects and are not named as an owner
 (or as an interested party), please speak up. I've added some (tentative) move
 targets to as of yet nonexistent repositories: `tensorflow/io`,
-`tensorflow/contrib` (I would prefer a better name for this), and
+`tensorflow/addons` (I would prefer a better name for this), and
 `tensorflow/scientific` will all require new SIGs to maintain them.
 
 Note that any project that has no other fate specified (including those moving
@@ -198,7 +198,7 @@ formed) will be deleted by default at 2.0.
 | hvx                | satok16          | delete (redundant with NNAPI)        |
 | igfs (#22194)      | dmitrievanthony  | move to tensorflow/io                |
 | ignite (#22210)    | dmitrievanthony  | move to tensorflow/io                |
-| image              |                  | partial move to tensorflow/contrib?  |
+| image              |                  | partial move to tensorflow/addons  |
 | input_pipeline     | rohan100jain     | delete                               |
 | integrate          | shoyer *mcoram   | move to tensorflow/scientific?       |
 | kafka              | yongtang (mrry)  | move to tensorflow/io?               |
@@ -207,7 +207,7 @@ formed) will be deleted by default at 2.0.
 | kfac               | duckworthd       | delete (moved to tensorflow/kfac)    |
 | kinesis            | yongtang (mrry)  | move to tensorflow/io?               |
 | labeled_tensor     | shoyer           | delete                               |
-| layers             |                  | partial move to tensorflow/contrib?  |
+| layers             |                  | partial move to tensorflow/addons  |
 | learn              | wicke       | delete (replaced by tensorflow/estimator) |
 | legacy_seq2seq     | ebrevdo (qlzh727) | delete (replaced by seq2seq)        |
 | libsvm             |                  | delete (no owner)                    |
@@ -215,7 +215,7 @@ formed) will be deleted by default at 2.0.
 | linear_optimizer   | petrosmol (karmel) | move to tensorflow/estimator       |
 | lite             | aselle  petewarden | move to core                         |
 | lookup          | ysuematsu (ebrevdo) | move to core                         |
-| losses             |                  | partial move to tensorflow/contrib   |
+| losses             |                  | partial move to tensorflow/addons   |
 | makefile           |  petewarden      | delete (RPI build now uses bazel)    |
 | memory_stats       | wujingyue        | delete                               |
 | meta_graph_transform |  petewarden    | delete                               |
@@ -227,7 +227,7 @@ formed) will be deleted by default at 2.0.
 | nccl               | (tobyboyd)       | move essential parts to core         |
 | nearest_neighbor   |                  | delete                               |
 | nn                 |                  | partial move to tensorflow/contrib?  |
-| opt                | *joshburkart apassos | move to tensorflow/contrib?      |
+| opt                | *joshburkart apassos | partial move to tensorflow/addons      |
 | optimizer_v2       |  josh11b         | merge to core                        |
 | periodic_resample  |                  | delete (no owner)                    |
 | pi_examples        |  petewarden      | delete (will need new examples)      |
@@ -244,12 +244,12 @@ formed) will be deleted by default at 2.0.
 | rnn            | ebrevdo (scottzhu)   | replace with new RNN API             |
 | rpc                | ebrevdo jsimsa   |                                      |
 | saved_model        | karmel           | move to core                         |
-| seq2seq        | ebrevdo (scottzhu)   | adapt, move to core                  |
+| seq2seq        | ebrevdo (scottzhu)   | adapt, move to tensorflow/addons                 |
 | session_bundle     |                  | delete (replaced by SavedModel)      |
 | signal             | rryan            | move to core (replace existing) or tensorflow/scientific? |
 | slim               |  sguada          | move to tensorflow/models?           |
 | solvers            |  rmlarsen        | move to tensorflow/scientific?       |
-| sparsemax          |                  | move to tensorflow/contrib?          |
+| sparsemax          |                  | move to tensorflow/addons          |
 | specs              |                  | delete                               |
 | staging            |                  | delete (redundant)                   |
 | stat_summarizer    |                  | delete (no owner)                    |
@@ -259,7 +259,7 @@ formed) will be deleted by default at 2.0.
 | tensorboard        |  nickfelt  jart  | move to tensorflow/tensorboard       |
 | tensorrt           | tobyboyd *samikama *aaroey *jjsjann123| move essential parts to core |
 | testing            | ispirmustafa     | move to core, make private           |
-| text               |                  | move to tensorflow/contrib?          |
+| text               |                  | partial move to tensorflow/addons          |
 | tfprof             |                  | delete (replaced by tf.profiler)     |
 | timeseries         | bananabowl karmel terrytangyuan | move to tensorflow/estimator         |
 | tpu                | saeta            | move to core                         |
@@ -267,10 +267,12 @@ formed) will be deleted by default at 2.0.
 | util               |                  | delete (no owner), or move to tools  |
 | verbs              |  (mrry tucker)   | delete (no owner)                    |
 
+For a more detailed and constantly evolving symbol map, please refer to this [document](https://docs.google.com/spreadsheets/d/1FLFJLzg7WNP6JHODX5q8BDgptKafq_slHpnHVbJIteQ/edit?usp=sharing).
+
 
 ## Questions and Discussion Topics
 
-* Who will maintain `tensorflow/contrib`, `tensorflow/scientific`, and
+* Who will maintain `tensorflow/addons`, `tensorflow/scientific`, and
 `tensorflow/io`? I have an initial list, but a SIG is better with more people to
 share the load (and fame!). I am taking names, please email
 `community-team@tensorflow.org` directly. Once a critical mass of maintainers

@@ -20,6 +20,11 @@ to show how this design addresses the problem?
 Which users are affected by the problem? Why is it a problem? What data supports
 this? What related work exists?
 
+## User Benefit
+
+How will users (or other contributors) benefit from this work? What would be the
+headline in the release notes or blog post?
+
 ## Design Proposal
 
 This is the meat of the document, where you explain your proposal. If you have
