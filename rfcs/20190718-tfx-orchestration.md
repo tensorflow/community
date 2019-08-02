@@ -2,8 +2,7 @@
 
 | Status        | Implemented                                         |
 | :------------ | :-------------------------------------------------- |
-| **Author(s)** | Kevin Haas (khaas@google.com), Zhitao Li            |
-:               : (zhitaoli@google.com), Ruoyu Liu (ruoyu@google.com) :
+| **Author(s)** | Kevin Haas (khaas@google.com), Zhitao Li (zhitaoli@google.com), Ruoyu Liu (ruoyu@google.com) |
 | **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com)       |
 | **Created**   | 2018-12-18                                          |
 
