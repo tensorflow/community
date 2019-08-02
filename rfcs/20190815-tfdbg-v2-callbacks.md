@@ -50,14 +50,14 @@ three key capabilities:
     input and output `EagerTensor`s of the execution. If so desired, the
     callback may _override_ the output `EagerTensor`s and thereby transparently
     affect downstream eager execution.
-  - **Capability B**: The ability to the creation of symbolic ops during
-    function-to-graph conversion in `tf.function`, including the cases assisted
-    by [AutoGraph](https://www.tensorflow.org/guide/autograph). This will
-    form the basis for simulated stepping through lines of
+  - **Capability B**: The ability to intercept the creation of symbolic ops
+    during function-to-graph conversion in `tf.function`, including the cases
+    assisted by [AutoGraph](https://www.tensorflow.org/guide/autograph). This
+    will form the basis for simulated stepping through lines of
     `tf.function`-decorated Python functions to assist debugging of graph
-    construction in TF2. Like in Capability A, the callbacks should be able
-    to override the output symbolic tensors of the op in order to affect
-    all downstream graph ops.
+    construction in TF2. Like in Capability A, the callbacks should be able to
+    override the output symbolic tensors of the op in order to affect all
+    downstream graph ops.
   - **Capability C**: Similar to Capability A above, we want the ability
     to intercept the runtime execution of FuncGraphs. Note that this
     requirement could be folded into Capability A, if FuncGraphs are
@@ -161,8 +161,8 @@ invoked not only during the eager execution of ops, but also the execution
 of FuncGraphs. In this paradigm, when a FuncGraph has been constructed and
 undergoes execution by TF2, it is simply treated as a special type of op.
 
-The following code shows how Capability A is met, i.e., how eager execution
-of ops is intercepted by the callback mechanism.
+The example code snippet below shows how Capability A is met, i.e., how eager
+execution of ops is intercepted by the callback mechanism.
 
 ```python
 with tf.debugging.op_callback(my_callback):
@@ -237,10 +237,11 @@ with tf.debugging.op_callback(my_callback):
 This API also supports the runtime instrumentation of ops in FuncGraphs. To see
 why, realize the fact that the return values of the callback will override the
 original Tensors for downstream graph construction. Hence, new ops can be
-created inside the body of the callback (which themselves will not trigger the
-callback.) Such new ops can consume the original output Tensors of the op and
-generate new output Tensors for the callback function to return. This workflow
-results in debugging nodes being inserted in the op’s graph.
+created inside the body of the callback. (The ops created inside the calbacks
+themselves will be skipped the callback, which avoids infinite loops.) Such new
+ops can consume the original output Tensors of the op and generate new output
+Tensors for the callback function to return. This workflow results in debugging
+nodes being inserted in the op’s graph.
 
 The two code snippets listed below (labeled "Listing 1" and "Listing 2") provide
 a concrete example of the workflow involved. The code in Listing 1 uses
@@ -301,7 +302,7 @@ The proposed approach here will work for the following special cases of graph
 construction:
 
 -  Gradient graphs (i.e., graphs generated with
-  [tf.GradientTape](https://www.tensorflow.org/api_docs/python/tf/GradientTape))
+  [tf.GradientTape](https://www.tensorflow.org/api_docs/python/tf/GradientTape)).
 - “Nested” invocation of FuncGraphs, i.e., a FuncGraph invoking another
   FuncGraph inside. As mentioned above, this includes control flow v2. In While
   v2 and Cond v2, the body and conditions of the control-flow constructs are
@@ -332,10 +333,10 @@ construction:
    in other parts of the overall tfdbg v2 effort. But as a goal, it is outside
    the scope of this design.
 2. Instrumenting the Python-level graph in a place such as
-   [_EagerDefinedFunction.__init__()](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/eager/function.py#L345),
+   [`_EagerDefinedFunction.__init__()`](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/eager/function.py#L345),
    i.e., a common pathway where all `tf.function`s are created in TF2. To this
    end, a graph-rewriting function can be implemented. Compared with the
-   approach proposed above, this approach has the following disadvantages: It
+   proposed approach, this approach has the following disadvantages. It
    doesn’t result in an elegant API that unifies graph instrumentation with
    eager instrumentation (see Capability A above). In addition, it doesn’t
    support step-by-step tracing a FuncGraph’s construction phase, which is
