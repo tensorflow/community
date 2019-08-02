@@ -197,6 +197,7 @@ with tf.debugging.op_callback(my_callback):
   #   2. With the `op_type` arg being 'Log' and the `outputs` arg being the
   #      symbolic Tensor output by by Log op.
   #   (In reality, tf.function and AutoGraph may create additional ops such as
+  #    constant ops for Python constants present in the Python function and
   #    Identity ops to marshal the FuncGraph's input and output values. Those
   #    extra ops will be captured by `my_callback` as well.
   #
