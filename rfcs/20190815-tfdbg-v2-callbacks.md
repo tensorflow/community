@@ -228,7 +228,7 @@ with tf.debugging.op_callback(my_callback):
   y = collatz(tf.constant(42))
   # ↑ During the execution of the line above, `my_callback` is invoked
   #   for the creation of all ops in the TF While loop's body and condition,
-  #   and th TF Cond op's branches. In addition, `my_callback` will be
+  #   and the TF Cond op's branches. In addition, `my_callback` will be
   #   invoked for the runtime execution of the FuncGraph converted from
   #   `collatz`.
 ```
