@@ -173,7 +173,7 @@ with tf.debugging.op_callback(my_callback):
   #   1. With the `op_type` arg being 'AddV2' and the `outputs` arg being an
   #      EagerTensor with value 4.0.
   #   2. With the `op_type` arg being 'Log' and the `outputs` arg being an
-  #      EagerTensor with value 0.602 (≈log(4.0)).
+  #      EagerTensor with value 1.386 (≈log(4.0)).
 ```
 
 The code below illustrates how Capability B is met, i.e., how creation of
@@ -199,12 +199,12 @@ with tf.debugging.op_callback(my_callback):
   #   (In reality, tf.function and AutoGraph may create additional ops such as
   #    constant ops for Python constants present in the Python function and
   #    Identity ops to marshal the FuncGraph's input and output values. Those
-  #    extra ops will be captured by `my_callback` as well.
+  #    extra ops will be captured by `my_callback` as well.)
   #
   #   The third (last) invocation of the callback is due to the eager execution
   #   of the FuncGraph, with the `op_type` arg being `tf.Graph`, the `op_name`
   #   arg being something like `_inference_log_1plusp_30`, and the `outputs` arg
-  #   being an EagerTensor of value 0.602 (≈log(4.0)).
+  #   being an EagerTensor of value 1.386 (≈log(4.0)).
 ```
 
 The example above dealt with a relatively simple FuncGraph. But the proposed API
