@@ -33,7 +33,7 @@ execution paradigm.
 Currently, tfdbg is compatible with only the `tf.Session` API of TensorFlow 1.x.
 However, users of TF2 have raised questions and issues that indicate needs for
 a dedicated debugger, ones that cannot be easily met by a generic Python
-debugger such as pdb.  The most common examples of such needs involve the
+debugger such as pdb.  The most common examples of such needs involve
 finding the source of numeric instability issues like NaNs (e.g., see [GitHub
 issue](https://github.com/tensorflow/tensorflow/issues/26543) and [StackOverflow
 question](https://stackoverflow.com/questions/55823557/converting-darknet53-gives-nan-results-in-tensorflow-2-0))
@@ -214,7 +214,7 @@ such as if-else and while loops. For instance, see the code example below.
 ```python
 with tf.debugging.op_callback(my_callback):
 
-  @def_function
+  @dtf.function
   def collatz(x):
     n = tf.convert_to_tensor((0,))
     while x != 1:
