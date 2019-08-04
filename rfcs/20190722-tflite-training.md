@@ -75,7 +75,7 @@ We're using a simplified example in this section:
 
 The code defines the entire model using Keras API. Since we want to be retrain
 only dense layers on device, the model is defined in 2 parts (`conv_layers` and
-`dens_layer`).
+`dense_layers`).
 
 ```python
 conv_layers = tf.keras.Sequential([
