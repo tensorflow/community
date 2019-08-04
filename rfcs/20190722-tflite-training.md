@@ -257,6 +257,12 @@ Today TensorFlow Lite doesn't have these training-specific ops. The following
 approaches are considered to run training ops in TensorFlow Lite:
 
 **Add training ops into Flex runtime (initial implementation)**<br/>
+
+Note: "Flex" is the code name for
+[Select TensorFlow operators to use in TensorFlow Lite](https://www.tensorflow.org/lite/guide/ops_select)
+project, which enables using TensorFlow kernels in TensorFlow Lite directly.
+Throughout the document, it will be referred as "Flex" to be concise.
+
 This is the easiest approach: Just whitelist these training ops to Flex whitelist. However this means Flex runtime is required for training (bloating binary size), and Flex kernels are not optimized for mobile.
 
 **Implement fused ops as TensorFlow Lite builtin ops (optimization)**<br/>
