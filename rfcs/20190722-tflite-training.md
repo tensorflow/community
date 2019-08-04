@@ -23,7 +23,7 @@ Goal: Have a working prototype to train over fully connected & convolutional lay
 Goal: Make inference & training performance comparable with TFMobile.
 
 **Milestone 2B: Enable on-device training loop with TensorFlow functionality**<br/>
-Goal: Encode the on-device training loop inside a TensorFlow model, with TensorFlow functionality like tf.Example and tf.DataSet.
+Goal: Encode the on-device training loop inside a TensorFlow model, with TensorFlow functionality like tf.Example and tf.data.Dataset.
 
 **Milestone 3: Optimized & generalized training (e.g. control flow, RNN)**<br/>
 Goal: Be able to train most models that are trainable with TensorFlow. Optimize the training performance for commonly used architectures.
@@ -405,14 +405,14 @@ Cons:
 *   Requires defining yet another format
 *   Low interoperability with TensorFlow checkpoints
 
-### Feeding data with tf.Example / tf.DataSet
+### Feeding data with tf.Example / tf.data.Dataset
 
-`tf.Example` and `tf.DataSet` are technically not training-specific
+`tf.Example` and `tf.data.Dataset` are technically not training-specific
 requirements. These features can also be used in inference.
 
 The basic training can work by feeding the raw data (e.g. float values) into
 TensorFlow Lite interpreter. On top of this, we can support tf.Example and
-tf.DataSet to make this easier to use (likely via Flex runtime). There may be a
+tf.data.Dataset to make this easier to use (likely via Flex runtime). There may be a
 performance drawback using these features.
 
 ### Selective Registration
