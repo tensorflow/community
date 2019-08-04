@@ -76,7 +76,7 @@ to the API.
 
 ```python
 # Exported publicly as: tf.debugging.op_callback()
-def op_callabck(callback_fn):
+def op_callback(callback_fn):
   """Intercepts op execution and op creation.
 
   The `callback_fn` will be invoked immediately after any of the three types
