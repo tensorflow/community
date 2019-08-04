@@ -371,28 +371,39 @@ case, Tensor List ops are required for inference and training.
 
 ### Saving Format
 
-We don't need a saving format to make training work. The newly trained weights
-can be used in TensorFlow Lite directly for inference. The weights data are
-stored in (variable) tensors, and users can read and write these data through
-interpreter API. This already enables saving and loading trainable weights from
-the application code. On top of this, we can define a saving format to store
-trainable weights.
+In TensorFlow, users can use `tf.Session` to train a model, and use `tf.train.Saver` to save the trained weights into TensorFlow checkpoint files.
 
-**(Open question)** There are a few potential options:
+This proposal enables training with TensorFlow Lite interpreter (which is similar to `tf.Session`). In addition, we can provide utility classes (similar to `tf.train.Saver`) to save the trained format, or users can get the raw data of variables and save it by themselves.
 
-*   Option 0: Do nothing
-*   Option 1: Implement TensorFlow Lite's own variable saving file format. This
-    can be a simple binary format that stores variable ID -> data mapping.
-*   Option 2: Write the variable value back to TensorFlow Lite model.
-    *   Pros: Only having a single file & single file format.
-    *   Cons: Have to ship FlatBuffer writer in the binary. Have to write the
-        entire model (which may contain other huge frozen constants) back to
-        storage.
-*   Option 3: Use TensorFlow checkpoint format
-    *   3A: Implement checkpoint reading / writing functionality in TensorFlow
-        Lite
-    *   3B: Reading / writing through Flex runtime (so it only works when Flex
-        runtime is used)
+A few approaches to handle variable saving are described below. In the near term we will focus on the recommended approach. However, note that these approaches are not conflicting with each other, so it's possible to implement multiple of these.
+
+**Approach 1: Reuse TensorFlow CheckPoint format [recommended]**
+
+Pros:
+*   Interoperability: It's potentially easier to load a TensorFlow trained weights into TensorFlow Lite, and vice versa.
+*   Avoid designing yet another format.
+
+Cons:
+*   Currently the TensorFlow checkpoint parsing code is coupled with TensorFlow core. We may need to refactor and decouple with TensorFlow core, or rewrite the parser.
+
+**Approach 2: Write the variable value back to TensorFlow Lite model**
+
+Pros:
+*   Use the existing TensorFlow Lite format. Avoid introducing another format.
+
+Cons:
+*   Need to ship the FlatBuffer writer code into the binary.
+*   Have to write the entire model (which may contain other huge frozen constants) back to storage.
+*   Low interoperability with TensorFlow checkpoints
+
+**Approach 3: Implement TensorFlow Lite's own variable saving file format**
+
+Pros:
+*   This can be an extremely simple key-value mapping format
+
+Cons:
+*   Requires defining yet another format
+*   Low interoperability with TensorFlow checkpoints
 
 ### Feeding data with tf.Example / tf.DataSet
 
