@@ -322,6 +322,13 @@ construction:
   performance, we will likely need to consolidate a large number of outside
   compilations into a smaller number. But the basic principle of instrumentation
   remains the same.
+- [tf.data pipeline](https://www.tensorflow.org/api_docs/python/tf/data)
+  constructs, including built-in data functions such as
+  [Dataset.batch()](https://www.tensorflow.org/api_docs/python/tf/data/Dataset#batch),
+  as well as the graph construction and runtime execution of user-defined
+  mapping functions supplied to
+  [Dataset.map()](https://www.tensorflow.org/api_docs/python/tf/data/Dataset#map).
+
 
 ### Alternatives Considered
 
