@@ -54,8 +54,10 @@ We are going to reorganize the official model directory to provide:
     *   Common training util library in TF2.0, model configuration and
         hyperparameter definition in a consistent style.
     *   Model category related common library, e.g. primitives as basic building
-        block for NLP models. We will follow the fundamental design of Keras
+        block for NLP models, or common networks like resnet, mobilenet. We will follow the fundamental design of Keras
         layer/network/model to define and utilize model building blocks.
+        **NOTE:** we are still figuring out what level of building block extraction would be the most useful and sharable
+        refactoring. Once we confirm the implementation is really useful, we will move it tensorflow/addons. 
 *   popular state-of-the-art (SOTA) models for end users as a product.
 *   reference models for performance benchmark testing.
     *   For models provided as SOTA models, we will share the network and
@@ -69,9 +71,8 @@ structure. The SOTA model list will be updated to cover more categories.
 | Directory     | Subdirectories       |   | Explainations                   |
 :-------------- |:---------------------|:--|:------------------------------ |
 | modeling      |                      |   | Common modeling libraries       |
-|               | layers               |   | Common modules/layers, not built-in tensorflow layers yet.|
+|               | layers               |   | Temporary folder to hold common modules/layers, not built-in tensorflow layers yet during refactoring. Will move to tensorflow/addons finally.|
 |               | networks             |   | Well-known networks built on top of layers, e.g. transformer |
-|               | optimziers           |   | New or customized optimizers    |
 |               | training             |   | Training utils, e.g. example custom training loop |
 | utils         |                      |   | Miscellaneous Utilities         |
 |               | hyperparameters      |   | Common flags and model parameters. |
@@ -99,12 +100,14 @@ structure. The SOTA model list will be updated to cover more categories.
 |               |                      | EfficientNet   |   |
 |               |                      | MnasNet   |   |
 |               |                      | ...   |   |
-|               | object_detection     |    |   |
+|               | detection            |       |   |
 |               |                      | RetinaNet    |   |
 |               |                      | Mask-RCNN    |   |
-|               |                      | UNet    |   |
 |               |                      | ShapeMask    |   |
 |               |                      | ...    |   |
+|               | segmentation         | UNet     |   |
+|               |                      | DeepLab v3/v3+ |   |
+|               |                      | FastSCNN |   |
 | recommendation|                      |     |   |
 |               | NCF                  |     |   |
 | staging       |                      |     | accepting community contributions  |
