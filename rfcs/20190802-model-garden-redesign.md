@@ -56,8 +56,9 @@ We are going to reorganize the official model directory to provide:
     *   Model category related common library, e.g. primitives as basic building
         block for NLP models, or common networks like resnet, mobilenet. We will follow the fundamental design of Keras
         layer/network/model to define and utilize model building blocks.
+        
         **NOTE:** we are still figuring out what level of building block extraction would be the most useful and sharable
-        refactoring. Once we confirm the implementation is really useful, we will move it tensorflow/addons. 
+        during refactoring. Once we confirm the implementation is really useful, we will move it tensorflow/addons. 
 *   popular state-of-the-art (SOTA) models for end users as a product.
 *   reference models for performance benchmark testing.
     *   For models provided as SOTA models, we will share the network and
