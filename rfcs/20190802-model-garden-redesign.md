@@ -58,7 +58,8 @@ We are going to reorganize the official model directory to provide:
         layer/network/model to define and utilize model building blocks.
         
         **NOTE:** we are still figuring out what level of building block extraction would be the most useful and sharable
-        during refactoring. Once we confirm the implementation is really useful, we will move it tensorflow/addons. 
+        during refactoring. Once we confirm the implementation is really useful, we will move it tensorflow/addons and/or tf.text.
+
 *   popular state-of-the-art (SOTA) models for end users as a product.
 *   reference models for performance benchmark testing.
     *   For models provided as SOTA models, we will share the network and
@@ -72,7 +73,7 @@ structure. The SOTA model list will be updated to cover more categories.
 | Directory     | Subdirectories       |   | Explainations                   |
 :-------------- |:---------------------|:--|:------------------------------ |
 | modeling      |                      |   | Common modeling libraries       |
-|               | layers               |   | Temporary folder to hold common modules/layers, not built-in tensorflow layers yet during refactoring. Will move to tensorflow/addons finally.|
+|               | layers               |   | Temporary folder to hold common modules/layers, not built-in tensorflow layers yet during refactoring. Broadly used layers will be graduated to tensorflow/addons and/or tf.text.|
 |               | networks             |   | Well-known networks built on top of layers, e.g. transformer |
 |               | training             |   | Training utils, e.g. example custom training loop |
 | utils         |                      |   | Miscellaneous Utilities         |
