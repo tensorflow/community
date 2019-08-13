@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Shanqing Cai (cais@google.com)                       |
 | **Sponsor**   | Alexandre Passos (apassos@google.com)                |
-| **Updated**   | 2019-08-02                                           |
+| **Updated**   | 2019-08-13                                           |
 
 ## Objective
 
