@@ -94,9 +94,10 @@ def op_callback(callback_fn):
                       outputs,
                       op_name=None,
                       graph=None):
-        # op_type: The type of the op. E.g., "MatMul".
+        # op_type: The type of the op, as a string. E.g., "MatMul".
         #          For the special case of FuncGraph execution, op_type
-        #          takes the special value `tf.Graph`.
+        #          takes the name of the graph name, e.g.,
+        #          "__inference_my_func_24".
         # inputs: (`tuple` of `Tensor`s) Input tensors to the op or the
         #         FuncGraph.
         #         In eager execution, these are `EagerTensor`s.
@@ -125,13 +126,14 @@ def op_callback(callback_fn):
         #
         # Return values:
         #   This callback function is expected to return a `list` or `tuple`
-        #   of `Tensor`s, with its length matching `len(outputs)`.
+        #   of `Tensor`s, with its length matching `len(outputs)`, in the order
+        #   that corresponds to that of the `output` argument.
         #   In eager execution, these returned `Tensor`s should be
         #   `EagerTensor`s. Their values will replace the original values of
-        #   `outputs` during downstream eager execution.
+        #   `outputs` for downstream eager execution.
         #   In graph construction, these returned `Tensor`s should be
         #   non-eager `Tensor`s. Their values will replace the original
-        #   `outputs` during downstream graph construction.
+        #   `outputs` for downstream graph construction.
 
   Returns:
     A thread-local context manager. Within the scope of the context
@@ -165,6 +167,10 @@ The example code snippet below shows how Capability A is met, i.e., how eager
 execution of ops is intercepted by the callback mechanism.
 
 ```python
+def my_callback(op_type, inputs, attrs, outputs, op_name=None, graph=None):
+  # Do something with any of the arguments.
+  return outputs
+
 with tf.debugging.op_callback(my_callback):
   x = tf.constant(3.0)
 
@@ -182,7 +188,7 @@ ops inside a user-defined Python function decorated by `tf-function`:
 ```python
 with tf.debugging.op_callback(my_callback):
 
-  @def_function
+  @tf.function
   def log_1plusp(p):
     return tf.math.log(1 + p)
 
@@ -214,7 +220,7 @@ such as if-else and while loops. For instance, see the code example below.
 ```python
 with tf.debugging.op_callback(my_callback):
 
-  @dtf.function
+  @tf.function
   def collatz(x):
     n = tf.convert_to_tensor((0,))
     while x != 1:
@@ -302,7 +308,10 @@ debug ops will support runtime debugging. Examples of such side effects include:
 The proposed approach here will work for the following special cases of graph
 construction:
 
--  Gradient graphs (i.e., graphs generated with
+- The proposed callback API will work for
+  [user-defined ops](https://www.tensorflow.org/guide/extend/op) as it'll work
+  for TensorFlow's built-in ops.
+- Gradient graphs (i.e., graphs generated with
   [tf.GradientTape](https://www.tensorflow.org/api_docs/python/tf/GradientTape)).
 - “Nested” invocation of FuncGraphs, i.e., a FuncGraph invoking another
   FuncGraph inside. As mentioned above, this includes control flow v2. In While
@@ -315,6 +324,12 @@ construction:
   processors (CPU and GPUs). The proposed callback API will capture all the
   eager execution and FuncGraph construction replicated on all the involved
   processors.
+- [tf.data pipeline](https://www.tensorflow.org/api_docs/python/tf/data)
+  constructs, including built-in data functions such as
+  [Dataset.batch()](https://www.tensorflow.org/api_docs/python/tf/data/Dataset#batch),
+  as well as the graph construction and runtime execution of user-defined
+  mapping functions supplied to
+  [Dataset.map()](https://www.tensorflow.org/api_docs/python/tf/data/Dataset#map).
 - Furthermore, the proposed API can support TPU debugging as well. In
   particular, if the inserted DebugIdentityV2 ops are placed inside
   [tpu.outside_compilation](https://www.tensorflow.org/api_docs/python/tf/tpu/outside_compilation),
@@ -322,13 +337,6 @@ construction:
   performance, we will likely need to consolidate a large number of outside
   compilations into a smaller number. But the basic principle of instrumentation
   remains the same.
-- [tf.data pipeline](https://www.tensorflow.org/api_docs/python/tf/data)
-  constructs, including built-in data functions such as
-  [Dataset.batch()](https://www.tensorflow.org/api_docs/python/tf/data/Dataset#batch),
-  as well as the graph construction and runtime execution of user-defined
-  mapping functions supplied to
-  [Dataset.map()](https://www.tensorflow.org/api_docs/python/tf/data/Dataset#map).
-
 
 ### Alternatives Considered
 
