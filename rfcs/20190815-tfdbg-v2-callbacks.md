@@ -286,7 +286,9 @@ def debugger_callback(op_type, inputs, attrs, outputs,
     # that users can use directly. This is the workflow that will be used
     # internally by tfdbg v2. However, TF users can emulate this pattern
     # by using any TF built-in or user-defined ops to override the op's output.
-    # For instance o
+    # For instance, using
+    # `instrumented_outputs.append(tf.math.negative(output))` will cause
+    # all output tensors in the graph to be negated (i.e., sign-flipped).
     instrumented_outputs.append(gen_debug_ops.debug_identity_v2(
         output,
         tensor_name="%s:%d" % (op_name, output_slot),
