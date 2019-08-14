@@ -15,6 +15,7 @@ Archives of the mailing list will be publicly available.
 * [SIG Micro mailing list](https://groups.google.com/a/tensorflow.org/forum/#!forum/micro)
 * [SIG Micro Gitter chat channel](https://gitter.im/tensorflow/sig-micro)
 * [TensorFlow Micro code](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/experimental/micro)
+* [SIG Micro monthly meeting notes and agenda](https://goo.gle/tf-micro-notes)
 
 ## Contacts
 
