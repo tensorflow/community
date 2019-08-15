@@ -1,10 +1,10 @@
 # TensorFlow Debugger v2: Callbacks for Eager Execution and `tf.function`s
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Shanqing Cai (cais@google.com)                       |
 | **Sponsor**   | Alexandre Passos (apassos@google.com)                |
-| **Updated**   | 2019-08-13                                           |
+| **Updated**   | 2019-08-15                                           |
 
 ## Objective
 
