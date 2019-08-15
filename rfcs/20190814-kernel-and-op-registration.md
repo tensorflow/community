@@ -399,12 +399,10 @@ For details on how we plan to switch between `std::function<void>` and `void
 ### Device Assignment API
 
 This approach lets us construct device objects (e.g. `Eigen::GpuDevice`) on the
-plugin side. This is preferred over the approach described in "Alternatives
-Considered" because it is more flexible when it comes to Eigen assignments and
-operations. Basically, we get an Eigen device object and can apply any
+plugin side. Basically, we get an Eigen device object and can apply any
 operations we currently apply to an Eigen device.
 
-We could wrap `StreamInterface`, `ThreadPoolInterface` and `Allocator`. These
+We could wrap `Eigen::StreamInterface`, `Eigen::ThreadPoolInterface` and `Eigen::Allocator`. These
 wrappers will consist of a C API and a C++ wrapper on top of the C API. A
 sample C API for `StreamInterface` is given below:
 
@@ -546,10 +544,10 @@ TensorFlow core of the form:
 void foo(std::function<void()> arg) { ... }
 ```
 
-We can't pass std::function across the C API boundary. Instead, we plan to wrap it with a struct and break this call up into 3 steps:
+We can't pass `std::function` across the C API boundary. Instead, we plan to wrap it with a struct and break this call up into 3 steps:
 
 * Wrap `std::function<void()>` with a struct. The struct will contain pointers
-  to callbacks for manipulating std::function<void()> pointer.  (This will happen
+  to callbacks for manipulating `std::function<void()>` pointer.  (This will happen
   on the kernel plugin side).
 
 * Pass the struct across C API boundary.
@@ -649,9 +647,8 @@ get from a HIP function (on the TensorFlow core side) and pass to another HIP
 function (on the kernel side).
 
 Ideally, we should only rely on extern C parts of `hip_runtime_api.h`. There is
-now an equivalent in the C API right now for `hipLaunchKernelGGL`. However, AMD
-have said they are looking into adding an equivalent function to the C API in
-the near future and are willing to add more functions if needed.
+no equivalent in the C API right now for `hipLaunchKernelGGL`. However, AMD
+might add an equivalent function to the C API in the near future.
 
 Note that we have to update `LAUNCH_GPU_KERNEL` in Eigen to call the HIP C API
 once it is available.
