@@ -168,7 +168,13 @@ execution of ops is intercepted by the callback mechanism.
 
 ```python
 def my_callback(op_type, inputs, attrs, outputs, op_name=None, graph=None):
-  # Do something with any of the arguments.
+  # Do something with any of the arguments. The author of the callback may:
+  #   - Log any information contained in the callback's input arguments.
+  #   - Return the input `outputs` arg directly as the output, which means
+  #     no change to the outputs of the op. Or
+  #   - Return a list or tuple of output tensors different from the original
+  #     input arg `outputs`, in which case the callback will override
+  #     the outputs of the op, in either eager execution or graph execution.
   return outputs
 
 with tf.debugging.op_callback(my_callback):
