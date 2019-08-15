@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Shanqing Cai (cais@google.com)                       |
 | **Sponsor**   | Alexandre Passos (apassos@google.com)                |
-| **Updated**   | 2019-08-02                                           |
+| **Updated**   | 2019-08-13                                           |
 
 ## Objective
 
@@ -105,6 +105,10 @@ def op_callback(callback_fn):
         #         that form the inputs to the just-created op.
         # attrs: The attributes of the op or FuncGraph of which the execution
         #        or creation caused the current invocation of the callback.
+        #        This is applicable to both eager- and graph-based execution,
+        #        as well as graph construction.
+        #        This is a tuple of alternating attribute keys and attribute
+        #        values, e.g., `('adjoint_a', False, 'adjoint_b', False)`.
         # outputs: (`tuple of `Tensor`s) Output tensors from the op or
         #          FuncGraph.
         #          In eager execution, these are `EagerTensor`s.
@@ -284,6 +288,13 @@ def debugger_callback(op_type, inputs, attrs, outputs,
   instrumented_outputs = []
   for output_slot, output in enumerate(outputs):
     # Construct overriding output tensor.
+    # Note: The `debug_identity_v2` below is not a public TensorFlow API
+    # that users can use directly. This is the workflow that will be used
+    # internally by tfdbg v2. However, TF users can emulate this pattern
+    # by using any TF built-in or user-defined ops to override the op's output.
+    # For instance, using
+    # `instrumented_outputs.append(tf.math.negative(output))` will cause
+    # all output tensors in the graph to be negated (i.e., sign-flipped).
     instrumented_outputs.append(gen_debug_ops.debug_identity_v2(
         output,
         tensor_name="%s:%d" % (op_name, output_slot),
@@ -309,6 +320,31 @@ debug ops will support runtime debugging. Examples of such side effects include:
     “breakpoint” in the graph (similar to [tfdbg v1’s TensorBoard Debugger
     Plugin](https://github.com/tensorflow/tensorboard/blob/master/tensorboard/plugins/debugger/README.md))
 
+
+### What This Proposal Offers Beyond pdb
+
+This design is not a replacement for pdb. Instead, it is a proposal for
+TensorFlow-specific debugging instrumentation that may supplement pdb. The
+proposed callback API will enable the following workflows beyond what the usual
+pdb-based interactive debugging can achieve.
+
+1. It allows registration of a callback that can error out with a helpful
+   error message with proper stack traces when any of the ops' output tensors
+   contains NaNs or Infinities. This will catch NaN/Infinity issues in both
+   eagerly computed tensors and the ones that are computed inside FuncGraphs.
+2. It allows registration of a callback that can dump the full history of
+   eager execution, graph building and in-graph op execution to the filesystem.
+   This will facilitate post hoc analysis of crashed TF2 programs.
+   Admittedly, dumping full tensor values is very expensive and not realistic
+   in general. However, there are ways to reduce the cost of this history
+   dumping (e.g., by dumping only concise numeric summaries of tensors,
+   sample only a subset of the execution steps, or dumping only from a subset
+   of the ops.)
+3. It allows real-time transmisson of debug information to a gRPC server, in
+   order to enable interactive debugging in the style of tfdbg v1's [TensorBoard
+   Debugger
+   Plugin](https://github.com/tensorflow/tensorboard/blob/master/tensorboard/plugins/debugger/README.md).
+
 ### Considerations for Various Cases
 
 The proposed approach here will work for the following special cases of graph
@@ -317,6 +353,14 @@ construction:
 - The proposed callback API will work for
   [user-defined ops](https://www.tensorflow.org/guide/extend/op) as it'll work
   for TensorFlow's built-in ops.
+- The proposad callback API will also work for TensorFlow's composite tensors,
+  which currently include
+  [SparseTensors](https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor)
+  and [RaggedTensors](https://www.tensorflow.org/guide/ragged_tensors).
+  Eager execution and graph-based execution on such tensors will trigger the
+  registered op callbacks. In fact, given this is a low-level API, the callback
+  mechanism does not treat composite tensors in any special way. The op types
+  received by the callbacks will be low-level ops such as "SparseTensorDenseMatMul".
 - Gradient graphs (i.e., graphs generated with
   [tf.GradientTape](https://www.tensorflow.org/api_docs/python/tf/GradientTape)).
 - “Nested” invocation of FuncGraphs, i.e., a FuncGraph invoking another
