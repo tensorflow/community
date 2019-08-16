@@ -1,4 +1,4 @@
-# Library versioning in the TensorFlow organization
+# Project versioning in the TensorFlow organization
 
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
@@ -8,7 +8,7 @@
 
 ## Objective
 
-This document describes best practices for numbering versions of libraries
+This document describes best practices for numbering versions of projects
 that form part of the TensorFlow suite of projects. This practice is required for dependent
 projects hosted under the [TensorFlow organization](https://github.com/tensorflow) on
 GitHub, and advisory for dependent projects hosted elsewhere.
