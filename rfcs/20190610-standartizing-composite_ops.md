@@ -1,4 +1,4 @@
-# Standardizing composite ops in tensorflow.
+# Standardizing composite ops in tensorflow to support efficient inference.
 
 Status        | Accepted
 :------------ | :------------------------------------
