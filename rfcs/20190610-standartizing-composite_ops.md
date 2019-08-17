@@ -252,7 +252,7 @@ on the platforms that support it, and “not-broken” on the platforms that don
 
 #### Alternative 0: Do nothing
 
-Everyone just continues with ad0hoc implementations.
+Everyone just continues with ad-hoc implementations.
 
 ##### Pros:
 
