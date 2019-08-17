@@ -46,7 +46,8 @@ optimization support. See appendix for a few possible ways forward.
 *   Discussion what should live in "core" tensorflow (e.g. `tf.xxx.my_cool_op` )
 *   Ultra complex functions (e.g. trained models) that are unlikely to get
     specialized implementations in hardware.
-*   No immediate support for replacing gradients of composite ops.
+*   Support for processing gradients (and forward inference in the presense of gradients)
+    for composite ops. 
 
 ## Motivation
 
@@ -66,7 +67,7 @@ Some examples of ops that were composite at some point (or still are today):
 *   Normalization methods (e.g. BatchNorm, Instance Norm, etc… ), some unusual
     flavors of convolutional padding, etc;
 *   Advanced numeric functions (e.g. matrix exponentiation);
-*   Combinatorial algorithms (e.g bipartite matching).
+*   Combinatorial algorithms (e.g bipartite matching and nms)
 *   Specialized losses CTC loss, RNN layer steps
 *   tf.einsum
 
