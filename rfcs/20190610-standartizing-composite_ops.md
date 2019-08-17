@@ -252,7 +252,7 @@ on the platforms that support it, and “not-broken” on the platforms that don
 
 #### Alternative 0: Do nothing
 
-Everyone just continues with ad-hoc implementations.
+Everyone just continue with ad-hoc implementations.
 
 ##### Pros:
 
@@ -326,15 +326,14 @@ Cons:
 
 *   Tooling is not forward compatible.
 
-\##
 
 ## Appendix: Future support for optimizing gradient functions
 
-This proposal is concerned with the inference of the composite ops, assuming
-that the downstream tooling today rarely if ever deals with gradients, and when
-it does, it can just rely on the provided implementation. However eventually
-this is likely to change, and thus we would like to keep the door open to
-extending this composite op framework to support optimization of both forward
+This proposal is concerned with the inference of the composite ops. The
+motivation today is that the downstream tooling today rarely if ever deals with gradients, and when
+it does, it can rely on the provided implementation. However eventually
+this is likely to change, and we would like to keep the door open for extending
+this composite op framework to support optimization of both forward
 and backward passes. In this appendix we provide several options of how this
 could be potentially supported in the future, for the reference purposes.
 
@@ -357,11 +356,12 @@ tensorflow implementation changes so needs downstream's.
 
 ### Option 1: Stabilize Gradient Signature
 
-Option 1 basically revolves about allowing the composite_op is to provide
+Option 1 basically revolves about allowing the composite_op to provide
 explicit list of side outputs that could possibly be required for the efficient
 gradient computation. The `tf.function` machinery would then validate that the
-signature actually matches the implementation and just respect the order
-provided in the signature.
+signature actually matches the implementation and respect the order
+provided in the signature. Tool  would need to compute the side-output
+when providing its implementation.
 
 This option means that we would not be able to significantly change the
 implementation in the future. For instance, if it is discovered that
@@ -391,7 +391,7 @@ for backward part
 > depends on implementation detail of tf.function implementation, thus
 > tf.function shouldn’t be optimized away.```
 
-Suppose the tooling have an efficient implementation of our functions that needs
+Suppose the tooling have an efficient implementation of the gradient that needs
 its own side outputs let them be t1 ... t_k. Then it can replace all three
 functions with the re-implementations with the following signatures.
 
@@ -407,10 +407,10 @@ all inner functions, thus not-only the signature of the function that we change
 changes, but also the signature of all functions that _call_ this function. Thus
 the tooling will need to do a non-trivial whole-graph transformation to update
 the signatures of **all** functions that call the optimized function. However,
-it desn't seem to be insurmountable and possibly get fairly straightforward with
+it desn't seem to be insurmountable and possibly fairly straightforward with
 MLIR.
 
-A cleaner option would be to wrap all the side output into a single blob which
+Another,  cleaner option would be to wrap all the side output into a single blob which
 contains multiple tensors which the implementation can then replace with its
 own. There are no such structure in tensorflow today, but it might be in the
 future. We should use this, if it becomes available. In this case this would
@@ -423,7 +423,7 @@ Tensorflow Review process.
 
 1.  We should provide namespacing for the operation names early on to avoid
     future collisions with function names. One option is to adopt java-style
-    "org.opname", basically using the developing organization to disambiguate. Another alternative is to use semantic namespaces e.g. `linalg`. Yet
+    "org.opname", basically using the developing organization to disambiguate. Another alternative is to use semantic namespaces e.g. `glinalg`. Yet
     third, is to use org.semantic.opname.
 
     Note: since many of these functions will live in user codebase we obviously
