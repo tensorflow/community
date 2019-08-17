@@ -166,7 +166,7 @@ signal to the processing/executing library that this function implements a
 differently should they choose to. The important part is that we define a
 standard set of attributes that users and tooling can rely on.
 
-As a start, we propose to add “implements” and “reference” as two attributes
+As a start, we propose to add “implements” as a new attribute
 defining a “standard” function.
 
 For example:
