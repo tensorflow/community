@@ -1,4 +1,4 @@
-# TFX OSS Iterative Notebook Proposal
+# TFX Iterative Notebook Proposal
 
 Status        | Proposed
 :------------ | :-------
