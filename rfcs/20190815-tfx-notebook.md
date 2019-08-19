@@ -8,21 +8,21 @@ Status        | Proposed
 
 ## Objective
 
-We want to build a notebook user experience for modeling / iterative
-development using TFX Components. This will provide a fast, familiar environment
-for developing model and pipeline code with standard TensorFlow + TFX utilities,
+We want to build a notebook user experience for modeling / iterative development
+using TFX Components. This will provide a fast, familiar environment for
+developing model and pipeline code with standard TensorFlow + TFX utilities,
 plus automatic notebook → pipeline export:
 
 *   Imperative,
     [define-by-run](https://ai.googleblog.com/2017/10/eager-execution-imperative-define-by.html),
     cell-by-cell workflow
-    *   Start directly from Colab – no running pipeline needed
+    *   Start directly from Notebook/Colab – no running pipeline needed
     *   Run TFX components as you need them, in separate cells
     *   No explicit DAG definitions or continuous execution
 *   Simple Python API per TFX component
     *   ExampleGen, StatsGen, SchemaGen, Transform, Trainer, Evaluator
     *   100% TFX compatible for automatic notebook → pipeline export
-*   Analyze artifacts natively in Colab
+*   Analyze artifacts natively in Notebook/Colab
     *   Built-in TensorBoard, Facets, TFMA visualizations
     *   Dataset, stats, eval metrics available in notebook for custom analysis
 *   Zero-setup, interactive onboarding tool for new TFX users on
@@ -46,7 +46,7 @@ By combining the notebook experience + TFX components, users can easily run
 *   Custom analyses on the output of any of these components with standard
     Python
 
-To close the loop, the notebook can be automatically exported as a pipeline
+To close the loop, the notebook will be automatically exported as a pipeline
 configuration that users can directly deploy as a scalable TFX pipeline. There
 is no additional modification required.
 
@@ -59,16 +59,18 @@ and data scientists within and outside of Google.
 
 ## Design Proposal
 
-This proposal proposes a set of slightly different primitives that better match
-concepts in the current OSS SDK.
+This proposal proposes a set of primitives that match concepts in the current
+TFX SDK.
 
 ### Component definition; inputs and outputs
 
 #### Proposal: components should take inputs, produce outputs (instead of taking predefined upstream components)
 
-We propose to follow the current TFX OSS style of having components explicitly
-take input channels (i.e. streams of artifacts of a specific type) and produce
-output channels (of another specific type). This could look like this:
+This proposal proposes a set of primitives that match concepts in the current
+TFX SDK. We propose to follow the current TFX style of having components
+explicitly take input channels (i.e. streams of artifacts of a specific type)
+and produce output channels (of another specific type). This could look like
+this:
 
 ```
 # Here, with an input_base as an execution parameter with a given
@@ -79,8 +81,7 @@ example_gen = CsvExampleGen(input_base=examples)
 # input to StatisticsGen.
 statistics_gen = StatisticsGen(input_data=example_gen.outputs['examples'])
 
-# We then similarly use the statsgen output in SchemaGen (an OSS-only
-# component).
+# We then similarly use the statsgen output in SchemaGen.
 infer_schema = SchemaGen(stats=statistics_gen.outputs['output'])
 
 # Next, we do example validation.
@@ -88,17 +89,6 @@ validate_stats = ExampleValidator(
     stats=statistics_gen.outputs['output'],
     schema=infer_schema.outputs['output'])
 ```
-
-One advantage of this proposal is that it decouples components with our current
-canonical pipeline topology (e.g. StatisticsGen must follow ExampleGen). This is
-also the style of the TFX pipeline configuration. Another advantage is that
-users can run components with custom/modified inputs, not just those produced by
-other TFX components.
-
-One disadvantage of this proposal is that it is not immediately obvious what
-inputs components take and which outputs components emit. On the other hand, it
-is not obvious from first principles either that StatisticsGen should follow
-ExampleGen (even though it is common knowledge for TFX team members).
 
 ### Component execution, execution result objects, visualization
 
@@ -127,11 +117,11 @@ See the "Example notebook usage" section below.
 ##### Part 1 (Option 2): add Component.run()
 
 In this alternative, we propose to add a run() method to the
-[BaseComponent](http://google3/third_party/tfx/components/base/base_component.py?l=44&rcl=252517506)
+[BaseComponent](https://github.com/tensorflow/tfx/blob/master/tfx/components/base/base_component.py)
 class. Given the appropriate parameters and execution properties, this will run
 that component of your pipeline. This will be in-process and not involve any
-external TFX OSS orchestrators (like Airflow or Kubeflow) and is suitable only
-for small development datasets.
+external TFX orchestrators (like Airflow or Kubeflow) and is suitable only for
+small development datasets.
 
 An advantage of the Component.run() style is that it is simple and intuitive in
 the notebook setting. A disadvantage is that this does not encourage the best
