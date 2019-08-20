@@ -8,9 +8,9 @@ Status        | Accepted
 
 ## Objective
 
-The objective is to create a simple API that enables adding new composite ops in
-a way that they can be automatically and robustly processed by downstream
-_inference_ tooling. The developers (of the composite op) should be able to
+The goal of this proposal is to create a simple API that allows
+adding new composite ops in a way that they can be automatically and robustly 
+processed by downstream _inference_ tooling. The developers (of the composite op) should be able to
 iterate on their implementation or even replace them with standard tensorflow
 op, without breaking any existing tools.
 
@@ -31,10 +31,9 @@ optimization support. See appendix for a few possible ways forward.
     TOCO/MLIR), grappler, as well as third party tooling, such as conversion to
     3-rd party engines (e.g. TFLite).
 *   Maximize backward and forward compatibility of such composite ops, while
-    enabling implementation changes later on.
+    allowing changes to implementation including switch to native tensorflow op. 
 *   Provide for *future* support of composite op gradient extraction and
     optimization by downstream tools.
-*   Leave the path open for op maintainers to switch to standard tf_op later on.
 *   Bonus: enable *serialized* models to benefit from more efficient
     composite-ops implementations as underlying platform changes.
 
@@ -46,7 +45,7 @@ optimization support. See appendix for a few possible ways forward.
 *   Discussion what should live in "core" tensorflow (e.g. `tf.xxx.my_cool_op` )
 *   Ultra complex functions (e.g. trained models) that are unlikely to get
     specialized implementations in hardware.
-*   Support for processing gradients (and forward inference in the presense of gradients)
+*   Immediate support for processing gradients (and forward inference in the presense of gradients)
     for composite ops. 
 
 ## Motivation
@@ -76,7 +75,7 @@ native implementations.
 
 It is important to note that many of the ops above precede or appeared during
 the early days of Tensorflow, when compatibility with downstream tooling wasn't
-that much of a concern. Though, for instance switch from non-fused batchnorm to
+that much of a concern. Nevertheless, for instance the switch from non-fused batchnorm to
 fused one, caused some disruption in early tensorflow processing tools. Some of
 which are still reflected in the
 [comments](https://github.com/tensorflow/tensorflow/blob/84c5a4551e2e71d854932cb389c359db11cfa2b1/tensorflow/python/ops/nn_impl.py#L1241).
@@ -96,8 +95,8 @@ represented as
 and
 [not-so-simple](https://github.com/tensorflow/tensorflow/blob/r1.13/tensorflow/python/ops/linalg/linalg_impl.py#L220)
 tensorflow subgraphs. On the other hand, to get the full utility a custom
-implementation on various platforms is necessary even when composite
-implementation in tensorflow fully sufficient. For example using un-optimized
+implementation on various platforms is necessary even if composite
+implementation in tensorflow is  sufficiently performant. For example using un-optimized
 activations in mobile applications can increase latency on mobile devices by
 more than 100%. This presents a conundrum: should implementers of such
 operations create new atomic op and provide efficient implementations for their
@@ -110,9 +109,9 @@ Who is affected? Tensorflow users, software and hardware vendors.
 ### Why no gradients?
 
 Adding gradient support would dramatically widen the scope of this proposal. See
-appendix for details on why it is complicated. However, we have outlined several
-possible options to add gradient support on top of this proposal in the future,
-depending on the needs.
+appendix for details on why it is complicated. We also have outlined several
+possible options to add gradient support on top of this proposal, depending
+on the needs.
 
 ### Existing prior art.
 
@@ -253,7 +252,7 @@ on the platforms that support it, and “not-broken” on the platforms that don
 
 #### Alternative 0: Do nothing
 
-Everyone just continue with ad-hoc implementations.
+Everyone just continues with ad-hoc implementations.
 
 ##### Pros:
 
@@ -263,14 +262,15 @@ Everyone just continue with ad-hoc implementations.
 
   Downstream tools are stuck between
   
-   a) trying to implement ops, even if the
+    a) trying to implement ops, even if the
     efficiency is not yet a concern. In which case this just redo's
     implementation in the downstream tooling using its own language. Or 
-    b)
-    trying to extract certain graph patterns that can be optimizing and
+    
+    b) trying to extract certain graph patterns that can be optimizing and
     following the moving target. Once such pattern is extracted there is a
     pressure on op-maintainers to freeze his implementation to avoid breaking
     the patterns used by the downstream tools. Or 
+    
     c) Trying to roll out their  own extension such as `OpHint` for tflite.
 
 *   New ops that could push the industry forward however are stymied due to lack
@@ -330,7 +330,7 @@ Cons:
 
 ## Appendix: Future support for optimizing gradient functions
 
-This proposal is concerned with the inference of the composite ops. The
+This proposal is concerned with optimiziging inference pass of composite ops . The
 motivation today is that the downstream tooling today rarely if ever deals with gradients, and when
 it does, it can rely on the provided implementation. However eventually
 this is likely to change, and we would like to keep the door open for extending
@@ -355,13 +355,15 @@ This is problematic for two reasons:
 ops, and for instance can't just choose arbitrary implementation 2) If
 tensorflow implementation changes so needs downstream's.
 
+In this appendix we outline two possible paths forward to resolve these issues.
+
 ### Option 1: Stabilize Gradient Signature
 
 Option 1 basically revolves about allowing the composite_op to provide
 explicit list of side outputs that could possibly be required for the efficient
 gradient computation. The `tf.function` machinery would then validate that the
 signature actually matches the implementation and respect the order
-provided in the signature. Tool  would need to compute the side-output
+provided in the signature. The downstream tooling  would need to compute the side-output
 when providing its implementation.
 
 This option means that we would not be able to significantly change the
@@ -374,16 +376,15 @@ be empty. In fact, *any* gradient could be computed without any side outputs, by
 recomputing the function internally. Thus, side outputs only become important
 when the function involve non-trivial compute.
 
-Thus, this option might be acceptable in simplest cases, where there are no
+Thus, this option might be acceptable in the following  cases, where there are no
 standard outputs, or if side-outputs are unlikely to ever change.
 
-### Option 2: Keep gradient out of function signature
+### Option 2: Allow dynamic substitution of side outputs. 
 
 Consider the `inference` and `forward` functions. The former has signature
-`x->y`, the latter is `x->y, s`. \
-Where either y or s can be a list of multiple tensors. Comparing the signature,
-tooling can select the split point to separate inference_part and side output
-for backward part
+`x->y`, the latter is `x->y, s`. Either y or s can be a list of multiple tensors. 
+Comparing the signature, tooling can select the split point to separate inference_part 
+and side output for backward part
 
 > Assumption: side_outputs of forward_XXX are only ever used as inputs to
 > inference_backward_XXX, if they are used for any other purposes, then the
