@@ -2,6 +2,7 @@
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)       |
 :-------------- |:---------------------------------------------------- |
+| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
 | **Author(s)** | My Name (me@example.org), AN Other (you@example.org) |
 | **Sponsor**   | A N Expert (whomever@tensorflow.org)                 |
 | **Updated**   | YYYY-MM-DD                                           |
