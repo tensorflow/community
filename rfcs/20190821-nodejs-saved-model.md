@@ -195,23 +195,19 @@ SavedModel
 *   MetaGraphsList
     *   MetaInfoDef
         *   …
-
-          -    graphDef
-
+    *   GraphDef
         *   …
-
-          -    ...
-
-*   Signature Definition Map:
-    *   Default SignatureDef
-        *   Input op metadata
-        *   Output op metadata
-    *   SignatureDef 1
-        *   Input op metadata
-        *   Output op metadata
-    *   SignatureDef 2
-        *   Input op metadata
-        *   Output op metadata
+    *   …
+    *   Signature Definition Map:
+        *   Default SignatureDef
+            *   Input op metadata
+            *   Output op metadata
+        *   SignatureDef 1
+            *   Input op metadata
+            *   Output op metadata
+        *   SignatureDef 2
+            *   Input op metadata
+            *   Output op metadata
 
 In TF Java TF go, TF_LoadSessionFromSavedModel and TF_SessionRun are also used to load and execute session from SavedModel. The SavedModel is parsed as protocol buffers in Java/go and input/output name is extracted from the default signature def.
 
