@@ -535,6 +535,28 @@ call ROCm's `hipLaunchKernelGGL` here instead. Its signature uses templates.
 Fortunately, AMD is planning to add an equivalent function that provides a C
 API. (see Appendix 2 for details)
 
+### Getting Status when using device APIs
+
+Kernel Device APIs described in this document rely on wrapping certain Eigen interfaces, such as `Eigen::StreamInterface` to provide a C API. Implementations of these interfaces might set an `OpKernelContext` status, which is not on the interface surface. Therefore, I propose that we add a new function that would update a given `TF_Status` with current `OpKernelContext` status:
+
+```c++
+TF_CAPI_EXPORT extern void TF_OpKernelContext_UpdateStatus(TF_Status*);
+```
+
+This would allow kernel implementations to return as soon as they see a failing status. For example:
+
+```c++
+TF_EigenStream* eigen_stream = TF_GetEigenStream();
+... run computation using eigen_stream ...
+
+TF_Status* context_status = TF_NewStatus();
+TF_OpKernelContext_UpdateStatus(context_status);
+if (TF_GetCode(context_status) != TF_OK) {
+  TF_DeleteStatus(context_status);
+  return;
+}
+```
+
 ## Appendix 1
 
 Certain parts of our design involve kernel plugins calling a function in
