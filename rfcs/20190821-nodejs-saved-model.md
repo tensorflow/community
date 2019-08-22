@@ -12,9 +12,9 @@ This project is aiming to enable native TF SavedModel execution in Node.js envir
 
 ### Goals
 
-*   Implement an API to load and execute TF SavedModel in Node.js for inference that is created in either TF 1.x or 2.0.
-*   Wrap the loaded SavedModel as a new subtype implementing tf.InferenceModel, so users could call default signatureDef or other signatureDefs with tag
-*   Enable the ability to inspect the SavedModel signatureDefs in Node.js with protocol buffers in JavaScript. This is a stage 2 implementation detail and will not be discussed deeply in this doc.
+*   Implement an API to load and execute TF SavedModel in Node.js for inference, supporting both TF 1.x and 2.0.
+*   Wrap the loaded SavedModel as a new subtype implementing tf.InferenceModel, so users could call default signatureDef or other signatureDefs with tag.
+*   Enable the ability to inspect the SavedModel signatureDefs in Node.js with protocol buffers in JavaScript (stage 2 feature).
 
 ### Non-goals
 
