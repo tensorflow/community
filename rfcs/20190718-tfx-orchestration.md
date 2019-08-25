@@ -56,8 +56,8 @@ Note that these pipelines are smiilar not not identical:
 *   Internal TFX pipelines are configured with service configs (protobufs),
     while external pipelines will use Python. To achieve parity, the Python DSL
     must be serializable into internal TFX service configs.
-*   The internal TFX pipelines primarily use the (pubsub design
-    pattern)[https://en.wikipedia.org/wiki/Publish–subscribe_pattern], whereas
+*   The internal TFX pipelines primarily use the [pubsub design
+    pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern), whereas
     the first few workflow engines targeted for orchestration are true
     orchestrators. While the pipeline DAG and the executors can be expressed
     using the same DSL, the execution of the pipeline will vary across
@@ -69,16 +69,16 @@ Note that these pipelines are smiilar not not identical:
 Users will define their pipeline using the TFX DSL and a set of Python classes
 that emulate the existing TFX protobufs. The DSL provides methods to instantiate
 TFX components link the outputs of one component to the inputs of another. The
-pipeline must be a (DAG)[https://en.wikipedia.org/wiki/Directed_acyclic_graph]
+pipeline must be a [DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph)
 and cycles will cause an exception to be thrown.
 
 ### Orchestration vs choreography
 
 TFX and Kubeflow both follow a runtime design pattern generally known as
-(service
-orchestration)[https://en.wikipedia.org/wiki/Orchestration_(computing)], which
-is different from (service
-choreography)[https://en.wikipedia.org/wiki/Service_choreography#Service_choreography_and_service_orchestration].
+[service
+orchestration](https://en.wikipedia.org/wiki/Orchestration_(computing)), which
+is different from [service
+choreography](https://en.wikipedia.org/wiki/Service_choreography#Service_choreography_and_service_orchestration).
 While both TFX and Kubeflow have eventual plans to support both patterns, the
 initial launch for each will be service orchestration.
 
