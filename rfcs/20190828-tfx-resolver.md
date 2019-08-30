@@ -64,9 +64,9 @@ write should be allowed during artifact resolution stage. The other parameter
 input is a mapping from tags to Channels. Each Channel provides the type
 information that will be used when querying ML metadata.
 
-### DSL intergration
+### DSL integration
 
-There are two options to intergrate *Resolver* into TFX DSL:
+There are two options to integrate *Resolver* into TFX DSL:
 
 1.  Make *Resolver* an optional parameter for component interface
 2.  Build a special node *ResolverNode* as the wrapper of *Resolver* logic and
