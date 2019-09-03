@@ -82,12 +82,12 @@ example_gen = CsvExampleGen(input_base=examples)
 statistics_gen = StatisticsGen(input_data=example_gen.outputs['examples'])
 
 # We then similarly use the statsgen output in SchemaGen.
-infer_schema = SchemaGen(stats=statistics_gen.outputs['output'])
+infer_schema = SchemaGen(statistics=statistics_gen.outputs['statistics'])
 
 # Next, we do example validation.
 validate_stats = ExampleValidator(
-    stats=statistics_gen.outputs['output'],
-    schema=infer_schema.outputs['output'])
+    statistics=statistics_gen.outputs['statistics'],
+    schema=infer_schema.outputs['schema'])
 ```
 
 ### Component execution, execution result objects, visualization
@@ -184,8 +184,9 @@ display of the resulting statistics
 
 Here is an example of what notebook execution may look like in this scheme.
 
-```
-Input[0]:
+**Input[0]:**
+
+```python
 # To begin, we initialize an interactive context. Here, by not passing
 # in a base directory or metadata configuration, we create an ephemeral
 # context whose outputs will be in a temporary directory.
@@ -198,79 +199,62 @@ context = InteractiveContext()
 #                              metadata_connection_config=my_config)
 ```
 
-<table>
-  <tr>
-   <td><strong>Input[1]:</strong>
-<p>
-<code><em># First, ExampleGen with a run / read.</em></code>
-<code>example_gen = CsvExampleGen(input_base=examples)</code>
-<p>
-<code><em># Note that the output will be of type 'ExamplesPath', for which we</em></code>
-<code><em># may have registered a notebook visualization handler.</em></code>
-<code>example_gen_result = context.run(example_gen)</code>
-<p>
-<code>example_gen.outputs['examples']</code>
-<p>
-<code><em># alternative style: explicit context.show() method</em></code>
-<code>context.show(example_gen.outputs['examples'])</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Output[1]:</strong>
-<p>
-_notebook visualization indicating we have N examples at some temp path_
-   </td>
-  </tr>
-</table>
+**Input[1]:**
 
-<table>
-  <tr>
-   <td><strong>Input[2]:</strong>
-<p>
-<code><em># Next, StatisticsGen with a run / read.</em></code>
-<code>statistics_gen = StatisticsGen(input_data=example_gen.outputs['examples'])</code>
-<p>
-<code>context.run(statistics_gen).outputs['output']</code>
-<p>
-<code><em># alternative styles:</em></code>
-<code><em># context.<strong>show(</strong>context.run(statistics_gen).outputs['output'])</em></code>
-<code><em># context.run().read('output'<strong>, visualization_handler=blah</strong>)</em></code>
-<code><em># context.run().<strong>show</strong>('output', <strong>visualization_handler=blah, visualization_args=</strong>)</em></code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Output[2]:</strong>
-<p>
-_notebook visualization for statsgen output_
-   </td>
-  </tr>
-</table>
+```python
+# First, ExampleGen with a run / read.
+example_gen = CsvExampleGen(input_base=examples)
 
-<table>
-  <tr>
-   <td><strong>Input[3]:</strong>
-<p>
-<code><em># Next, SchemaGen without a run / read.</em></code>
-<code>infer_schema = SchemaGen(stats=statistics_gen.outputs['output'])</code>
-<p>
-<code><em># Finally, ExampleValidator with a run / read. Note that SchemaGen</em></code>
-<code><em># will be implicitly run (see Note 2 below).</em></code>
-<code>validate_stats = ExampleValidator(</code>
-<p>
-<code>    stats=statistics_gen.outputs['output'],</code>
-<p>
-<code>    schema=infer_schema.outputs['output'])</code>
-<p>
-<code>context.run(validate_stats)</code>
-   </td>
-  </tr>
-  <tr>
-   <td><strong>Output[3]:</strong>
-<p>
-_ExecutionResult object for ExampleValidator_
-   </td>
-  </tr>
-</table>
+# Note that the output will be of type 'ExamplesPath', for which we
+# may have registered a notebook visualization handler.
+example_gen_result = context.run(example_gen)
+
+example_gen.outputs['examples']
+
+# alternative style: explicit context.show() method
+context.show(example_gen.outputs['examples'])
+```
+
+**Output[1]:**
+
+_(notebook visualization indicating we have N examples at some temp path)_
+
+**Input[2]:**
+
+```python
+# Next, StatisticsGen with a run / read.
+statistics_gen = StatisticsGen(input_data=example_gen.outputs['examples'])
+
+context.run(statistics_gen).outputs['statistics']
+
+# alternative styles:
+# context.show(context.run(statistics_gen).outputs['statistics'])
+# context.run().read('output', visualization_handler=blah)
+# context.run().show('output', visualization_handler=blah, visualization_args=)
+```
+
+**Output[2]:**
+
+_(notebook visualization for statsgen output)_
+
+**Input[3]:**
+
+```python
+# Next, SchemaGen without a run / read.
+infer_schema = SchemaGen(statistics=statistics_gen.outputs['statistics'])
+
+# Finally, ExampleValidator with a run / read. Note that SchemaGen
+# will be implicitly run (see Note 2 below).
+validate_stats = ExampleValidator(
+    statistics=statistics_gen.outputs['statistics'],
+    schema=infer_schema.outputs['schema'])
+
+context.run(validate_stats)
+```
+
+**Output[3]:**
+
+_(ExecutionResult object for ExampleValidator)_
 
 Note that the user may have forgotten to run InteractiveContext.run() on
 upstream components in the dependency graph. Instead of implicitly running these
@@ -307,7 +291,7 @@ actions such as “Run All”, “Run Cells Before”, and “Run Cells After”
 
         ```
         aliased_class = interactive_context.InteractiveContext
-        sess = aliased_class()
+        context = aliased_class()
         ```
 
     1.  This should cover subsequent aliases of InteractiveContext instances.
@@ -346,9 +330,9 @@ user to skip scratch work in cells.
 Example line magic:
 
 ```
-%skip_for_export sess = InteractiveContext()
+%skip_for_export context = InteractiveContext()
 ...
-%skip_for_export sess.run(example_gen)
+%skip_for_export context.run(example_gen)
 ```
 
 Example cell magic:
