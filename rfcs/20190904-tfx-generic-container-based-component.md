@@ -14,8 +14,7 @@ containerized program as a component to a pipeline authored using the TFX DSL,
 in a way that inter-operates with other components.
 
 This RFC assumes some clarification on the TFX’s use of artifacts and metadata
-as explained in
-[this section of TFX user guide](https://www.tensorflow.org/tfx/guide#artifacts).
+as explained in [this section of TFX user guide](https://www.tensorflow.org/tfx/guide#artifacts).
 
 ## Motivation
 
