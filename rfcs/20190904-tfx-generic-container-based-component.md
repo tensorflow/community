@@ -123,7 +123,8 @@ shows some example code for these two steps:
 *   `my_example_gen.py`
 
 ```python
-import argparse import pandas as pd
+import argparse
+import pandas as pd
 
 def convert_and_save(df, file):
   ...
@@ -153,8 +154,6 @@ if __name__ == '__main__':
 *   `my_trainer.py`
 
 ```python
-
-
 import argparse
 import pandas as pd
 import sklearn.linear_model import Logisticregression
