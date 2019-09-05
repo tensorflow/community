@@ -30,7 +30,7 @@ We plan to start by focusing on the Graph Compiler. As such, we’ll have a 45 m
 
 ## Contacts
 
-* Project lead: Tatiana Shpeisman [@tatianashp](https://github.com/tatianashp) - speisman at google
+* Project lead: Tatiana Shpeisman [@tatianashp](https://github.com/tatianashp) - shpeisman at google
 * Project manager: Pankaj Kanwar [@pkanwar23](https://github.com/pkanwar23) - pkanwar at google 
 * For administrative questions, contact Edd Wilder-James
   [@ewilderj](https://github.com/ewilderj) - ewj at google
