@@ -1,5 +1,5 @@
 # Java Repositories
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author**    | Karl Lessard (karl.lessard@gmail.com) |
 | **Sponsor**   | James Ring (Google) |
