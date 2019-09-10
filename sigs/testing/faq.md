@@ -1,6 +1,6 @@
 # TensorFlow 2.0: An Overview
 
-Last Updated: _Mar 6, 2019_
+Last Updated: _September 10, 2019_
 
 A key element of the evolution of TensorFlow (TF) is TF 2.0, which is primarily focused on:
 
@@ -159,8 +159,8 @@ TensorFlow 2.0 API documentation can be found [here](https://www.tensorflow.org/
 
 We recommend that greenfield projects should begin using TensorFlow 2.0. Here’s how to get started:
 - [Udacity Course](https://www.udacity.com/course/intro-to-tensorflow-for-deep-learning--ud187)
-- [DeepLearning.ai Course](https://www.deeplearning.ai/tensorflow-specialization/)
-- [TensorFlow Documentation](https://www.tensorflow.org/alpha)
+- [DeepLearning.ai Course](https://www.deeplearning.ai/tensorflow-in-practice/)
+- [TensorFlow Documentation](https://www.tensorflow.org/beta/)
 
 **I’ve noticed a problem with TensorFlow 2.0. How can I file an issue?**
 
