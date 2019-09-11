@@ -2,9 +2,7 @@
 
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
-| **Author(s)** | Edward Loper (edloper@google.com),                   |
-:               : Martin Zinkevich (martinz@google.com),               :
-:               : Zhuo Peng (zhuo@google.com)                          :
+| **Authors**   | Edward Loper (edloper@google.com), Martin Zinkevich (martinz@google.com), Zhuo Peng (zhuo@google.com) |
 | **Sponsor**   | Alex Passos (apassos@google.com)                     |
 | **Updated**   | 2019-09-10                                           |
 
@@ -526,14 +524,11 @@ schema.  Thus, `StructTensor` cannot be used to encode arbitrary schema-free
 "dictionary-like" data.  A few examples of structured values that could not be
 encoded with `StructTensor` include:
 
-| Structured Value                            | Reason Why It Can't be Encoded |
-:-------------------------------------------- |:------------------------------ |
-|`[{"a": 1}, {"a": "hello"}]`                 | Field `"a"` has different      |
-:                                             : dtypes                         :
-|`[{"b": [1, 2, 3]}, {"b": [[1, 2], [3, 4]]}` | Field `"b"` has different      |
-:                                             : ranks                          :
-|`[{"c": {"x": 1}}, {"c": {"y": 1}}]`         | Field `"c"` has different      |
-:                                             : nested fields                  :
+| Structured Value                            | Reason Why It Can't be Encoded          |
+:-------------------------------------------- |:--------------------------------------- |
+|`[{"a": 1}, {"a": "hello"}]`                 | Field `"a"` has different dtypes        |
+|`[{"b": [1, 2, 3]}, {"b": [[1, 2], [3, 4]]}` | Field `"b"` has different ranks         |
+|`[{"c": {"x": 1}}, {"c": {"y": 1}}]`         | Field `"c"` has different nested fields |
 
 Many existing struct-like encodings have provisions for "optional" values.  For
 example, protobuf fields may be "`optional`" and Apache Arrow fields may be
