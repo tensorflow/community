@@ -1,4 +1,4 @@
-# Proposed name: SIG MLIR
+# MLIR
 
 ## Objective
 
