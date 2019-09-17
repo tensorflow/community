@@ -51,7 +51,7 @@ implementation-agnostic Python library.
 
 The goal of TFX is to allow external users to configure and run TFX pipelines
 which are similar to those configured and run internally at Google. The emphasis
-Note that these pipelines are smiilar not not identical:
+Note that these pipelines are similar but not identical:
 
 *   Internal TFX pipelines are configured with service configs (protobufs),
     while external pipelines will use Python. To achieve parity, the Python DSL
