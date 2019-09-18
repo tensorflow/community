@@ -1,6 +1,6 @@
 # On-Device Training with TensorFlow Lite
 
-Status        | Proposed
+Status        | Accepted
 :------------ | :---------------------------------------------------------------
 **Author(s)** | Yu-Cheng Ling (ycling@google.com)
 **Sponsor**   | Andrew Selle (aselle@google.com), Jared Duke (jdduke@google.com)
