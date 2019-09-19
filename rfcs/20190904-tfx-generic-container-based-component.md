@@ -214,9 +214,9 @@ from and to storage on behalf of the wrapped containerized application program.
 
 We propose the following syntax for wrapping user’s containers in the DSL by
 introducing `ExecutorSpec`. This syntax complements and extends the
-[ComponentSpec](https://github.com/tensorflow/tfx/blob/4cafb7a3ddd73463d70072dade71f380e86072e6/tfx/types/component_spec.py#L73)
-design previously implemented in TFX, and generalizes
-[EXECUTOR_CLASS](https://github.com/tensorflow/tfx/blob/767968262233bb8d37837e8de9e11d1065b07c7b/tfx/components/base/base_component.py#L66)
+[ComponentSpec](https://github.com/tensorflow/tfx/blob/0.14.0/tfx/types/component_spec.py#L73)
+design previously implemented in TFX, and generalize `EXECUTOR_CLASS` to
+[EXECUTOR_SPEC](https://github.com/tensorflow/tfx/blob/0.14.0/tfx/components/base/base_component.py#L63)
 attribute of components. We propose to use the same `ComponentSpec` base class
 to describe the custom container-based component’s input and output artifacts,
 and its parameters.
@@ -347,7 +347,7 @@ my_trainer_exec_spec = ExecutorContainerSpec(
 # the command line flags that my_trainer.py takes are different from what
 # TFX stock trainer takes. Nevertheless, it does produce an instance of
 # Model artifacts, which can then be consumed by downstream components.
-class MyContainerBasedTrainerSpec(ContainerBasedComponentSpec):
+class MyContainerBasedTrainerSpec(ComponentSpec):
   """ComponentSpec to drive my_trainer.py as a component."""
   # Input artifacts.
   INPUTS = {
@@ -422,40 +422,39 @@ def create_pipeline():
 # in which case, an Exception is raised at the time when the logical pipeline
 # is compiled for execution by the TfxRunner.
 # See the next section of this doc about ComponentLauncher.
-_ = KubeflowDagRunner().run(_create_pipeline())
+_ = KubeflowDagRunner().run(create_pipeline())
 
 ```
 
 ### ComponentLauncher to launch the container-based application
 
 With the introduction of `ExecutorContainerSpec` which does not specify
-`executor_class`, the default `ComponentLauncher` cannot execute the
-container-based component. Furthermore, different orchestrator (i.e. an instance
-of `TfxRunner`) may have different ways to launch the containerized application
-program.
+`executor_class`, the default implementation of `BaseComponentLauncher` cannot
+execute the container-based component. Furthermore, different orchestrator
+(i.e. an instance of `TfxRunner`) may have different ways to launch
+the containerized application program.
 
-We propose to extend the base `ComponentLauncher` to define
-orchestrator-specific ways to execute the containerized program, including the
-ways to translate input artifacts to the complete command line, by filling the
-[Jinja template](https://jinja.palletsprojects.com/en/2.10.x/) for
-`ExecutorContainerSpec.command` and `ExecutorContainerSpec.args`, and to
+We propose to extend the `BaseComponentLauncher` to define orchestrator-specific
+ways to execute the containerized program, including the ways to translate input
+artifacts to the complete command line, by filling the [Jinja template](https://jinja.palletsprojects.com/en/2.10.x/)
+for `ExecutorContainerSpec.command` and `ExecutorContainerSpec.args`, and to
 translate output from the containerized application to keep track of metadata of
 it and write back to Metadata storage.
 
-Below is one possible implementation of `ComponentLauncher` that implements a
-way to launch container-based components with `KubeflowDagRunner`, with ability
-to configure low level k8s configurations. This `KubeflowComponentLauncher`
-would use the k8s Pod API to launch the container [ref]. On top of this,
-`KubeflowDagRunner` allows to apply
-[additional k8s APIs](https://github.com/tensorflow/tfx/commit/74f9b6ab26c51ebbfb5d17826c5d5288a67dcf85#diff-6e0294d7fcca3bea10cb2c38bc7860c3),
+Below is one possible implementation of `BaseComponentLauncher` that implements
+a way to launch container-based components with `KubeflowDagRunner`, with
+ability to configure low level k8s configurations. This
+`KubeflowComponentLauncher` would use the k8s Pod API to launch the container
+through underlying Kubeflow Pipelines SDK implementation [ref](https://github.com/tensorflow/tfx/blob/0.14.0/tfx/orchestration/kubeflow/base_component.py#L118).
+On top of this, `KubeflowDagRunner` allows to apply [additional k8s APIs](https://github.com/tensorflow/tfx/blob/0.14.0/tfx/orchestration/kubeflow/kubeflow_dag_runner.py#L188),
 such as volume mount and secret management to pods.
 
 ```python
 # Demonstration of a ComponentLauncher that has the ability to launch
 # container-based component, in addition to executor-class based component,
 # with KubeflowDagRunner.
-class KubeflowComponentLauncher(ComponentLauncher):
-  """Demonstration of ComponentLauncher specific to KubeflwoRunner."""
+class KubeflowComponentLauncher(BaseComponentLauncher):
+  """Demonstration of a ComponentLauncher specific to KubeflwoRunner."""
 
   def __init__(self, ..., platform_config=...):
     # platform_config delines any Runner-specific, for example k8s-specific
@@ -535,7 +534,7 @@ component to capture it as properties of output artifacts. File I/O is
 consistent with the way how `KubeflowDagRunner` passively logs output artifact
 metadata as of `tfx` 0.13, hence natural extension to it.
 
-### Binding between CompomentSpec and ExecutorContainerSpec
+### Binding between ComponentSpec and ExecutorContainerSpec
 
 (A subclass of) `ComponentSpec` defines input and output artifact specification,
 and execution property of the component, but does not define ‘what’ to execute
@@ -563,7 +562,7 @@ This is as illustrated as the code snippet in the previous sections.
             needs to be defined in different places and kept in tightly
             consistent.
             1.  Command line flags to `my_example_gen.py`.
-            1.  Jinja template defined in `my_example_gen_exec_spec.commnad` and
+            1.  Jinja template defined in `my_example_gen_exec_spec.command` and
                 `my_example_gen_exec_spec.args`.
             1.  `INPUT`, `OUTPUT` and `PARAMETERS` in
                 `MyExampleGenComponentSpec`.
@@ -763,7 +762,7 @@ class MyContainerBasedExampleGen(BaseComponent):
 
 ## Appendix
 
-### Ppeline Compilation and Release
+### Pipeline Compilation and Release
 
 The proposed `ExecutorContainerSpec` and related modification will reside in the
 TFX repository.
@@ -794,16 +793,16 @@ to create a helper to build an image, configure a `python` command entrypoint
 from a naked Python function, and construct command line arguments under the
 hood, as a specialized subclass of it. Such helper shall eventually converge to
 the other way of implementing a
-[custom component](https://github.com/tensorflow/tfx/tree/80a80ffb0f833cf02344ac2898017cf1b73e166d/tfx/examples/custom_components)
+[custom component](https://github.com/tensorflow/tfx/tree/0.14.0/tfx/examples/custom_components)
 for TFX via a custom `Executor` class written in Python, and package it in a
 container image to release.
 
 Detailed RFC particularly on this point will follow.
 
-### Component Arhcetypes
+### Component Archetypes
 
 As of `tfx` 0.14, there are
-[10 known artifact types](https://github.com/tensorflow/tfx/blob/767968262233bb8d37837e8de9e11d1065b07c7b/tfx/types/standard_artifacts.py)
+[10 known artifact types](https://github.com/tensorflow/tfx/blob/0.14.0/tfx/types/standard_artifacts.py)
 defined and used.
 
 *   ExternalArtifact
@@ -818,7 +817,7 @@ defined and used.
 *   PushedModel
 
 Based on the above known artifact types, TFX defines the following
-[9 component archetypes](https://github.com/tensorflow/tfx/tree/767968262233bb8d37837e8de9e11d1065b07c7b/tfx/components).
+[9 component archetypes](https://github.com/tensorflow/tfx/tree/0.14.0/tfx/components).
 
 | **Component**    | **Inputs**                | **Outputs**              |
 | :--------------- | :------------------------ | :----------------------- |
@@ -844,7 +843,7 @@ know the actual business logic inside the container application.
 
 As of tfx 0.14, the schema (list of properties) of metadata for each artifact
 type is defined implicitly when it is created and used
-([example](https://github.com/tensorflow/tfx/blob/767968262233bb8d37837e8de9e11d1065b07c7b/tfx/components/transform/component.py#L99)).
+([example](https://github.com/tensorflow/tfx/blob/0.14.0/tfx/components/transform/component.py#L118)).
 
 In order for the proposed generic component-based component to utilize artifacts
 and its metadata in a standardized way, such metadata schema definition needs to
