@@ -812,7 +812,7 @@ defined and used.
 *   ExampleAnomalies
 *   TransformGraph
 *   Model
-*   ModelEvalulation
+*   ModelEvaluation
 *   ModelBlessing
 *   PushedModel
 
