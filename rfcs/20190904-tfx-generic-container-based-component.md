@@ -25,9 +25,9 @@ is letting users orchestrate arbitrary containers as part of a Machine Learning
 languages other than Python (e.g. in R, Java, C++ etc), and the ability to chain
 existing containerized application programs with other pipeline steps through a
 Python DSL is valuable. As of 2019/09
-([tfx 0.14](https://github.com/tensorflow/tfx/blob/0.14.0rc1//RELEASE.md#version-0140),
+([tfx 0.14](https://github.com/tensorflow/tfx/blob/0.14.0/RELEASE.md#version-0140),
 even though TFX supports `KubeflowDagRunner` as an orchestrator, the
-[TFX DSL](https://github.com/tensorflow/tfx/tree/0.14.0rc1/tfx) does not provide
+[TFX DSL](https://github.com/tensorflow/tfx/tree/0.14.0/tfx) does not provide
 a mechanism to accomplish this.
 
 ## User Benefit
@@ -857,6 +857,6 @@ of artifacts must be compatible with the way metadata (via properties of
 artifacts) defines, which allows components to properly consume artifacts.
 
 We anticipate that
-[standard_artifacts.py](https://github.com/tensorflow/tfx/blob/0.14.0rc1/tfx/types/standard_artifacts.py)
+[standard_artifacts.py](https://github.com/tensorflow/tfx/blob/0.14.0/tfx/types/standard_artifacts.py)
 will serve as the catalog of known artifact types. We also anticipate that this
 catalog might evolve with more properties of a type, or more types themselves.
