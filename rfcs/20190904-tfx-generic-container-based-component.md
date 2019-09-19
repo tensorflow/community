@@ -429,14 +429,14 @@ _ = KubeflowDagRunner().run(create_pipeline())
 ### ComponentLauncher to launch the container-based application
 
 With the introduction of `ExecutorContainerSpec` which does not specify
-`executor_class`, the default implementation of `BaseComponentLauncher` cannot
-execute the container-based component. Furthermore, different orchestrator
-(i.e. an instance of `TfxRunner`) may have different ways to launch
+`executor_class`, the default implementation of `BaseComponentLauncher` may
+not be able to execute the container-based component. Furthermore, different
+orchestrator (i.e. an instance of `TfxRunner`) may have different ways to launch
 the containerized application program.
 
 We propose to extend the `BaseComponentLauncher` to define orchestrator-specific
-ways to execute the containerized program, including the ways to translate input
-artifacts to the complete command line, by filling the [Jinja template](https://jinja.palletsprojects.com/en/2.10.x/)
+ways to execute the containerized program. It includes the ways to translate
+input artifacts to the complete command line, by filling the [Jinja template](https://jinja.palletsprojects.com/en/2.10.x/)
 for `ExecutorContainerSpec.command` and `ExecutorContainerSpec.args`, and to
 translate output from the containerized application to keep track of metadata of
 it and write back to Metadata storage.
@@ -487,13 +487,13 @@ class KubeflowComponentLauncher(BaseComponentLauncher):
 Another example of `_run_executor()` to the above illustration may be to execute
 `docker run` locally.
 
-The Runner should implement suitable `ComponentLauncher` accordingly. A pipeline
-may have different `ExecutorSpec`s for different components. In case the Runner,
-and corresponding `ComponentLauncher`, does not have a way to execute a
-containerized program with `ExecutorContainerSpec`, a runtime error would be
-raised. If a Runner's `run()` method has a compilation step from logical
-pipeline to orchestrator-specific representation of the pipeline, such error
-could be caught at compile time.
+The Runner should implement a suitable subclass of `BaseComponentLauncher`
+accordingly. A pipeline may have different `ExecutorSpec`s for different
+components. In case the Runner, and corresponding `BaseComponentLauncher`
+subclasses, does not have a way to execute a containerized program with
+`ExecutorContainerSpec`, a runtime error would be raised. If a Runner's `run()`
+method has a compilation step from logical pipeline to orchestrator-specific
+representation of the pipeline, such error could be caught at compile time.
 
 ### Artifact Properties after Execution is complete
 
