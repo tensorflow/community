@@ -1,10 +1,10 @@
 # TFX Iterative Notebook Proposal
 
-Status        | Proposed
+Status        | Approved
 :------------ | :-------
 **Author(s)** | Charles Chen (<a href="mailto:ccy@google.com">ccy@google.com</a>), Joe Lee (<a href="mailto:joeyounglee@google.com">joeyounglee@google.com</a>), Kenny Song (<a href="mailto:kennysong@google.com">kennysong@google.com</a>), Kevin Haas (<a href="mailto:khaas@google.com">khaas@google.com</a>), Pushkar Joshi (<a href="mailto:pushkarj@google.com">pushkarj@google.com</a>)
 **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com)
-**Updated**   | 2019-08-15
+**Updated**   | 2019-09-17
 
 ## Objective
 
