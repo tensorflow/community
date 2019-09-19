@@ -78,7 +78,7 @@ capabilities:
     another**: As a result of the artifact centric, strongly typed input- and
     output- signatures, it enables robust sharing and drop-in replacement of
     components, so long as signatures (the list of input- and output- artifact
-    *types*) are the same.
+    *types*) are the same, and payload is compatible (see also appendix).
 
 Additionally, the proposed container-based component will enable the following
 new features in TFX DSL, which already exist In Kubeflow Pipelines:
@@ -819,19 +819,17 @@ defined and used.
 Based on the above known artifact types, TFX defines the following
 [9 component archetypes](https://github.com/tensorflow/tfx/tree/0.14.0/tfx/components).
 
-| **Component**    | **Inputs**                | **Outputs**              |
-| :--------------- | :------------------------ | :----------------------- |
-| ExampleGen       | ExternalPath (optional)   | Examples                 |
-| StatisticsGen    | Examples                  | ExampleStatistics        |
-| SchemaGen        | ExampleStatistics         | Schema                   |
-| ExampleValidator | ExampleStatistics, Schema | ExampleAnomalies         |
-| Transform        | Examples (raw), Schema    | TransformGraph, Examples |
-:                  :                           : (transformed)            :
-| Trainer          | Examples, TransformGraph  | Model                    |
-:                  : (optional), Schema        :                          :
-| Evaluator        | Examples, Model           | ModelEvaluation          |
-| ModelValidator   | Examples, Model           | ModelBlessing            |
-| Pusher           | Model, ModelBlessing      | PushedModel              |
+| **Component**    | **Inputs**                                    | **Outputs**                            |
+| :--------------- | :-------------------------------------------- | :------------------------------------- |
+| ExampleGen       | ExternalArtifact (optional)                   | Examples                               |
+| StatisticsGen    | Examples                                      | ExampleStatistics                      |
+| SchemaGen        | ExampleStatistics                             | Schema                                 |
+| ExampleValidator | ExampleStatistics, Schema                     | ExampleAnomalies                       |
+| Transform        | Examples (raw), Schema                        | TransformGraph, Examples (transformed) |
+| Trainer          | Examples, TransformGraph (optional), Schema   | Model                                  |
+| Evaluator        | Examples, Model                               | ModelEvaluation                        |
+| ModelValidator   | Examples, Model                               | ModelBlessing                          |
+| Pusher           | Model, ModelBlessing                          | PushedModel                            |
 
 The proposed generic container-based component will enable scenarios where, so
 long as the wrapped component adheres to one of the above the input- and output-
@@ -847,14 +845,17 @@ type is defined implicitly when it is created and used
 
 In order for the proposed generic component-based component to utilize artifacts
 and its metadata in a standardized way, such metadata schema definition needs to
-be made explicit, possibly as a Python class. In other words, unless the known
-artifact types are explicitly defined and accessible in a common repository,
-custom built container-based component would not be able to implement the
-interaction with other components via such artifact types, in turn the custom
-container-based component would not be able to make use of the interoperability
-and shareability with other components in a pipeline. Furthermore, the payload
-of artifacts must be compatible with the way metadata (via properties of
-artifacts) defines, which allows components to properly consume artifacts.
+be made explicit, possibly as a Python class (In TFX 0.14.0, the base `Artifact`
+class defines the common set of [properties](https://github.com/tensorflow/tfx/blob/0.14.0/tfx/types/artifact.py#L103),
+with option for each sub-classed type to extend it). In other words, unless the
+known artifact types are explicitly defined and accessible in a common
+repository, custom built container-based component would not be able to
+implement the interaction with other components via such artifact types, in turn
+the custom container-based component would not be able to make use of the
+interoperability and shareability with other components in a pipeline.
+Furthermore, the payload of artifacts must be compatible with the way metadata
+(via properties of artifacts) defines, which allows components to properly
+consume artifacts.
 
 We anticipate that
 [standard_artifacts.py](https://github.com/tensorflow/tfx/blob/0.14.0/tfx/types/standard_artifacts.py)
