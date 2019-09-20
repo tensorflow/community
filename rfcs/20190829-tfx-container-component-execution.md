@@ -119,7 +119,7 @@ steps. Step 1 and Step 2 follow the DSL extension proposed by the other RFC
 
 #### Step 1: Defines container based component by `ExecutorContainerSpec`
 
-```
+```python
 class MyContainerBasedExampleGen(BaseComponent):
 
   SPEC_CLASS = types.make_spec_class(
@@ -146,7 +146,7 @@ class MyContainerBasedExampleGen(BaseComponent):
 
 #### Step 2: Creates pipeline from container based component
 
-```
+```python
 def create_pipeline():
   my_csv_file = Channel('CSVFile', uri="/path/to/csv_file")
 
@@ -163,7 +163,7 @@ def create_pipeline():
 
 #### Step 3(a): Sets docker config via runner’s config
 
-```
+```python
 _ = BeamRunner(platform_configs={
   'MyContainerBasedExampleGen': [DockerPlatformConfig(volumes={...})]
 }).run(create_pipeline())
@@ -171,7 +171,7 @@ _ = BeamRunner(platform_configs={
 
 #### Step 3(b): Sets k8s platform config via runner’s config
 
-```
+```python
 _ = KubeflowDagRunner(platform_configs={
   'default': [KubernetesPodPlatformConfig(Pod().use_gcp_secret().spec()]
   'MyContainerBasedExampleGen': [
@@ -206,7 +206,7 @@ different target platforms. For example:
 
 Pseudo implementation:
 
-```
+```python
 class BaseComponentLauncher(with_metaclass(abc.ABCMeta, object)):
   @abc.abstractmethod
   @classmethod
@@ -298,7 +298,7 @@ capacity is needed to support a layered configuration system in runner’s confi
 
 Pseudo implementation:
 
-```
+```python
 class PlatformConfig(with_metaclass(abc.ABCMeta, object)):
   def merge(self, platform_config: PlatformConfig) -> PlatformConfig:
     """Merge the current config with a new config.
@@ -340,7 +340,7 @@ Default and component platform configs are configured by runner’s constructor.
 
 For example:
 
-```
+```yaml
 # base pod spec
 apiVersion: v1
 kind: Pod
@@ -402,7 +402,7 @@ The default choosing logic is:
 
 Pseudo implementation:
 
-```
+```python
 class TfxRunner(with_metaclass(abc.ABCMeta, object)):
   def __init__(self, launchers: List[BaseComponentLauncher],
                platform_configs: Dict[Text, List[PlatformConfig]]):
@@ -445,7 +445,7 @@ The executor will look for `output.json` file under `exec_properties.tmp_path`
 to get the outputs from the component. The output file follows the following
 schema:
 
-```
+```yaml
 "$id": https://pipeline.mlx.org/output.schema.json"
 "$schema": http://json-schema.org/draft-07/schema#"
 type: object
