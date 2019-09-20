@@ -4,7 +4,10 @@ SIG Addons release process consists of the folowing steps:
 1. Create new rX.X branch on tensorflow/addons
 2. Create and merge a new PR into the release branch
 	* Set the correct version and suffix in [version.py](https://github.com/tensorflow/addons/blob/master/tensorflow_addons/version.py)
-	* Freeze the tensorflow version in [requirements.txt](https://github.com/tensorflow/addons/blob/master/requirements.txt)
+	* Freeze the tensorflow version in
+      - [setup.py](https://github.com/tensorflow/addons/blob/master/setup.py)
+      - [requirements.txt](https://github.com/tensorflow/addons/blob/master/build_deps/requirements.txt)
+      - [requirements_gpu.txt](https://github.com/tensorflow/addons/blob/master/build_deps/requirements_gpu.txt)
 	* Remove `--nightly` flag from [release scripts](https://github.com/tensorflow/addons/tree/master/tools/ci_build/builds)
 	* Compile the docs: [instructions](https://github.com/tensorflow/addons/tree/master/tools/docs)
 3. Trigger [Travis build](https://travis-ci.org/tensorflow/addons)
