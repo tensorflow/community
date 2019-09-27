@@ -3,7 +3,7 @@
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | kangyizhang@google.com |
-| **Sponsor**   | smilkov@google.com, nsthorat@google.com, piyu@google.com, kreeger@google.com |
+| **Sponsor**   | smilkov@google.com, nsthorat@google.com, piyu@google.com |
 | **Updated**   | 2019-09-27                                           |
 
 ## Objective
@@ -83,7 +83,7 @@ The TFSaveModel object also has an `execute()` function to execute the inference
 ```
 const input = tensor1d([123], 'int32');
 // Execute the loaded signatureDef of the SavedModel
-const output = savedMode.predict([input_tensors]);
+const output = savedModel.predict([input_tensors]);
 ```
 
 
@@ -91,9 +91,9 @@ The TFSavedModel object also has a `delete()` function to free the SavedModel re
 
 
 ```
-savedMode.delete()
+savedModel.delete()
 // The following line will throw an exception saying the SavedModel has been deleted.
-const output = savedMode.predict([input_tensors]);
+const output = savedModel.predict([input_tensors]);
 ```
 
 
@@ -337,7 +337,7 @@ const input = tensor1d([123], 'int32');
 
 const output = model.predict([input_tensor]);
 
-const output = savedMode.execute({'input_op_names':input_tensors}, ['output_op_names']);
+const output = savedModel.execute({'input_op_names':input_tensors}, ['output_op_names']);
 
 model.delete();
 ```
