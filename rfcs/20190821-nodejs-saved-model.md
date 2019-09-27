@@ -308,8 +308,8 @@ To manage and execute loaded sesion from SavedModel, a new TFSavedModel javascri
 class TFSavedModel implement InferenceModel {
  private readonly id: number;
  private deleted: boolean;
- private readonly inputOpName: string;
- private readonly outputOpName: string;
+ private readonly inputOpName: string[];
+ private readonly outputOpName: string[];
 
  constructor(id: number, backend: NodeJSKernelBackend) {}
 
