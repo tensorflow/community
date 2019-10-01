@@ -18,6 +18,11 @@ where:
 * A ***structure*** maps each field in the schema to a tensor value
   (which could be a nested `StructuredTensor`).
 
+As an important special case, a 1D `tf.StructuredTensor` encodes a 2D table,
+where columns are heterogeneous `Tensor`s, and rows are the aligned elements
+in each of those `Tensor`s.  This special case maps cleanly to a Pandas
+DataFrame or an Arrow RecordBatch.
+
 ## Motivation
 
 Structured data types are widely recognized as a useful abstraction for making
