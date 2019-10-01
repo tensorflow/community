@@ -1,6 +1,6 @@
 # StructuredTensor
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Authors**   | Edward Loper (edloper@google.com), Martin Zinkevich (martinz@google.com), Zhuo Peng (zhuo@google.com) |
 | **Sponsor**   | Alex Passos (apassos@google.com)                     |
@@ -941,6 +941,12 @@ will also define several new ops, including:
 ## Questions and Discussion Topics
 
 -->
+
+### Variables
+
+The fields in a `tf.StructuredTensor` may be `tf.Variable`s; but a
+`tf.StructuredTensor` is a python-level object, and can't be stored in a
+`tf.Variable` itself.
 
 
 
