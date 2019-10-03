@@ -4,7 +4,7 @@
 
 Status        | Proposed
 :------------ | :------------------------------------------------------------
-**RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN)
+**RFC #**     | [162](https://github.com/tensorflow/community/pull/162)
 **Author(s)** | Zhuo Peng (zhuo@google.com), Kester Tong (kestert@google.com)
 **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com)
 **Updated**   | 2019-10-03
