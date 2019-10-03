@@ -1,6 +1,6 @@
 # TFX Resolver
 
-Status        | Proposed
+Status        | Accepted
 :------------ | :--------------------------------------------
 **Author(s)** | Ruoyu Liu (ruoyu@google.com)
 **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com)
