@@ -179,7 +179,7 @@ implemented for each of the supported combination of {physical, logical} format.
 class TFXIO(object):
   """Abstract basic class of all Standardized TFX inputs API implementations."""
   def __init__(
-      self, pipeline_env,
+      self,
       schema: Optional[tfmd.Schema]=None
   ):
     pass
@@ -226,17 +226,20 @@ class TensorAdapter(object):
 
   def __init__(
       self,
+      arrow_schema: pyarrow.Schema,
       tensor_representations: Dict[str, TensorRepresentation]):
     """Initializer.
 
     Args:
+      arrow_schema: the schema of the RecordBatches this adapter is to receive
+        in ToBatchTensors().
       tensor_representations: keys are the names of the output tensors; values
       describe how an output tensor should be derived from a RecordBatch.
     """
-    pass
+
 
   def TypeSpecs(self) -> Dict[str, tf.TypeSpec]:
-    """Returns tf.TypeSpec for each tensor to be produced by ToBatchTensors().
+    """Returns tf.TypeSpec for each tensor in `tensor_representation`.
 
     TypeSpecs can be used to construct placeholders or tf.function signatures.
     """
@@ -247,13 +250,14 @@ class TensorAdapter(object):
   ) -> Dict[str, TFFeedable]:  # TFFeedable: np.ndarrays or tf.EagerTensor
                                # (or compositions of them, i.e.
                                # CompositeTensors).
-    """Converts a record batch to batched tensors.
+    """Converts a RecordBatch to batched TFFeedables per `tensor_representation`
 
-    Each will conform to the corresponding TypeSpec.
+    Each will conform to the corresponding TypeSpec / TensorRepresentation.
 
     Args:
-      projections: if not None, only specified subset of tensors will be
-      converted.
+      projections: a set of names of TFFeedables (mentioned in
+      `tensor_representation`). If not None, only TFFeedables of those names
+      will be converted.
     """
 ```
 
@@ -262,6 +266,11 @@ implementations can implement their own `TensorAdapter`. A custom
 `TensorAdapter` would allow a `TFXIO` implmentation to rely on a TF graph to
 do parsing -- the same graph can be used in both `BeamSource` and
 `TensorAdapter`.
+
+The default `TensorAdapter` can be constructed out of the Arrow schema (which
+is required for any TFXIO implementation) and `TensorRepresentations`. The
+latter is part of the TFMD schema. See [this section](#tensorrepresentation)
+for details.
 
 # Detailed Design
 
@@ -659,8 +668,8 @@ The disadvantages of this approach are:
 ### We don’t have a strong representation in the Arrow community
 
 This has led to some issues. For example, the PyPI/Wheel packaging for pyarrow
-currently is unfunded and lacks volunteers and there is a risk of support being
-dropped, but we do rely on the pyarrow wheel as TFX is released on PyPI.
+currently is unfunded and lacks volunteers, and the pyarrow wheel sometimes had
+issues with TensorFlow ([example](https://github.com/apache/arrow/issues/4472)).
 
 ### ABI compatibility with libarrow
 
