@@ -1,6 +1,6 @@
 # Native SavedModel execution in Node.js
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | kangyizhang@google.com |
 | **Sponsor**   | smilkov@google.com, nsthorat@google.com, piyu@google.com |
