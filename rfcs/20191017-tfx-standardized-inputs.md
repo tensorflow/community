@@ -605,8 +605,10 @@ We’ve considered an alternative where
 is the unified in-memory representation, and **tf.Data** is the unified I/O
 abstraction.
 
-StructuredTensor is equally powerful as Arrow’s StructArray so it’s able to
-represent all our logical representations.
+StructuredTensor is almost equally powerful as Arrow’s StructArray, except
+that it cannot encode null values (i.e. a missing value cannot be distinguished
+from a null value). The discussion below assumes we extend StructuredTensor so
+that nulls can be encoded.
 
 Because StructuredTensor is a CompositeTensor, we could imagine that I/O +
 parsing of a logical data format in a physical storage format is handled by a
