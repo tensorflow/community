@@ -764,8 +764,10 @@ class MyContainerBasedExampleGen(BaseComponent):
 
 ### Pipeline Compilation and Release
 
-The proposed `ExecutorContainerSpec` and related modification will reside in the
-TFX repository.
+The proposed `ExecutorContainerSpec` and any related extension of DSL APIs
+will reside in the TFX repository. Pending code completion, we may choose
+to place some or all of the new APIs under `experimental` namespace until
+we admit it to core APIs.  
 
 If run with `KubeflowDagRunner`, it will be executed by `run()` method to
 compile into Argo pipeline spec. As a result, there is no need to have any
@@ -853,11 +855,32 @@ repository, custom built container-based component would not be able to
 implement the interaction with other components via such artifact types, in turn
 the custom container-based component would not be able to make use of the
 interoperability and shareability with other components in a pipeline.
-Furthermore, the payload of artifacts must be compatible with the way metadata
-(via properties of artifacts) defines, which allows components to properly
-consume artifacts.
 
 We anticipate that
 [standard_artifacts.py](https://github.com/tensorflow/tfx/blob/0.14.0/tfx/types/standard_artifacts.py)
 will serve as the catalog of known artifact types. We also anticipate that this
 catalog might evolve with more properties of a type, or more types themselves.
+
+### Interoperability of Artifact Payload
+
+In order for a custom component to be interoperable with other parts of the
+TFX system, the payload of artifacts must be compatible with the way metadata
+(via properties of artifacts) defines, which allows downstream components to
+properly consume artifacts. In fact, in TFX 0.14.0, there is implicit assumption
+on payload of artifacts. For example, payload of *Model* artifact is always
+TensorFlow SavedModel with a certain signatures that downstream component,
+such as Pusher (and the serving system it pushed to), can consume. Likewise,
+payload of *Example* artifact is GZipped tensorflow.Example TFRecord.
+
+Any custom componenent, regardless of the proposed container-based component
+or [Python class](https://www.tensorflow.org/tfx/guide/custom_component),
+implementation, mismatch in assumed payload would cause runtime error.
+This is analogous to the fact that Pandas [`DataFrame.to_csv()`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html)
+and subsequent [`read_csv()`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html) must implement the same format options
+(such as delimiter, quote, header).
+
+We believe that best-possible way handle such ambiguity is to enforce project-internal consistency within user projects by convention on artifact
+properties. This approach will retain capability to implement a logic in
+custom components to enforce payload compatibility between components at
+DAG complination time. Once this has proven sufficiently generally useful,
+some of such convention would be admitted to the central artifact type/property repository as mentioned in the previous section, and compile time payload compatibility check logic would be admitted to the TFX's core library.
