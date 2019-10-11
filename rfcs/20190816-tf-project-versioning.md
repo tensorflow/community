@@ -36,3 +36,9 @@ by the use of dependencies in `pip`, or whichever package manager is being used 
 
 Within the constraints of semantic versioning, project maintainers should feel free to do
 whatever is best for their projects and users.
+
+## Review Feedback
+
+Included as advisory but not binding.
+
+* Jason Zaman: It might be a good idea to also mention stability guarantees, and things that are excluded from them. eg TensorFlow itself says anything that's `tf.foo.experimental.bar` is not stable and is allowed to change at anytime, and other projects should think about having a similar mechanism if needed.
