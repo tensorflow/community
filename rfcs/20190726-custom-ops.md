@@ -1,6 +1,6 @@
 # Best practices for custom operations in TensorFlow
 
-| Status        | Proposed                                          |
+| Status        | Accepted                                          |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Alexandre Passos (apassos@google.com |
 | **Sponsor** | Karmel Allison (karmel@google.com) |
