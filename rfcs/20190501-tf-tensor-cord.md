@@ -1,6 +1,6 @@
 # TensorCord Variant Object
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Eugene Brevdo (ebrevdo@google.com) |
 | **Sponsor**   | Alex Passos (apassos@google.com)                 |
