@@ -103,7 +103,7 @@ Yes. Use tf.disable_eager_execution() or tf.compat.v1.disable_eager_execution().
 
 **Where can I find a style guide for TensorFlow 2.0?**
 
-There are multiple changes in TensorFlow 2.0 to help support end-user productivity. For a style guide including best practices for API clean-up, @tf.function, see [Effective TF 2.0 Style Guide](https://github.com/tensorflow/docs/blob/master/site/en/r2/guide/effective_tf2.md) and this accompanying [blog post](https://medium.com/tensorflow/effective-tensorflow-2-0-best-practices-and-whats-changed-a0ca48767aff).
+There are multiple changes in TensorFlow 2.0 to help support end-user productivity. For a style guide including best practices for API clean-up, @tf.function, see [Effective TF 2.0 Style Guide](https://www.tensorflow.org/beta/guide/effective_tf2) and this accompanying [blog post](https://medium.com/tensorflow/effective-tensorflow-2-0-best-practices-and-whats-changed-a0ca48767aff).
 
 **Where can I find a mapping of all API symbols in TensorFlow 1.x to their equivalents in TF 2.0, TensorFlow Probability, addons, etc.?**
 
@@ -122,11 +122,11 @@ An upgrade utility called tf_upgrade_v2 is included with every install of Tensor
 
 **How do I convert my code from tf.Session, tf.cond, etc., to @tf.function?**
 
-See [Effective TF 2.0 Style Guide](https://github.com/tensorflow/docs/blob/master/site/en/r2/guide/effective_tf2.md).
+See [Effective TF 2.0 Style Guide](https://www.tensorflow.org/beta/guide/effective_tf2).
 
 **Where can I find a list of all of the changes in TensorFlow 2.0?**
 
-You can find the API symbol 1:1 map [here](https://docs.google.com/spreadsheets/d/1FLFJLzg7WNP6JHODX5q8BDgptKafq_slHpnHVbJIteQ/edit#gid=0), RFCs on Github, and the [Effective TF 2.0 Style Guide](https://github.com/tensorflow/docs/blob/master/site/en/r2/guide/effective_tf2.md).
+You can find the API symbol 1:1 map [here](https://docs.google.com/spreadsheets/d/1FLFJLzg7WNP6JHODX5q8BDgptKafq_slHpnHVbJIteQ/edit#gid=0), RFCs on Github, and the [Effective TF 2.0 Style Guide](https://www.tensorflow.org/beta/guide/effective_tf2).
 
 **How long will TensorFlow 1.x be supported?**
 
@@ -231,7 +231,7 @@ The original TensorFlow API’s approach to variables had many drawbacks. As det
 
 **What’s the deal with collections?**
 
-Global collections have been removed in TensorFlow 2.0, in favor of variable garbage collecting. For more on variables in TF 2.0, and how they’ve changed since TF 1.x, please refer to the [Effective TF 2.0 Style Guide](https://github.com/tensorflow/docs/blob/master/site/en/r2/guide/effective_tf2.md).
+Global collections have been removed in TensorFlow 2.0, in favor of variable garbage collecting. For more on variables in TF 2.0, and how they’ve changed since TF 1.x, please refer to the [Effective TF 2.0 Style Guide](https://www.tensorflow.org/beta/guide/effective_tf2).
 
 **I use PyTorch, but would like to try TF 2.0. Is there a migration guide?**
 
