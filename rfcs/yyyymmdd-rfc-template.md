@@ -2,6 +2,7 @@
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)       |
 :-------------- |:---------------------------------------------------- |
+| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
 | **Author(s)** | My Name (me@example.org), AN Other (you@example.org) |
 | **Sponsor**   | A N Expert (whomever@tensorflow.org)                 |
 | **Updated**   | YYYY-MM-DD                                           |
@@ -19,6 +20,11 @@ to show how this design addresses the problem?
 
 Which users are affected by the problem? Why is it a problem? What data supports
 this? What related work exists?
+
+## User Benefit
+
+How will users (or other contributors) benefit from this work? What would be the
+headline in the release notes or blog post?
 
 ## Design Proposal
 

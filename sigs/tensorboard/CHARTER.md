@@ -6,7 +6,7 @@ For discussion and collaboration around TensorBoard, the visualization tool for 
 
 ## Membership
 
-Everyone interested in developing TensorBoard is welcome to join the group. To participate, request an invitation join the mailing list.
+Everyone interested in developing TensorBoard is welcome to join the group. To participate, request an invitation to join the mailing list.
 
 Archives of the mailing list will be publicly accessible.
 

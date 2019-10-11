@@ -286,7 +286,7 @@ It also has few differences from the original LSTM/GRU implementation:
 incompatible with the standard LSTM/GRU. There are internal effort to convert the weights between 
 a CuDNN implementation and normal TF implementation. See CudnnLSTMSaveable.
 1. CuDNN does not support variational recurrent dropout, which is a quite important feature.
-1. CuDNN implementation only support TAN activation which is also the default implementation in the 
+1. CuDNN implementation only support TANH activation which is also the default implementation in the 
 LSTM paper. The Keras one support more activation choices if user don't want the default behavior.
 
 With that, it means when users specify their LSTM/GRU layer, the underlying implementation could be 
