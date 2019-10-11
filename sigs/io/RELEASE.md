@@ -1,6 +1,6 @@
 # SIG IO Releases
 
-At the moment SIG IO Releases consist of two parts:
+At the moment SIG IO Releases consist of three parts:
 - Release of source code with versioning in GitHub
 - Release of python package in PyPI
 - Release of R package to CRAN
@@ -13,23 +13,33 @@ To perform a release in GitHub, the following steps are needed:
   * Add updates for new features, enhancements, bug fixes
   * Add contributors using `git shortlog <last-version>..HEAD -s`
 - Merge the PR for RELEASE.md update
+- Release PyPI Python Package (see below)
+- Release CRAN R Package (see below)
 - Create a new version through GitHub
 
 ## PyPI Python Package Release
 
-To perform a release in PyPI, first complete the above GitHub release, then
-build pip packages locally with docker in the following commands
-```
-$ docker run -it -e BAZEL_VERSION=0.20.0 --rm -v ${PWD}:/working_dir \
-    -w /working_dir  tensorflow/tensorflow:custom-op \
-    bash -x /working_dir/.travis/python.release.sh <2.7|3.4|3.5|3.6>
-```
-Note the above commands has to run four times with 2.7, 3.4, 3.5, 3.6
-to generate all pip packages for different python versions.
+At the moment Python package (whl files) is created automatically,
+upon each successful Travis CI on master branch. At the end of
+each Travis CI build on master branch, all whl files
+(2.7, 3.4, 3.5, 3.6, 3.7 on Linux and 2.7 on macOS) are pushed to
+Dropbox and are available in:
 
-Then upload `artifacts/*.whl` files with:
+https://www.dropbox.com/sh/dg0npidir5v1xki/AACor-91kbJh1ScqAdYpxdEca?dl=0
+
+To perform a release in PyPI, first make sure the binary whl files
+are the correct one from corresponding Travis CI build number.
+This could be verified by checking the Travis CI history where at
+the end of the log, the sha256 of all whl files are calculated and displayed.
+The sha256 of each file displayed on Travis CI log should match the sha256
+of the files downloaded from Dropbox.
+
+Once sha256 are verified against every whl files on Dropbox, perform
+a sanity check, then upload all of the whl files
+(2.7, 3.4, 3.5, 3.6, 3.7 on Linux and 2.7 on macOS) to PyPI.org:
+
 ```
-twine upload artifacts/*
+twine upload *.whl
 ```
 
 ## CRAN R Package Release
