@@ -104,7 +104,7 @@ Architecture that allows local container execution.
 
 Architecture that allows Kubernetes container execution.
 
-![TFX Kubernetes container execution](20190829-tfx-container-component-execution/tfx-Kubernetes-container-execution.png)
+![TFX Kubernetes container execution](20190829-tfx-container-component-execution/tfx-k8s-container-execution.png)
 
 Class diagram that allows container execution
 
