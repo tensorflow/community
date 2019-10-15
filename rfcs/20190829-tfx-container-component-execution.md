@@ -12,7 +12,7 @@ This RFC proposes an orchestrator agnostic way to reliably execute a user’s
 container in the TFX pipeline. The proposal can support:
 
 *   Running an arbitrary container in either a local Docker environment or a remote
-    k8s cluster.
+    Kubernetes cluster.
 *   Passing data into the container
 *   Passing output data from the container
 *   Capturing logs from the container
@@ -21,9 +21,9 @@ container in the TFX pipeline. The proposal can support:
 
 ## Motivation
 
-Currently, in a TFX pipeline, there is no way to execute a generic container as
-one of its steps. Without this feature, users cannot bring their own containers
-into the pipeline. This blocks following use cases:
+Currently, the execution of a generic container as a step in a TFX pipeline is 
+not supported. Without this feature, users cannot bring their own containers
+into the pipeline. This blocks the following use cases:
 
 *   User already has a docker image and wants to run the image as one of the
     steps in a TFX pipeline.
@@ -42,7 +42,7 @@ The execution may occurs in local Docker container or in a remote Kubernetes clu
 
 Today, KFP’s ContainerOp leverages
 [Argo container template API](https://github.com/argoproj/argo/blob/master/pkg/apis/workflow/v1alpha1/workflow_types.go)
-to launch user’s container in a k8s pod. Argo, as the orchestrator, controls when
+to launch user’s container in a Kubernetes pod. Argo, as the orchestrator, controls when
 to launch the POD and it uses a sidecar container to report output files back
 and wait for user’s container to complete. We are not proposing to use Argo API
 because of the following reasons:
@@ -55,9 +55,9 @@ because of the following reasons:
 *   Argo doesn’t provide an easy way to recover from user’s transient errors,
     which is critical in production workload.
 
-#### Airflow k8s pod operator
+#### Airflow Kubernetes pod operator
 
-Airflow supports launching a k8s pod by an
+Airflow supports launching a Kubernetes pod by an
 [operator](https://github.com/apache/airflow/blob/master/airflow/contrib/operators/kubernetes_pod_operator.py).
 This approach is closer to what we are proposing in the document. However, we
 cannot directly use the operator because:
@@ -76,12 +76,11 @@ cannot directly use the operator because:
 
 ### TLDR
 
-We propose to solve the above problems by the following design.
+We propose to solve the above problems with the following design:
 
-*   Define container as an executor spec.
-*   Launch container by component launcher in either local docker or k8s pod.
-*   Use platform config to specify platform specific settings like k8s pod
-    config.
+*   Define a container as an executor spec.
+*   Launch a container via a component launcher in either a local docker or Kubernetes pod.
+*   Use a platform config to specify a platform-specific settings config.
 
 The proposed solution has the following parts:
 
@@ -92,9 +91,9 @@ The proposed solution has the following parts:
     *   `DockerComponentLauncher` which launches `ExecutorContainerSpec` in
         a Docker environment.
     *   `KubernetesPodComponentLauncher` which launches `ExecutorContainerSpec`
-        in a k8s environment.
+        in a Kubernetes environment.
 *   Extensible `PlatformConfig` framework.
-    *   `KubernetesPodPlatformConfig` to support k8s pod spec as a config.
+    *   `KubernetesPodPlatformConfig` to support Kubernetes pod spec as a config.
     *   `DockerPlatformConfig` to support docker run configs.
 
 ### Architecture
@@ -105,7 +104,7 @@ Architecture that allows local container execution.
 
 Architecture that allows Kubernetes container execution.
 
-![TFX k8s container execution](20190829-tfx-container-component-execution/tfx-k8s-container-execution.png)
+![TFX Kubernetes container execution](20190829-tfx-container-component-execution/tfx-Kubernetes-container-execution.png)
 
 Class diagram that allows container execution
 
@@ -114,8 +113,7 @@ Class diagram that allows container execution
 ### Python DSL experience
 
 In order to use container base component in TFX DSL, user needs follow these
-steps. Step 1 and Step 2 follow the DSL extension proposed by the other RFC
-(https://github.com/tensorflow/community/pull/146).
+steps. Step 1 and Step 2 follow the DSL extension proposed by [TFX Generic Container-based Component](https://github.com/tensorflow/community/pull/146).
 
 #### Step 1: Define the container based component by `ExecutorContainerSpec`
 
@@ -169,7 +167,7 @@ _ = BeamRunner(platform_configs={
 }).run(create_pipeline())
 ```
 
-#### Step 3(b): Set k8s platform config via runner’s config
+#### Step 3(b): Set Kubernetes platform config via runner’s config
 
 ```python
 _ = KubeflowDagRunner(platform_configs={
@@ -199,7 +197,7 @@ different target platforms. For example:
     process.
 *   `DockerComponentLauncher` can launch a container executor in a Docker
     environment.
-*   `KubernetesPodComponentLauncher` can launch a container executor in a k8s
+*   `KubernetesPodComponentLauncher` can launch a container executor in a Kubernetes
     environment.
 *   A Dataflow launcher can launch a beam executor in Dataflow service.
 
@@ -274,7 +272,7 @@ class KubernetesPodComponentLauncher(BaseComponentLauncher):
                    input_dict: Dict[Text, List[types.Artifact]],
                    output_dict: Dict[Text, List[types.Artifact]],
                    exec_properties: Dict[Text, Any]) -> None:
-    # k8s pod launcher implementation
+    # Kubernetes pod launcher implementation
     …
 ```
 
@@ -467,7 +465,7 @@ definitions:
 ```
 
 The output.json file is optional, but if the user’s container writes to the file. It
-overrides the default handling of the k8s pod launcher. The output fields are:
+overrides the default handling of the Kubernetes pod launcher. The output fields are:
 
 *   error_status: tells the executor whether it should retry or fail
 *   outputs and exec_properties: used to override the execution and
@@ -478,35 +476,35 @@ MLMD from executor.
 
 ### Auth context resolution
 
-The k8s pod launcher internally uses the k8s Python client. The auth context resolution
+The Kubernetes pod launcher internally uses the Kubernetes Python client. The auth context resolution
 logic is as follows:
 
 1.  If the current env is in a cluster, use `load_incluster_config` to load k8s
     context.
-1.  If not, use default k8s active context to connect to remote cluster.
+1.  If not, use default Kubernetes active context to connect to remote cluster.
 
 ### Pod launcher resiliency
 
 In this design section, we focused more on the launcher resiliency under
 `KubeflowDAGRunner`. In `AirflowDAGRunner`, the launcher code is running in the
-same process of Airflow orchestrator which we rely on Airflow to ensure its
-resiliency. `BeamDAGRunner`, however, is considered mainly for local testing
+same process of Airflow orchestrator, and we rely on Airflow to ensure the 
+resiliency of the process.  `BeamDAGRunner`, however, is considered mainly for local testing
 purpose and we won't add support for it to be resilient.
 
 In `KubeflowDAGRunner`, a pipeline step will create two pods in order to execute
 user’s container:
 
-*   A launcher pod which contains the driver, k8s pod launcher, and publisher code.
+*   A launcher pod which contains the driver, Kubernetes pod launcher, and publisher code.
 *   A user pod with user’s container.
 
-A pod in k8s is not resilient by itself. We will use Argo’s retry feature to make
+A pod in Kubernetes is not resilient by itself. We will use Argo’s retry feature to make
 the launcher pod partially resilient. The details are as follows:
 
 *   Each Argo launcher step will be configured with a default retry count.
 *   Argo will retry the step in case of failure, no matter what type of error.
 *   The launcher container will create a tmp workdir in `pipeline_root`.
 *   It will keep intermediate results (for example, the ID of the created pod) in the tmp workdir.
-*   The k8s pod launcher will be implemented in a way that it will resume the
+*   The Kubernetes pod launcher will be implemented in a way that it will resume the
     operation based on the intermediate results in the tmp workdir.
 *   The launcher will also record a permanent failure data in the tmp workdir so
     it won’t resume the operation in case of non-retriable failures.
@@ -514,19 +512,19 @@ the launcher pod partially resilient. The details are as follows:
 ### Default retry strategy
 
 K8s pod launcher supports exponential backoff retry. This strategy applies to
-all runners which can support k8s pod launcher. Docker launchers are not in the
+all runners which can support Kubernetes pod launcher. Docker launchers are not in the
 scope of the design as it is mainly for local development use case.
 
 The retry only happens if the error is retriable. An error is retriable only
 when:
 
-*   It’s a transient error code from k8s pod API.
-*   The output.json file from artifact store indicates it’s a retriable error.
-*   The pod get deleted (For example: GKE preemptible pod feature).
+*   It’s a transient error code from Kubernetes pod API.
+*   Or, the output.json file from artifact store indicates it’s a retriable error.
+*   Or, the pod get deleted (For example: GKE preemptible pod feature).
 
 ### Log streaming
 
-The container launcher streams the log from user’s docker container or k8s pod through the
+The container launcher streams the log from user’s docker container or Kubernetes pod through the
 API. It will start a thread which constantly pulls new logs and outputs them to
 local stdout.
 
@@ -541,7 +539,7 @@ How the container launcher handles cancellation request varies by orchestrators:
     to work. We will use the same process to propagate cancellation requests to
     user’s container.
 
-In order to allow the user to specify the cancellation command line entrypoint, the k8s
+In order to allow the user to specify the cancellation command line entrypoint, the Kubernetes
 pod launcher will support an optional parameter called `cancellation_command`
 from `ExecutorContainerSpec`.
 
@@ -549,5 +547,5 @@ from `ExecutorContainerSpec`.
 
 *   In the Argo runner, each step requires 2 pods with total 3 containers (launcher
     main container + launcher argo wait container + user main container) to run.
-    Although each launcher container requires minimal k8s resources,
+    Although each launcher container requires minimal Kubernetes resources,
     resource usage is still a concern.
