@@ -7,7 +7,6 @@ SIG Addons release process consists of the folowing steps:
 	* Freeze the tensorflow version in
       - [setup.py](https://github.com/tensorflow/addons/blob/master/setup.py)
       - [requirements.txt](https://github.com/tensorflow/addons/blob/master/build_deps/requirements.txt)
-      - [requirements_gpu.txt](https://github.com/tensorflow/addons/blob/master/build_deps/requirements_gpu.txt)
 	* Remove `--nightly` flag from [release scripts](https://github.com/tensorflow/addons/tree/master/tools/ci_build/builds)
 	* Compile the docs: [instructions](https://github.com/tensorflow/addons/tree/master/tools/docs)
 3. Trigger [Travis build](https://travis-ci.org/tensorflow/addons)
