@@ -3,13 +3,13 @@
 | Status        | (Proposed)       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
-| **Author(s)** | eoldridge@nvidia.com, AN Other (you@example.org) |
+| **Author(s)** | eoldridge@nvidia.com, @futurely |
 | **Sponsor**   | A N Expert (whomever@tensorflow.org)                 |
 | **Updated**   | 2019-10-16                                           |
 
 ## Objective
 
-This document proposes the adoption of dlpack (https://github.com/dmlc/dlpack) as way of passing tensor data to other frameworks without leaving the GPU and without a copy per [24453](https://github.com/tensorflow/tensorflow/issues/24453).  dlpack is a community effort to define a common tensor data structure that can be shared by different frameworks. dlpack is currently supported by cuPy, cuDF, DGM, TGL, PyTorch, MxNet. 
+This document proposes the adoption of dlpack (https://github.com/dmlc/dlpack) as way of passing tensor data to other frameworks without leaving the GPU and without a copy per [24453](https://github.com/tensorflow/tensorflow/issues/24453).  dlpack is a community effort to define a common tensor data structure that can be shared by different frameworks. dlpack is currently supported by cuPy, cuDF, DGM, TGL, PyTorch, and MxNet. 
 
 The interoperability of dlpack would allow for fast on-GPU communication between TensorFlow and these frameworks opening up a wide range of use cases outlined below.  It would further enable \_\_cuda_array_interface\_\_ interoperability through cuPy/cuDF which support both methods providing a way to transfer data to Numba, PyArrow and other frameworks that have adopted that method, although [a similar request has been made to support that method of interoperability](https://github.com/tensorflow/tensorflow/issues/29039) and ideally both would be supported.
 
@@ -21,10 +21,10 @@ to show how this design addresses the problem?
 Which users are affected by the problem? Why is it a problem? What data supports
 this? What related work exists?
 
-DLPack is a community effort to define a common tensor data structure that can be shared by different frameworks allowing data to be quickly shared often with zero or minimal copy. One of the main bottlenecks when trying to achieve GPU performance when operating across different frameworks is I/O and data formatting.  The transfer of data between GPU and CPU or between formats is costly to the point where many operations become faster to simply run on the CPU because of the additional costs associated with moving/transforming the data.  Even when mechanisms exist to copy data without leaving the GPU, memory constraints limit the application because two copies of the data are required.  By implementing dlpack within TensorFlow there would be a way to transfer data directly between frameworks, enabling the development of a range of applications that weren't previously possible but are currently available in PyTorch and MxNet.
+DLPack is a community effort to define a common tensor data structure that can be shared by different frameworks allowing data to be quickly shared often with zero or minimal copy. One of the main bottlenecks when trying to achieve GPU performance when operating across different frameworks is I/O and data formatting.  The transfer of data between GPU and CPU or between formats is costly to the point where many operations become faster to simply run on the CPU because of the additional costs associated with moving/transforming the data.  Even when mechanisms exist to copy data without leaving the GPU, memory constraints limit the application because two copies of the data are required.  By implementing dlpack within TensorFlow there would be a way to transfer data directly between frameworks, enabling the development of a range of applications that weren't previously possible.
 
 Existing applications that take advantage of dlpack include: (adding my own and those listed in , other contributions needed)
- - Inline on-gpu preprocessing of tabular data using cuDF to prepare it for the model (normalization, categorical encoding, etc) improving preprocessing performance by 10x over pandas and CPU
+ - Inline on-gpu preprocessing of tabular data using cuDF to prepare it for deep learning models (continuous normalization, categorical encoding, etc) improving preprocessing performance by 10x over pandas and CPU
  - Larger than cpu memory dataloader that iterates over parquet files and batch loads tensors, providing a significant speedup over traditional dataloaders for tabular data
  - [End to end acceleration of training on GPU](https://medium.com/rapids-ai/accelerating-deep-learning-recommender-systems-by-15x-using-rapids-fastai-and-pytorch-b50b4d8568d1); 
  - Use of Tensorflow in conjunction with [tvm](https://github.com/dmlc/tvm)
