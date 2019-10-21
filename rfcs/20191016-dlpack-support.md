@@ -29,7 +29,7 @@ Existing applications that take advantage of dlpack include: (adding my own and 
  - [End to end acceleration of training on GPU](https://medium.com/rapids-ai/accelerating-deep-learning-recommender-systems-by-15x-using-rapids-fastai-and-pytorch-b50b4d8568d1); 
  - Use of Tensorflow in conjunction with [tvm](https://github.com/dmlc/tvm); [TF custom op implementation of TVM](https://github.com/tobegit3hub/tftvm)
  - Use of Tensorflow in conjunction with [dgl](https://github.com/dmlc/dgl)
- - Zero copy transfer of data in [DALI](https://github.com/NVIDIA/DALI) reducing memory requirements by half.
+ - Zero copy transfer of data in [DALI](https://github.com/NVIDIA/DALI) reducing memory requirements.
 
 Beyond the benefit of specific applications, Tensorflow's adoption of dlpack would further incentivize other frameworks considering its adoption as all three major DL frameworks would now be supporting it.  Finally, it would also make the development of applications that operate upstream and downstream of deep learning frameworks easier to develop as a single framework agnostic method could be used in conjunction all DL frameworks.  
 
