@@ -4,8 +4,8 @@
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
 | **Author(s)** | eoldridge@nvidia.com, @futurely, @VoVAllen |
-| **Sponsor**   | A N Expert (whomever@tensorflow.org)                 |
-| **Updated**   | 2019-10-16                                           |
+| **Sponsor**   | alexandre.tp@gmail.com                 |
+| **Updated**   | 2019-10-23                                           |
 
 ## Objective
 
@@ -93,6 +93,10 @@ Runtime uses DeviceFactory to CreateDevices. BaseGPUDeviceFactory::CreateGPUDevi
 GpuExecutor::Allocate is a simple wrapper of GpuDriver::DeviceAllocate which utilizes cuMemAlloc.
 
 TensorFlow has added conversion between CPU Tensor and numpy array.
+
+Notes from @alextp:
+
+AFAICT it should be easy to take cuda pointers in and out of TF and use them to build dlpack structures from tensors or vice versa. The tricky part is that TF does not use cudamalloc to allocate memory but its own allocator whose internal state is stored on the CPU and matches the head of TF's compute stream, so we need to sync TF's stream before the memory is usable from dlpack and similarly sync other cuda streams before memory is made usable by TF tensors (and similarly we need to sync the streams when trying to free the buffers).
 
 ## Questions and Discussion Topics
 
