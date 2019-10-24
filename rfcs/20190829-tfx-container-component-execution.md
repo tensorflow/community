@@ -528,24 +528,43 @@ The container launcher streams the log from user’s docker container or Kuberne
 API. It will start a thread which constantly pulls new logs and outputs them to
 local stdout.
 
-### Cancellation
-
-How the container launcher handles cancellation request varies by orchestrators:
-
-*   Airflow natively supports cancellation propagation to operator. We will need
-    to pass the cancellation request from operator into executor.
-*   Argo doesn’t natively support cancellation propagation. Currently KFP relies
-    on Argo’s pod annotation to workaround the limitation and has been proven
-    to work. We will use the same process to propagate cancellation requests to
-    user’s container.
-
-In order to allow the user to specify the cancellation command line entrypoint, the Kubernetes
-pod launcher will support an optional parameter called `cancellation_command`
-from `ExecutorContainerSpec`.
-
-## Open discussions
+## Discussions
 
 *   In the Argo runner, each step requires 2 pods with total 3 containers (launcher
     main container + launcher argo wait container + user main container) to run.
     Although each launcher container requires minimal Kubernetes resources,
     resource usage is still a concern.
+    
+    * With an additional pod, it gives launcher more control over execution and reduce the discrepancy between different orchestrators. We decided to go with the platform launcher approach and the additional container resource can be ignored.
+    
+*   For executor container spec, will environment variables be supported?
+
+    *   It’s not added right now to the container spec. Most things could be passed down using command line and arguments. So there is a workaround right now. Also, environment variables can be platform specific. Kubernetes for example, has certain conventions that don’t apply in other platforms. Hence, this could be part of platform_config instead of spec.
+    
+*   Step 3 indicates we first create a DAG, then use node identity to apply platform configuration. Another possibility is to do it directly during DAG construction. For example, if user goes back and changes the DAG, the platform configuration may stop mapping well, and will need to be revisited by the user. Did we consider the second option?
+
+    *   We don’t want users to add platform configuration at the pipeline level since it won’t be portable. We want the same pipeline to be compatible with local run and say running on k8s. Right now, we’d like to keep the pipeline specification itself clean from platform-specific abstractions.
+    
+ *  The current proposal uses the component name as the key for binding. Different instantiations may have late binding for their names. For example, if I have 3 ExampleGen, should we be binding to the name instead of the type?
+ 
+    *   The names need to be unique else compilation fails. The instance names are actually component id, which is enforced to be unique at compile time.
+    
+ *  How is caching affected by container tags? We should be careful with using container tags, since these are mutable. We should be relying on digest instead. If we cannot safely get digest, we should disable caching so we don’t fail due to the inability to obtain the digest at runtime. E.g. ‘latest’ and ‘nightly’ tags are not good candidates
+ 
+    *   By default, if we provide a tag name, the image will be cached in the cluster. We should log an error if caching requirement cannot be met at runtime. Note that currently, executor code changes don’t affect caching behaviour. We should change the above and ensure caching takes the above into account as well.
+    
+ *  Will we ensure we have adequate test coverage?
+ 
+    *   We will add e2e tests for both Docker container and Kubernetes container launchers. The former using Beam as orchestrator, and the latter using Kubeflow orchestrator.
+    
+    
+ *  What are the major user-facing differences between using TFX DSL with these extensions compared with KFP’s SDK today?
+ 
+    *   here is a difference in how users will specify platform-specific configuration in the pipeline. In KFP’s SDK, the user specifies this in-place when writing the logical pipeline. In TFX DSL, the need to ensure the logical pipeline is portable necessarily means the platform configuration needs to be specified outside the logical pipeline, which may be slightly more cumbersome than the KFP experience today. Note that the separation of configuration sometimes appears in KFP SDK too, when users want to apply global settings.
+    
+ *  We don’t support or provide mechanisms for users to control container lifetime, e.g. container cancellation.
+
+    *   A lot of cancellation operations are best effort anyway. Failures on cancel operations are hard to handle. Users need to understand from the document that we are not aiming to enable such operations.
+    *   If user starts a long-running job from a container, and the pipeline is canceled, users may want the container to receive this message and cancel gracefully.
+    *   Can we guarantee that workflows will not stop until we get confirmation of cancellation of long-running operations?
+    *   This seems difficult, and best effort may be enough, given that this is all Kubernetes itself does today.
