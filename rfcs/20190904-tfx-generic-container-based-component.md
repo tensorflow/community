@@ -1,8 +1,8 @@
 # TFX Generic Container-based Component Proposal
 
-Status        | Proposed
+Status        | Accepted
 :------------ | :-------
-**RFC #**     | https://github.com/tensorflow/community/pull/146
+**RFC #**     | [146](https://github.com/tensorflow/community/pull/146)
 **Author(s)** | Ajay Gopinathan (<a href="mailto:ajaygopinathan@google.com">ajaygopinathan@google.com</a>), Hongye Sun (<a href="mailto:hongyes@google.com">hongyes@google.com</a>), Makoto Uchida (<a href="mailto:muchida@google.com">muchida@google.com</a>)
 **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com)
 **Updated**   | 2019-09-04
