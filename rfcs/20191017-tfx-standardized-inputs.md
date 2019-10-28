@@ -671,8 +671,7 @@ requirements:
 | Lossless encoding (nullity)       | Yes                | No (see remark 1) |
 | Efficient translatable to Tensors | Yes (see remark 2) | Yes               |
 | Efficient slicing, filtering and concatenation | Yes                | No (see remark 3) |
-| Interoperability with the rest of the world | Good through Apache Arrow |
-Needs adaptation (see remark 4) |
+| Interoperability with the rest of the world | Good through Apache Arrow | Needs adaptation (see remark 4) |
 
 Remarks:
 
@@ -687,9 +686,9 @@ Remarks:
         clause) will be added over time.
 4.  We may gain similar interoperability by creating an Arrow to
     StructuredTensor adapter.
-   *    Beyond the technical aspects, we believe by having all the TFX libraries
-        directly adopting a popular OSS in-memory format will send a positive
-        message that TFX is meant to work well with the rest of the world.
+    *    Beyond the technical aspects, we believe by having all the TFX libraries
+         directly adopting a popular OSS in-memory format will send a positive
+         message that TFX is meant to work well with the rest of the world.
 
 ## tf.Data
 
