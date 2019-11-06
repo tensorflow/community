@@ -4,8 +4,8 @@
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
 :               : (update when you have community PR #)                   :
-| **Author(s)** | ylc@google.com, lzr@google.com                          |
-| **Sponsor**   | jhseu@google.com                                        |
+| **Author(s)** | Zhuoran Liu (lzr@google.com), Youlong Cheng (ylc@google.com) |
+| **Sponsor**   | Jonathan Hseu (jhseu@google.com)                        |
 | **Updated**   | 2019-11-06                                              |
 
 ## Objective
