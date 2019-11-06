@@ -32,7 +32,7 @@ Status        | Proposed
 # Motivation
 
 ## Interoperability of TFX libraries
-TFX offers a portfolio of libraries, including 
+TFX offers a portfolio of libraries, including
 [TFT](https://github.com/tensorflow/transform),
 [TFDV](https://github.com/tensorflow/data-validation) and
 [TFMA](https://github.com/tensorflow/model-analysis). These libraries can be
@@ -168,6 +168,13 @@ The in-memory representation should:
 
     This type of workload is also significant in TFX, both in terms of CPU
     cycles and number of examples processed.
+
+    Note that TFX libraries don't always need to run TF graphs. For example,
+    TFDV, despite of its name, only analyzes the training data and (almost) does
+    not call any TF API. Another example, TFMA, will support "blackbox"
+    evaluation where the model being evaluated does not have to be a TF model.
+    Therefore a TF-neutral in-memory representation that works well with plain
+    Python code is desirable.
 
 *   Be interoperable with the rest of the world.
 
@@ -680,7 +687,10 @@ Remarks:
 2.  Only when the backing buffers are aligned correctly. Currently both TF
     and Apache Arrow has 64-byte alignment. And this can be enforced by
     implementing our own Arrow MemoryPool wrapping a TF allocator.
-3.  See the comparison in [this colab notebook](https://colab.sandbox.google.com/drive/1SCQs88J4Tc6HKk2AfpYvELaJDxa4h4IQ).
+    [This colab notebook](https://colab.research.google.com/drive/1bM8gso7c8x4UXx5htDM4N1KUSTuRvIFL)
+    shows that as long as the memory alignment is the same, feeding TF with an
+    Arrow Array has very little overhead.
+3.  See the comparison in [this colab notebook](https://colab.research.google.com/drive/1CvDjZCH3GQE8iojCmRHPuSqLTw8KgNf3).
     *   It’s worth calling out that Arrow is meant to be a data analysis library
         and better data analysis support (for example, support for a “group-by”
         clause) will be added over time.
