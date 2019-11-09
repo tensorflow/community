@@ -46,7 +46,7 @@ Some major differences between CPU and TPU Graph:
     VarHandleOp, and consumed by ReadVariableOp.
 
 Also for reducing the number of TPU compilation, serving platforms(For example,
-Servomatic) prefers batching the inference requests with a few allowed batch
+[TensorFlow Serving](https://www.tensorflow.org/tfx/guide/serving)) prefers batching the inference requests with a few allowed batch
 sizes. This requires wrapping TPUPartitionedCall in another function, and called
 by BatchFunction.
 
