@@ -2,7 +2,7 @@
 
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
+| **RFC #**     | [171](https://github.com/tensorflow/community/pull/171) |
 :               : (update when you have community PR #)                   :
 | **Author(s)** | Zhuoran Liu (lzr@google.com), Youlong Cheng (ylc@google.com) |
 | **Sponsor**   | Jonathan Hseu (jhseu@google.com)                        |
