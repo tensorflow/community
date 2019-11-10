@@ -34,15 +34,44 @@ idea, and list pros/cons to each approach. If there are alternatives that you
 have eliminated, you should also list those here, and explain why you believe
 your chosen approach is superior.
 
-Factors to consider include:
+Make sure you’ve thought through and addressed the following sections (if a section is not relevant to your specific proposal, please explain why).
 
-* performance implications
-* dependencies
-* maintenance
-* platforms and environments impacted (e.g. hardware, cloud, other software
-  ecosystems)
-* [compatibility](https://www.tensorflow.org/programmers_guide/version_compat)
-* how will this change impact users, and how will that be managed?
+### Alternatives Considered
+* Make sure to discuss the relative merits of alternatives to your proposal.
+
+### Performance Implications
+* Do you expect any (speed / memory)? How will you confirm?
+* There should be microbenchmarks. Are there?
+* There should be end-to-end tests and benchmarks. Are there?
+* Assuming there are not (since this is still a design), how will you track that these will be created?
+
+### Dependencies
+* Dependencies: Does this proposal add any new dependencies to TensorFlow?
+* Dependent projects: Are there other areas of TensorFlow or things that use TensorFlow (TFX/pipelines, TensorBoard, etc) that this affects? How have you identified these dependencies and are you sure they are complete? If there are dependencies, how are you managing those changes (who’s doing them and how are you tracking they get done)?
+
+### Engineering Impact
+* Do you expect changes to binary size / startup time / build time / test times?
+* Who will maintain this code? What happens if the people maintaining this code leave the team or Google? Is this code in its own buildable unit? Can this code be tested in its own? Is visibility suitably restricted to only a small API surface for others to use? Is OWNERship suitably restricted?
+
+### Platforms and Environments
+* Platforms: Does this work on all platforms supported by TensorFlow? If not, why is that ok? Will it work on embedded/mobile? Does it impact automatic code generation or mobile stripping tooling? Will it work with transformation tools?
+* Execution environments (CloudML, Cloud TPUs): What impact do you expect and how will you confirm?
+
+### Best Practices, Tutorials and Examples
+* Does this proposal change best practices for some aspect of using/developing TensorFlow? How will these changes be communicated/enforced?
+* If design changes existing API or creates new ones, the design owner should create end-to-end examples (ideally, a tutorial) which reflects how new feature will be used. Some things to consider related to the tutorial:
+    - The minimum requirements for this are to consider how this would be used in a Keras-based workflow, as well as a non-Keras (low-level) workflow. If either isn’t applicable, explain why.
+    - It should show the usage of the new feature in an end to end example (from data reading to serving, if applicable). Many new features have unexpected effects in parts far away from the place of change that can be found by running through an end-to-end example.
+    - This should be written as if it is documentation of the new feature, i.e., consumable by a user, not a TensorFlow developer. The code does not need to work (since feature is not implemented yet).
+
+### Compatibility
+* Does the design conform to the backwards & forwards compatibility [requirements](https://www.tensorflow.org/programmers_guide/version_compat)?
+
+### Third Parties
+* How does this affect 3rd party partners? Do we have to communicate / codesign with major contributors?
+
+### User Impact
+* What are the user-facing changes? How will this feature be rolled out?
 
 ## Detailed Design
 
