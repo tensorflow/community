@@ -1,6 +1,6 @@
 # TensorFlow MLIR Dialects
 
-|Status        | Proposed                                  |
+|Status        | Accepted                                  |
 |:------------ | :-----------------------------------------|
 |**Author(s)** | Mehdi Amini (aminim@google.com)           |
 |              | Tatiana Schpeisman (shpeisman@google.com) |
