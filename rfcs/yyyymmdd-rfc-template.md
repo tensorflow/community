@@ -34,7 +34,8 @@ idea, and list pros/cons to each approach. If there are alternatives that you
 have eliminated, you should also list those here, and explain why you believe
 your chosen approach is superior.
 
-Make sure you’ve thought through and addressed the following sections (if a section is not relevant to your specific proposal, please explain why).
+Make sure you’ve thought through and addressed the following sections. If a section is not relevant to your specific proposal, please explain why, e.g. your RFC addresses a convention or process, not an API.
+
 
 ### Alternatives Considered
 * Make sure to discuss the relative merits of alternatives to your proposal.
@@ -54,7 +55,7 @@ Make sure you’ve thought through and addressed the following sections (if a se
 
 ### Platforms and Environments
 * Platforms: does this work on all platforms supported by TensorFlow? If not, why is that ok? Will it work on embedded/mobile? Does it impact automatic code generation or mobile stripping tooling? Will it work with transformation tools?
-* Execution environments (CloudML, Cloud TPUs): what impact do you expect and how will you confirm?
+* Execution environments (Cloud services, accelerator hardware): what impact do you expect and how will you confirm?
 
 ### Best Practices, Tutorials and Examples
 * Does this proposal change best practices for some aspect of using/developing TensorFlow? How will these changes be communicated/enforced?
@@ -65,6 +66,12 @@ Make sure you’ve thought through and addressed the following sections (if a se
 
 ### Compatibility
 * Does the design conform to the backwards & forwards compatibility [requirements](https://www.tensorflow.org/programmers_guide/version_compat)?
+* How will this proposal interact with other parts of the TensorFlow Ecosystem?
+    - How will it work with TFLite?
+    - How will it work with distribution strategies?
+    - How will it interact with tf.function?
+    - Will this work on GPU/TPU?
+    - How will it serialize to a SavedModel?
 
 ### User Impact
 * What are the user-facing changes? How will this feature be rolled out?
