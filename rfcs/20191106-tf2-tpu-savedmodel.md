@@ -2,10 +2,10 @@
 
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
-| **RFC #**     | [171](https://github.com/tensorflow/community/pull/171) |
+| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
 :               : (update when you have community PR #)                   :
-| **Author(s)** | Zhuoran Liu (lzr@google.com), Youlong Cheng (ylc@google.com) |
-| **Sponsor**   | Jonathan Hseu (jhseu@google.com)                        |
+| **Author(s)** | ylc@google.com, lzr@google.com                          |
+| **Sponsor**   | jhseu@google.com                                        |
 | **Updated**   | 2019-11-06                                              |
 
 ## Objective
@@ -46,16 +46,16 @@ Some major differences between CPU and TPU Graph:
     VarHandleOp, and consumed by ReadVariableOp.
 
 Also for reducing the number of TPU compilation, serving platforms(For example,
-[TensorFlow Serving](https://www.tensorflow.org/tfx/guide/serving)) prefers batching the inference requests with a few allowed batch
+Servomatic) prefers batching the inference requests with a few allowed batch
 sizes. This requires wrapping TPUPartitionedCall in another function, and called
 by BatchFunction.
 
 Below is an intuitive example of how a TPU graph is different from a CPU one:
 
-![Original CPU Graph](20191106-tf2-tpu-savedmodel/cpu_graph.png)
+![Original CPU Graph](https://cs.corp.google.com/codesearch/f/piper///depot/google3/experimental/users/lzr/tf2-tpu-rfcs/tf2-tpu-savedmodel/cpu_graph.png)
 <center>Original CPU Graph.</center>
 
-![TPU Graph](20191106-tf2-tpu-savedmodel/tpu_graph.png)
+![TPU Graph](https://cs.corp.google.com/codesearch/f/piper///depot/google3/experimental/users/lzr/tf2-tpu-rfcs/tf2-tpu-savedmodel/tpu_graph.png)
 <center>TPU Graph.</center>
 
 ### User Control of Device Placement
@@ -66,7 +66,7 @@ for every use case. For example even though dense embedding ops are allowed on
 TPU, serving models might still want to run embedding lookups on CPU because the
 embeddings are too big to fit on TPU.
 
-![Customized Embeddings](20191106-tf2-tpu-savedmodel/customized_embeddings.png)
+![Customized Embeddings](https://cs.corp.google.com/codesearch/f/piper///depot/google3/experimental/users/lzr/tf2-tpu-rfcs/tf2-tpu-savedmodel/customized_embeddings.png)
 <center>Example of user control. In this graph, both ‘custom_embedding’ and
 ‘dense’ can run on TPU. But users want ‘custom_embedding’ to run on CPU for
 whatever reason, e.g. CPU computations can be parallelized, users don’t have
@@ -75,7 +75,8 @@ SavedModel that only ‘dense’ is to run on TPU.</center>
 
 ## User Benefit
 
-Enable TPU Inference.
+<!-- TODO(lzr) How will users (or other contributors) benefit from this work? What would be the
+headline in the release notes or blog post? -->
 
 ## Design Proposal
 
@@ -127,7 +128,7 @@ Users need to do the following things to export a TPU SavedModel in TF2.x:
 
 The resulting TPU inference graph looks like this:
 
-![Resulting TPU Graph](20191106-tf2-tpu-savedmodel/tpu_result.png)
+![Resulting TPU Graph](https://cs.corp.google.com/codesearch/f/piper///depot/google3/experimental/users/lzr/tf2-tpu-rfcs/tf2-tpu-savedmodel/tpu_result.png)
 <center>Resulting TPU Graph.</center>
 
 <b>For Advanced Users who need customized Ops</b>
@@ -331,3 +332,7 @@ def save_model(model,
                         tags,
                         options)
 ```
+
+## Questions and Discussion Topics
+
+<!-- TODO(lzr): Seed this with open questions you require feedback on from the RFC process. -->
