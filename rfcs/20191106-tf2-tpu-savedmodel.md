@@ -231,6 +231,8 @@ def predict_step(image_tensors):
     -   `num_batch_threads`, `max_batch_size`, `batch_timeout_micros`,
         `allowed_batch_sizes`, `max_enqueued_batches`: arguments used to
         configure BatchFunction.
+    -   `preserve_cpu_fn`: boolean. With this set to true, users avoid having to
+        copy-paste the same block of code for CPU inference.
 
 ### Changes to Keras API
 
