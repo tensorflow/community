@@ -1,12 +1,11 @@
 # TPU SavedModel Export API for TF2.x
 
-| Status        | Proposed                                                |
-| :------------ | :------------------------------------------------------ |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
-:               : (update when you have community PR #)                   :
-| **Author(s)** | ylc@google.com, lzr@google.com                          |
-| **Sponsor**   | jhseu@google.com                                        |
-| **Updated**   | 2019-11-06                                              |
+Status        | Proposed
+:------------ | :-----------------------------------------------------------
+**RFC #**     | [171](https://github.com/tensorflow/community/pull/171)
+**Author(s)** | Zhuoran Liu (lzr@google.com), Youlong Cheng (ylc@google.com)
+**Sponsor**   | Jonathan Hseu (jhseu@google.com)
+**Updated**   | 2019-11-06
 
 ## Objective
 
@@ -20,6 +19,46 @@ inference</b>, which:
 
 ## Motivation
 
+### TPU Serving Requirement
+
+Serving a model on TPU is not as straightforward as serving on CPU and GPU,
+because TPU serving has special requirements, listed as follows:
+
++   Contract between TensorFlow graph and TF2XLA Bridge. The new bridge will
+    still respect this contract. The information of “which part of computation
+    should run on TPU” is conveyed from Graph to Bridge by tagging a special
+    Node attribute `_tpu_replicate`. Because of this, we need to provide
+    information during Function object instantiation in order for this attribute
+    to be correctly attached to Nodes during Graph building;
+
++   Multi-core TPU serving. TPU has various deployment configurations, for
+    example 1x1 Dragonfish chip has 2 cores, 2x2 Dragonfish chip has 8 cores.
+    The exported saved model should be able to run on different configurations
+    and can leverage all the TPU cores.
+
+    -   When users write their model code, they likely don’t have information
+        about how many TPU they have for serving / which core they can use.
+        Therefore we need a Graph level abstraction to express graph
+        partitioning information. tf.device() cannot serve this purpose, because
+        it requires users to have knowledge about the physical device they have
+        during serving;
+    -   To make efficient usage of multicore TPUs, we need to encapsulate TPU
+        computations as FunctionDef, and construct TPUPartitionedCall /
+        TPUOrdinalSelector to perform round-robin core selection;
+
++   Tagging system of SavedModel. Users rely on a tagging system to load their
+    models for serving. E.g. CPU MetaGraphs have one tag ‘serve’, while TPU
+    MetaGraphs have two tags ‘serve’ and ‘tpu’. Only with correct tags can
+    SavedModels be loaded correctly.
+
+Below is an intuitive example of how a TPU graph is different from a CPU one:
+
+![Original CPU Graph](20191106-tf2-tpu-savedmodel/cpu_graph.png)
+<center>Original CPU Graph.</center>
+
+![TPU Graph](20191106-tf2-tpu-savedmodel/tpu_graph.png)
+<center>TPU Graph.</center>
+
 ### Limitation of current `tf.saved_model.save()`
 
 MetaGraphDef allows saving customized tags. Current downstream components like
@@ -27,36 +66,6 @@ TPU model-server, TFX infra-validator use the tags to load the specific
 MetaGraph. However tf.saved_model.save() does not allow users to specify the set
 of tags in MetaGraphDef, but hard-coded the MetaGraph to have only one ‘serve’
 tag.
-
-### Special Logic in TPU Inference Graph
-
-Under the status quo, TPU computations have to be represented by a drastically
-different graph from CPU. Inference-specific requirements (e.g. batching /
-core-selection) also adds another layer of complexity.
-
-Some major differences between CPU and TPU Graph:
-
-+   As a protocol between TensorFlow Graph and TF2XLA, TPU device placement of a
-    Node is done by attaching `_tpu_replicate` attribute;
-+   For multicore efficiency, TPU computations have to be encapsulated as a
-    function and saved in FunctionLibrary, and will be called by
-    TPUPartitionedCall. A TPUOrdinalSelector node has to be connected to
-    TPUPartitionedCall to do efficient round-robin core selection;
-+   Variable nodes have to be lifted from TPU functions, rewritten as
-    VarHandleOp, and consumed by ReadVariableOp.
-
-Also for reducing the number of TPU compilation, serving platforms(For example,
-Servomatic) prefers batching the inference requests with a few allowed batch
-sizes. This requires wrapping TPUPartitionedCall in another function, and called
-by BatchFunction.
-
-Below is an intuitive example of how a TPU graph is different from a CPU one:
-
-![Original CPU Graph](https://cs.corp.google.com/codesearch/f/piper///depot/google3/experimental/users/lzr/tf2-tpu-rfcs/tf2-tpu-savedmodel/cpu_graph.png)
-<center>Original CPU Graph.</center>
-
-![TPU Graph](https://cs.corp.google.com/codesearch/f/piper///depot/google3/experimental/users/lzr/tf2-tpu-rfcs/tf2-tpu-savedmodel/tpu_graph.png)
-<center>TPU Graph.</center>
 
 ### User Control of Device Placement
 
@@ -66,33 +75,35 @@ for every use case. For example even though dense embedding ops are allowed on
 TPU, serving models might still want to run embedding lookups on CPU because the
 embeddings are too big to fit on TPU.
 
-![Customized Embeddings](https://cs.corp.google.com/codesearch/f/piper///depot/google3/experimental/users/lzr/tf2-tpu-rfcs/tf2-tpu-savedmodel/customized_embeddings.png)
+![Customized Embeddings](20191106-tf2-tpu-savedmodel/customized_embeddings.png)
 <center>Example of user control. In this graph, both ‘custom_embedding’ and
 ‘dense’ can run on TPU. But users want ‘custom_embedding’ to run on CPU for
 whatever reason, e.g. CPU computations can be parallelized, users don’t have
 enough TPU resources, etc. In this case, there has to be a way for them to tell
 SavedModel that only ‘dense’ is to run on TPU.</center>
 
-## User Benefit
-
-<!-- TODO(lzr) How will users (or other contributors) benefit from this work? What would be the
-headline in the release notes or blog post? -->
-
 ## Design Proposal
+
+### Caveat
+
+`@tf.tpu.function` should only be used for serving. It should never appear in
+training code.
 
 ### User Facing API
 
 <b>For General TF2 Users</b>
 
-Users need to do the following things to export a TPU SavedModel in TF2.x:
+Under the proposed design, users will need to do the following things to export
+a TPU SavedModel in TF2.x:
 
 1.  Replace @tf.function with @tf.tpu.function for functions they wish to run on
     TPU;
 
     ```python
+    # `model` can be any Python Callable. E.g. A Keras Model.
     @tf.tpu.function
-    def predict_step(images):
-      ...
+    def predict_step(image_tensors):
+      return model(image_tensors)
     ```
 
 2.  Create main serving function and call the tpu function above. The main
@@ -128,7 +139,7 @@ Users need to do the following things to export a TPU SavedModel in TF2.x:
 
 The resulting TPU inference graph looks like this:
 
-![Resulting TPU Graph](https://cs.corp.google.com/codesearch/f/piper///depot/google3/experimental/users/lzr/tf2-tpu-rfcs/tf2-tpu-savedmodel/tpu_result.png)
+![Resulting TPU Graph](20191106-tf2-tpu-savedmodel/tpu_result.png)
 <center>Resulting TPU Graph.</center>
 
 <b>For Advanced Users who need customized Ops</b>
@@ -144,30 +155,35 @@ In such cases, we provide the flexibility for users to tweak `@tf.tpu.function`.
       ...
     ```
 
-2.  Users can nest TPU functions within BatchFunction:
+2.  Users can also nest TPU functions within BatchFunction:
 
     ```python
-    @batch_ops.nondifferentiable_batch_function
-    @tf.tpu.function
+    @tf.tpu.function(use_batch_function=True,
+                     # Below arguments for BatchFunction
+                     # are optional
+                     max_batch_size=...,
+                     allowed_batch_sizes=...
+                     ...)
     def predict_step(images):
       ...
     ```
 
-3.  User can also use their customized PartitionedCallOp:
+3.  User can also customize their TPUPartitionedCallOp:
 
     ```python
-    @batch_ops.nondifferentiable_batch_function
-    @my_partitioned_call_op_constructor
-    @tf.tpu.function(use_tpu_partitioned_call=False)
+    @tf.tpu.function(use_tpu_partitioned_call=True,
+                     device_ordinal=0)
     def predict_step(images):
       ...
     ```
 
 <b>For Keras Users</b>
 
-Keras users only need to pass `export_to_tpu=True` to save to TPU SavedModel.
-(Currently, we require the Keras model being saved to be completely
-TPU-compatible.)
+Option 1:
+
+Introduce argument `export_to_tpu`. For Keras users, they will only need to pass
+`export_to_tpu=True` to save to TPU SavedModel. (Currently, we require the graph
+defined by `model` to be completely TPU-compatible.)
 
 ```python
 tf.keras.models.save_model(
@@ -176,31 +192,51 @@ tf.keras.models.save_model(
     export_to_tpu=True)
 ```
 
+Option 2:
+
+Keep tf.keras.models.save_model() unchanged. Users use a keras model as if they
+were using a TF2 Function.
+
+```python
+# isinstance(model, (tf.keras.Model, tf.keras.layers.Layer)) == True
+@tf.tpu.function
+def predict_step(image_tensors):
+  return model(image_tensors)
+```
+
 ### Changes to TF2.x API
 
-1.  In addition to taking the keyword argument `signatures`,
-    tf.saved_model.save() will take an optional argument `tags`.
+1.  `tf.saved_model.save()` will take an optional argument `tags`.
 
-    Originally, concrete functions specified by `signatures` will be saved in
-    one MetaGraph, which has ‘serve’ tag hard-coded.
-
-    `tags` is an optional argument. It is a Python iterable, representing the
-    list of tags for MetaGraph. This allows user to specify customized tags.
+    `tags` is an optional argument which represents a list of tags. This allows
+    users to specify customized tags. For example, Servomatic or model server
+    requires both ‘tpu’ and ‘serve’ tags to load TPU saved model.
 
 2.  Implement an additional `@tf.tpu.function` decorator in
     `tensorflow/python/tpu/tpu.py`. This decorator handles TPU rewriting under
     the hood.
 
-3.  An additional `use_tpu_partitioned_call` keyword argument for
-    `def_function.function()` and `Function.__init__()`. This argument will be
-    passed through to the place where PartitionedCallOp is created. Originally
-    all stateful functions will generate StatefulPartitionedCallOp. Now we
-    switch to TPUPartitionedCallOp, and this routing is done by checking the
-    value of `use_tpu_partitioned_call`.
+    `tf.tpu.function()` takes the following optional arguments:
+
+    -   `func`: A Python function. If not set, will return a wrapper that takes
+        a Python function. This allows @tf.tpu.function to be called w/ or w/o
+        arguments;
+    -   `use_tpu_partitioned_call`: boolean. Controls whether TPUPartitionedCall
+        will be used;
+    -   `device_ordinal`: Used in conjunction with `use_tpu_partitioned_call`. A
+        tensor or a TF Function object that returns a tensor, designating the
+        device ordinal. Default to tpu_ordinal_selector();
+    -   `use_batch_function`: boolean. Controls whether BatchFunction will be
+        used;
+    -   `num_batch_threads`, `max_batch_size`, `batch_timeout_micros`,
+        `allowed_batch_sizes`, `max_enqueued_batches`: arguments used to
+        configure BatchFunction.
 
 ### Changes to Keras API
 
-Keras users would like `tf.keras.models.save_model()` to work directly for
+<b>Option 1</b>
+
+If Keras users would like `tf.keras.models.save_model()` to work directly for
 exporting TPU SavedModel, without having knowledge of tf.function / tags /
 signatures. The only way to achieve this is to hide those logics under
 `tf.keras.models.save_model()`.
@@ -209,9 +245,14 @@ After the change, `tf.keras.models.save_model()` will have two additional
 arguments:
 
 1.  `export_to_tpu`: Simply setting this to `True` will export TPU model;
-2.  `tags_signatures`: Optionally for advanced users, if they want to have more
-    control of what tags / signatures they are using, they can use this argument
-    as if they are using TF2.x saving API.
+2.  `tags`: Optionally for advanced users, if they want to have more control of
+    what tags they are using, they can use this argument as if they are using
+    TF2.x saving API.
+
+<b>Option 2</b>
+
+No change. Users can save a keras model for TPU inference with
+tf.saved_model.save().
 
 ## Detailed Design
 
@@ -220,69 +261,51 @@ arguments:
 Under the hood, exporter API is doing the following things:
 
 +   The @tf.tpu.function wraps user-specified function;
-+   `use_tpu_partitioned_call` as an attribute in Function class is controlling
-    whether TPUPartitionedCall is generated instead of StatefulPartitionedCall;
 +   Tag the MetaGraph with user-defined tags.
 
 <b>Step 1:</b> Use a new decorator to wrap TPU version of the user-specified TPU
 function. It calls tpu.rewrite inside the original function to generate a TPU
 version of graph. By default, this will create a tpu function. If users wish to
-preserve both CPU and TPU function, they can set `preserve_cpu_fn=True`.
+preserve both CPU and TPU function, they can set ‘preserve_cpu_fn=True’.
+Optionally, they can use `use_tpu_partitioned_call` and `use_batch_function` to
+customize the Function object they get.
 
 ```python
 # tensorflow/python/tpu/tpu.py
 
-FunctionCollection = namedtuple('FunctionCollection', ['tpu_fn', 'cpu_fn'])
+def _tpu_partitioned_call_wrapper(tf_func, device_ordinal):
+  ...
+
+def _batch_function_wrapper(tf_func,
+                            num_batch_threads,
+                            max_batch_size,
+                            batch_timeout_micros,
+                            allowed_batch_sizes,
+                            max_enqueued_batches):
+  ...
 
 def _rewrite_func_wrapper(func):
-  def tpu_fn(*x):
-    return rewrite(func, x)
-  return tpu_fn
+  ...
 
 @tf_export("tpu.function")
 def tpu_function(func=None, *args, **kwargs):
-  """Compiles a TPU function into a callable TensorFlow graph."""
-  def inner_func(func):
-    preserve_cpu_fn = False
-    if 'preserve_cpu_fn' in kwargs:
-      preserve_cpu_fn = kwargs['preserve_cpu_fn']
-      del kwargs['preserve_cpu_fn']
-
-    if preserve_cpu_fn:
-      cpu_fn = def_function.function(func, *args, **kwargs)
-
-    kwargs.update({'use_tpu_partitioned_call': True})
+    ...
     tpu_func = _rewrite_func_wrapper(func)
-    tpu_fn = def_function.function(tpu_func, *args, **kwargs)
-
-    if preserve_cpu_fn:
-      func_collection = FunctionCollection(tpu_fn=tpu_fn, cpu_fn=cpu_fn)
-      return func_collection
-    else:
-      return tpu_fn
-
-  if func:
-    return inner_func(func)
-  else:
-    return inner_func
+    ...
+    if use_tpu_partitioned_call:
+      tpu_fn = _tpu_partitioned_call_wrapper(tpu_fn, device_ordinal)
+      ...
+    if use_batch_function:
+      tpu_fn = _batch_function_wrapper(tpu_fn,
+                                       num_batch_threads,
+                                       max_batch_size,
+                                       batch_timeout_micros,
+                                       allowed_batch_sizes,
+                                       max_enqueued_batches)
+      ...
 ```
 
-<b>Step 2:</b> Pass the `use_tpu_partitioned_call` argument all the way through
-to `functional_ops.py`, where TPUPartitionedCall will be created, instead of
-StatefulPartitionedCall.
-
-```python
-# tensorflow/python/ops/functional_ops.py
-
-if hasattr(f, "_use_tpu_partitioned_call") and f._use_tpu_partitioned_call:
-    outputs = tpu_functional.TPUPartitionedCall(
-        args=args,
-        device_ordinal=tpu_ops.tpu_ordinal_selector(),
-        Tout=tout,
-        f=f)
-```
-
-<b>Step 3:</b> Create MetaGraph for SavedModel.
+<b>Step 2:</b> Create a MetaGraph with designated tags for the SavedModel.
 
 ```python
 # tensorflow/python/saved_model/save.py
@@ -297,7 +320,7 @@ asset_info, exported_graph = _fill_meta_graph_def(
 ...
 ```
 
-### Support for Keras saving API
+### Support for Keras saving API (Under option 1 for Keras)
 
 Adding an argument `export_to_tpu` for `tf.keras.models.save_model()`, which if
 set to true will rewrite the model for TPU inference.
@@ -332,7 +355,3 @@ def save_model(model,
                         tags,
                         options)
 ```
-
-## Questions and Discussion Topics
-
-<!-- TODO(lzr): Seed this with open questions you require feedback on from the RFC process. -->
