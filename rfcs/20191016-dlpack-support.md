@@ -3,9 +3,9 @@
 | Status        | (Proposed)       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
-| **Author(s)** | eoldridge@nvidia.com, @futurely, @VoVAllen |
-| **Sponsor**   | alexandre.tp@gmail.com                 |
-| **Updated**   | 2019-10-23                                           |
+| **Author(s)** | eoldridge@nvidia.com, wmjlyjemaine@gmail.com, @VoVAllen |
+| **Sponsor**   | alexandre.tp@gmail.com, sanjoy@playingwithpointers.com                 |
+| **Updated**   | 2019-11-25                                           |
 
 ## Objective
 
@@ -46,57 +46,47 @@ A blog post or release notes headline could read "Tensorflow now supports dlpack
 
 ## Design Proposal
 
-@Santosh-Gupta @a6802739 @futurely @jermainewang This is where I need help.
-
-This is the meat of the document, where you explain your proposal. If you have
-multiple alternatives, be sure to use sub-sections for better separation of the
-idea, and list pros/cons to each approach. If there are alternatives that you
-have eliminated, you should also list those here, and explain why you believe
-your chosen approach is superior.
-
-Factors to consider include:
-
-* performance implications
-* dependencies
-* maintenance
-* platforms and environments impacted (e.g. hardware, cloud, other software
-  ecosystems)
-* [compatibility](https://www.tensorflow.org/programmers_guide/version_compat)
-* how will this change impact users, and how will that be managed?
-
-@tobegit3hub asked:
-The TensorFlow Tensor object provide API to get the array data of tensor.
-
-input_tensor.flat<T>().data()
-Can we get the data from the above function and use to initialize the DLTensor like this?
-
-  DLTensor* x;
-  int ndim = 1;
-  int dtype_code = kDLFloat;
-  int dtype_bits = 32;
-  int dtype_lanes = 1;
-  int device_type = kDLCPU;
-  int device_id = 0;
-
-  TVMArrayAlloc(shape, ndim, dtype_code, dtype_bits, dtype_lanes,
-                device_type, device_id, &x);
-  static_cast<float*>(x->data) = data;
-
-Workflow proposed by @futurely
-
-Tensor constructs Buffer with Allocator. Buffer calls TypedAllocator::Allocate to allocate memory through Allocator::AllocateRaw. GPUcudaMallocAllocator::AllocateRaw calls cudaMalloc.
-
-Maybe cuda.synchronize related API should be added to every class involved in the above pipeline.
-
-Runtime uses DeviceFactory to CreateDevices. BaseGPUDeviceFactory::CreateGPUDevice allocates GPUDevice containing GPUAllocator. GPUProcessState::GetGPUAllocator composes AllocatorParts including GPUcudaMallocAllocator.
-
-GpuExecutor::Allocate is a simple wrapper of GpuDriver::DeviceAllocate which utilizes cuMemAlloc.
-
-TensorFlow has added conversion between CPU Tensor and numpy array.
-
 Notes from @alextp:
 
 AFAICT it should be easy to take cuda pointers in and out of TF and use them to build dlpack structures from tensors or vice versa. The tricky part is that TF does not use cudamalloc to allocate memory but its own allocator whose internal state is stored on the CPU and matches the head of TF's compute stream, so we need to sync TF's stream before the memory is usable from dlpack and similarly sync other cuda streams before memory is made usable by TF tensors (and similarly we need to sync the streams when trying to free the buffers).
+
+A working version of dlpack integration has been released as a package by wmjlyjemaine@gmail.com and @VoVAllen here:
+https://github.com/VoVAllen/tf-dlpack/issues/3
+
+This proposal would leverage that solution and integrate it into TF so that the operations could be performed natively.
+
+User experience
+We plan to release a python package tfdlpack, containing two APIs:
+
+to_dlpack: Given a tensorflow tensor, return a DLPack tensor contain.
+from_dlpack: Given a DLPack-compatible python capsule, return a tensorflow tensor.
+Example codes of converting a Tensorflow tensor to Torch tensor using DLPack:
+```python
+import numpy as np
+import tensorflow as tf
+import torch.utils.dlpack as thdlpack
+import tfdlpack
+
+t1 = tf.constant([1, 2, 3], dtype=np.float32)
+dlpack = tfdlpack.to_dlpack(t1)  # tf tensor -> dlpack
+t2 = thdlpack.from_dlpack(dlpack)  # dlpack -> th tensor
+print(t2)
+dlpack = thdlpack.to_dlpack(t2)  # th tensor -> dlpack
+t3 = tfdlpack.from_dlpack(dlpack)  # dlpack -> tf tensor
+print(t3)
+```
+You will find that t1, t2 and t3 all have the same values, shape, and device contexts.
+Package dependency: tensorflow>=2.0
+
+How it works?
+The first design consideration is that we want to avoid any modification to the main Tensorflow library, so to get around the potential long delay of PR, code review, and release cycle of Tensorflow main package. Inspired by the solution from https://github.com/tobegit3hub/tftvm, we decide to implement the functionality as two custom tensor ops: to_dlpack and from_dlpack.
+
+Besides, we want this feature to be plugged into other projects quite easily. For example, any project that relies on this feature is able to run without compiling against Tensorflow's header files. Not only that an extra dependency usually means extra effort, but also that such maintenance is repetitive and should be handled by the feature developer (i.e., us) alone. To this end, we have an idea of releasing it as a python package. However, the question is how to invoke the two custom tensor ops in python? The challenge is that Tensorflow's custom op interface has a limited support of argument and return types, while to_dlpack and from_dlpack should have an argument/return type of DLPack object. We work around this by encoding the address of an DLPack object as an integer, so it can be accepted/returned by the custom op interface. Then, we decode it in python or C depending on whether we return it (to_dlpack) or consume it (from_dlpack).
+
+Finally, to achieve the maximal efficiency, we want the conversion happens without memory copy.
+
+For to_dlpack, the returned DLPack tensor shares the same memory address of the input Tensorflow tensor and holds a reference to it. Upon the destruction of the DLPack tensor, it will dereference the Tensorflow tensor, so it can be collected by Tensorflow's memory management. (inspired by PyTorch's DLPack implementation).
+For from_dlpack, it first creates an allocator object (subclass Tensorflow's allocator interface) that holds the reference to the DLPack tensor. The AllocateRaw function directly returns the memory it holds without creating any new buffer. Upon destruction, the DeallocateRaw function just calls the deletor of the DLPack tensor. (inspired by Tensorflow's immutable_constant_op).
 
 ## Questions and Discussion Topics
 
