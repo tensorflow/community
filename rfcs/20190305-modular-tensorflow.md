@@ -75,7 +75,10 @@ A few important points to clarify above are:
 * We are aiming to avoid needing to change most existing custom op and kernel
   code.
 * The APIs will evolve over time. We will modify the APIs based on our and
-  user's needs. These modifications are expected to reduce in frequency.
+  user's needs. These modifications are expected to follow versioning guidelines
+  [described
+  here](https://github.com/tensorflow/community/blob/592221e839eb9629a9ff4c73d46ee44ccb832d97/rfcs/20190816-tf-project-versioning.md).
+
 
 
 ### Definitions
@@ -296,7 +299,12 @@ This package will be a subset of the current "tensorflow" pip package. It will i
 
 ### Required tensorflow addons
 
-These packages are planned to contain high level TF functionality that can be safely split up from TF. Examples for these are tensorboard, estimator and keras. Together with the base TF package, these packages will contain the full Python code of TF, except for top level API wiring. As like any addons, these are only allowed to use public APIs exposed by their dependencies.
+These packages are planned to contain high level TF functionality that can be safely split up from TF. Examples for these are tensorboard, estimator and keras. Together with the base TF package, these packages will contain the full Python code of TF, except for top level API wiring. As like any addons, these are only allowed to use public APIs exposed by their dependencies. These packages have two constraints
+
+1. They are only allowed to use public APIs exposed by their dependencies.
+1. They are required to provide backwards compatible public APIs.
+
+With the backwards compatible public APIs, we expect addons to be able to release independently as long as features they depend on are released in their dependencies.
 
 These packages will have full control over the versions of their dependencies. We recommend they only set a minimum version for their dependencies. When they need new features, they will bump their minimum requirement to include the new API changes.
 
@@ -353,7 +361,7 @@ These shared objects will be automatically loaded by TF core if:
 *   **Why do we not use C++ APIs instead of C**: Compilers have no guarantees for ABIs generated for C++ code. Any C++ API used will require each shared object to be compiled with the same compiler, using the same version of the compiler, with the same compiler flags ([See github issue 23561](https://github.com/tensorflow/tensorflow/issues/23561)).
 *   **Why do not we statically link everything**: Single shared object for everything: Anywhere except google does not have access to the massively parallel build system we use here at google. This causes prohibitive build times, causing major developer pain for open source developers. There are many more issues, but the summary is while this is a great solution for google, outside google this is simply infeasible.
 *   **TF will become a suite of multiple packages, built by multiple authorities. What if the bugs get blamed on TF team**: With the modular model, we expect testing of 3rd party code to become easier. This can also be mitigated if the error messages are better, and if they can clearly point out which module the issue stems from. Finally, we can create an apple-swift like testing model, where we run a Jenkins setup that people can donate their machines to, and we can run continuous integration tests on their plugins.
-*   **Why not have APIs but still have a monolithic repository: **When everything is in a single repository, this enables developers to bypass the APIs, and depend on internals. Moreover, we cannot grant full control over different folders on our repository to our partners in a single repository. As long as they are in a single repository, they are still constrained by our build system and license. Finally, in a single repository we do not provide the option of closed source plugins for contributors.
+*   **Why not have APIs but still have a monolithic repository** When everything is in a single repository, this enables developers to bypass the APIs, and depend on internals. Moreover, we cannot grant full control over different folders on our repository to our partners in a single repository. As long as they are in a single repository, they are still constrained by our build system and license. Finally, in a single repository we do not provide the option of closed source plugins for contributors.
 *   **Why not go with the OSS federation solutions?** OSS federation requires all dependencies to be in the federation before adding a repository. This is simply not possible for tensorflow, as eigen, llvm and many other dependencies will never be a part of the federation.
 *   **Documentation, how/where do we document everything?** With multiple repositories, structure of the documentation will need to be rethought, based on what is a part of "TensorFlow proper" and what is an optional feature.
 
@@ -375,7 +383,7 @@ We propose the following principles to be followed for testing in a modular worl
 In the current setup, we need to test all of the above packages for different Python versions, operating systems, accelerators (CPU, GPU), compilers, and more variants combined. In the modularized world, each of these packages only need to be unit tested for the following:
 
 
-*   tensorflow-base: Operating systems, compiler versions and python versions only with CPU 
+*   tensorflow-base: Operating systems, compiler versions and python versions only with CPU
 *   tf-gpu: With GPU only, for different operating systems.
 *   tf-estimator: Only for different python versions
 
