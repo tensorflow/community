@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Gunhan Gulsoy (gunan@google.com)                     |
 | **Sponsor**   | Martin Wicke (wicke@google.com)                      |
-| **Updated**   | 2019-03-06                                           |
+| **Updated**   | 2019-11-25                                           |
 
 
 ## Motivation
