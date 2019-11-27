@@ -45,7 +45,7 @@ Note that we could still place the API directly under *tensorflow/* in the pip p
 #### Circular dependencies
 Estimator depends on TensorFlow. At the same time, TensorFlow includes estimator as a part of its API. This creates a cycle.
 
-![alt_text](20191127-pip-structure/circular_dependency.png "Circular dependency
+![alt_text](https://github.com/annarev/community/blob/pip_structure_rfc/rfcs/20191127-pip-structure/circular_dependency.png "Circular dependency
 between TensorFlow and Estimator.")
 
 #### Metapackage vs base package plans
@@ -55,11 +55,11 @@ tensorflow-base would only contain core TensorFlow (for e.g. no estimator).
 TensorFlow Metapackage would be a thin package defining composition of TensorFlow which includes base, estimator, keras and tensorboard.
 Note that this 2-package approach is not implemented yet. However, its proposal demonstrates how keeping a virtual pip package could be beneficial in the future.
 
-![alt_text](20191127-pip-structure/modular_structure.png "Proposed modular TensorFlow structure.")
+![alt_text](https://github.com/annarev/community/blob/pip_structure_rfc/rfcs/20191127-pip-structure/modular_structure.png "Proposed modular TensorFlow structure.")
 
 Current structure looks more like this (except *tensorflow/* and *tensorflow\_core/* are directories as opposed to separate pip packages) and meant to be the first step towards structure above:
 
-![alt_text](20191127-pip-structure/current_structure.png "Current TensorFlow structure.")
+![alt_text](https://github.com/annarev/community/blob/pip_structure_rfc/rfcs/20191127-pip-structure/current_structure.png "Current TensorFlow structure.")
 
 ### Current state of IDE code features
 
@@ -135,7 +135,7 @@ After building a pip package with this change all of the following work in PyCha
 
 To support the TensorFlow Metapackage plans we could add a new pip package that specifies dependencies on tensorflow, tensorflow\_estimator, tensorboard, etc.. Its sole purpose would be to get all dependencies installed.
 
-![alt_text](20191127-pip-structure/new_modular_structure.png "New proposed modular TensorFlow structure.")
+![alt_text](https://github.com/annarev/community/blob/pip_structure_rfc/rfcs/20191127-pip-structure/new_modular_structure.png "New proposed modular TensorFlow structure.")
 
 ### Long term: Import from external package directly
 Short term would fix IDE issues, but the package structure is still not as clean as it could be. We resolve cycles with lazy loading but it would be even better not to have this circular structure at all.
