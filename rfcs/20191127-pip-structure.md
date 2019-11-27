@@ -14,7 +14,7 @@ We propose to simplify TensorFlow pip package structure to enable IDE features s
 ## Motivation
 
 ### Current package structure
-TensorFlow package structure has grown quite complex over time as we started to support multiple versions (1.x and 2.x) and import external sub-packages (such as tensorflow\_estimator and tensorboard). This complexity is expected to grow (for e.g. keras will be split out as well).
+TensorFlow package structure has grown quite complex over time as we started to support multiple versions (1.x and 2.x) and import external sub-packages (such as tensorflow\_estimator and tensorboard). This complexity is expected to grow if we split out more components into separate pip packages.
 
 Sources of complexity:
 
@@ -24,7 +24,7 @@ Sources of complexity:
 Outline of the current structure:
 ```
 tensorflow
-    __init__.py (contains "from tensorflow\_core import *")
+    __init__.py (contains "from tensorflow_core import *")
 
 tensorflow_core
     python/...
@@ -38,7 +38,7 @@ tensorflow_core
 
 ### Rationale behind current package structure
 #### Multiple version support
-To prepare for TensorFlow 2.0 launch, we added a way to build two versions: 1.x and 2.x. Each version has its own respective genrule that outputs file for 1.x or 2.x since API modules are different (for e.g. *tensorflow/manip/__init__.py* only exists in 1.x and not 2.x API). Now, bazel does not allow two genrules to output files to the same directory. Therefore, we have *_api/v1/* and *_api/v2/* subdirectories.
+To prepare for TensorFlow 2.0 launch, we added a way to build two versions: 1.x and 2.x. Each version has its own respective genrule that outputs file for 1.x or 2.x since API modules are different (for e.g. *tensorflow/manip/\_\_init\_\_.py* only exists in 1.x and not 2.x API). Now, bazel does not allow two genrules to output files to the same directory. Therefore, we have *_api/v1/* and *_api/v2/* subdirectories.
 
 Note that we could still place the API directly under *tensorflow/* in the pip package since a pip package contains a single version of TensorFlow. This option became out of reach when *tensorflow/contrib/lite/* was migrated to *tensorflow/lite/*. Now *tensorflow/lite/* API directory would conflict with *tensorflow/lite/* source directory if the API was under *tensorflow/* instead of *_api/vN/*.
 
@@ -68,23 +68,23 @@ Current structure looks more like this (except *tensorflow/* and *tensorflow\_co
 * Autocomplete:
   * Works in most cases after switching to use relative imports.
   * Doesn’t work for tf.compat.v1.keras and tf.compat.v2.keras.
-  * Doesn’t work for keras if importing it using from import (i.e. from tensorflow import keras).
+  * Doesn’t work for keras if importing it using from import (i.e. `from tensorflow import keras`).
 * Jump-to-definition doesn’t work.
 * Quick documentation doesn’t work.
 
 #### PyCharms with 2019.3 EAP build 193.3793.14
 Latest version of PyCharms added [custom handling for tensorflow](https://github.com/JetBrains/intellij-community/blob/0a08f8212351ee84d602cdc5547f038ce0df79fd/python/src/com/jetbrains/tensorFlow/PyTensorFlow.kt)
 * Autocomplete works in most cases.
-* Doesn’t work for keras if importing it using from import (i.e. from tensorflow import keras).
+* Doesn’t work for keras if importing it using from import (i.e. `from tensorflow import keras`).
 * Jump-to-definition works.
 * Quick documentation works.
 
 #### VS Code 1.40 (October 2019 release)
 * Autocomplete:
   * Works in most cases.
-  * Doesn’t work for tf.estimator or tf.keras.
-  * Doesn’t work for tf.compat.v1.keras and tf.compat.v2.keras.
-  * Doesn’t work for keras if importing it using from import (i.e. from tensorflow import keras).
+  * Doesn’t work for `tf.estimator` or `tf.keras`.
+  * Doesn’t work for `tf.compat.v1.keras` and `tf.compat.v2.keras`.
+  * Doesn’t work for keras if importing it using from import (i.e. `from tensorflow import keras`).
 * Jump-to-definition doesn’t work.
 * Quick documentation doesn’t work.
 
@@ -99,7 +99,7 @@ package structure would improve productivity for TensorFlow users.
 
 ## Design Proposal
 
-The only way I can think of to fix the autocomplete issues is to make our package structure as clean as possible. In this case, autocomplete will work out of the box.
+The best way I can think of to fix the autocomplete issues is to make our package structure as clean as possible. In this case, autocomplete will work out of the box.
 
 ### Short term: Remove virtual pip package
 
@@ -109,7 +109,7 @@ estimator.
 
 Lazy loading by itself would mean that we no longer have autocomplete for estimator. As a workaround, we can import estimator in the stub *.pyi* file.
 
-Estimator import in root *__init__.py* file:
+Estimator import in root *\_\_init\_\_.py* file:
 ```python
 from tensorflow.python.util.lazy_loader import LazyLoader as _LazyLoader
 estimator = _LazyLoader(
@@ -118,7 +118,7 @@ estimator = _LazyLoader(
 setattr(_current_module, "estimator", estimator)
 ```
 
-Estimator import in root *__init__.pyi* file:
+Estimator import in root *\_\_init\_\_.pyi* file:
 ```python
 from tensorflow_estimator.python.estimator.api._v2 import estimator as estimator
 ```
