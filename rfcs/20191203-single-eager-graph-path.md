@@ -77,7 +77,7 @@ def batch_matrix_band_part(input, num_lower, num_upper, name=None):
 -   _execute.record_gradient(
 -       "BatchMatrixBandPart", _inputs_flat, _attrs, _result)
 - _result, = _result
-- return _result~~
+- return _result
 
 def batch_matrix_band_part_eager_fallback(input, num_lower, num_upper, name, ctx): 
   _attr_T, (input,) = _execute.args_to_matching_eager([input], ctx)
