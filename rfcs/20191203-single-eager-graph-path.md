@@ -48,11 +48,11 @@ References:
 Basically we want to get rid of the graph-building part in gen_*_ops.py and get rid of gradient tape bookkeeping in both graph and eager modes. For example:
 
 
-```
+```diff
 def batch_matrix_band_part(input, num_lower, num_upper, name=None):
   _ctx = _context._context or _context.context()
   tld = _ctx._thread_local_data
-  ~~if tld.is_eager:~~
+- if tld.is_eager:
     try:  
       _result = _pywrap_tensorflow.TFE_Py_FastPathExecute(
         _ctx._context_handle, tld.device_name, "BatchMatrixBandPart", name, 
@@ -66,18 +66,18 @@ def batch_matrix_band_part(input, num_lower, num_upper, name=None):
         pass  # Add nodes to the TensorFlow graph.
     except _core._NotOkStatusException as e: 
       _ops.raise_from_not_ok_status(e, name) 
-  ~~# Add nodes to the TensorFlow graph.
-  _, _, _op, _outputs = _op_def_library._apply_op_helper(
-        "BatchMatrixBandPart", input=input, num_lower=num_lower,
-                               num_upper=num_upper, name=name)
-  _result = _outputs[:]
-  if _execute.must_record_gradient():
-    _attrs = ("T", _op._get_attr_type("T"))
-    _inputs_flat = _op.inputs
-    _execute.record_gradient(
-        "BatchMatrixBandPart", _inputs_flat, _attrs, _result)
-  _result, = _result
-  return _result~~
+- # Add nodes to the TensorFlow graph.
+- _, _, _op, _outputs = _op_def_library._apply_op_helper(
+-       "BatchMatrixBandPart", input=input, num_lower=num_lower,
+-                              num_upper=num_upper, name=name)
+- _result = _outputs[:]
+- if _execute.must_record_gradient():
+-   _attrs = ("T", _op._get_attr_type("T"))
+-   _inputs_flat = _op.inputs
+-   _execute.record_gradient(
+-       "BatchMatrixBandPart", _inputs_flat, _attrs, _result)
+- _result, = _result
+- return _result~~
 
 def batch_matrix_band_part_eager_fallback(input, num_lower, num_upper, name, ctx): 
   _attr_T, (input,) = _execute.args_to_matching_eager([input], ctx)
@@ -87,9 +87,9 @@ def batch_matrix_band_part_eager_fallback(input, num_lower, num_upper, name, ctx
   _attrs = ("T", _attr_T)
   _result = _execute.execute(b"BatchMatrixBandPart", 1, inputs=_inputs_flat,
                              attrs=_attrs, ctx=ctx, name=name)
-  ~~if _execute.must_record_gradient():
-    _execute.record_gradient(
-        "BatchMatrixBandPart", _inputs_flat, _attrs, _result)~~
+- if _execute.must_record_gradient():
+-   _execute.record_gradient(
+-       "BatchMatrixBandPart", _inputs_flat, _attrs, _result)
   _result, = _result
   return _result
 ```
