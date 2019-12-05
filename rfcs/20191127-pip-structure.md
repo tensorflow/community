@@ -1,8 +1,8 @@
-# Title of RFC
+# Improved pip package structure
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)       |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [182](https://github.com/tensorflow/community/pull/182)|
 | **Author(s)** | Anna Revinskaya (annarev@google.com)                 |
 | **Sponsor**   | Alex Passos (apassos@tensorflow.org)                 |
 | **Updated**   | 2019-11-27                                           |
@@ -164,7 +164,7 @@ Rationale for this change:
 * One way dependencies (estimator depends on tensorflow and not vise-versa).
 * Minimal overhead for users. Adding an extra import is easy.
 
-Note that this change cannot be done in TensorFlow 2.0 due to API guarantees. However, we can keep `tf.estimator`, `tf.keras` (once it is moved out of TensorFlow), `tf.summary` available while encouraging users to import from tensorflow\_estimator, tensorflow\_keras (once available) and tensorboard instead. This would require some work to make sure these packages contain the right API (for e.g. tensorflow\_estimator.estimator currently always contains V1 API).
+Note that this change cannot be done in TensorFlow 2.x due to API guarantees. However, we can keep `tf.estimator`, `tf.keras` (once it is moved out of TensorFlow), `tf.summary` available while encouraging users to import from tensorflow\_estimator, tensorflow\_keras (once available) and tensorboard instead. This would require some work to make sure these packages contain the right API (for e.g. tensorflow\_estimator.estimator currently always contains V1 API).
 
 
 ### Alternatives Considered
@@ -178,8 +178,7 @@ TensorFlow to import from `tensorflow_core` instead of `tensorflow`.
 
 #### Disadvantages:
 
-* This is a
-more invasive change since it requires updating every Python file in TensorFlow.
+* This is a more invasive change since it requires updating every Python file in TensorFlow.
 It would also mean that external packages such as `tensorflow_estimator` need to
 use imports of the form `from tensorflow_core` instead of `from tensorflow`.
 
