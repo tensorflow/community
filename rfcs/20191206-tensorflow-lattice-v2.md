@@ -134,7 +134,7 @@ This layer applies a linear transformation to the input tensor with an optional
 bias term. It supports monotonicity and fixed-norm constraints.
 
 ```python
-calibrator = tfl.linear_layer.Linear(
+linear = tfl.linear_layer.Linear(
     num_input_dims=8,
     # Monotonicity constraints can be defined per dimension or for all dims.
     monotonicities=1,
@@ -180,7 +180,7 @@ This layer maps integer-valued input categories to float output.
 This layer supports partial ordering and bound constraints.
 
 ```python
-tfl.categorical_calibration_layer.CategoricalCalibration(
+calibrator = tfl.categorical_calibration_layer.CategoricalCalibration(
     # Number of categories, including oov buckets and default values.
     num_buckets=3,
     # Output can be bounded, e.g. when this layer feeds into a lattice.
@@ -206,7 +206,7 @@ This layer support monotonicity, unimodality,
 [trust](http://proceedings.mlr.press/v97/cotter19a.html) and bound constraints.
 
 ```python
-lattice = tensorflow_lattice.lattice_layer.Lattice(
+lattice = tfl.lattice_layer.Lattice(
     # Number of vertices along each dimension.
     lattice_sizes=[2, 2, 3, 4, 2, 2, 3],
     # You can specify monotonicity constraints.
@@ -227,7 +227,7 @@ This layer concatenates multiple calibrators to act on a single
 multi-dimensional input. This helps with construction of sequential models.
 
 ```python
-model = keras.models.Sequential()
+model = tf.keras.models.Sequential()
 
 all_calibrators = tfl.lattice_layer.MultiCalibration()
 all_calibrators.append(tfl.pwl_calibration_layer.PWLCalibration(...))
@@ -250,7 +250,7 @@ every update to the model parameters. Alternatively you can apply faster partial
 projections for each batch and a final strict projection at the end of training.
 
 ```python
-lattice = LatticeLayer(
+lattice = tfl.lattice_layer.Lattice(
     ...,
     monotonic_at_every_step=False,
 )
@@ -278,7 +278,7 @@ various constraints about the model shape for each input feature.
 
 ```python
 # Configuration for a lattice ensemble with output calibration.
-model_config = configs.CalibratedLatticeEnsembleConfig(
+model_config = tfl.configs.CalibratedLatticeEnsembleConfig(
     num_lattices=6,  # number of lattices
     lattice_rank=5,  # number of features in each lattice
     output_calibration=True,
@@ -287,19 +287,19 @@ model_config = configs.CalibratedLatticeEnsembleConfig(
     feature_configs=[
         # Numeric feature with PWL calibration.
         # Feature type is inferred from the corresponding feature column.
-        configs.FeatureConfig(
+        tfl.configs.FeatureConfig(
             name='age',
             lattice_size=3,
             # Model output must be monotonically increasing w.r.t. this feature.
             monotonicity=1,
             # Per feature regularization.
             regularizer_configs=[
-                configs.RegularizerConfig(name='calib_hessian', l2=1e-4),
+                tfl.configs.RegularizerConfig(name='calib_hessian', l2=1e-4),
             ],
         ),
         # Categorical feature.
         # Feature type and vocab list is inferred from the input feature column.
-        configs.FeatureConfig(
+        tfl.configs.FeatureConfig(
             name='thal',
             # Partial monotonicity:
             # output(normal) <= output(fixed)
@@ -311,11 +311,11 @@ model_config = configs.CalibratedLatticeEnsembleConfig(
     # Global regularizers
     regularizer_configs=[
         # Regularizer applied to all calibrators.
-        configs.RegularizerConfig(name='calib_wrinkle', l2=1e-4),
+        tfl.configs.RegularizerConfig(name='calib_wrinkle', l2=1e-4),
         # Regularizer applied to the lattice.
-        configs.RegularizerConfig(name='torsion', l2=1e-4),
+        tfl.configs.RegularizerConfig(name='torsion', l2=1e-4),
         # Regularizer for the output calibrator.
-        configs.RegularizerConfig(name='output_calib_hessian', l2=1e-4),
+        tfl.configs.RegularizerConfig(name='output_calib_hessian', l2=1e-4),
     ],
 )
 ```
@@ -327,7 +327,7 @@ passed to the estimator constructor. Feature types and categorical vocabulary
 list can be inferred from the feature columns passed to the estimator.
 
 ```python
-estimator = estimators.CannedClassifier(
+estimator = tfl.estimators.CannedClassifier(
     feature_columns=feature_columns,  # same as any other estimator
     model_config=model_config,        # defines model and feature configs
     feature_analysis_input_fn=make_input_fn(num_epochs=1, ...))
