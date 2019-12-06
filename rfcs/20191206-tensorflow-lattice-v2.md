@@ -1,4 +1,4 @@
-# Tensorflow Lattice 2.0
+# TensorFlow Lattice 2.0
 
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
