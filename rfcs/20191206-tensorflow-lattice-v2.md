@@ -2,13 +2,10 @@
 
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
-:               : (update when you have community PR #)                   :
-| **Author(s)** | Mahdi Milani Fard (mmilanifard@google.com), Oleksandr   |
-:               : Mangylov (amangy@google.com)                            :
-| **Sponsor**   | Zhenyu Tan (tanzheny@google.com), Karmel Allison        |
-:               : (karmel@google.com)                                     :
-| **Updated**   | 2019-12-04                                              |
+| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #) |
+| **Author(s)** | Mahdi Milani Fard (mmilanifard@google.com), Oleksandr Mangylov (amangy@google.com) |
+| **Sponsor**   | Zhenyu Tan (tanzheny@google.com), Karmel Allison (karmel@google.com) |
+| **Updated**   | 2019-12-06                                              |
 
 ## Objective
 
@@ -155,7 +152,7 @@ keypoint inputs are fixed and passed to the layer constructor. They are
 typically set to the quantiles of the input, or are uniformly spaced in the
 input range.
 
-![PWL Calibration](20191206-tensorflow-lattice-v2/pwl.png){style="width:50%;display:block;margin:auto"}
+![PWL Calibration](20191206-tensorflow-lattice-v2/pwl.png)
 
 This layer supports monotonicity, convexity, concavity and bound constraints.
 
@@ -178,7 +175,7 @@ calibrator = tfl.pwl_calibration_layer.PWLCalibration(
 
 This layer maps integer-valued input categories to float output.
 
-![Categorical Calibration](20191206-tensorflow-lattice-v2/cat.png){style="width:50%;display:block;margin:auto"}
+![Categorical Calibration](20191206-tensorflow-lattice-v2/cat.png)
 
 This layer supports partial ordering and bound constraints.
 
@@ -203,7 +200,7 @@ input space and learns values for the output in the vertices of the grid. For a
 test point *x*, *f(x)* is linearly interpolated from the lattice values
 surrounding *x*.
 
-![Lattice](20191206-tensorflow-lattice-v2/lattice.png){style="width:50%;display:block;margin:auto"}
+![Lattice](20191206-tensorflow-lattice-v2/lattice.png)
 
 This layer support monotonicity, unimodality,
 [trust](http://proceedings.mlr.press/v97/cotter19a.html) and bound constraints.
@@ -353,14 +350,14 @@ our specific canned estimators.
 TFL 2.0 supports extracting calibrator parameters from saved models and plotting
 them either individually or altogether.
 
-![Calibration Plots](20191206-tensorflow-lattice-v2/calib.png){style="display:block;margin:auto"}
+![Calibration Plots](20191206-tensorflow-lattice-v2/calib.png)
 
 #### Plotting model structure
 
 The model structure and all layer parameters can be extracted from a saved model
 and plotted in a schematic graph. This is similar to Keras model plotting.
 
-![Model Graph](20191206-tensorflow-lattice-v2/graph.png){style="display:block;margin:auto"}
+![Model Graph](20191206-tensorflow-lattice-v2/graph.png)
 
 We plan to expose these in a TFL TensorBoard extension in future launches.
 
