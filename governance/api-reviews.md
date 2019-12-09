@@ -90,7 +90,9 @@ the next. We would like new experimental symbols to be things which will
 eventually end up in core TF as opposed to things we expect will be phased out
 with no clear replacement. The best expectation to have for an experimental
 endpoint is that the “experimental” will simply be removed. If you don’t believe
-that’ll work, it should probably not be added in its current form.  Style
+that’ll work, it should probably not be added in its current form.  
+
+### Style
 Generally, follow Google style.
 
 Avoid redundancy. Do not write arguments of the form `function(...,
