@@ -54,7 +54,9 @@ all possible these docstrings should have runnable examples, and these examples
 should form a doctest so they stay correct. The examples should demonstrate an
 end-to-end user workflow, such that it’s clear how to generate the necessary
 inputs for the API and what to do with the outputs. The docstring should be
-understandable by someone who is not familiar with TF.
+understandable by someone who is not familiar with TF. See the [guide to writing
+TF docstrings](https://www.tensorflow.org/community/contribute/docs_ref) for
+more information.
 
 Our documentation generator for classes only sees methods, so prefer defining
 members as properties instead of assigning them in `__init__`.
