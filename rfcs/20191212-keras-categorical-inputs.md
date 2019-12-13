@@ -314,8 +314,28 @@ def to_sparse(input, ignore_value):
 ### Alternatives Considered
 An alternative is to provide solutions on top of feature columns. This will make user code to be slightly cleaner but far less flexible.
 
+### Performance Implications
+End to End benchmark should be same as other preprocessing layers.
+
+### Dependencies
+This proposal does not add any new dependencies.
+
+### Engineering Impact
+These changes will include more layers and thus binary size and build time. It will not impact startup time.
+This code can be tested in its own and maintained in its own buildable unit.
+
+### Platforms and Environments
+This proposal should work in all platforms and environments.
+
+### Best Practices, Tutorials and Examples
+This proposal does not change the best engineering practices.
+
 ### Compatibility
 No backward compatibility issues.
+
+### User Impact
+User facing changes to migrate feature column based Keras modeling to preprocessing layer based Keras modeling, as the example workflow suggests.
+
 
 ## Code Snippets
 
