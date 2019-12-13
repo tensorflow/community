@@ -15,6 +15,17 @@ This document proposes 4 new preprocessing Keras layers (`CategoryLookup`, `Cate
 
 Other proposed layers for replacement of feature columns such as `tf.feature_column.bucketized_column` and `tf.feature_column.numeric_column` has been discussed [here](https://github.com/keras-team/governance/blob/master/rfcs/20190502-preprocessing-layers.md) and are not the focus of this document.
 
+## Motivation
+
+Specifically, by introducing the 4 layers, we aim to address these pain points:
+* Users have to define both feature columns and Keras Inputs for the model, resulting in code duplication and deviation from DRY (Do not repeat yourself) principle. See this [Github issue](https://github.com/tensorflow/tensorflow/issues/27416).
+* Users with large dimension categorical inputs will incur large memory footprint and computation cost, if wrapped with indicator column through `tf.keras.layers.DenseFeatures`.
+* Currently there is no way to correctly feed Keras linear model or dense layer with multivalent categorical inputs or weighted categorical inputs.
+
+## User Benefit
+
+We expect to get rid of the user painpoints once migrating off feature columns.
+
 ## Example Workflows
 
 Two example workflows are presented below. These workflows can be found at this [colab](https://colab.sandbox.google.com/drive/1cEJhSYLcc2MKH7itwcDvue4PfvrLN-OR#scrollTo=22sa0D19kxXY).
@@ -24,6 +35,9 @@ Two example workflows are presented below. These workflows can be found at this 
 The first example gives an equivalent code snippet to canned `LinearEstimator` [tutorial](https://www.tensorflow.org/tutorials/estimator/linear) on the Titanic dataset:
 
 ```python
+dftrain = pd.read_csv('https://storage.googleapis.com/tf-datasets/titanic/train.csv')
+y_train = dftrain.pop('survived')
+
 CATEGORICAL_COLUMNS = ['sex', 'n_siblings_spouses', 'parch', 'class', 'deck', 'embark_town', 'alone']
 NUMERICAL_COLUMNS = ['age', 'fare']
 # input list to create functional model.
@@ -49,9 +63,6 @@ linear_logits = linear_model(linear_inputs)
 model = tf.keras.Model(model_inputs, linear_logits)
 
 model.compile('sgd', loss=tf.keras.losses.BinaryCrossEntropy(from_logits=True), metrics=['accuracy'])
-
-dftrain = pd.read_csv('https://storage.googleapis.com/tf-datasets/titanic/train.csv')
-y_train = dftrain.pop('survived')
 
 dataset = tf.data.Dataset.from_tensor_slices((
 	(tf.to_sparse(dftrain.sex, "Unknown"), tf.to_sparse(dftrain.n_siblings_spouses, -1),
@@ -173,13 +184,6 @@ x = tf.keras.layers.CategoryEncoding(num_categories=len(vocabulary_list)+num_oov
 linear_model = tf.keras.premade.LinearModel(units)
 linear_logits = linear_model(x)
 ```
-
-## Pain Points
-
-Specifically, by introducing the 4 layers, we aim to address these pain points:
-* Users have to define both feature columns and Keras Inputs for the model, resulting in code duplication and deviation from DRY (Do not repeat yourself) principle. See this [Github issue](https://github.com/tensorflow/tensorflow/issues/27416).
-* Users with large dimension categorical inputs will incur large memory footprint and computation cost, if wrapped with indicator column through `tf.keras.layers.DenseFeatures`.
-* Currently there is no way to correctly feed Keras linear model or dense layer with multivalent categorical inputs or weighted categorical inputs.
 
 ## Design Proposal
 We propose a CategoryLookup layer to replace `tf.feature_column.categorical_column_with_vocabulary_list` and `tf.feature_column.categorical_column_with_vocabulary_file`, a `CategoryHashing` layer to replace `tf.feature_column.categorical_column_with_hash_bucket`, a `CategoryCrossing` layer to replace `tf.feature_column.crossed_column`, and another `CategoryEncoding` layer to convert the sparse input to the format required by linear models.
@@ -307,6 +311,12 @@ def to_sparse(input, ignore_value):
   pass
 ```
 
+### Alternatives Considered
+An alternative is to provide solutions on top of feature columns. This will make user code to be slightly cleaner but far less flexible.
+
+### Compatibility
+No backward compatibility issues.
+
 ## Code Snippets
 
 Below is a more detailed illustration of how each layer works. If there is a vocabulary list of countries:
@@ -355,3 +365,6 @@ cross_out.indices = <tf.Tensor: id=186, shape=(2, 2), dtype=int64, numpy=
                         array([[0, 0], [0, 1]])>
 cross_out.values = <tf.Tensor: id=187, shape=(2,), dtype=int64, numpy=array([3, 3])>
 ```
+
+## Questions and Discussion Topics
+We'd like to gather feedbacks on `CategoryLookup`, specifically we propose migrating off from mutually exclusive `num_oov_buckets` and `default_value` and replace with `num_oov_tokens`.
