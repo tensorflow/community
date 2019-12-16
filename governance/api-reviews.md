@@ -123,6 +123,11 @@ thread-local. The TF API is supposed to be thread-safe. Avoid stateful operation
 (mutability) if you can. Both features make it hard to reason about code, and
 make composability harder to achieve.
 
+We prefer strings ("auto", "never", etc) over enums (tf.namespace.AUTO,
+etc). Strings are easier to type, and forces us to document all possible values
+and their semantics in the docstrings of all places which accept the string, as
+opposed to only in the enum definition, which is a little friendlier.
+
 ### Orthogonality and integration with the existing APIs 
 
 Is the new API implementable in terms of existing APIs? If so, we might want to
