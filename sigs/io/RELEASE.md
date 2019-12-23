@@ -45,10 +45,11 @@ twine upload *.whl
 ## CRAN R Package Release
 
 Before submitting the R package to CRAN, manually perform and check the following items:
-* Make sure the documentation in `README.md` and `vignettes` is up-to-date
+* Make sure the documentation in `README.md`, `docs/`, and `vignettes/` is up-to-date
 * Update `Version` field in `DESCRIPTION` file
 * Update `NEWS.md` to include items for this new release
-* Run `devtools::check()` and fix all the notable issues, especially warnings and errors
+* Run `devtools::check()` and fix all the notable issues, especially warnings and errors that appear
+either locally or in [CRAN package check result](https://cran.r-project.org/web/checks/check_results_tfio.html)
 * Update `cran-comments.md` to include any unsolvable issues from `devtools::check()` and
 other comments/responses to CRAN maintainers
 * Run checks on R-hub via `devtools::check_rhub()` and on win-builder via `devtools::check_win_devel()`. This is
