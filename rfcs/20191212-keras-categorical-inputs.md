@@ -4,11 +4,11 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Zhenyu Tan (tanzheny@google.com), Francois Chollet (fchollet@google.com)|
 | **Sponsor**   | Karmel Allison (karmel@google.com), Martin Wicke (wicke@google.com) |
-| **Updated**   | 2019-12-12                                           |
+| **Updated**   | 2019-01-03                                           |
 
 ## Objective
 
-This document proposes 4 new preprocessing Keras layers (`CategoryLookup`, `CategoryCrossing`, `CategoryEncoding`, `CategoryHashing`), and 1 additional op (`to_sparse`) to allow users to:
+This document proposes 4 new preprocessing Keras layers (`CategoryLookup`, `CategoryCrossing`, `CategoryEncoding`, `CategoryHashing`), and an extension to existing op (`tf.sparse.from_dense`) to allow users to:
 * Perform feature engineering for categorical inputs
 * Replace feature columns and `tf.keras.layers.DenseFeatures` with proposed layers
 * Introduce sparse inputs that work with Keras linear models and other layers that support sparsity
@@ -65,8 +65,8 @@ model = tf.keras.Model(model_inputs, linear_logits)
 model.compile('sgd', loss=tf.keras.losses.BinaryCrossEntropy(from_logits=True), metrics=['accuracy'])
 
 dataset = tf.data.Dataset.from_tensor_slices((
-	(tf.to_sparse(dftrain.sex, "Unknown"), tf.to_sparse(dftrain.n_siblings_spouses, -1),
-	tf.to_sparse(dftrain.parch, -1), tf.to_sparse(dftrain['class'], "Unknown"), tf.to_sparse(dftrain.deck, "Unknown"),
+	(tf.sparse.from_dense(dftrain.sex, "Unknown"), tf.sparse.from_dense(dftrain.n_siblings_spouses, -1),
+	tf.sparse.from_dense(dftrain.parch, -1), tf.sparse.from_dense(dftrain['class'], "Unknown"), tf.sparse.from_dense(dftrain.deck, "Unknown"),
 	tf.expand_dims(dftrain.age, axis=1), tf.expand_dims(dftrain.fare, axis=1)),
 	y_train)).batch(bach_size).repeat(n_epochs)
 
@@ -186,7 +186,7 @@ linear_logits = linear_model(x)
 ```
 
 ## Design Proposal
-We propose a CategoryLookup layer to replace `tf.feature_column.categorical_column_with_vocabulary_list` and `tf.feature_column.categorical_column_with_vocabulary_file`, a `CategoryHashing` layer to replace `tf.feature_column.categorical_column_with_hash_bucket`, a `CategoryCrossing` layer to replace `tf.feature_column.crossed_column`, and another `CategoryEncoding` layer to convert the sparse input to the format required by linear models.
+We propose a `CategoryLookup` layer to replace `tf.feature_column.categorical_column_with_vocabulary_list` and `tf.feature_column.categorical_column_with_vocabulary_file`, a `CategoryHashing` layer to replace `tf.feature_column.categorical_column_with_hash_bucket`, a `CategoryCrossing` layer to replace `tf.feature_column.crossed_column`, and another `CategoryEncoding` layer to convert the sparse input to the format required by linear models.
 
 ```python
 `tf.keras.layers.CategoryLookup`
@@ -206,9 +206,10 @@ CategoryLookup(PreprocessingLayer):
               All out-of-vocab inputs will be assigned IDs in the range of 
               [0, num_oov_tokens) based on a hash. When
               `vocabulary` is None, it will convert inputs in [0, num_oov_tokens)
-      vocabulary: the vocabulary to lookup the input. If it is a file, it represents the 
-              source vocab file; If it is a list/tuple, it represents the source vocab 
-              list; If it is None, the vocabulary can later be set.
+      vocabulary: the vocabulary to lookup the input. If it is a file, specify the file
+              path to represent the  source vocab file, example 'tmp/vocab_file.txt';
+              If it is a list/tuple, it represents the source vocab list, example '[A, B, C]';
+              If it is None, the vocabulary can later be set.
       name: Name to give to the layer.
      **kwargs: Keyword arguments to construct a layer.
 
@@ -216,18 +217,17 @@ CategoryLookup(PreprocessingLayer):
     Output: an int tensor of shape `[batch_size, d1, ..., dm]`
 
     Example:
-
-    If one input sample is `["a", "c", "d", "a", "x"]` and the vocabulary is ["a", "b", "c", "d"],
-    and a single OOV token is used (`num_oov_tokens=1`), then the corresponding output sample is
-    `[1, 3, 4, 1, 0]`. 0 stands for an OOV token.
+      If one input sample is `["a", "c", "d", "a", "x"]` and the vocabulary is ["a", "b", "c", "d"],
+      and a single OOV token is used (`num_oov_tokens=1`), then the corresponding output sample is
+      `[1, 3, 4, 1, 0]`. 0 stands for an OOV token.
     """
     pass
 
 `tf.keras.layers.CategoryCrossing`
 CategoryCrossing(PreprocessingLayer):
 """This layer transforms multiple categorical inputs to categorical outputs
-   by Cartesian product. and hash the output if necessary.
-   If any input is sparse, then output is sparse, otherwise dense."""
+   by Cartesian product, and hash the output if necessary.
+   If any of the inputs is sparse, then all outputs will be sparse. Otherwise, all outputs will be dense."""
 
   def __init__(self, depth=None, num_bins=None, name=None, **kwargs):
     """Constructs a CategoryCrossing layer.
@@ -244,14 +244,10 @@ CategoryCrossing(PreprocessingLayer):
     Output: a single int tensor of shape `[batch_size, d1, ..., dm]`
 
     Example:
-
-    If the layer receives two inputs, `a=[[1, 2]]` and `b=[[1, 3]]`,
-    and if depth is 2, then
-    the output will be a single integer tensor `[[i, j, k, l]]`, where:
-    i is the index of the category "a1=1 and b1=1"
-    j is the index of the category "a1=1 and b2=3"
-    k is the index of the category "a2=2 and b1=1"
-    l is the index of the category "a2=2 and b2=3"
+      If the layer receives two inputs, `a=[[1, 2]]` and `b=[[1, 3]]`, and
+      if depth is 2, then the output will be a string tensor `[[b'1_X_1',
+      b'1_X_3', b'2_X_1', b'2_X_3']]` if not hashed, or integer tensor
+      `[[hash(b'1_X_1'), hash(b'1_X_3'), hash(b'2_X_1'), hash(b'2_X_3')]]` if hashed.
     """
     pass
 
@@ -275,6 +271,12 @@ CategoryEncoding(PreprocessingLayer):
 
     Input: a int tensor of shape `[batch_size, d1, ..., dm-1, dm]`
     Output: a float tensor of shape `[batch_size, d1, ..., dm-1, num_categories]`
+
+    Example:
+      If the input is 2 by 2 dense integer tensor '[[0, 2], [2, 2]]' with `num_categories=3`, then
+      output is 2 by 3 dense integer tensor '[[1, 0, 1], [0, 0, 2]]' with a `sum` encoding, or
+      dense float tensor '[[.5, 0, .5], [0, 0, 1.]]' with a `mean` encoding, or dense integer tensor
+      '[[1, 0, 1], [0, 0, 1]]' with a `binary` encoding.
     """
     pass
 
@@ -292,21 +294,27 @@ CategoryHashing(PreprocessingLayer):
 
     Input: a int tensor of shape `[batch_size, d1, ..., dm]`
     Output: a int tensor of shape `[batch_size, d1, ..., dm]`
+
+    Example:
+      If the input is a 5 by 1 string tensor '[['A'], ['B'], ['C'], ['D'], ['E']]' with `num_bins=2`,
+      then output is 5 by 1 integer tensor '[[0], [0], [1], [1], [0]]', i.e.,
+      [[hash('A')], [hash('B')], [hash('C')], [hash('D')], [hash('E')]].
     """
     pass
 
 ```
 
-We also propose a `to_sparse` op to convert dense tensors to sparse tensors given user specified ignore values. This op can be used in both `tf.data` or [TF Transform](https://www.tensorflow.org/tfx/transform/get_started). In previous feature column world, "" is ignored for dense string input and -1 is ignored for dense int input.
+We also propose to extend the current `tf.sparse.from_dense` op with a `ignore_value` to convert dense tensors to sparse tensors given user specified ignore values. This op can be used in both `tf.data` or [TF Transform](https://www.tensorflow.org/tfx/transform/get_started). In previous feature column world, "" is ignored for dense string input and -1 is ignored for dense int input.
 
 ```python
-`tf.to_sparse`
-def to_sparse(input, ignore_value):
+`tf.sparse.from_dense`
+def from_dense(tensor, name=None, ignore_value=0):
   """Convert dense/sparse tensor to sparse while dropping user specified values.
 
   Args:
-    input: A `Tensor` or `SparseTensor`.
-    ignore_value: The value to be dropped from input.
+    tensor: A dense `Tensor` to be converted to a `SparseTensor`.
+    name: Optional name for the op.
+    ignore_value: The value to be dropped from input. Default to 0 for backward compatibility.
   """
   pass
 ```
@@ -343,7 +351,7 @@ Below is a more detailed illustration of how each layer works. If there is a voc
 ```python
 vocabulary_list = ["Italy", "France", "England", "Austria", "Germany"]
 inp = np.asarray([["Italy", "Italy"], ["Germany", ""]])
-sp_inp = tf.to_sparse(inp, "")
+sp_inp = tf.sparse.from_dense(inp, ignore_value="")
 cat_layer = tf.keras.layers.CategoryLookup(vocabulary=vocabulary_list)
 sp_out = cat_layer(sp_inp)
 ```
@@ -370,7 +378,7 @@ A weight input can also be passed into the layer if different categories/example
 If this input needs to be crossed with another categorical input, say a vocabulary list of days, then use `CategoryCrossing` which works in the same way as `tf.feature_column.crossed_column` without setting `depth`:
 ```python
 days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-inp_days = tf.to_sparse(np.asarray([["Sunday"], [""]]), ignore_value="")
+inp_days = tf.sparse.from_dense(np.asarray([["Sunday"], [""]]), ignore_value="")
 layer_days = CategoryLookup(vocabulary=days)
 sp_out_2 = layer_days(inp_days)
 
