@@ -125,6 +125,8 @@ void TF_DeleteEagerContext(TF_EagerContext* c);
 int TF_EagerContextIsExecutingEagerly(TF_EagerContext* c);
 void TF_EagerContextEnterGraph(TF_EagerContext* c, TF_Graph* g);
 void TF_EagerContextExitGraph(TF_EagerContext* c, TF_Graph* g, TF_Status* s);
+// Cleans up captures and other graph metadata in the eager context.
+void TF_EagerContextDeleteGraph(TF_EagerContext* c, TF_Graph* g, TF_Status* s);
 
 // A TF_TensorHandle is a union type of TFE_TensorHandle (eager tensor) and
 // TF_Output (graph tensor).
@@ -181,8 +183,8 @@ TF_TensorHandle* TF_OutputListOutput(TF_OutputList* o, int i);
 // A TF_AbstractOp is the metadata we need to execute an operation in either
 // eager or graph mode.
 typedef struct TF_AbstractOp TF_AbstractOp;
-TF_AbstractOp* TF_NewAbstractOp(TF_EagerContext* c, const char* const op_name,
-                                TF_Status* s);
+TF_AbstractOp* TF_NewAbstractOp(TF_EagerContext* c, const char* const op_type,
+                                const char* const op_name, TF_Status* s);
 void TF_DeleteAbstractOp(TF_AbstractOp* op);
 
 // TODO: we need a way of specifying attrs
