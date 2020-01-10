@@ -241,9 +241,17 @@ the MVP this is designed for:
     training dataset and be able to store that data on disk. Otherwise, a
     snapshot will never get created.
 
-2.  In case there are multiple workers and the dataset is sharded across
-    workers, we assume that the number of workers remains the same from one run
-    to another. If the number changes, we’ll trigger another snapshot.
+2.  In the cases where there are multiple workers and the dataset is sharded with
+    `Dataset.shard`, we assume that the number of workers remains the same from 
+    the initial (writing) run through to the reading runs.
+
+    If the number of workers change, then the `num_shards` parameter to
+    `Dataset.shard` will change, and this will result in a different graph
+    fingerprint and another snapshot write will be triggered.
+
+    If all workers use the exact same input pipeline with no sharding (e.g. all
+    workers will read from all the files), then snapshot will still be able to
+    read from previous snapshots even if the number of workers is different.
 
 3.  Any `repeat`s in the dataset should be moved to after the `snapshot` op, to
     avoid writing large (or infinite) amounts of data during a snapshot writing
