@@ -90,7 +90,7 @@ def snapshot(path,
 
 2.  `compression`: Optional. The type of compression to apply to the snapshot
     written to disk. This will support `GZIP`, `SNAPPY` or None. Defaults to
-    None.
+    AUTO.
 
 3.  `reader_path_prefix`: Optional. A prefix to add to the path when reading
     from snapshots. This is useful for filesystems where configuration is passed
@@ -101,7 +101,7 @@ def snapshot(path,
     through the path. Defaults to None.
 
 5.  `shard_size_bytes`: Optional. The maximum size of each data file to be
-    written by the snapshot dataset op. Defaults to 10 GiB.
+    written by the snapshot dataset op. Defaults to AUTO.
 
 6.  `pending_snapshot_expiry_seconds`: Optional. How long to wait (in seconds)
     before the snapshot op considers a previously unfinished snapshot to be
@@ -110,28 +110,31 @@ def snapshot(path,
 
 7.  `num_reader_threads`: Optional. Number of threads to parallelize reading
     from snapshot. Especially useful if compression is turned on since the
-    decompression operation tends to be intensive. Defaults to 1. If > 1, then
+    decompression operation tends to be intensive. If > 1, then
     this might introduce non-determinism i.e. the order in which the elements
     are read from the snapshot are different from the order they're written.
+    Defaults to AUTO. 
 
 8.  `reader_buffer_size`: Optional. Maximum number of elements we can prefetch
-    reading from the snapshot. Defaults to 1. Increasing this might improve
-    performance but will increase memory consumption.
+    reading from the snapshot. Increasing this might improve
+    performance but will increase memory consumption. Defaults to AUTO.
 
 9.  `num_writer_threads`: Optional. Number of threads to parallelize writing
     from snapshot. We'll open up `num_writer_threads` files and write to them in
     parallel. Especially useful if compression is turned on since the
-    compression operation tends to be intensive. Defaults to 1. If > 1, then
+    compression operation tends to be intensive. If > 1, then
     this might introduce non-determinism i.e. the order in which the elements
     are read from the upstream iterator are different from the order they're
-    written.
+    written. Defaults to AUTO. 
 
 10. `writer_buffer_size`: Optional. Maximum number of pipeline elements to fill
-    up the buffer before writing them out using `num_writer_threads`.
+    up the buffer before writing them out using `num_writer_threads`. Defaults
+    to AUTO.
 
-11. `shuffle_on_read`: Optional. If this is True, then the order in which
-    examples are produced when reading from a snapshot will be random. Defaults
-    to False.
+11. `shuffle_on_read`: Optional. If this is True, then snapshot randomizes the
+    order in which the snapshot files are read back. This emulates shuffling
+    of the input files during a training run (e.g. when `Dataset.list_files` 
+    is called with `shuffle` turned on). Defaults to False.
 
 12. `shuffle_seed`: Optional. If shuffle_seed is set, the random number
     generator used for shuffling (when `shuffle_on_read` is turned on) is seeded
@@ -166,12 +169,15 @@ def snapshot(path,
         and `run_id` (see the _Detailed Design_ section for details), we will
         use the `snapshot_name` to uniquely identify the snapshot.
 
+Note: `AUTO` options above indicates that snapshot will attempt to pick a 
+reasonable default that is suitable for most use cases. We will eventually add
+tf.data autotuning to pick the right parameters for the best performance for
+individual workloads.
+
 ### External API Guarantees
 
 Externally, we guarantee that snapshots written by a particular version of
-TensorFlow will be readable by that specific version of TensorFlow. Eventually,
-we can also guarantee that snapshots written will be readable by all future
-versions of TensorFlow.
+TensorFlow will be readable by that specific version of TensorFlow.
 
 We are not currently handling the case where workers do not go through the
 entire training set at least once.
@@ -285,13 +291,16 @@ WRITE, PASSTHROUGH, or READ state.
 1.  If the snapshot directory is non-existent, empty or it doesn’t contain a
     `metadata` file, we will enter the **WRITE** state.
 
-1.  If the snapshot directory contains a `metadata` file, we will read the
-    metadata file.
+1.  If the snapshot directory contains a `metadata.final` file, we will read
+    the final metadata file and proceed to the **READ** state.
 
-    1.  The metadata file contains the following fields:
-        1.  A training run ID
-        1.  A boolean indicating if the snapshot is complete
+    1.  The file contains the following fields:
+        1.  A training run ID,
+        1.  A boolean indicating if the snapshot is complete.
         1.  A training run start-time.
+
+1.  If the snapshot directory contains a `metadata` file but not a 
+    `metadata.final` file, we will read the metadata file.
 
 1.  If the training run start-time is more than the (configurable) training run
     timeout (set with the `pending_snapshot_expiry_seconds` parameter), we will
@@ -315,7 +324,9 @@ WRITE, PASSTHROUGH, or READ state.
     the snapshot.metadata file to determine whether it contains the same
     training run ID.
 
-    1.  If it does, we set the complete bit to true to finalize the directory.
+    1.  If it does, we write a `metadata.final` file containing the 
+        same information as the `metadata` file but with the complete
+        bit set to true.
     1.  If it does not, it means that someone else is concurrently writing the
         snapshot and we lost the race to them. We delete all data in the
         training run directory.
