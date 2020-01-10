@@ -70,14 +70,10 @@ We are proposing the following API for the snapshot transformation.
 ```python
 def snapshot(path,
              compression=None,
-             reader_path_prefix=None,
-             writer_path_prefix=None,
              shard_size_bytes=None,
              pending_snapshot_expiry_seconds=None,
              num_reader_threads=None,
-             reader_buffer_size=None,
              num_writer_threads=None,
-             writer_buffer_size=None,
              shuffle_on_read=None,
              shuffle_seed=None,
              mode=None,
@@ -88,38 +84,26 @@ def snapshot(path,
 1.  `path`: Required. A directory where we want to save our snapshots and/or
     read from a previously saved snapshot.
 
-2.  `compression`: Optional. The type of compression to apply to the snapshot
+1.  `compression`: Optional. The type of compression to apply to the snapshot
     written to disk. This will support `GZIP`, `SNAPPY` or None. Defaults to
     AUTO.
 
-3.  `reader_path_prefix`: Optional. A prefix to add to the path when reading
-    from snapshots. This is useful for filesystems where configuration is passed
-    in through the path. Defaults to None.
-
-4.  `writer_path_prefix`: Optional. A prefix to add to the path when writing to
-    snapshots. This is useful for filesystems where configuration is passed in
-    through the path. Defaults to None.
-
-5.  `shard_size_bytes`: Optional. The maximum size of each data file to be
+1.  `shard_size_bytes`: Optional. The maximum size of each data file to be
     written by the snapshot dataset op. Defaults to AUTO.
 
-6.  `pending_snapshot_expiry_seconds`: Optional. How long to wait (in seconds)
+1.  `pending_snapshot_expiry_seconds`: Optional. How long to wait (in seconds)
     before the snapshot op considers a previously unfinished snapshot to be
     stale and starts writing a snapshot from scratch again. Defaults to 86400
     seconds (1 day).
 
-7.  `num_reader_threads`: Optional. Number of threads to parallelize reading
+1.  `num_reader_threads`: Optional. Number of threads to parallelize reading
     from snapshot. Especially useful if compression is turned on since the
     decompression operation tends to be intensive. If > 1, then
     this might introduce non-determinism i.e. the order in which the elements
     are read from the snapshot are different from the order they're written.
     Defaults to AUTO. 
 
-8.  `reader_buffer_size`: Optional. Maximum number of elements we can prefetch
-    reading from the snapshot. Increasing this might improve
-    performance but will increase memory consumption. Defaults to AUTO.
-
-9.  `num_writer_threads`: Optional. Number of threads to parallelize writing
+1.  `num_writer_threads`: Optional. Number of threads to parallelize writing
     from snapshot. We'll open up `num_writer_threads` files and write to them in
     parallel. Especially useful if compression is turned on since the
     compression operation tends to be intensive. If > 1, then
@@ -127,21 +111,17 @@ def snapshot(path,
     are read from the upstream iterator are different from the order they're
     written. Defaults to AUTO. 
 
-10. `writer_buffer_size`: Optional. Maximum number of pipeline elements to fill
-    up the buffer before writing them out using `num_writer_threads`. Defaults
-    to AUTO.
-
-11. `shuffle_on_read`: Optional. If this is True, then snapshot randomizes the
+1.  `shuffle_on_read`: Optional. If this is True, then snapshot randomizes the
     order in which the snapshot files are read back. This emulates shuffling
     of the input files during a training run (e.g. when `Dataset.list_files` 
     is called with `shuffle` turned on). Defaults to False.
 
-12. `shuffle_seed`: Optional. If shuffle_seed is set, the random number
+1.  `shuffle_seed`: Optional. If shuffle_seed is set, the random number
     generator used for shuffling (when `shuffle_on_read` is turned on) is seeded
     by the given seed. Otherwise, it is seeded by a random seed that differs for
     every run.
 
-13. `mode`: Optional. The mode at which snapshot should operate. Valid options
+1.  `mode`: Optional. The mode at which snapshot should operate. Valid options
     are `auto`, `read`, `write`, and `passthrough`. The default mode is `auto`,
     where the snapshot op will automatically determine what mode to operate in.
 
@@ -150,24 +130,33 @@ def snapshot(path,
         materialization currently exists. In other words, we enter the **WRITE**
         state immediately.
 
-    2.  `read` mode forces the snapshot transformation to read from the latest
+    1.  `read` mode forces the snapshot transformation to read from the latest
         version of the materialization on disk, regardless of whether the data
         stored on disk is complete and valid. In other words, we enter the
         **READ** state immediately.
 
-    3.  `passthrough` mode turns the snapshot transformation into a no-op. In
+    1.  `passthrough` mode turns the snapshot transformation into a no-op. In
         other words, we enter the **PASSTHROUGH** state immediately.
 
-    4.  `auto` retains the default behavior of snapshot. See the "Standard
+    1.  `auto` retains the default behavior of snapshot. See the "Standard
         Kernel Workflow" section for the default behavior.
 
-14. `snapshot_name`: Optional. If set, use the supplied string as a named
+1.  `snapshot_name`: Optional. If set, use the supplied string as a named
     snapshot name instead of introspecting the data pipeline and automatically
     generating a unique identifier for the specific data pipeline.
 
     1.  Instead of generating a new fingerprint of the input processing graph or
         and `run_id` (see the _Detailed Design_ section for details), we will
         use the `snapshot_name` to uniquely identify the snapshot.
+
+    1.  Multiple concurrent training jobs with the same "snapshot_name" may
+        result in concurrent write collisions and a potentially invalid snapshot
+        if the jobs tries to read from and then write to the metadata file at
+        exactly the same time. 
+
+        The user is expected to handle these cases and explicitly specify `mode`s
+        to ensure that only one run is set to `write` mode at any point if
+        collisions are a possibility.
 
 Note: `AUTO` options above indicates that snapshot will attempt to pick a 
 reasonable default that is suitable for most use cases. We will eventually add
@@ -195,10 +184,7 @@ select whether to train or preprocess on their own, which is not good.
 
 ### Performance Implications
 
-*   Do you expect any (speed / memory)? How will you confirm?
-*   There should be microbenchmarks. Are there?
-*   There should be end-to-end tests and benchmarks. If there are not (since
-    this is still a design), how will you track that these will be created?
+Benchmarks for this feature will be included as part of Dataset microbenchmarks.
 
 ### Dependencies
 
