@@ -1,8 +1,8 @@
 # Single python code path for eager and graph
 
-| Status        | Proposed      |
+| Status        | Accepted      |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | 184 |
+| **RFC #**     | [184](https://github.com/tensorflow/community/pull/184) |
 | **Author** | Saurabh Saxena (srbs@google.com) |
 | **Sponsors**   | Alex Passos, Gaurav Jain                |
 | **Updated**   | 2019-12-03                                           |
@@ -317,7 +317,8 @@ Automatic control dependencies (ACD) will move to C++ as well. However instead o
 
 ### Open questions
 
-1. Keras seems to be using [non-public APIs](https://github.com/tensorflow/tensorflow/blob/6d7926bb87c1a91ffd110aa3407c003b2ae54009/tensorflow/python/keras/engine/base_layer.py#L2511) for directly building NodeDef and adding that to the graph. This is necessary for supporting Keras's Functional API (Model.add_loss, Model.add_metric, and auto-Lambda layers). We need to figure out if/how to support that. There are ongoing efforts to use just the public API of TF in tf.keras but the timelines for that are unclear.
+1.  Keras seems to be using [non-public APIs](https://github.com/tensorflow/tensorflow/blob/6d7926bb87c1a91ffd110aa3407c003b2ae54009/tensorflow/python/keras/engine/base_layer.py#L2511) for directly building NodeDef and adding that to the graph. This is necessary for supporting Keras's Functional API (Model.add_loss, Model.add_metric, and auto-Lambda layers). We need to figure out if/how to support that. There are ongoing efforts to use just the public API of TF in tf.keras but the timelines for that are unclear.
+    1. In the design review it was concluded that we should either be able to change Keras to use public python APIs or replace the internal python API calls with C API calls.
 
 
 ## Appendix
