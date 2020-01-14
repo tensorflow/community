@@ -104,6 +104,8 @@ processing their input pipelines and quickly feeding data to accelerators.
 
 #### Embedded Cluster Architecture
 
+Each TensorFlow server runs the tf.data worker gRPC service, and one server also
+runs the master gRPC service. This lets users leverage the tf.data service
 without needing to provision additional compute resources. and gives all the
 benefits of the tf.data service except for horizontal scaling.
 
