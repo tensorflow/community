@@ -507,9 +507,9 @@ the tf.data service.
     relies on the order of the input files, the user's assumptions will be
     violated when splitting causes each input worker to process only a subset of
     the input files.
--   If a dataset doesn't support splitting, it must be moved after the part of
-    the dataset which is distributed. Alternately, the user could set
-    num_tasks=1 to avoid the need for splitting, but this will have a heavy
+-   If a particular dataset operation doesn't support splitting, it must be moved
+    after the part of the dataset which is distributed. Alternately, the user could
+    set num_tasks=1 to avoid the need for splitting, but this will have a heavy
     performance cost since it only allows a single worker to generate dataset
     elements. The most commonly used but unsupported datasets are
     `from_generator` and `zip`.
