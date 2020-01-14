@@ -72,10 +72,8 @@ def snapshot(path,
              compression=None,
              shard_size_bytes=None,
              pending_snapshot_expiry_seconds=None,
-             num_reader_threads=None,
              num_writer_threads=None,
-             shuffle_on_read=None,
-             shuffle_seed=None,
+             reader_fn=None,
              mode=None,
              snapshot_name=None):
   pass  # Implementation goes here.
@@ -96,13 +94,6 @@ def snapshot(path,
     stale and starts writing a snapshot from scratch again. Defaults to 86400
     seconds (1 day).
 
-1.  `num_reader_threads`: Optional. Number of threads to parallelize reading
-    from snapshot. Especially useful if compression is turned on since the
-    decompression operation tends to be intensive. If > 1, then
-    this might introduce non-determinism i.e. the order in which the elements
-    are read from the snapshot are different from the order they're written.
-    Defaults to AUTO. 
-
 1.  `num_writer_threads`: Optional. Number of threads to parallelize writing
     from snapshot. We'll open up `num_writer_threads` files and write to them in
     parallel. Especially useful if compression is turned on since the
@@ -111,15 +102,47 @@ def snapshot(path,
     are read from the upstream iterator are different from the order they're
     written. Defaults to AUTO. 
 
-1.  `shuffle_on_read`: Optional. If this is True, then snapshot randomizes the
-    order in which the snapshot files are read back. This emulates shuffling
-    of the input files during a training run (e.g. when `Dataset.list_files` 
-    is called with `shuffle` turned on). Defaults to False.
+1.  `reader_fn`: Optional. A user provided reader function to use when reading
+    the snapshot back. This allows the user to specify the concurrency and
+    randomization required when reading from the snapshot.
 
-1.  `shuffle_seed`: Optional. If shuffle_seed is set, the random number
-    generator used for shuffling (when `shuffle_on_read` is turned on) is seeded
-    by the given seed. Otherwise, it is seeded by a random seed that differs for
-    every run.
+    `reader_fn` should be a function that accepts two arguments: (1) a list of
+    snapshot file paths, and (2) a reference to a `SnapshotDataset` class.
+    The function should return a `Dataset` class.
+
+    The `SnapshotDataset` class is a `Dataset` (similar to other source datasets
+    like `TFRecordDataset` or `TextLineDataset`) with the following constructor:
+    ```python
+    class SnapshotDataset(dataset_ops.DatasetSource):
+        def __init__(filenames):
+        """Creates a `SnapshotDataset`.
+
+        Args:
+          filenames: A `tf.string` tensor or a `tf.data.Dataset` containing one or
+          more filenames.
+        """
+        pass
+    ```
+
+    If the `reader_fn` is not specified, a default equivalent to the following 
+    will be used:
+    ```python
+    def reader_fn(filenames, SnapshotDataset):
+        return SnapshotDataset(filenames)
+    ```
+
+    Users can optionally add snapshot file shuffling and parallelism by passing
+    a `reader_fn` similar to the one here:
+    ```python
+    def reader_fn(filenames, SnapshotDataset):
+        file_ds = Dataset.from_tensor_slices(filenames)
+        file_ds = file_ds.shuffle(1000)
+        reader_ds = dataset.interleave(
+          lambda x: SnapshotDataset(x),
+          cycle_length=32,
+          num_parallel_calls=32)
+        return reader_ds
+    ```
 
 1.  `mode`: Optional. The mode at which snapshot should operate. Valid options
     are `auto`, `read`, `write`, and `passthrough`. The default mode is `auto`,
