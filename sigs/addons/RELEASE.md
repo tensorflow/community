@@ -6,9 +6,8 @@ SIG Addons release process consists of the folowing steps:
 	* Set the correct version and suffix in [version.py](https://github.com/tensorflow/addons/blob/master/tensorflow_addons/version.py)
 	* Freeze the tensorflow version in
       - [setup.py](https://github.com/tensorflow/addons/blob/master/setup.py)
-      - [requirements.txt](https://github.com/tensorflow/addons/blob/master/build_deps/requirements.txt)
+      - [requirements.txt](https://github.com/tensorflow/addons/blob/master/requirements.txt)
 	* Remove `--nightly` flag from [release scripts](https://github.com/tensorflow/addons/tree/master/tools/ci_build/builds)
-	* Compile the docs: [instructions](https://github.com/tensorflow/addons/tree/master/tools/docs)
 3. Trigger [Travis build](https://travis-ci.org/tensorflow/addons)
     * This will test and build linux+macos wheels and publish to PyPi
 4. Publish and tag a [release on Github](https://github.com/tensorflow/addons/releases)
