@@ -1,9 +1,10 @@
 # Distributed tf.data service
 
-| Status        | Proposed          |
+| Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [195](https://github.com/tensorflow/community/pull/195) |
-| **Author(s)** | Andrew Audibert (aaudibert@google.com) Rohan Jain (rohanj@google.com) |
+| **Author(s)** | Andrew Audibert (aaudibert@google.com) Rohan Jain       |
+:               : (rohanj@google.com)                                     :
 | **Sponsor**   | Jiri Simsa (jsimsa@google.com)                          |
 | **Updated**   | 2019-01-09                                              |
 
@@ -62,7 +63,9 @@ utilization for valuable accelerator resources, reducing total cost.
 Today, the tf.distribute API statically shards data across accelerators. This
 can lead to suboptimal utilization because some shards may contain more data
 than others. The tf.data service provides a mechanism for dynamically sharding,
-reducing the data imbalance across accelerators.
+reducing the data imbalance across accelerators. Note that dynamic load
+balancing and deterministic output are mutually exclusive; if users require
+deterministic output, they must trade off dynamic load balancing.
 
 ### Visitation guarantees
 
@@ -154,7 +157,7 @@ def tf.data.experimental.service.create_iteration(
   if consumer_index == 0:
     # The iteration object is a byte array which needs to be shared among all
     # consumers. Here we suppose there are broadcast_send and broadcast_recv
-    # method available.
+    # methods available.
     iteration_id = tf.data.experimental.service.create_iteration(ds, address, 3)
     broadcast_send(iteration_id)
   else:
@@ -373,14 +376,26 @@ list<Tensors> GetElement(iterator_id);
 void ProcessDataset(int dataset_id, int iteration_id, list<int> iterator_ids);
 ```
 
-#### Visitation Guarantees
+#### Visitation Guarantee
 
-When iterating over a dataset, the tf.data service will process all input data
-at least once, even in the presence of master or worker failures. If there are
-no failures, all input data will be processed exactly once.
+When iterating over a deterministic dataset, the tf.data service will process
+all input data exactly once, even in the presence of master or worker failures.
+We achieve exactly-once by having consumers keep track of their index within
+each task, and having restored tasks skip elements to reach the requested index.
+For the skipping to give exactly-once semantics, the dataset must produce
+outputs deterministically.
 
-With determinstic execution enabled, the tf.data service provides an
-exactly-once visitation guarantee even in the face of master or worker failures.
+If the dataset is not deterministic, the user can choose either at-least-once or
+a close-to-exactly-once visitation guarantee. We can achieve
+close-to-exactly-once by using the same skipping technique that we use to
+achieve exactly-once for deterministic datasets. If users prefer an
+at-least-once guarantee, we can instead start restored tasks from their latest
+checkpoint.
+
+In some cases, we can provide an exactly-once visitation guarantee to
+non-deterministic pipelines. If input workers are brought down gracefully, they
+can first write checkpoints of their tasks. This way, tasks can begin exactly
+where they left off.
 
 #### Determinism
 
@@ -404,10 +419,7 @@ element for consumer `i`.
 To provide determinism even when servers fail, consumers can keep track of which
 element index they have processed up to for each task. Input workers would
 attach per-task element indices when they produce elements, so consumers can
-ignore duplicate elements caused by worker restarts. We will use an analogous
-mechanism to avoid re-processing the same split in case of master falure. Input
-workers will track the split index of splits as they receive them, and ignore
-duplicate splits.
+ignore duplicate elements caused by worker restarts.
 
 #### Failure Recovery
 
@@ -427,8 +439,8 @@ The unrecoverable state includes
     *   **dataset id** for the iterated dataset so that we can recover the
         iteration's split generator
     *   **iteration id**
-    *   **participating worker ids**, so that we can send splits to the correct
-        workers.
+    *   **assignments from splits to tasks**, so that we can restart failed
+        tasks on new workers.
 
 Recoverable state includes
 
@@ -436,19 +448,11 @@ Recoverable state includes
     iterations.
 *   **Worker addresses**: Recoverable when workers reconnect.
 *   **Worker loads**: Recoverable when workers reconnect.
-*   **Assignment from splits to workers**: Recoverable when workers reconnect.
-*   **Outstanding splits**: Recoverable by re-running split generators from
-    their checkpoint state.
+*   **Assignment from tasks to workers**: Recoverable when workers reconnect.
 
 To improve recovery time, the master will periodically write checkpoints of its
 split generators and outstanding splits, so that split generators don't need to
 be run from the beginning during master recovery.
-
-A concern with the above recovery strategy is that a master could transmit a
-split before crashing, then restart and transmit the same split again. To avoid
-this duplication, the master attaches a split index to every split it sends to a
-worker. When workers reconnect, they inform the master of their latest split
-index.
 
 Workers have no unrecoverable state. If a worker crashes, a new worker can take
 its place. It is up to the master to reassign splits from the crashed worker to
@@ -461,9 +465,9 @@ from.
 
 We will read and write this state through a MasterState interface which can be
 implemented using various storage backends. For use cases that require fault
-tolerance, the user must configure a fault-tolerant MasterState, e.g. Spanner
-internally, Cloud Spanner in GCP, or etcd externally. If fault tolerance isn't
-required, the user could configure state to be held in memory only.
+tolerance, the user must configure a fault-tolerant MasterState, e.g. Cloud
+Spanner or etcd. If fault tolerance isn't required, the user could configure
+state to be held in memory only.
 
 #### Leadership Transfer
 
@@ -478,24 +482,27 @@ ZooKeeper cluster, and it would also require adding a new dependency on a
 ZooKeeper client.
 
 What TensorFlow does have is a FileSystem API. We will leverage this API to
-perform leadership transfer as follows:
+perform leadership transfer by creating empty files and inspecting file
+modification times.
 
-1.  The first master will create a file named "master_seqno_0". If it
-    successfully creates the file, it will consider itself the leader.
-1.  The leader master will check every N milliseconds that the "master_seqno"
-    file it created still exists. If the file no longer exists, the master will
-    cease operation immediately.
-1.  When a master thinks it should be leader, it attempts to atomically rename
-    the master_seqno_n file to master_seqno_n+1. If this succeeds, the master
-    will wait (N + M) milliseconds, verify that its renamed file still exists,
-    and begin acting as leader. This gives the previous leader time to notice
-    the rename.
+```
+files = list_directory(leadership_directory)
+if all_files_older_than(files, leadership_transfer_interval):
+  file = create_unique_file(leadership_directory);
+  if file_is_strictly_newest(file, leadership_directory):
+    become_leader()
+# Another master may be leader. Wait for some time before trying again.
+wait_random_interval()
+```
 
-The above scheme relies on rename being atomic so that two masters don't both
-succeed at renaming the same file. Users may opt to use a filesystem that
-doesn't support atomic rename, but they do so at the (unlikely) risk of two
-concurrently running masters thinking they are leader. Common filesystems such
-as Posix and HDFS support atomic rename.
+The leader master will periodically write files to the leadership directory to
+indicate that it is still leading.
+
+The above scheme relies on the filesystem's create_file() and list() operations
+being strongly consistent . Users may opt to use a filesystem that doesn't
+support strong consistency, but they do so at the risk of two concurrently
+running masters thinking they are leader. Common filesystems such as Posix,
+HDFS, and GCS support such strong consistency.
 
 #### Caveats
 
@@ -507,12 +514,12 @@ the tf.data service.
     relies on the order of the input files, the user's assumptions will be
     violated when splitting causes each input worker to process only a subset of
     the input files.
--   If a particular dataset operation doesn't support splitting, it must be moved
-    after the part of the dataset which is distributed. Alternately, the user could
-    set num_tasks=1 to avoid the need for splitting, but this will have a heavy
-    performance cost since it only allows a single worker to generate dataset
-    elements. The most commonly used but unsupported datasets are
-    `from_generator` and `zip`.
+-   If a particular dataset operation doesn't support splitting, it must be
+    moved after the part of the dataset which is distributed. Alternately, the
+    user could set num_tasks=1 to avoid the need for splitting, but this will
+    have a heavy performance cost since it only allows a single worker to
+    generate dataset elements. The most commonly used but unsupported datasets
+    are `from_generator` and `zip`.
 
 ### Alternatives Considered
 
