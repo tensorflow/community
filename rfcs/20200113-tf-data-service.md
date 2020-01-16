@@ -122,7 +122,20 @@ compute resources of the TensorFlow cluster for input processing.
 ### User-facing Python API
 
 This API is how users will interact with the tf.data service from their Python
-code.
+code. The steps for distributed iteration over a dataset are
+
+1.  Create a dataset like usual.
+2.  Apply the `distribute` transformation to indicate that the dataset should be
+    processed by the tf.data service.
+3.  Begin an *iteration* by calling `create_iteration`. An *iteration* is a
+    single pass through the dataset. Multiple consumers can read from the same
+    iteration, resulting in each consumer receiving a partition of the original
+    dataset. We represent an iteration with an iteration id, which is generated
+    by the tf.data service when you call `create_iteration`.
+4.  Share the iteration id with all consumer processes which are participating
+    in the iteration.
+5.  Create per-consumer iterators using `make_iterator`, and use these iterators
+    to read data from the tf.data service.
 
 ```python
 def tf.data.experimental.service.distribute(address):
@@ -158,7 +171,7 @@ def tf.data.experimental.service.create_iteration(
     # The iteration object is a byte array which needs to be shared among all
     # consumers. Here we suppose there are broadcast_send and broadcast_recv
     # methods available.
-    iteration_id = tf.data.experimental.service.create_iteration(ds, address, 3)
+    iteration_id = tf.data.experimental.service.create_iteration(ds, 3)
     broadcast_send(iteration_id)
   else:
     iteration_id = broadcast_recv()
@@ -170,10 +183,7 @@ def tf.data.experimental.service.create_iteration(
   Args:
     dataset: The dataset to begin iteration over.
     num_consumers: The number of consumers to divide the dataset between. Set
-      this if you require determinism. If None, a single iterator id is returned,
-      and any number of consumers can read from that iterator id. The data
-      produced by the dataset will be fed to consumers on a first-come
-      first-served basis.
+      this if you require determinism.
     num_tasks: The number of tasks to use for processing. Tasks run for
       the duration of an epoch, and each worker should typically process a single
       task. Normally it is best to leave this as None so that the master can
@@ -190,7 +200,7 @@ def tf.data.experimental.service.create_iteration(
   """
 
 def tf.data.experimental.service.make_iterator(
-    dataset, iteration, consumer_index):
+    dataset, iteration, consumer_index=0):
   """Creates an iterator for reading from the specified dataset.
 
   Args:
@@ -343,7 +353,7 @@ list<int> CreateIterators(int dataset_id, int num_consumers,
 
 // Returns the list of tasks processing data for `iterator_id`. Consumers query
 // this to find which worker addresses to read data from.
-list<TaskInfo> GetWorkersForiterator(int iterator_id);
+list<TaskInfo> GetWorkersForIterator(int iterator_id);
 
 ///---- Methods called by input workers ----
 
@@ -376,7 +386,7 @@ list<Tensors> GetElement(iterator_id);
 void ProcessDataset(int dataset_id, int iteration_id, list<int> iterator_ids);
 ```
 
-#### Visitation Guarantee
+#### Visitation Guarantees
 
 When iterating over a deterministic dataset, the tf.data service will process
 all input data exactly once, even in the presence of master or worker failures.
@@ -406,10 +416,9 @@ service will provide determinism.
 To get deterministic behavior, the tf.data service will require three things:
 
 1.  The dataset being distributed has deterministic output.
-1.  The user sets `deterministic=True` when calling
-    `tf.data.experimental.service.create_iteration`.
-1.  The user specifies how many input tasks to use when calling
-    `tf.data.experimental.service.create_iteration`.
+1.  The user sets `num_consumers`, `num_tasks`, and `deterministic=True` when
+    calling `tf.data.experimental.service.create_iteration`.
+1.  Each consumer uses a unique `consumer_index` when calling `make_iterator`.
 1.  The consumers do not fail.
 
 In the absence of failures, determinism is achieved by distributing splits
