@@ -509,8 +509,8 @@ indicate that it is still leading.
 The above scheme relies on the filesystem's create_file() and list() operations
 being strongly consistent . Users may opt to use a filesystem that doesn't
 support strong consistency, but they do so at the risk of two concurrently
-running masters thinking they are leader. Common filesystems such as Posix,
-HDFS, and GCS support such strong consistency.
+running masters thinking they are leader. Common filesystems such as POSIX,
+HDFS, and GCS support such strong consistency, but S3 does not.
 
 #### Caveats
 
