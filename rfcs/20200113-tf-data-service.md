@@ -3,8 +3,7 @@
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [195](https://github.com/tensorflow/community/pull/195) |
-| **Author(s)** | Andrew Audibert (aaudibert@google.com) Rohan Jain       |
-:               : (rohanj@google.com)                                     :
+| **Author(s)** | Andrew Audibert (aaudibert@google.com) Rohan Jain (rohanj@google.com) |
 | **Sponsor**   | Jiri Simsa (jsimsa@google.com)                          |
 | **Updated**   | 2019-01-09                                              |
 
