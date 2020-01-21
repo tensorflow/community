@@ -110,7 +110,7 @@ def snapshot(path,
     snapshot file paths, and (2) a reference to a `SnapshotDataset` class.
     The function should return a `Dataset` class.
 
-    The `SnapshotDataset` class is a `Dataset` (similar to other source datasets
+    The `SnapshotReaderDataset` class is a `Dataset` (similar to other source datasets
     like `TFRecordDataset` or `TextLineDataset`) with the following constructor:
     ```python
     class SnapshotDataset(dataset_ops.DatasetSource):
