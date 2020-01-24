@@ -61,7 +61,7 @@ Make sure you’ve thought through and addressed the following sections. If a se
 * Does this proposal change best practices for some aspect of using/developing TensorFlow? How will these changes be communicated/enforced?
 * If design changes existing API or creates new ones, the design owner should create end-to-end examples (ideally, a tutorial) which reflects how new feature will be used. Some things to consider related to the tutorial:
     - The minimum requirements for this are to consider how this would be used in a Keras-based workflow, as well as a non-Keras (low-level) workflow. If either isn’t applicable, explain why.
-    - It should show the usage of the new feature in an end to end example (from data reading to serving, if applicable). Many new features have unexpected effects in parts far away from the place of change that can be found by running through an end-to-end example.
+    - It should show the usage of the new feature in an end to end example (from data reading to serving, if applicable). Many new features have unexpected effects in parts far away from the place of change that can be found by running through an end-to-end example. TFX [Examples](https://github.com/tensorflow/tfx/tree/master/tfx/examples) have historically been good in identifying such unexpected side-effects and are as such one recommended path for testing things end-to-end.
     - This should be written as if it is documentation of the new feature, i.e., consumable by a user, not a TensorFlow developer. The code does not need to work (since feature is not implemented yet).
 
 ### Compatibility
