@@ -529,6 +529,18 @@ the tf.data service.
     generate dataset elements. The most commonly used but unsupported datasets
     are `from_generator` and `zip`.
 
+#### Framework Integration
+
+Many users interact with TensorFlow through a framework such as
+[TFX](https://www.tensorflow.org/tfx). A framework can make leveraging the
+tf.data service as simple as toggling a configuration boolean, triggering the
+framework to bring up tf.data service servers and add a
+`tf.data.experimental.service.distribute` transformation at the end of the
+users' data pipeline. By inspecting the amount of time blocked on the input
+pipeline, the framework could dynamically scale the number of input workers up
+and down to find the minimum number of workers needed so that the input pipeline
+can keep up with the model.
+
 ### Alternatives Considered
 
 #### Use Beam for distributed dataset processing.
