@@ -5,7 +5,7 @@
 | **RFC #**     | [195](https://github.com/tensorflow/community/pull/195) |
 | **Author(s)** | Andrew Audibert (aaudibert@google.com) Rohan Jain (rohanj@google.com) |
 | **Sponsor**   | Jiri Simsa (jsimsa@google.com)                          |
-| **Updated**   | 2019-01-09                                              |
+| **Updated**   | 2019-01-24                                              |
 
 ## Objective
 
@@ -98,20 +98,20 @@ provides dataset elements to consumers over RPC.
 **Consumer**: A machine which consumes data from the tf.data service. The
 consumer may be attached to a GPU or TPU, or use data for on-CPU training.
 
-#### Separate Cluster Architecture
+#### Option 1: Separate Cluster Architecture
 
 Each server is run on a separate host from the TensorFlow cluster. This
 configuration gives users a way to provide horizontally scaling CPU for
 processing their input pipelines and quickly feeding data to accelerators.
 
-#### Embedded Cluster Architecture
+#### Option 2: Embedded Cluster Architecture
 
 Each TensorFlow server runs the tf.data worker gRPC service, and one server also
 runs the master gRPC service. This lets users leverage the tf.data service
 without needing to provision additional compute resources. and gives all the
 benefits of the tf.data service except for horizontal scaling.
 
-#### Hybrid Architecture
+#### Option 3: Hybrid Architecture
 
 Users could run tf.data workers embedded in their TensorFlow cluster, and also
 run additional tf.data workers (and potentially the tf.data master) outside the
@@ -135,6 +135,12 @@ code. The steps for distributed iteration over a dataset are
     in the iteration.
 5.  Create per-consumer iterators using `make_iterator`, and use these iterators
     to read data from the tf.data service.
+
+We move away from the idiomatic `for element in dataset` control flow because
+there is now an extra step when going from dataset to iterator: creating an
+iteration. A higher layer API such as tf.distribute may use the API presented
+here to implement datasets which produce per-replica elements, enabling
+idiomatic control flow.
 
 ```python
 def tf.data.experimental.service.distribute(address):
@@ -237,7 +243,9 @@ It will be entirely in C++, and we don't currently have any plans to expose
 splitting through Python.
 
 The API focuses on producing and consuming `Split`s. A `Split` is a variant
-Tensor that can be subclassed to represent arbitrary types of splitting.
+Tensor that can be subclassed to represent arbitrary types of splitting. The
+`Split` base class is intentionally general so that subclasses have the
+flexibility to define splits however they like.
 
 ```cpp
 class Split {
@@ -614,6 +622,8 @@ service. We will also provide a tutorial for using the tf.data service.
 *   How should we communicate that distributing a dataset will change the order
     in which elements are processed? If users' datasets rely on elements being
     processed in a certain order, they could face unpleasant surprises.
+*   Should we support splitting `skip` and `take` by having them operate at a
+    per-task level (skip or take the first `N` elements within each task)?
 *   Is there a more user-friendly way to share iteration data across consumers?
     Distribution strategy is well-equipped with collective ops to share the
     iteration data, but sharing the iteration data could be a heavy burden for
