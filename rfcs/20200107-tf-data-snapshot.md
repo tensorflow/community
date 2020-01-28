@@ -70,12 +70,9 @@ We are proposing the following API for the snapshot transformation.
 ```python
 def snapshot(path,
              compression=None,
-             shard_size_bytes=None,
-             pending_snapshot_expiry_seconds=None,
-             num_writer_threads=None,
              reader_fn=None,
-             mode=None,
-             snapshot_name=None):
+             writer_fn=None,
+             pending_snapshot_expiry_seconds=None):
   pass  # Implementation goes here.
 ```
 
@@ -86,105 +83,107 @@ def snapshot(path,
     written to disk. This will support `GZIP`, `SNAPPY` or None. Defaults to
     AUTO.
 
-1.  `shard_size_bytes`: Optional. The maximum size of each data file to be
-    written by the snapshot dataset op. Defaults to AUTO.
+1.  `reader_fn`: Optional. The input pipeline transformation specified by 
+    `reader_fn` is executed when the snapshot detects that there is an existing, 
+    valid snapshot available.
+
+    `reader_fn` is a user specified function that accepts a single argument: 
+    (1) a Dataset of Datasets, each representing a "splits" of elements of the 
+    original dataset. The cardinality of the input dataset matches the 
+    cardinality of the output of `writer_fn` (see below). The function should 
+    return a Dataset of elements of the original dataset.
+
+    A default `reader_fn` will look like the following:
+
+    ```python
+    def default_reader_fn(datasets):
+      # shuffle the datasets splits
+      datasets = datasets.shuffle(NUM_DATASETS)
+      # read datasets in parallel and interleave their elements
+      return dataset.interleave(lambda x: x, num_parallel_calls=AUTOTUNE)
+    ```
+
+1.  `writer_fn`: Optional. The input pipeline specified by `writer_fn` is 
+    executed when the snapshot op detects that there are no valid snapshots
+    and no other threads are currently attempting to write a snapshot.
+
+    `writer_fn` is a user specified function that accepts a single argument: 
+    (1) a Dataset of elements to be written out. The function should return
+    a Dataset of Datasets, each representing "splits" of elements of the
+    original dataset. The tf.data snapshot implementation will then persist
+    splits in parallel.
+
+    A default writer_fn will look like the following:
+
+    ```python
+    def default_writer_fn(dataset):
+      # add a component with element index
+      dataset = dataset.enumerate()
+      # split input dataset in a round-robin fashion
+      return dataset.split(num_splits=NUM_CORES, key_fn=lambda i, _: i % NUM_CORE
+    ```
 
 1.  `pending_snapshot_expiry_seconds`: Optional. How long to wait (in seconds)
     before the snapshot op considers a previously unfinished snapshot to be
     stale and starts writing a snapshot from scratch again. Defaults to 86400
     seconds (1 day).
 
-1.  `num_writer_threads`: Optional. Number of threads to parallelize writing
-    from snapshot. We'll open up `num_writer_threads` files and write to them in
-    parallel. Especially useful if compression is turned on since the
-    compression operation tends to be intensive. If > 1, then
-    this might introduce non-determinism i.e. the order in which the elements
-    are read from the upstream iterator are different from the order they're
-    written. Defaults to AUTO. 
+#### Achieving Parallelism
 
-1.  `reader_fn`: Optional. A user provided reader function to use when reading
-    the snapshot back. This allows the user to specify the concurrency and
-    randomization required when reading from the snapshot.
+`reader_fn` and `writer_fn` will default to passing the dataset through unchanged
+by default. In other words, the default implementation will result in 
+single-threaded reads and writes on snapshots. Parallelism can be achieved in
+`writer_fn` by splitting up the dataset into multiple datasets, and using
+`num_parallel_calls` in the `interleave` function of the `reader_fn`.
 
-    `reader_fn` should be a function that accepts two arguments: (1) a list of
-    snapshot file paths, and (2) a reference to a `SnapshotDataset` class.
-    The function should return a `Dataset` class.
+#### Computing Graph Fingerprints
 
-    The `SnapshotReaderDataset` class is a `Dataset` (similar to other source datasets
-    like `TFRecordDataset` or `TextLineDataset`) with the following constructor:
-    ```python
-    class SnapshotDataset(dataset_ops.DatasetSource):
-        def __init__(filenames):
-        """Creates a `SnapshotDataset`.
+Snapshot attempts to determine whether a run of an input pipeline is the same
+as a previous run by computing the fingerprint of the nodes within the pipeline.
 
-        Args:
-          filenames: A `tf.string` tensor or a `tf.data.Dataset` containing one or
-          more filenames.
-        """
-        pass
-    ```
+However, some input pipelines might vary in insignificant ways from run to run
+that causes the fingerprinting of them to differ. For instance, consider the
+following preprocessing function:
 
-    If the `reader_fn` is not specified, a default equivalent to the following 
-    will be used:
-    ```python
-    def reader_fn(filenames, SnapshotDataset):
-        return SnapshotDataset(filenames)
-    ```
+```python
+features_to_multiply = {"feature1", "feature2", "feature3", "feature4"}
 
-    Users can optionally add snapshot file shuffling and parallelism by passing
-    a `reader_fn` similar to the one here:
-    ```python
-    def reader_fn(filenames, SnapshotDataset):
-        file_ds = Dataset.from_tensor_slices(filenames)
-        file_ds = file_ds.shuffle(1000)
-        reader_ds = dataset.interleave(
-          lambda x: SnapshotDataset(x),
-          cycle_length=32,
-          num_parallel_calls=32)
-        return reader_ds
-    ```
+def preprocessing_fn(value):
+  keys_to_features = {
+    "feature1": tf.FixedLenFeature([], tf.float32, 0.0),
+    "feature2": tf.FixedLenFeature([], tf.float32, 0.0),
+    "feature3": tf.FixedLenFeature([], tf.float32, 0.0),
+    "feature4": tf.FixedLenFeature([], tf.float32, 0.0)
+  }
 
-1.  `mode`: Optional. The mode at which snapshot should operate. Valid options
-    are `auto`, `read`, `write`, and `passthrough`. The default mode is `auto`,
-    where the snapshot op will automatically determine what mode to operate in.
+  parsed = tf.parse_single_example(value, keys_to_features)
+  combined_feature = 1.0
+  for item in features_to_multiply:
+    combined_feature *= parsed[item]
 
-    1.  `write` mode forces the snapshot transformation to write a new
-        materialization to disk, regardless of whether a complete and valid
-        materialization currently exists. In other words, we enter the **WRITE**
-        state immediately.
+  return combined_feature
 
-    1.  `read` mode forces the snapshot transformation to read from the latest
-        version of the materialization on disk, regardless of whether the data
-        stored on disk is complete and valid. In other words, we enter the
-        **READ** state immediately.
+dataset = ...
+dataset = dataset.map(preprocessing_fn)
+```
 
-    1.  `passthrough` mode turns the snapshot transformation into a no-op. In
-        other words, we enter the **PASSTHROUGH** state immediately.
+In the above example, our `features_to_multiply` variable uses a `set`, which is 
+not guaranteed to be ordered in Python 2. When we iterate over the set in the 
+for loop within `preprocessing_fn`, we may get a different graph on each 
+run (i.e. one run could have us multiplying `feature2` first, then `feature4`, 
+etc..., while another run may have us multiplying `feature1`, then `feature3`, 
+and so on).
 
-    1.  `auto` retains the default behavior of snapshot. See the "Standard
-        Kernel Workflow" section for the default behavior.
+In cases like these, we can ask fingerprinting to use a fixed value for the
+fingerprint of the map function with a new `set_fingerprint`
+transformation, which asks the fingerprinting function to not compute the 
+fingerprint of the previous node but to use a user-specified value instead:
 
-1.  `snapshot_name`: Optional. If set, use the supplied string as a named
-    snapshot name instead of introspecting the data pipeline and automatically
-    generating a unique identifier for the specific data pipeline.
-
-    1.  Instead of generating a new fingerprint of the input processing graph or
-        and `run_id` (see the _Detailed Design_ section for details), we will
-        use the `snapshot_name` to uniquely identify the snapshot.
-
-    1.  Multiple concurrent training jobs with the same "snapshot_name" may
-        result in concurrent write collisions and a potentially invalid snapshot
-        if the jobs tries to read from and then write to the metadata file at
-        exactly the same time. 
-
-        The user is expected to handle these cases and explicitly specify `mode`s
-        to ensure that only one run is set to `write` mode at any point if
-        collisions are a possibility.
-
-Note: `AUTO` options above indicates that snapshot will attempt to pick a 
-reasonable default that is suitable for most use cases. We will eventually add
-tf.data autotuning to pick the right parameters for the best performance for
-individual workloads.
+```python
+dataset = ...
+dataset = dataset.map(preprocessing_fn) 
+dataset = tf.data.set_fingerprint(dataset, fingerprint="my_fixed_fp")
+```
 
 ### External API Guarantees
 
