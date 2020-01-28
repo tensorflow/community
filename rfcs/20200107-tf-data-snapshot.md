@@ -168,21 +168,22 @@ dataset = dataset.map(preprocessing_fn)
 ```
 
 In the above example, our `features_to_multiply` variable uses a `set`, which is 
-not guaranteed to be ordered in Python 2. When we iterate over the set in the 
+not guaranteed to be ordered in Python. When we iterate over the set in the 
 for loop within `preprocessing_fn`, we may get a different graph on each 
 run (i.e. one run could have us multiplying `feature2` first, then `feature4`, 
 etc..., while another run may have us multiplying `feature1`, then `feature3`, 
 and so on).
 
 In cases like these, we can ask fingerprinting to use a fixed value for the
-fingerprint of the map function with a new `set_fingerprint`
+fingerprint of the map function with a new `set_snapshot_fingerprint`
 transformation, which asks the fingerprinting function to not compute the 
 fingerprint of the previous node but to use a user-specified value instead:
 
 ```python
 dataset = ...
 dataset = dataset.map(preprocessing_fn) 
-dataset = tf.data.set_fingerprint(dataset, fingerprint="my_fixed_fp")
+dataset = tf.data.experimental.set_snapshot_fingerprint(
+    dataset, fingerprint="my_fixed_fp")
 ```
 
 ### External API Guarantees
