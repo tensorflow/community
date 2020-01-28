@@ -175,14 +175,14 @@ etc..., while another run may have us multiplying `feature1`, then `feature3`,
 and so on).
 
 In cases like these, we can ask fingerprinting to use a fixed value for the
-fingerprint of the map function with a new `set_snapshot_fingerprint`
+fingerprint of the map function with a new `with_snapshot_fingerprint`
 transformation, which asks the fingerprinting function to not compute the 
 fingerprint of the previous node but to use a user-specified value instead:
 
 ```python
 dataset = ...
 dataset = dataset.map(preprocessing_fn) 
-dataset = tf.data.experimental.set_snapshot_fingerprint(
+dataset = tf.data.experimental.with_snapshot_fingerprint(
     dataset, fingerprint="my_fixed_fp")
 ```
 
