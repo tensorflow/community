@@ -622,9 +622,22 @@ service. We will also provide a tutorial for using the tf.data service.
 *   How should we communicate that distributing a dataset will change the order
     in which elements are processed? If users' datasets rely on elements being
     processed in a certain order, they could face unpleasant surprises.
-*   Should we support splitting `skip` and `take` by having them operate at a
-    per-task level (skip or take the first `N` elements within each task)?
-*   Is there a more user-friendly way to share iteration data across consumers?
+    -   Current plan is to address this through documentation.
+*   Should we support splitting `skip`, `take`, and `scan` by having them
+    operate at a per-task level (e.g. skip or take the first `N` elements within
+    each task)?
+    -   Leaning towards supporting these operations at a per-task level. This is
+        consistent with how skip/take/scan behave today when using distribution
+        strategies to distribute a dataset.
+*   Is there a more user-friendly way to share iteration ids across consumers?
     Distribution strategy is well-equipped with collective ops to share the
-    iteration data, but sharing the iteration data could be a heavy burden for
+    iteration ids, but sharing the iteration id could be a heavy burden for
     some users.
+    -   Distributing iteration ids is simple in the common case where a single
+        process builds the graph. If users are advanced enough to do distributed
+        training without distribution strategies, they will likely have a
+        different mechanism available for distributing iteration ids.
+*   Can `service.distribute` take a `ClusterResolver` so that the master
+    hostname isn't baked into the dataset definition?
+    -   We can achieve this by having the `distribute` transformation take a
+        master_address_or_resolver.
