@@ -347,8 +347,8 @@ with which the model is validated. Confidence interval is a common method for
 model validation. Next, we describe some concepts behind this feature. There are
 four types of thresholds:
 
-                        | Absolute                | Change
-:-------------- |:--------------------------------- |:------------------- |
+|                        | Absolute                | Change               |
+| :-------------- |:--------------------------------- |:------------------- |
 | w/o Confidence Interval | GenericValueThreshold   | GenericChangeThreshold |
 | w/ Confidence Interval  | GenericValueCIThreshold | GenericChangeCIThreshold |
 
