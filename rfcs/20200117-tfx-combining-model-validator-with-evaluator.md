@@ -2,11 +2,8 @@
 
 | Status        | Proposed                                               |
 | :------------ | :----------------------------------------------------- |
-| **Author(s)** | Gene Huang (jinhuang@google.com), Mike Dreves          |
-:               : (mdreves@google.com), Neoklis Polyzotis                :
-:               : (npolyzotis@google.com)                                :
-| **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com), Neoklis |
-:               : Polyzotis (npolyzotis@google.com)                      :
+| **Author(s)** | Gene Huang (jinhuang@google.com), Mike Dreves (mdreves@google.com), Neoklis Polyzotis (npolyzotis@google.com) |
+| **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com), Neoklis Polyzotis (npolyzotis@google.com) |
 | **Updated**   | 2020-01-17                                             |
 
 ## Objective
@@ -351,9 +348,9 @@ model validation. Next, we describe some concepts behind this feature. There are
 four types of thresholds:
 
                         | Absolute                | Change
------------------------ | ----------------------- | ------------------------
-w/o Confidence Interval | GenericValueThreshold   | GenericChangeThreshold
-w/ Confidence Interval  | GenericValueCIThreshold | GenericChangeCIThreshold
+:-------------- |:--------------------------------- |:------------------- |
+| w/o Confidence Interval | GenericValueThreshold   | GenericChangeThreshold |
+| w/ Confidence Interval  | GenericValueCIThreshold | GenericChangeCIThreshold |
 
 ```proto
 message GenericValueThreshold {
