@@ -5,7 +5,7 @@
 | **RFC #**     | [182](https://github.com/tensorflow/community/pull/182)|
 | **Author(s)** | Anna Revinskaya (annarev@google.com)                 |
 | **Sponsor**   | Alex Passos (apassos@tensorflow.org)                 |
-| **Updated**   | 2019-11-27                                           |
+| **Updated**   | 2020-02-04                                           |
 
 ## Objective
 
@@ -107,8 +107,6 @@ Primary purpose of keeping the virtual pip package is to workaround circular
 estimator imports. Alternatively, we can resolve this issue by lazy loading
 estimator.
 
-Lazy loading by itself would mean that we no longer have autocomplete for estimator. As a workaround, we can import estimator in the stub *.pyi* file.
-
 Estimator import in root *\_\_init\_\_.py* file:
 ```python
 from tensorflow.python.util.lazy_loader import LazyLoader as _LazyLoader
@@ -118,12 +116,7 @@ estimator = _LazyLoader(
 setattr(_current_module, "estimator", estimator)
 ```
 
-Estimator import in root *\_\_init\_\_.pyi* file:
-```python
-from tensorflow_estimator.python.estimator.api._v2 import estimator as estimator
-```
-In Python 3, we don't even need the *.pyi* file and instead can import estimator
-without lazy loading if `typing.TYPE_CHECKING` is `True`.
+Lazy loading by itself would mean that we no longer have autocomplete for estimator. As a workaround, we can import estimator without lazy loading if `typing.TYPE_CHECKING` is `True`.
 
 After building a pip package with this change all of the following work in PyCharms (both released and EAP) and VS Code:
 
@@ -137,7 +130,7 @@ To support the TensorFlow Metapackage plans we could add a new pip package that 
 
 ![alt_text](https://github.com/annarev/community/blob/pip_structure_rfc/rfcs/20191127-pip-structure/new_modular_structure.png "New proposed modular TensorFlow structure.")
 
-### Long term: Import from external package directly
+### Long term (optional): Import from external package directly
 Short term would fix IDE issues, but the package structure is still not as clean as it could be. We resolve cycles with lazy loading but it would be even better not to have this circular structure at all.
 
 Therefore, I propose that we don’t import external packages into TensorFlow 3.0. Users who want to use estimator, tensorboard summaries or keras could import them separately:
@@ -164,7 +157,7 @@ Rationale for this change:
 * One way dependencies (estimator depends on tensorflow and not vise-versa).
 * Minimal overhead for users. Adding an extra import is easy.
 
-Note that this change cannot be done in TensorFlow 2.x due to API guarantees. However, we can keep `tf.estimator`, `tf.keras` (once it is moved out of TensorFlow), `tf.summary` available while encouraging users to import from tensorflow\_estimator, tensorflow\_keras (once available) and tensorboard instead. This would require some work to make sure these packages contain the right API (for e.g. tensorflow\_estimator.estimator currently always contains V1 API).
+Note that this change cannot be done in TensorFlow 2.x due to API guarantees. Also, accessing these packages from `tf.` would match familiar workflows. Therefore, we can keep `tf.estimator`, `tf.keras` (once it is moved out of TensorFlow), `tf.summary` available as an alternative to importing pip package directly. This would require some work to make sure these packages contain the right API (for e.g. tensorflow\_estimator.estimator currently always contains V1 API).
 
 
 ### Alternatives Considered
