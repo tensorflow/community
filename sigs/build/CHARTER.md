@@ -2,14 +2,14 @@
 
 ## Objective
 
-For discussion and collaboration around the packaging and distribution of
-TensorFlow.
+For discussion and collaboration around the building, testing, packaging, and
+distribution of TensorFlow.
 
 ## Membership
 
-Everyone involved in the packaging, distributing or embedding of TensorFlow is
-welcome to join the group. To participate, request an invitation join the
-mailing list.
+Everyone involved in the building, testing, packaging, distributing or embedding
+of TensorFlow is welcome to join the group. To participate, request an invitation
+join the mailing list.
 
 Archives of the mailing list will be publicly accessible.
 
@@ -19,7 +19,7 @@ Archives of the mailing list will be publicly accessible.
 
 ## Contacts
 
-* Project lead: Martin Wicke [@martinwicke](https://github.com/martinwicke) - wicke at google
+* Project leads: Jason Zaman [@perfinion](https://github.com/perfinion), Austin Anderson [@angersson](https://github.com/angersson)
 * For administrative questions, contact Edd Wilder-James @ewilderj - ewj at
   google
 
