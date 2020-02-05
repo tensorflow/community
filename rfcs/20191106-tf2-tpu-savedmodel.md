@@ -5,7 +5,7 @@ Status        | Accepted
 **RFC #**     | [171](https://github.com/tensorflow/community/pull/171)
 **Author(s)** | Zhuoran Liu (lzr@google.com), Youlong Cheng (ylc@google.com)
 **Sponsor**   | Jonathan Hseu (jhseu@google.com)
-**Updated**   | 2020-11-06
+**Updated**   | 2020-02-04
 
 ## Objective
 
