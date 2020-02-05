@@ -3,7 +3,7 @@
 | Status        | Proposed                                                  |
 | :------------ | :-------------------------------------------------------- |
 | **Author(s)** | Jiayi Zhao (jyzhao@google.com)                            |
-| **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com), Zhitao Li (zhitaoli@google.com), Karmel Allison (karmel@google.com)                                                         |
+| **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com), Zhitao Li (zhitaoli@google.com), Karmel Allison (karmel@google.com) |
 | **Updated**   | 2020-01-17                                                |
 
 ## Objective
@@ -197,7 +197,7 @@ def run_fn(fn_args: executor.TrainerFnArgs):
 
 ### tf.distribute.Strategy
 
-Distribute strategy will be user module's responsibilty with the new generic
+Distribution strategy will be user module's responsibilty with the new generic
 trainer interface. To use it, user needs to modify the `run_fn()` in the module
 file, below shows the pseudo code example for single worker and multi-worker
 distribute strategy.
