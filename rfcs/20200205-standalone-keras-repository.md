@@ -129,7 +129,7 @@ except ImportError:
    base_layer = None
 ```
 
-### Use Keras to use public TF API symbol
+### Update Keras to use public TF API symbol
 
 The current Keras code will still work if they still do:
 ```python
@@ -139,10 +139,10 @@ ones = array_ops.ones([2, 3])
 ```
 
 On the other hand, since Keras is a separate repository, having it only use TF 
-public API symbol will heavily reduce the chance of breakage because of relying
+public API symbol will heavily reduce the chance of breakage caused by relying
 on private methods or implementation details. We think this is a item that is
-critial to the health of the repository. This also allows TF to change without 
-breaking Keras.
+critial to the health of the project. This also allows TF to change internal 
+implementation without worrying breaking Keras.
 
 The converted code should look like:
 
@@ -155,23 +155,23 @@ ones = tf.ones([2, 3])
 During this conversion, we might notice that certain functions used in Keras are
 not public API. Decision should be made on a case by case base for whether:
 
-* Copy the function to Keras
-* Replace the usage with other alternative public API
-* Make the function a new TF public API.
+* Copy the functionality from TF to Keras.
+* Replace the usage with other alternative TF public API.
+* Make the functionality a new TF public API.
 
 <b>Note that this work can be contributed by the open source community.</b>
 
 ### Two stage change process
 
 For any change that is changing both Tensorflow and Keras, they will need to be 
-split into two, one as a PR to TF, and the other one as PR to Keras. Here is 
+split into two, one as a PR to TF, and the other PR to Keras. Here is 
 some common scenario to split the change.
 
 1. Adding a new behavior to Tensorflow, and let Keras rely on it. Note that the 
 TF change needs to be submitted first, and keras PR needs to wait for the new TF
 nightly PIP. Also note that the rollback of TF PR will cause Keras to break, the
 rollback sequence should be PR 33333 and then PR 22222. The Google internal test
-for TF should catch this.
+for TF should catch the error if the rollback sequence is not correct.
 
 ```python
 # Existing scenario.
