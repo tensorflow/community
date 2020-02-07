@@ -237,10 +237,8 @@ def run_fn(args: trainer.executor.TrainerFnArgs) -> None:
   """Build the TF model and train it."""
   ps_strategy = tf.distribute.experimental.ParameterServerStrategy()
   with ps_strategy.scope():
-    train_dataset = _create_dataset(args.train_files, ...)
-    eval_dataset = _create_dataset(args.eval_files, ...)
     model = _build_keras_model()
-  model.fit(train_dataset, validation_data=eval_dataset, ...)
+  model.fit(...)
   if _is_chief():
     model.save(...)
 ```
