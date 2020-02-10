@@ -64,7 +64,7 @@ private features, it  might be an indication of tight coupling of
 implementation details. If certain private features are extensively used,
 we might want to consider exposing them  as public low level API.
 
-This design is also aligned with thee design for
+This design is also aligned with the design for
 [Modular TensorFlow](https://github.com/tensorflow/community/blob/master/rfcs/20190305-modular-tensorflow.md), 
 which splits the TensorFlow project into smaller components that are not
 tightly coupled together.
