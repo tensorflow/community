@@ -129,12 +129,12 @@ when we split the repository.
 The current usage of Keras from TensorFlow are:
 * Unit tests, which should be converted to integration tests, or port the tests
 to Keras repository.
-* `feature_column`.
-* Legacy `tf.layers` in v1 API.
-* legacy RNN cells.
+* `feature_column`, which uses Keras base layer and model.
+* Legacy `tf.layers` in v1 API, which uses Keras base layer as base class.
+* legacy RNN cells, which uses Keras serialization and deserialization.
 * TPU support code for `optimizer_v2`.
-* SavedModel.
-* TF Lite.
+* TF Lite for keras model saving utils.
+* Aliases from tf.losses/metrics/initializers/optimizers in tf.compat.v1.
 
 All Keras imports in integration tests can be changed to use dynamic import like below:
 
