@@ -109,19 +109,21 @@ GitHub as source of truth. This will have the following implications:
 * We expect the majority of the code development/contribution from GitHub
 and the dev tools / tests / scripts should focus on the GitHub development use
 case. See below for more details.
-* Keras CI/presubmit build for the GitHub repo should target the `tf-nightly` pip
-package as dependency. This means any change to TF will take at most 24
-hours to be reflected on the Keras side.
-* The Keras code will be mirrored to a Google-internal code repository via Google-internal 
-tools within a very short time window after each change.
+* Keras CI/presubmit build for the GitHub repo should target a stable PIP 
+version of tensorflow package as dependency. It could either be a `tf-nightly`
+with explicit version, or a release candidate version, or a stable version.
+Depend on a floating `tf-nightly` could cause CI build to be instable, which has
+been observed in other repository 
+[like tf-addons](https://github.com/tensorflow/addons/pull/912).
+* The Keras code will be mirrored to a Google-internal code repository via
+Google-internal tools within a very short time window after each change.
 The Google-internal CI tests will run on HEAD for both Keras and TF code.
-* The CI build for the repository on GitHub might break when it sees a
-new version of `tf-nightly`, if  certain behavior has been changed and wasn't
-caught by unit tests. We have  observed a few similar cases with
+* The CI build for the repository on GitHub might break when it points to a
+new version of `tf-nightly`, if certain behavior has been changed and wasn't
+caught by unit tests. We have observed a few similar cases with
 [tf/addons](https://github.com/tensorflow/addons).
-We hope this can be reduced by stronger
-unit test coverage by Google internel systems, when both TF and Keras code are 
-tested at HEAD.
+We hope this can be reduced by stronger unit test coverage by Google internel
+systems, when both TF and Keras code are tested at HEAD.
 * pip package management. Keras will now follow the `tf-estimator` approach. 
 "pip install tensorflow" should also install Keras (from PyPI) as well.
 There are more details for the pip package in the
