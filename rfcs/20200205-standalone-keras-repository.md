@@ -110,8 +110,13 @@ GitHub as source of truth. This will have the following implications:
 and the dev tools / tests / scripts should focus on the GitHub development use
 case. See below for more details.
 * Keras CI/presubmit build for the GitHub repo should target a stable PIP 
-version of tensorflow package as dependency. It could either be a `tf-nightly`
-with explicit version, or a release candidate version, or a stable version.
+version of tensorflow package as dependency. It could either be (preferably in
+this order):
+  * a stable version
+  * a release candidate version
+  * a `tf-nightly` with explicit version.
+Using a nightly version for testing should be motivated by the usage of a API
+feature not present in the stable or pre-release version.
 Depend on a floating `tf-nightly` could cause CI build to be instable, which has
 been observed in other repository 
 [like tf-addons](https://github.com/tensorflow/addons/pull/912).
