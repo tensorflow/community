@@ -80,11 +80,19 @@ codebase. `tf.Keras` will also replace Keras on PyPI.
 
 Also considered: `tensorflow/keras`.
 
-| keras-team/keras   | tensorflow/keras |
-:------------------- |:------------------------------------------- |
-|Under the umbrella of Keras SIG, which hosts all other Keras related projects like keras-application, KerasTuner etc.|Under the umbrella of tensorflow, which also hosts other TF related projects.|
-|Lots of existing followers on keras-team, who may not be easily migrated to TF project.|No cross org repo management cost on GitHub. Could rely on a lot of existing setup in TensorFlow.|
-|Can't easily delete keras project, which already have tons of stars and incoming reference links. Continued existence of external Keras code will create confusion ("why is there tensorflow/keras AND keras-team/keras?")|Issue/PR under the same org can be transferred easily, but not cross the different org. See [here](https://help.github.com/en/github/managing-your-work-on-github/transferring-an-issue-to-another-repository)|
+Pros:
+1. Under the umbrella of Keras SIG, which hosts all other Keras related projects
+like keras-application, KerasTuner etc.
+1. Lots of existing followers on keras-team, who may not be easily migrated to 
+TF project.
+1. Can't easily delete keras project, which already have tons of stars and 
+incoming reference links. Continued existence of external Keras code will create
+confusion ("why is there tensorflow/keras AND keras-team/keras?").
+
+Cons:
+1. The repo isn't under the same organization as tensorflow, which makes it hard
+to manage issues/PRs and references across the organization.
+1. Existing issue/PR under the same org can be transferred easily, but not cross the different org. See [here](https://help.github.com/en/github/managing-your-work-on-github/transferring-an-issue-to-another-repository).
 
 ### Source of Truth
 
