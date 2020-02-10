@@ -309,6 +309,34 @@ class existing_layer(Layer):
         knob2=3)
 ```
 
+### Github Repository Migration
+
+* For any open Github PR/issue in Keras-team/keras, it need to be copied to 
+Tensorflow if the content is still relevant in Tensorflow. Otherwise it will
+be closed as obsolete. We intend to have a clean keras-team/keras repository
+before we copy any issue or PR from TF side.
+* For any opening PR in Tensorflow for Keras, team will try to merge them as
+much as possible before the migration. For any open PR that hasn't been merged,
+we will check if it is still relevant/active, and will be copied to 
+keras-team/keras.
+* The permission of keras-team/keras need to be updated as the codebase is new.
+The access level for the repository need to be reestablished.
+From least access to most access, the permission levels for an organization repository are:
+
+  * Read: Recommended for non-code contributors who want to view or discuss the project.
+  * Triage: Recommended for contributors who need to proactively manage issues
+  and pull requests without write access.
+  * Write: Recommended for contributors who actively push to your project.
+  * Maintain: Recommended for project managers who need to manage the repository without access to sensitive or destructive actions.
+  * Admin: Recommended for people who need full access to the project, including sensitive and destructive actions like managing security or deleting a 
+  repository.
+
+Any existing Keras-team active member should get `Triage` level for now, and
+more permission will be granted once we identified active contributers. In the
+meantime, Keras team in Google will manage the repository initially, and will
+share more permissions with the community member.
+
+See more details about the project permission in https://help.github.com/en/github/setting-up-and-managing-organizations-and-teams/repository-permission-levels-for-an-organization.
 
 ### Performance Implications
 
