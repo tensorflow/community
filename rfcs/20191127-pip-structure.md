@@ -148,7 +148,7 @@ Would be changed to:
 ```python
 import tensorflow as tf
 import tensorflow_estimator as estimator
-import tensorflow_keras as keras
+import keras
 from tenosorboard import summaries
 ```
 
