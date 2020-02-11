@@ -1,12 +1,12 @@
 # tf.data Snapshot
 
-| Status        | Proposed                                                |
+| Status        | Accepted                                                |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [193](https://github.com/tensorflow/community/pull/193) |
 | **Author(s)** | Frank Chen (frankchn@google.com), Rohan Jain            |
 |               | (rohanj@google.com)                                     |
 | **Sponsor**   | Jiri Simsa (jsimsa@google.com)                          |
-| **Updated**   | 2020-01-07                                              |
+| **Updated**   | 2020-02-10                                              |
 
 ## Objective
 
