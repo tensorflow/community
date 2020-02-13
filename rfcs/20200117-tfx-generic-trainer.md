@@ -145,6 +145,7 @@ def run_fn(args: trainer.executor.TrainerFnArgs) -> None:
   """Build the TF model and train it."""
   model = _build_keras_model()
   model.fit(...)
+  # Save model to args.serving_model_dir.
   model.save(...)
 ```
 
