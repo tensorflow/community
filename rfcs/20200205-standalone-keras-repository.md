@@ -353,7 +353,8 @@ package imported by `tf_core`, like what we do for TF estimator.
 ### Developer experience Impact
 
 * The local build and test times should be greatly reduced, since compiling TF
-is no longer needed, and Keras is a pure-Python project.
+is no longer needed, and Keras is so far a pure-Python project (this might 
+change in future when custom c ops are added to Keras).
 * Cross-boundary changes will require some extra handling since such changes 
 needs to be split into two or more PRs. Same for rollbacks.
 * Tooling on the GitHub side (for code review, etc.) is not as good as
