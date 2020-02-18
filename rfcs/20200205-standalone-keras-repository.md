@@ -137,9 +137,9 @@ There are more details for the pip package in the
 ### Dependency Cleanup
 
 As the high-level API of TensorFlow, Keras should have a direct dependency on
-TF low-level APIs, but not the other way around. Unfortunately, there is some existing reverse 
-logic in the TF code that relies on Keras, which we should update/remove 
-when we split the repository.
+TF low-level APIs, but not the other way around. Unfortunately, there is some
+existing reverse logic in the TF code that relies on Keras, which we should 
+update/remove when we split the repository.
 
 The current usage of Keras from TensorFlow are:
 * Unit tests, which should be converted to integration tests, or port the tests
@@ -150,16 +150,27 @@ to Keras repository.
 * TPU support code for `optimizer_v2`.
 * TF Lite for keras model saving utils.
 * Aliases from tf.losses/metrics/initializers/optimizers in tf.compat.v1.
+* Symoblic/eager tensor logic for ops that is tightly coupled with Keras due to
+  current implementation of functional API and TF Ops layers.
 
-All Keras imports in integration tests can be changed to use dynamic import like below:
+For usage like tf.layers to keras.layers, it can't be removed due to the API
+contract and guarantee. We should use LasyLoader to walk around the cyclic
+dependency issue.
 
 ```python
-try:
-   from tensorflow.python.keras.engine import base_layer
-except ImportError:
-   tf.logging.error('keras is not installed, please pip install keras')
-   base_layer = None
+from tensorflow.python.util.lasy_loader import LasyLoader
+
+BaseLayer = LasyLoader(
+  'BaseLayer', globals(), 'keras.layers.Layer')
+if not BaseLayer:
+  raise ImportError('Keras is not installed, please pip install keras.')
 ```
+
+Other dependency should be removed as much as possible, eg move the util/code 
+from Keras to TF, or rework the implementation detail.
+
+**Note that this is a key point to prevent Keras accidentally break Tensorflow.**
+
 
 ### Update Keras to only use public TF APIs
 
