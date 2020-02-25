@@ -219,14 +219,15 @@ down the change for area's like distribution stragey, and other areas that
 might under active development.
 
 With the internal change history between 2019-01-01 and 2020-01-01:
-1. There are 6756 changes submitted to tensorflow/python
-2. There are 5115 changes submitted to tensorflow/python but not 
+1. There are <b>6756</b> changes submitted to tensorflow/python
+2. There are <b>5115</b> changes submitted to tensorflow/python but not 
 tensorflow/python/keras.
-3. Among the 1641 changes submitted to tensorflow/keras, 1338 of them change
-Keras only without touching tensorflow, and 303 of them change both Keras and
-TF.
-This means about 18.5% change that change Keras will change TF, and 4.4% change
-that change TF will touch Keras in the meantime.
+3. Among the <b>1641</b> changes submitted to tensorflow/keras, <b>1338</b> of 
+them change Keras only without touching tensorflow, and 303 of them change both 
+Keras and TF.
+
+This means about <b>18.5%</b> change that change Keras will change TF, and 
+<b>4.4%</b> change that change TF will touch Keras in the meantime.
 
 Here are some common scenarios:
 
@@ -339,6 +340,52 @@ class existing_layer(Layer):
         knob1=True,
         knob2=3)
 ```
+
+### Continuous integration and presubmit test
+Due to the fact that Keras code is also being used within Google, apart from 
+the normal Github CI (action) tests, We will also run the same tests internally
+against HEAD.
+1. Github CI and presubmit test will use a stable version of TF binary during
+test.
+2. Google CI and presubmit test will run against HEAD for both TF and Keras
+code. Note that we won't allow submiting Keras code directly to Google 
+internal code repo, engineers within Google are still allowed to create changes
+internally and run test for it.
+
+The gap between the HEAD version and TF used by Keras should be
+as close as possible. Large gap is expect to cause issue for debugging and code
+tracing.
+
+There are a few common cases that either CI could break:
+1. Github CI could break when the version of TF it depend on is changed. We
+think this can be mitigated by pinning Keras to a explicit version of TF, rather
+than a floating version like `tf-nightly`. The presubmit test when changing the
+verison nubmer should catch this. In the case that a new stable version is
+breaking some Keras test, we should
+
+    1a. Disable the failed tests and move forward to minimize the gap between
+    TF HEAD and Keras used version. Report the isuse TF team for fix.
+    
+    1b. In the case of major breakage, Keras will stay with old version, report
+    to TF team and get the issue fixed.
+
+    We hope 1b case should be minimized since same tests are running on Google 
+    CI as well.
+
+2. Google CI could break when a submitted PR for Keras is mirrored into Google 
+code base. We can't foresee these breakage since we don't run global presumbit
+internally for every CL. In the case of breakage, since external contributor
+won't notice this, Keras team in Google will:
+
+    2a. Rollback the original Keras PR if the fault is at Keras side (miss test
+    coverage, or bad code interface).
+    
+    2b. Update the internal tests to correctly rely on Keras public contract, or
+    disable the failed test for the moment.
+
+    We hope both case can be minimized with the internal dependency cleanup as
+    well as only relying on public TF API described above.
+
 
 ### Github Repository Migration
 
