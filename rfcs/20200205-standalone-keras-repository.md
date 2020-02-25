@@ -14,19 +14,35 @@ repository, with TensorFlow as a dependency.
 
 ## Motivation
 
+### TensorFlow API modularity
+
+Currently, Keras has to rely on a number of private TensorFlow APIs. However, a 
+litmus test of the quality of the public TensorFlow low-level APIs is that they 
+should be strictly sufficient to a higher-level API like Keras.
+After splitting the repository, Keras will have to import TensorFlow and 
+rely exclusively on public APIs. If Keras still ends up using TensorFlow
+private features, it  might be an indication of tight coupling of
+implementation details. If certain private features are extensively used,
+we might want to consider exposing them  as public low level API.
+
+This design is also aligned with the design for
+[Modular TensorFlow](https://github.com/tensorflow/community/blob/master/rfcs/20190305-modular-tensorflow.md), 
+which splits the TensorFlow project into smaller components that are not
+tightly coupled together.
+
 ### Build times
 
 Building the open-source TensorFlow project end-to-end is an extensive exercise. 
-With a standard GCP instance, it might take more than one hour to finish the whole
-build process (it might take longer with a Mac laptop). Although the local build 
-cache might help speed up the follow-up builds, the initial time cost is too 
-high for regular software development workflows. Internally, Google has a
+With a standard GCP instance, it might take more than one hour to finish the 
+whole build process (it might take longer with a Mac laptop). Although the local 
+build cache might help speed up the follow-up builds, the initial time cost is 
+too high for regular software development workflows. Internally, Google has a
 distributed build and caching service, which Googlers heavily rely on,
 that can build TensorFlow and run all Keras tests within 5 mins. Sadly,
 we can't expose this to external contributors.
 
 Currently, any contribution to Keras code will require building all of
-TensorFlow, which is quite expensive to do for average users.
+TensorFlow c++ binary, which is quite expensive to do for average users.
 Having a separate repository will allow the Keras package to be built
 without building TensorFlow. This should greatly improve the 
 velocity of open-source developers when they contribute to Keras code.
@@ -38,36 +54,19 @@ to Keras code has been a significant source of issues:
 
 * It discouraged contributions, since many external developers couldn't test
 their changes and make sure they were correct.
-* External developers would send unverified PRs, and Google reviewers spend time back 
-and forth, fixing the PR. Sometimes PR is just not moving forward because of the
-lengthy feedback loop.
+* External developers would send unverified PRs, and Google reviewers spend time 
+back and forth, fixing the PR. Sometimes PR is just not moving forward because 
+of the lengthy feedback loop.
 
-With the new standalone Keras repository, external contributors
-should experience much shorter turn-around time when 
-building/testing Keras, since they don't need to build TensorFlow anymore.
-This should  have a positive impact on building a vibrant open-source
+With the new standalone Keras repository, external contributors should 
+experience much shorter turn-around time when building/testing Keras, since they 
+don't need to build TensorFlow anymore.
+This should have a positive impact on building a vibrant open-source
 developer community.
 
 In addition, by getting the Keras team at Google to start developing Keras
 using the same public tools and infrastructure as third-party developers,
 we make the development process more transparent and more community-oriented.
-
-### TensorFlow API modularity
-
-There are other side-benefits if we split the repository. Currently, Keras
-has to rely on a number of private TensorFlow APIs. However, a litmus test
-of the quality of the public TensorFlow low-level APIs is that they should
-be strictly sufficient to a higher-level API like Keras.
-After splitting the repository, Keras will have to import TensorFlow and 
-rely exclusively on public APIs. If Keras still ends up using TensorFlow
-private features, it  might be an indication of tight coupling of
-implementation details. If certain private features are extensively used,
-we might want to consider exposing them  as public low level API.
-
-This design is also aligned with the design for
-[Modular TensorFlow](https://github.com/tensorflow/community/blob/master/rfcs/20190305-modular-tensorflow.md), 
-which splits the TensorFlow project into smaller components that are not
-tightly coupled together.
 
 
 ## Design Proposal
@@ -141,17 +140,18 @@ TF low-level APIs, but not the other way around. Unfortunately, there is some
 existing reverse logic in the TF code that relies on Keras, which we should 
 update/remove when we split the repository.
 
-The current usage of Keras from TensorFlow are:
-* Unit tests, which should be converted to integration tests, or port the tests
-to Keras repository.
+So far there are about 120 usages for Keras within Tensorflow, the current usage
+are:
+* Unit tests, which relies on Keras to verify certain behavior of TF, like
+distribution strategy, tf.function, and eager context. They should either be 
+converted to integration tests, or port the tests to Keras repository.
 * `feature_column`, which uses Keras base layer and model.
 * Legacy `tf.layers` in v1 API, which uses Keras base layer as base class.
 * legacy RNN cells, which uses Keras serialization and deserialization.
-* TPU support code for `optimizer_v2`.
+* TPU support code does a isinstance() check for `optimizer_v2`.
 * TF Lite for keras model saving utils.
 * Aliases from tf.losses/metrics/initializers/optimizers in tf.compat.v1.
-* Symoblic/eager tensor logic for ops that is tightly coupled with Keras due to
-  current implementation of functional API and TF Ops layers.
+* Keras symbolic tensor check in the ops library for tf.function.
 
 For usage like tf.layers to keras.layers, it can't be removed due to the API
 contract and guarantee. We should use LasyLoader to walk around the cyclic
@@ -167,7 +167,10 @@ if not BaseLayer:
 ```
 
 Other dependency should be removed as much as possible, eg move the util/code 
-from Keras to TF, or rework the implementation detail.
+from Keras to TF, or rework the implementation detail. For any of the
+dependencies that have to stay, <b>need to use public Keras API only</b>. A
+check will also be added to TF to make sure there isn't any dependencies being
+added in future for need of Keras.
 
 **Note that this is a key point to prevent Keras accidentally break Tensorflow.**
 
