@@ -67,6 +67,9 @@ developer community.
 In addition, by getting the Keras team at Google to start developing Keras
 using the same public tools and infrastructure as third-party developers,
 we make the development process more transparent and more community-oriented.
+In the meantime, some of the workload for repository management can be shared
+with community so that Keras team member within Google won't be the bottleneck
+for all the issues.
 
 
 ## Design Proposal
@@ -198,8 +201,8 @@ import tensorflow as tf
 ones = tf.ones([2, 3])
 ```
 
-During this conversion, we might notice that certain TF features used in Keras are
-not public. A decision should be made on a case-by-case basis:
+During this conversion, we might notice that certain TF features used in Keras
+are not public. A decision should be made on a case-by-case basis:
 
 * Copy the functionality from TF to Keras.
 * Replace the usage with another alternative TF public API.
@@ -211,11 +214,25 @@ not public. A decision should be made on a case-by-case basis:
 
 For any change that is affecting both TensorFlow and Keras, the change
 will need to be split into two, one as a PR to the TF repo,
-and the other as a PR to the Keras repo. Here are some common scenarios:
+and the other as a PR to the Keras repo. This will introduce overhead and slow
+down the change for area's like distribution stragey, and other areas that
+might under active development.
 
-1. Adding a new feature to TensorFlow, and having Keras rely on it. Note that the 
-TF change needs to be submitted first, and the Keras PR needs to wait for the new TF
-nightly to become available on PyPI.
+With the internal change history between 2019-01-01 and 2020-01-01:
+1. There are 6756 changes submitted to tensorflow/python
+2. There are 5115 changes submitted to tensorflow/python but not 
+tensorflow/python/keras.
+3. Among the 1641 changes submitted to tensorflow/keras, 1338 of them change
+Keras only without touching tensorflow, and 303 of them change both Keras and
+TF.
+This means about 18.5% change that change Keras will change TF, and 4.4% change
+that change TF will touch Keras in the meantime.
+
+Here are some common scenarios:
+
+1. Adding a new feature to TensorFlow, and having Keras rely on it. Note that 
+the TF change needs to be submitted first, and the Keras PR needs to wait for 
+the new TF nightly to become available on PyPI.
 
 Also note that any rollback of the TF PR will cause Keras to break, the
 rollback sequence should be PR 33333 and then PR 22222 (see example below).
@@ -335,9 +352,11 @@ we will check if it is still relevant/active, and will be copied to
 keras-team/keras.
 * The permission of keras-team/keras need to be updated as the codebase is new.
 The access level for the repository need to be reestablished.
-From least access to most access, the permission levels for an organization repository are:
+From least access to most access, the permission levels for an organization 
+repository are:
 
-  * Read: Recommended for non-code contributors who want to view or discuss the project.
+  * Read: Recommended for non-code contributors who want to view or discuss the
+  project.
   * Triage: Recommended for contributors who need to proactively manage issues
   and pull requests without write access.
   * Write: Recommended for contributors who actively push to your project.
@@ -360,9 +379,9 @@ is no performance regression.
 
 ### Dependencies
 
-The TensorFlow pip package will auto-install the Keras package, which shouldn't make 
-any difference on the end-user side. Under the hood, Keras will be a different 
-package imported by `tf_core`, like what we do for TF estimator.
+The TensorFlow pip package will auto-install the Keras package, which shouldn't
+make any difference on the end-user side. Under the hood, Keras will be a 
+different package imported by `tf_core`, like what we do for TF estimator.
 
 ### Developer experience Impact
 
