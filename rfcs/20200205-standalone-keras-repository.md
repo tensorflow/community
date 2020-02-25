@@ -419,6 +419,32 @@ share more permissions with the community member.
 
 See more details about the project permission in https://help.github.com/en/github/setting-up-and-managing-organizations-and-teams/repository-permission-levels-for-an-organization.
 
+### Alternative Considered
+
+Split the Tensorflow python and c++ code into separate pip package, eg 
+tf-core and tf-python, and tf-python will use a stable version of tf-core 
+package to build Tensorflow python. We have to maintain the compatiblity 
+between c++ layer and python layer, which is currently quite stable.
+
+    Pros:
+    * This should allow us to enjoy speed up of build time for OSS build, since 
+    build/test TF won't require building all the c kernel, which is the majority
+    of the build time. Internal CI won't be affected since it will always run
+    against HEAD.
+    * All the python code still lives in one repository, so we don't need to
+    split the change into 2 if it changes Keras and TF python at the same time.
+    
+    Cons:
+    * The change that touch both c kernel and TF python code will need to do the
+    two stage commit process, if the python change relies on c kernel change.
+    * Less motivated to cleanup the cross dependency between TF and Keras since
+    it is no longer a required task.
+    * With Google internel code repo as source of turth, most of the workflow/
+    tools will still be Google centric instead of Github centric.
+    * Keras-team/keras code base will still be there if we don't move new TF
+    code to it. Having a staled version out there is not ideal, and we should
+    really merge them (code/issue/community member) together.
+
 ### Performance Implications
 
 There may be some performance implications as we move towards only using
