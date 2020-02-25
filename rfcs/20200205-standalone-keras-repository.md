@@ -363,24 +363,25 @@ than a floating version like `tf-nightly`. The presubmit test when changing the
 verison nubmer should catch this. In the case that a new stable version is
 breaking some Keras test, we should
 
-    1a. Disable the failed tests and move forward to minimize the gap between
-    TF HEAD and Keras used version. Report the isuse TF team for fix.
+    * Disable the failed tests and move forward to minimize the gap between
+    TF HEAD and Keras used version. Report the issue TF team for fix.
     
-    1b. In the case of major breakage, Keras will stay with old version, report
+    * In the case of major breakage, Keras will stay with old version, report
     to TF team and get the issue fixed.
 
-    We hope 1b case should be minimized since same tests are running on Google 
-    CI as well.
+    We hope the second case should be minimized since same tests are running on
+    Google CI as well. Any change that might break Keras should be caught
+    with internal presubmits.
 
 2. Google CI could break when a submitted PR for Keras is mirrored into Google 
 code base. We can't foresee these breakage since we don't run global presumbit
 internally for every CL. In the case of breakage, since external contributor
 won't notice this, Keras team in Google will:
 
-    2a. Rollback the original Keras PR if the fault is at Keras side (miss test
+    * Rollback the original Keras PR if the fault is at Keras side (miss test
     coverage, or bad code interface).
     
-    2b. Update the internal tests to correctly rely on Keras public contract, or
+    * Update the internal tests to correctly rely on Keras public contract, or
     disable the failed test for the moment.
 
     We hope both case can be minimized with the internal dependency cleanup as
