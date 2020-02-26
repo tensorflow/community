@@ -157,13 +157,13 @@ converted to integration tests, or port the tests to Keras repository.
 * Keras symbolic tensor check in the ops library for tf.function.
 
 For usage like tf.layers to keras.layers, it can't be removed due to the API
-contract and guarantee. We should use LasyLoader to walk around the cyclic
+contract and guarantee. We should use LazyLoader to walk around the cyclic
 dependency issue.
 
 ```python
-from tensorflow.python.util.lasy_loader import LasyLoader
+from tensorflow.python.util.lazy_loader import LazyLoader
 
-BaseLayer = LasyLoader(
+BaseLayer = LazyLoader(
   'BaseLayer', globals(), 'keras.layers.Layer')
 if not BaseLayer:
   raise ImportError('Keras is not installed, please pip install keras.')
