@@ -19,7 +19,7 @@ Archives of the mailing list will be publicly accessible.
 
 ## Contacts
 
-* Project leads: Jason Zaman [@perfinion](https://github.com/perfinion), Austin Anderson [@angersson](https://github.com/angersson)
+* Project leads: Jason Zaman [@perfinion](https://github.com/perfinion), Austin Anderson [@angerson](https://github.com/angerson)
 * For administrative questions, contact Edd Wilder-James @ewilderj - ewj at
   google
 
