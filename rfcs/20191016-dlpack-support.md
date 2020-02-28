@@ -86,7 +86,7 @@ Proposed code of converting a Tensorflow tensor to Torch tensor using DLPack nat
 ```python
 import numpy as np
 import tensorflow as tf
-import tensorflow.???.dlpack as tfdlpack
+import tensorflow.experimental.dlpack as tfdlpack
 import torch.utils.dlpack as thdlpack
 
 
@@ -99,7 +99,27 @@ t3 = tfdlpack.from_dlpack(dlpack)  # dlpack -> tf tensor
 print(t3)
 ```
 
-Package implementation details:
+Proposed API implementation details:
+There two critical parts for this API:
+1. Memory usability on async device (to_dlpack)
+As mentioned by @alextp
+> TF does not use cudamalloc to allocate memory but its own allocator whose internal state is stored on the CPU and matches the head of TF's compute stream, so we need to sync TF's stream before the memory is usable from dlpack and similarly sync other cuda streams before memory is made usable by TF tensors (and similarly we need to sync the streams when trying to free the buffers).
+Here we decide to manunally sync the device when exporting TF tensor to dlpack. The sync behavior is done in the `TFE_TensorHandleDevicePointer` API, which returns the pointer to the underlying memory.
+
+2. Memory management (avoid leak) (to_dlpack/from_dlpack)
+As the design of dlpack, the framework constructing tensor from dlpack is responsible to call the dlpack's deleter, which is usually dereferencing the underlying buffer, when destructing the constructed tensor. 
+For `from_dlpack`, a deleter function is registered when constructing the TF tensor, and would be called upon destruction.
+For `to_dlpack`, the dlpack data structure will hold a reference (by `TensorReference`) to the underlying buffer, and `unref` it in the dlpack's deleter function. 
+
+
+## Questions and Discussion Topics
+
+https://github.com/tensorflow/tensorflow/issues/29039#issuecomment-527520270 Outlines the key issues that need to be addressed, namely that a synch is required to ensure the tensor information is valid.  Supporting \_\_cuda_array_interface\_\_ is another option as well, although cuPy and cuDF have opted to support both and ideally Tensorflow would as well.
+
+## Reference
+
+### tfdlpack package implementation detail
+
 The first design consideration is that we want to avoid any modification to the main Tensorflow library, so to get around the potential long delay of PR, code review, and release cycle of Tensorflow main package. Inspired by the solution from https://github.com/tobegit3hub/tftvm, we decide to implement the functionality as two custom tensor ops: to_dlpack and from_dlpack.
 
 Besides, we want this feature to be plugged into other projects quite easily. For example, any project that relies on this feature is able to run without compiling against Tensorflow's header files. Not only that an extra dependency usually means extra effort, but also that such maintenance is repetitive and should be handled by the feature developer (i.e., us) alone. To this end, we have an idea of releasing it as a python package. However, the question is how to invoke the two custom tensor ops in python? The challenge is that Tensorflow's custom op interface has a limited support of argument and return types, while to_dlpack and from_dlpack should have an argument/return type of DLPack object. We work around this by encoding the address of an DLPack object as an integer, so it can be accepted/returned by the custom op interface. Then, we decode it in python or C depending on whether we return it (to_dlpack) or consume it (from_dlpack).
@@ -108,7 +128,3 @@ Finally, to achieve the maximal efficiency, we want the conversion happens witho
 
 For to_dlpack, the returned DLPack tensor shares the same memory address of the input Tensorflow tensor and holds a reference to it. Upon the destruction of the DLPack tensor, it will dereference the Tensorflow tensor, so it can be collected by Tensorflow's memory management. (inspired by PyTorch's DLPack implementation).
 For from_dlpack, it first creates an allocator object (subclass Tensorflow's allocator interface) that holds the reference to the DLPack tensor. The AllocateRaw function directly returns the memory it holds without creating any new buffer. Upon destruction, the DeallocateRaw function just calls the deletor of the DLPack tensor. (inspired by Tensorflow's immutable_constant_op).
-
-## Questions and Discussion Topics
-
-https://github.com/tensorflow/tensorflow/issues/29039#issuecomment-527520270 Outlines the key issues that need to be addressed, namely that a synch is required to ensure the tensor information is valid.  Supporting \_\_cuda_array_interface\_\_ is another option as well, although cuPy and cuDF have opted to support both and ideally Tensorflow would as well.
