@@ -20,23 +20,28 @@ To perform a release in GitHub, the following steps are needed:
 ## PyPI Python Package Release
 
 At the moment Python package (whl files) is created automatically,
-upon each successful Travis CI on master branch. At the end of
-each Travis CI build on master branch, all whl files
-(2.7, 3.4, 3.5, 3.6, 3.7 on Linux and 2.7 on macOS) are pushed to
-Dropbox and are available in:
-
-https://www.dropbox.com/sh/dg0npidir5v1xki/AACor-91kbJh1ScqAdYpxdEca?dl=0
+upon each successful GitHub Actions workflow on master branch. At the end of
+each GitHub Actions Workflow build on master branch, all whl files
+(3.5, 3.6, 3.7 on Linux, macOS, and Windows) are pushed to part of the
+artifact that is available to download. To download the artifact,
+go into the tab of [Actions](https://github.com/tensorflow/io/actions),
+click and get into the build of the commit ready for release, and download
+the artifact named `tensorflow-io-release` only. Once the artifact is
+uncompressed locally, all whl files on Linux, macOS, and Windows will be
+available.
 
 To perform a release in PyPI, first make sure the binary whl files
-are the correct one from corresponding Travis CI build number.
-This could be verified by checking the Travis CI history where at
+are the correct one from corresponding GitHub Actions build commit.
+This could be verified by checking the GitHub Actions log history where at
 the end of the log, the sha256 of all whl files are calculated and displayed.
-The sha256 of each file displayed on Travis CI log should match the sha256
-of the files downloaded from Dropbox.
+The sha256 of each file displayed on GitHub Actions log should match the sha256
+of the files extracted from artifact.
 
-Once sha256 are verified against every whl files on Dropbox, perform
-a sanity check, then upload all of the whl files
-(2.7, 3.4, 3.5, 3.6, 3.7 on Linux and 2.7 on macOS) to PyPI.org:
+Once sha256 are verified against every whl files in artifact, perform
+a sanity check locally to make sure at least the getting started example
+on [README.md](https://github.com/tensorflow/io/blob/master/README.md)
+is able to run correctly. After that upload all of the whl files
+(3.5, 3.6, 3.7 on Linux, macOS, and Windows) to PyPI.org:
 
 ```
 twine upload *.whl
