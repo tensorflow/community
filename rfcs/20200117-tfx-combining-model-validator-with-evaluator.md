@@ -1,6 +1,6 @@
 # Combining ModelValidator with Evaluator
 
-| Status        | Proposed                                               |
+| Status        | Accepted                                               |
 | :------------ | :----------------------------------------------------- |
 | **RFC #**     | 200 |
 | **Author(s)** | Gene Huang (jinhuang@google.com), Mike Dreves (mdreves@google.com), Neoklis Polyzotis (npolyzotis@google.com) |
