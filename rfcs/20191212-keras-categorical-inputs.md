@@ -1,6 +1,6 @@
 # Keras categorical inputs
 
-| Status        | Reviewed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Zhenyu Tan (tanzheny@google.com), Francois Chollet (fchollet@google.com)|
 | **Sponsor**   | Karmel Allison (karmel@google.com), Martin Wicke (wicke@google.com) |
@@ -8,7 +8,7 @@
 
 ## Objective
 
-This document proposes 4 new preprocessing Keras layers (`IndexLookup`, `CategoryCrossing`, `CategoricalEncoding`, `Hashing`), and an extension to existing op (`tf.sparse.from_dense`) to allow users to:
+This document proposes 4 new preprocessing Keras layers (`IndexLookup`, `CategoryCrossing`, `CategoryEncoding`, `Hashing`), and an extension to existing op (`tf.sparse.from_dense`) to allow users to:
 * Perform feature engineering for categorical inputs
 * Replace feature columns and `tf.keras.layers.DenseFeatures` with proposed layers
 * Introduce sparse inputs that work with Keras linear models and other layers that support sparsity
@@ -47,18 +47,18 @@ model_inputs = []
 # input list to feed linear model.
 linear_inputs = []
 for feature_name in CATEGORICAL_COLUMNS:
-	feature_input = tf.keras.Input(shape=(1,), dtype=tf.string, name=feature_name, sparse=True)
-	vocab_list = sorted(dftrain[feature_name].unique())
-	# Map string values to indices
-	x = tf.keras.layers.IndexLookup(vocabulary=vocab_list, name=feature_name)(feature_input)
-  x = tf.keras.layers.CategoricalEncoding(num_categories=len(vocab_list))(x)
-	linear_inputs.append(x)
-	model_inputs.append(feature_input)
+  feature_input = tf.keras.Input(shape=(1,), dtype=tf.string, name=feature_name, sparse=True)
+  vocab_list = sorted(dftrain[feature_name].unique())
+  # Map string values to indices
+  x = tf.keras.layers.IndexLookup(vocabulary=vocab_list, name=feature_name)(feature_input)
+  x = tf.keras.layers.CategoryEncoding(num_categories=len(vocab_list))(x)
+  linear_inputs.append(x)
+  model_inputs.append(feature_input)
 
 for feature_name in NUMERICAL_COLUMNS:
-	feature_input = tf.keras.Input(shape=(1,), name=feature_name)
-	linear_inputs.append(feature_input)
-	model_inputs.append(feature_input)
+  feature_input = tf.keras.Input(shape=(1,), name=feature_name)
+  linear_inputs.append(feature_input)
+  model_inputs.append(feature_input)
 
 linear_model = tf.keras.experimental.LinearModel(units=1)
 linear_logits = linear_model(linear_inputs)
@@ -67,10 +67,10 @@ model = tf.keras.Model(model_inputs, linear_logits)
 model.compile('sgd', loss=tf.keras.losses.BinaryCrossEntropy(from_logits=True), metrics=['accuracy'])
 
 dataset = tf.data.Dataset.from_tensor_slices((
-	(tf.sparse.from_dense(dftrain.sex, "Unknown"), tf.sparse.from_dense(dftrain.n_siblings_spouses, -1),
-	tf.sparse.from_dense(dftrain.parch, -1), tf.sparse.from_dense(dftrain['class'], "Unknown"), tf.sparse.from_dense(dftrain.deck, "Unknown"),
-	tf.expand_dims(dftrain.age, axis=1), tf.expand_dims(dftrain.fare, axis=1)),
-	y_train)).batch(bach_size).repeat(n_epochs)
+  (tf.sparse.from_dense(dftrain.sex, "Unknown"), tf.sparse.from_dense(dftrain.n_siblings_spouses, -1),
+  tf.sparse.from_dense(dftrain.parch, -1), tf.sparse.from_dense(dftrain['class'], "Unknown"), tf.sparse.from_dense(dftrain.deck, "Unknown"),
+  tf.expand_dims(dftrain.age, axis=1), tf.expand_dims(dftrain.fare, axis=1)),
+  y_train)).batch(bach_size).repeat(n_epochs)
 
 model.fit(dataset)
 ```
@@ -84,7 +84,7 @@ The second example gives an instruction on how to transition from categorical fe
 Original:
 ```python
 fc = tf.feature_column.categorical_feature_column_with_vocabulary_list(
-	   key, vocabulary_list, dtype, default_value, num_oov_buckets)
+     key, vocabulary_list, dtype, default_value, num_oov_buckets)
 ```
 Proposed:
 ```python
@@ -182,13 +182,13 @@ layer = tf.keras.layers.IndexLookup(
            vocabulary=vocabulary_list,   
            num_oov_tokens=num_oov_buckets)
 x1 = layer(x1)
-x = tf.keras.layers.CategoricalEncoding(num_categories=len(vocabulary_list)+num_oov_buckets)([x1, x2])
+x = tf.keras.layers.CategoryEncoding(num_categories=len(vocabulary_list)+num_oov_buckets)([x1, x2])
 linear_model = tf.keras.premade.LinearModel(units)
 linear_logits = linear_model(x)
 ```
 
 ## Design Proposal
-We propose a `IndexLookup` layer to replace `tf.feature_column.categorical_column_with_vocabulary_list` and `tf.feature_column.categorical_column_with_vocabulary_file`, a `Hashing` layer to replace `tf.feature_column.categorical_column_with_hash_bucket`, a `CategoryCrossing` layer to replace `tf.feature_column.crossed_column`, and another `CategoricalEncoding` layer to convert the sparse input to the format required by linear models.
+We propose a `IndexLookup` layer to replace `tf.feature_column.categorical_column_with_vocabulary_list` and `tf.feature_column.categorical_column_with_vocabulary_file`, a `Hashing` layer to replace `tf.feature_column.categorical_column_with_hash_bucket`, a `CategoryCrossing` layer to replace `tf.feature_column.crossed_column`, and another `CategoryEncoding` layer to convert the sparse input to the format required by linear models.
 
 ```python
 `tf.keras.layers.IndexLookup`
@@ -253,13 +253,13 @@ CategoryCrossing(PreprocessingLayer):
     """
     pass
 
-`tf.keras.layers.CategoricalEncoding`
-CategoricalEncoding(PreprocessingLayer):
+`tf.keras.layers.CategoryEncoding`
+CategoryEncoding(PreprocessingLayer):
 """This layer transforms categorical inputs from index space to category space.
    If input is dense/sparse, then output is dense/sparse."""
 
   def __init__(self, num_categories, mode="count", axis=-1, sparse_out=True, name=None, **kwargs):
-    """Constructs a CategoricalEncoding layer.
+    """Constructs a CategoryEncoding layer.
     Args:
       num_categories: Number of elements in the vocabulary.
       mode: how to reduce a categorical input if multivalent, can be one of "count",  
@@ -367,9 +367,9 @@ sp_out.values = <tf.Tensor: id=28, shape=(3,), dtype=int64,
                  numpy=array([0, 0, 4])>
 ```
 
-The `CategoricalEncoding` layer will then convert the input from index space to category space, e.g., from a sparse tensor with indices shape as [batch_size, n_columns] and values in the range of [0, n_categories) to a sparse tensor with indices shape as [batch_size, n_categories] and values as the frequency of each value that occured in the example:
+The `CategoryEncoding` layer will then convert the input from index space to category space, e.g., from a sparse tensor with indices shape as [batch_size, n_columns] and values in the range of [0, n_categories) to a sparse tensor with indices shape as [batch_size, n_categories] and values as the frequency of each value that occured in the example:
 ```python
-encoding_layer = CategoricalEncoding(num_categories=len(vocabulary_list))
+encoding_layer = CategoryEncoding(num_categories=len(vocabulary_list))
 sp_encoded_out = encoding_layer(sp_out)
 sp_encoded_out.indices = <tf.Tensor: id=8, shape=(2, 2), dtype=int64, numpy=
                               array([[0, 0], [1, 4]])>
@@ -389,7 +389,7 @@ sp_out_2.indices = <tf.Tensor: id=161, shape=(1, 2), dtype=int64, numpy=array([[
 sp_out_2.values = <tf.Tensor: id=181, shape=(1,), dtype=int64, numpy=array([6])>
 
 cross_layer = CategoryCrossing(num_bins=5)
-# Use the output from IndexLookup (sp_out), not CategoricalEncoding (sp_combined_out)
+# Use the output from IndexLookup (sp_out), not CategoryEncoding (sp_combined_out)
 crossed_out = cross_layer([sp_out, sp_out_2])
 
 cross_out.indices = <tf.Tensor: id=186, shape=(2, 2), dtype=int64, numpy=
@@ -397,5 +397,11 @@ cross_out.indices = <tf.Tensor: id=186, shape=(2, 2), dtype=int64, numpy=
 cross_out.values = <tf.Tensor: id=187, shape=(2,), dtype=int64, numpy=array([3, 3])>
 ```
 
-## Questions and Discussion Topics
+## Questions and Meeting Notes
 We'd like to gather feedbacks on `IndexLookup`, specifically we propose migrating off from mutually exclusive `num_oov_buckets` and `default_value` and replace with `num_oov_tokens`.
+1. Naming for encoding v.s. vectorize: encoding can mean many things, vectorize seems to general. We will go with "CategoryEncoding"
+2. "mode" should be "count" or "avg_count", instead of "sum" and "mean".
+3. Rename "sparse_combiner" to "mode", which aligns with scikit-learn.
+4. Have a 'sparse_out' flag for "CategoryEncoding" layer.
+5. Hashing -- we refer to hashing when we mean fingerprinting. Keep using "Hashing" for layer name, but document how it relies on tf.fingerprint, and also provides option for salt.
+5. Rename "CategoryLookup" to "IndexLookup"
