@@ -17,12 +17,6 @@ A solution has already been developed by @VoVAllen and @jermainewang (coauthored
 
 ## Motivation
 
-Why this is a valuable problem to solve? What background information is needed
-to show how this design addresses the problem?
-
-Which users are affected by the problem? Why is it a problem? What data supports
-this? What related work exists?
-
 DLPack is a community effort to define a common tensor data structure that can be shared by different frameworks allowing data to be quickly shared often with zero or minimal copy. One of the main bottlenecks when trying to achieve GPU performance when operating across different frameworks is I/O and data formatting.  The transfer of data between GPU and CPU or between formats is costly to the point where many operations become faster to simply run on the CPU because of the additional costs associated with moving/transforming the data.  Even when mechanisms exist to copy data without leaving the GPU, memory constraints limit the application because two copies of the data are required.  By implementing dlpack within TensorFlow there would be a way to transfer data directly between frameworks, enabling the development of a range of applications that weren't previously possible.
 
 Existing applications that take advantage of dlpack include: (adding my own and those listed in , other contributions needed)
@@ -36,9 +30,6 @@ Existing applications that take advantage of dlpack include: (adding my own and 
 Beyond the benefit of specific applications, Tensorflow's adoption of dlpack would further incentivize other frameworks considering its adoption as all three major DL frameworks would now be supporting it.  Finally, it would also make the development of applications that operate upstream and downstream of deep learning frameworks easier to develop as a single framework agnostic method could be used in conjunction all DL frameworks.  
 
 ## User Benefit
-
-How will users (or other contributors) benefit from this work? What would be the
-headline in the release notes or blog post?
 
 Users who wish to utilize other GPU accelerated frameworks like cuDF, cuPy, etc would be able to do so without expensive copy operations.  By doing direct dataloading, feature engineering and preprocessing on GPU we see 10-15x speedups over traditional workflows involving CPUs to prepare the data for model readiness in other frameworks and they would be immediately available in tensorflow.
 
