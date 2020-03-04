@@ -156,24 +156,22 @@ converted to integration tests, or port the tests to Keras repository.
 * Aliases from tf.losses/metrics/initializers/optimizers in tf.compat.v1.
 * Keras symbolic tensor check in the ops library for tf.function.
 
-For usage like tf.layers to keras.layers, it can't be removed due to the API
-contract and guarantee. We should use LazyLoader to walk around the cyclic
-dependency issue.
-
-```python
-from tensorflow.python.util.lazy_loader import LazyLoader
-
-BaseLayer = LazyLoader(
-  'BaseLayer', globals(), 'keras.layers.Layer')
-if not BaseLayer:
-  raise ImportError('Keras is not installed, please pip install keras.')
-```
-
-Other dependency should be removed as much as possible, eg move the util/code 
-from Keras to TF, or rework the implementation detail. For any of the
-dependencies that have to stay, <b>need to use public Keras API only</b>. A
-check will also be added to TF to make sure there isn't any dependencies being
-added in future for need of Keras.
+The conclusion from the design meetings are:
+1. We prefer to have a clear cut, which means any backwards deps from TF to
+keras is not accepted. LazyLoading should be used for this case.
+2. `feature_column` package will be moved to Tensorflow/Estimator project,
+and will still exported under tf.feature_column name space.
+3. Legacy `tf.layers` and RNN cell code will move to keras and still export 
+under same name space.
+4. TPU support code will change to use new type spec, which will be proposed by
+new RFC from Dan.
+5. The saving util will either be moved to TF, or copeid to TF lite.
+6. Any unittest in TF that rely on Keras should either be moved to Keras, or
+if it is an integration test, we will create a new package for it, which will
+do verification e2e.
+7. Keras symbolic tensor check in the ops library, we will do some write with
+composite tensor. Since this is a implementation details, but not a hard code
+level dependency, this shouldn't be a blocking issue.
 
 **Note that this is a key point to prevent Keras accidentally break Tensorflow.**
 
@@ -207,6 +205,9 @@ are not public. A decision should be made on a case-by-case basis:
 * Copy the functionality from TF to Keras.
 * Replace the usage with another alternative TF public API.
 * Make the functionality a new TF public API.
+
+So far there is a long tail of private API usage, can they shouldn't be blocking
+the repo split, as long as the majority of the usage has been addressed.
 
 **Note that the open-source community is encouraged to contribute to this effort.**
 
