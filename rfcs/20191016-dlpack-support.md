@@ -9,7 +9,7 @@
 
 ## Objective
 
-This document proposes the adoption of dlpack (https://github.com/dmlc/dlpack) as way of passing tensor data to other frameworks without leaving the GPU and without a copy per [24453](https://github.com/tensorflow/tensorflow/issues/24453).  dlpack is a community effort to define a common tensor data structure that can be shared by different frameworks. dlpack is currently supported by cuPy, cuDF, DGM, TGL, PyTorch, and MxNet. 
+This document proposes the adoption of dlpack (https://github.com/dmlc/dlpack) as way of passing tensor data to other frameworks without leaving the GPU and without a copy per [24453](https://github.com/tensorflow/tensorflow/issues/24453).  dlpack is a community effort to define a common tensor data structure that can be shared by different frameworks. dlpack is currently supported by cuPy, cuDF, DGL, TGL, PyTorch, and MxNet. 
 
 The interoperability of dlpack would allow for fast on-GPU communication between TensorFlow and these frameworks opening up a wide range of use cases outlined below.  It would further enable \_\_cuda_array_interface\_\_ interoperability through cuPy/cuDF which support both methods providing a way to transfer data to Numba, PyArrow and other frameworks that have adopted that method, although [a similar request has been made to support that method of interoperability](https://github.com/tensorflow/tensorflow/issues/29039) and ideally both would be supported.
 
@@ -35,13 +35,9 @@ Users who wish to utilize other GPU accelerated frameworks like cuDF, cuPy, etc 
 
 More generally, users would be able to develop preprocessing or other GPU based functionality and be able to support integration with all dl frameworks simplifying development efforts when creating solutions that are upstream or downstream from deep learning models.
 
-A blog post or release notes headline could read "Tensorflow now supports dlpack enabling interoperability with other GPU powered frameworks like cuPy, cuDF, DGM, TGL, PyTorch, and MxNet."
+A blog post or release notes headline could read "Tensorflow now supports dlpack enabling interoperability with other GPU powered frameworks like cuPy, cuDF, DGL, TGL, PyTorch, and MxNet."
 
 ## Design Proposal
-
-Notes from @alextp:
-
-AFAICT it should be easy to take cuda pointers in and out of TF and use them to build dlpack structures from tensors or vice versa. The tricky part is that TF does not use cudamalloc to allocate memory but its own allocator whose internal state is stored on the CPU and matches the head of TF's compute stream, so we need to sync TF's stream before the memory is usable from dlpack and similarly sync other cuda streams before memory is made usable by TF tensors (and similarly we need to sync the streams when trying to free the buffers).
 
 A working version of dlpack integration has been released as a package by coauthors @jermainewang and @VoVAllen here:
 https://github.com/VoVAllen/tf-dlpack/issues/3
@@ -90,8 +86,7 @@ t3 = tfdlpack.from_dlpack(dlpack)  # dlpack -> tf tensor
 print(t3)
 ```
 
-Proposed API implementation details:
-There two critical parts for this API:
+Potential technical problems for this API:
 1. Memory usability on async device (to_dlpack)
 As mentioned by @alextp
 > TF does not use cudamalloc to allocate memory but its own allocator whose internal state is stored on the CPU and matches the head of TF's compute stream, so we need to sync TF's stream before the memory is usable from dlpack and similarly sync other cuda streams before memory is made usable by TF tensors (and similarly we need to sync the streams when trying to free the buffers).
@@ -101,6 +96,12 @@ Here we decide to manunally sync the device when exporting TF tensor to dlpack. 
 As the design of dlpack, the framework constructing tensor from dlpack is responsible to call the dlpack's deleter, which is usually dereferencing the underlying buffer, when destructing the constructed tensor. 
 For `from_dlpack`, a deleter function is registered when constructing the TF tensor, and would be called upon destruction.
 For `to_dlpack`, the dlpack data structure will hold a reference (by `TensorReference`) to the underlying buffer, and `unref` it in the dlpack's deleter function. 
+
+Proposed API implementation details:
+- to_dlpack
+ - Implementing `TFE_HandleToDLPack`, which converts tf's eager tensor handle to dlpack tensor's pointer(`DLManagedTensor*`). And wrap it into PyCapsule to adapt to the Python interface in ffi binding file. For the underlying memory liveness, `TensorReference` is used to maintain the reference counting over the underlying `TensorBuffer`, which increases when creating dlpack tensor, and decreases in the deleter of dlpack tensor.  
+- from_dlpack
+ - Implementing `TFE_HandleFromDLPack`, which converts dlpack tensor's pointer(`DLManagedTensor*`) to tf's eager tensor handle. `TFE_TensorHandleDevicePointer` is used to get the data pointer of underlying buffer, and synchronize the related device to ensures the memory readiness. 
 
 
 ## Questions and Discussion Topics
