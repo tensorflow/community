@@ -1,6 +1,6 @@
 # Standalone Keras Repository
 
-| Status        | Proposed |
+| Status        | Accepted |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [202](https://github.com/tensorflow/community/pull/202) |
 | **Author(s)** | Qianli Zhu (scottzhu@google.com), Francois Chollet (fchollet@google.com) |
