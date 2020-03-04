@@ -19,13 +19,14 @@ A solution has already been developed by @VoVAllen and @jermainewang (coauthored
 
 DLPack is a community effort to define a common tensor data structure that can be shared by different frameworks allowing data to be quickly shared often with zero or minimal copy. One of the main bottlenecks when trying to achieve GPU performance when operating across different frameworks is I/O and data formatting.  The transfer of data between GPU and CPU or between formats is costly to the point where many operations become faster to simply run on the CPU because of the additional costs associated with moving/transforming the data.  Even when mechanisms exist to copy data without leaving the GPU, memory constraints limit the application because two copies of the data are required.  By implementing dlpack within TensorFlow there would be a way to transfer data directly between frameworks, enabling the development of a range of applications that weren't previously possible.
 
-Existing applications that take advantage of dlpack include: (adding my own and those listed in , other contributions needed)
+Existing applications that take advantage of dlpack include: 
  - Inline on-gpu preprocessing of tabular data using cuDF to prepare it for deep learning models (continuous normalization, categorical encoding, etc) improving preprocessing performance by 10x over pandas and CPU
  - Larger than cpu memory dataloader that iterates over parquet files and batch loads tensors, providing a significant speedup over traditional dataloaders for tabular data
  - [End to end acceleration of training on GPU](https://medium.com/rapids-ai/accelerating-deep-learning-recommender-systems-by-15x-using-rapids-fastai-and-pytorch-b50b4d8568d1); 
  - Use of Tensorflow in conjunction with [tvm](https://github.com/dmlc/tvm); [TF custom op implementation of TVM](https://github.com/tobegit3hub/tftvm)
  - Use of Tensorflow in conjunction with [dgl](https://github.com/dmlc/dgl)
  - Zero copy transfer of data in [DALI](https://github.com/NVIDIA/DALI) reducing memory requirements.
+ - [thinc.ai](https://thinc.ai/docs/usage-frameworks) framework interoperability.
 
 Beyond the benefit of specific applications, Tensorflow's adoption of dlpack would further incentivize other frameworks considering its adoption as all three major DL frameworks would now be supporting it.  Finally, it would also make the development of applications that operate upstream and downstream of deep learning frameworks easier to develop as a single framework agnostic method could be used in conjunction all DL frameworks.  
 
