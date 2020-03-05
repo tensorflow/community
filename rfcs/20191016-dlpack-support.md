@@ -100,14 +100,14 @@ For `to_dlpack`, the dlpack data structure will hold a reference (by `TensorRefe
 
 Proposed API implementation details:
 - to_dlpack
- - Implementing `TFE_HandleToDLPack`, which converts tf's eager tensor handle to dlpack tensor's pointer(`DLManagedTensor*`). And wrap it into PyCapsule to adapt to the Python interface in ffi binding file. For the underlying memory liveness, `TensorReference` is used to maintain the reference counting over the underlying `TensorBuffer`, which increases when creating dlpack tensor, and decreases in the deleter of dlpack tensor.  
+  - Implementing `TFE_HandleToDLPack`, which converts tf's eager tensor handle to dlpack tensor's pointer(`DLManagedTensor*`). And wrap it into PyCapsule to adapt to the Python interface in ffi binding file. For the underlying memory liveness, `TensorReference` is used to maintain the reference counting over the underlying `TensorBuffer`, which increases when creating dlpack tensor, and decreases in the deleter of dlpack tensor.  
 - from_dlpack
- - Implementing `TFE_HandleFromDLPack`, which converts dlpack tensor's pointer(`DLManagedTensor*`) to tf's eager tensor handle. `TFE_TensorHandleDevicePointer` is used to get the data pointer of underlying buffer, and synchronize the related device to ensures the memory readiness. 
+  - Implementing `TFE_HandleFromDLPack`, which converts dlpack tensor's pointer(`DLManagedTensor*`) to tf's eager tensor handle. `TFE_TensorHandleDevicePointer` is used to get the data pointer of underlying buffer, and synchronize the related device to ensures the memory readiness. 
 
 
 ## Questions and Discussion Topics
 
-https://github.com/tensorflow/tensorflow/issues/29039#issuecomment-527520270 Outlines the key issues that need to be addressed, namely that a synch is required to ensure the tensor information is valid.  Supporting \_\_cuda_array_interface\_\_ is another option as well, although cuPy and cuDF have opted to support both and ideally Tensorflow would as well.
+https://github.com/tensorflow/tensorflow/issues/29039#issuecomment-527520270 outlines the key issues that need to be addressed, namely that a synch is required to ensure the tensor information is valid.  Supporting [\_\_cuda_array_interface\_\_](https://github.com/tensorflow/tensorflow/issues/29039) is another option as well, although cuPy and cuDF have opted to support both and ideally Tensorflow would as well.
 
 ## Reference
 
