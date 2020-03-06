@@ -1,6 +1,6 @@
 # TensorFlow Official Model Garden Redesign
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Jing Li (jingli@google.com), Hongkun Yu (hongkuny@google.com), Xiaodan Song (xiaodansong@google.com) |
 | **Sponsor**   | Edd Wilder-James (ewj@google.com)                 |
