@@ -74,8 +74,8 @@ structure. The SOTA model list will be updated to cover more categories.
 :-------------- |:---------------------|:--|:------------------------------ |
 | nlp           |                      |   | models/tasks for Natural Language Processing |
 |               | modeling             |   | NLP modeling library |
-|               | BERT                 |   | NLP specific utils, e.g. input dataset |
-|               | ALBERT                    | BERT core modeling |  |
+|               | BERT                 |   |  |
+|               | ALBERT                    |  |  |
 |               | XLNET                |    |   |
 |               | Transformer          |    |   |
 |               | ...                  |    |   |
