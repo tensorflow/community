@@ -72,53 +72,27 @@ structure. The SOTA model list will be updated to cover more categories.
 
 | Directory     | Subdirectories       |   | Explainations                   |
 :-------------- |:---------------------|:--|:------------------------------ |
-| modeling      |                      |   | Common modeling libraries       |
-|               | layers               |   | Temporary folder to hold common modules/layers, not built-in tensorflow layers yet during refactoring. Broadly used layers will be graduated to tensorflow/addons and/or tf.text.|
-|               | networks             |   | Well-known networks built on top of layers, e.g. transformer |
-|               | training             |   | Training utils, e.g. example custom training loop |
-| utils         |                      |   | Miscellaneous Utilities         |
-|               | hyperparameters      |   | Common flags and model parameters. |
-|               | ...                  |   |                                 |
-| benchmarks    |                      |   | benchmark testing and reference models to validate tensorflow |                                |
-|               | utils                |   |                                 |
-|               | examples             |   | reference models for testing/validating end-to-end tensforflow |
-|               |                      | Resnet |                            |
-|               |                      | BERT   |                            |
-|               |                      | Transformer |                       |
-|               |                      | NCF   |                             |
 | nlp           |                      |   | models/tasks for Natural Language Processing |
-|               | utils                |   | NLP specific utils, e.g. input dataset |
+|               | modeling             |   | NLP modeling library |
 |               | BERT                 |   | NLP specific utils, e.g. input dataset |
-|               |                      | BERT core modeling |  |
-|               |                      | tasks | specific tasks on open public datasets, e.g Squad, MNLI |
+|               | ALBERT                    | BERT core modeling |  |
 |               | XLNET                |    |   |
-|               | GPT                  |    |   |
 |               | Transformer          |    |   |
-|               | GNMT                 |    |   |
 |               | ...                  |    |   |
 | vision        |                      |    | models/tasks for Computer Vision |
-|               | image_classification |    |   |
-|               |                      | resnet |   |
-|               |                      | EfficientNet   |   |
-|               |                      | MnasNet   |   |
-|               |                      | ...   |   |
-|               | detection            |       |   |
-|               |                      | RetinaNet    |   |
-|               |                      | Mask-RCNN    |   |
-|               |                      | ShapeMask    |   |
-|               |                      | ...    |   |
-|               | segmentation         | UNet     |   |
-|               |                      | DeepLab v3/v3+ |   |
-|               |                      | FastSCNN |   |
+|               | image_classification |    | e.g. resnet, EfficientNet, ... |
+|               | detection            |    | e.g. RetinaNet, Mask-RCNN, ... |
+|               | ...                  |    |  |
 | recommendation|                      |     |   |
 |               | NCF                  |     |   |
-| staging       |                      |     | accepting community contributions  |
-| archive       |                      |     | deprecated models, not officially supported  |
+| utils         |                      |   | Miscellaneous Utilities.          |
+|               | ...                  |   |                                 |
+| benchmarks    |                      |   | benchmark testing and reference models to validate tensorflow |
+| staging       |                      |     | Utilities not in TF core yet, and not suitable for tf addons  |
 | r1            |                      |     | tf1.x models and utils  |
 |               | utils                |     |   |
 |               | resnet50             |     |   |
 |               | transformer          |     |   |
-|               | ncf                  |     |   |
 |               | wide_deep            |     |   |
 |               | boosted_trees        |     |   |
 
