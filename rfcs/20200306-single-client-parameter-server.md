@@ -69,7 +69,7 @@ The `strategy.run` API was initially developed for synchronous training. We prop
 *   hide the details of load-balancing, fault tolerance and dynamic scheduling
 *   expose the non-blocking semantics to users.
 
-To enable scheduling a function on any worker, we recommend users create the same dataset, but may shuffled differently, on all workers via `strategy.experimental_distribute_datasets_from_function` API.
+To enable scheduling a function on any worker, we recommend users create the same dataset, but may shuffle differently, on all workers via `strategy.experimental_distribute_datasets_from_function` API.
 
 
 ```python
