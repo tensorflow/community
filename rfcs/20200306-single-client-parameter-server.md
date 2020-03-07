@@ -40,7 +40,7 @@ With a single-client architecture, the programming model will be different than 
 
 1. Connect to all remote workers and parameter servers. 
 2. Create variables on parameter servers and hold references to them.
-3. Create datasets and iterators on workers..
+3. Create datasets and iterators on workers.
 4. Create the replica function that takes an iterator as input, trace it and register it on all workers.  Note: a function may create variables as well. If not specified, they will be created on parameter servers as well.
 5. Dispatch the step function on one available worker.
 6. Repeat 5 until the end of epoch.
