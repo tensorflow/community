@@ -20,7 +20,10 @@ Distribution Strategy’s [custom training loop](https://www.tensorflow.org/tuto
 
 ### Single-Client Distributed Training
 
+We recommend a single client architecture for parameter server training in TensorFlow 2. This means there is only one client in a training cluster that coordinates the training of all workers in contrast to the multi-client setup in TensorFlow 1.x where each worker has its own coordinator. 
+
 We believe that a single-client architecture can provide a simpler programming model than multi-client setup. A single source of truth can avoid bugs due to inconsistencies in multi-client setup. Furthermore, a single source of control can enable more determinism. In extreme cases, it can launch long-running tasks and turn into multi-client effectively.
+
 
 
 ## Goal
