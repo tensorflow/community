@@ -4,10 +4,10 @@
 
 This is an attempt to gather commonly discussed topics when doing API
 reviews. It’ll hopefully be a useful resource to both API owners and people
-proposing API changes.  Process TF API Owners meet twice weekly to discuss
-changes. We try to get to PRs on the next meeting, but we don’t always make it
-all the way through. If your change is particularly urgent, please ping the PR
-to notify us of any urgency.
+proposing API changes.  [TF API Owners](https://github.com/orgs/tensorflow/teams/api-owners) 
+meet twice weekly to discuss changes. We try to get to PRs on the next meeting, 
+but we don’t always make it all the way through. If your change is particularly 
+urgent, please ping the PR to notify us of any urgency.
 
 ## Process
 
@@ -33,7 +33,7 @@ and in general breaking serialized GraphDefs is worse than breaking the python
 APIs.
 
 Forward compatibility is more subtle: we should avoid changing the graph
-produced by currently correct python code without a three weeks notice . This
+produced by currently correct python code without a three weeks notice. This
 comes up most frequently when adding new ops, but also applies to non-obvious
 things such as the graph emitted by gradients or pfor.
 
@@ -67,7 +67,6 @@ made public) and should refer to public API symbols by their full exported name.
 
 ### Common names
 
-
 Prefer keepdims over keep_dims. Prefer axis over dim. Data types are called
 dtype. name is a common last argument of ops but backward compatibility mandates
 that new arguments are added after the last existing argument, even if that
@@ -93,6 +92,7 @@ endpoint is that the “experimental” will simply be removed. If you don’t b
 that’ll work, it should probably not be added in its current form.  
 
 ### Style
+
 Generally, follow Google style.
 
 Avoid redundancy. Do not write arguments of the form `function(...,
@@ -175,6 +175,7 @@ new ops if possible, but performance, hardware compatibility, and other concerns
 often do require new ops.
 
 When adding new ops, look for:
+
  - closure under automatic differentiation (i.e. we avoid ops which are
    differentiable but not twice-differentiable, or which are technically
    differentiable but not marked as such)
@@ -182,7 +183,7 @@ When adding new ops, look for:
    suboptimal kernel; we need to make sure kernel experts have reviewed the
    code)
  - broadcasting (all numerical ops should broadcast using numpy rules)
- - does support for this op have to be added to pfor?
+ - does support for this op have to be added to pfor/vectorized_map?
  - dtype support (in general all numerical ops should support the common
    integer, floating point, and complex dtypes, if they all make sense; we need
    to watch out for int32 on GPUs though)
@@ -199,14 +200,3 @@ When adding new ops, look for:
    it CPU, GPU, XLA, TPU, etc) and prefer to have at least a plan for writing
    device-agnostic code
  - should the python layer for this operation support raggedtensor/sparsetensor?
-
-
-## Keras changes
-
-Keras has its own external API and maintainers, as well as an internal
-team. Keras API changes tend to be cross-cutting as core Keras classes are base
-classes to many TF API endpoints. We generally only look at keras changes after
-a keras owner (say, fchollet or karmel) has already approved it on their
-end. fchollet has guidelines for changes to the Keras API (location TBD). These
-include many generally good practices that are useful to keep in mind outside of
-Keras as well.
