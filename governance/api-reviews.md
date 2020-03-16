@@ -210,3 +210,56 @@ When adding new ops, look for:
    it CPU, GPU, XLA, TPU, etc) and prefer to have at least a plan for writing
    device-agnostic code
  - should the python layer for this operation support raggedtensor/sparsetensor?
+
+## Experimental APIs
+
+Experimental APIs are APIs which have the word 'experimental' somewhere in their
+name; for example `tf.experimental.foo`, or `tf.foo.experimental.Bar`, or
+`tf.foo(experimental_bar=True)` or `tf.Foo().experimental_bar()`.
+
+Experimental APIs are APIs intended to be added to TensorFlow as-is, but which
+we reserve the right to change in backwards-incompatible ways if we have
+to.
+
+No temporary APIs should be added to experimental (i.e. "we just need this until
+certain bugfix or certain new feature becomes available" is not a valid reason
+to add an API with experimental in the name.) 
+
+No API with known deficiencies should be added to experimental. Experimental
+APIs should, to the best of our knowledge, not be expected to change in a known
+way (no argument with a known bad name, etc).
+
+The same amount of due diligence required for a real API is required for an
+experimental API: this means tests, benchmarks, documentation, end-to-end
+examples, etc
+
+Experimental APIs are not a license to break users. This means:
+ 1. we do not remove experimental APIs which are widely used without an effort
+    to help migrate users away
+ 2. experimental APIs are not removed without warning and don't have
+    backwards-incompatible changes made to them without warning (the warning can be
+    a deprecation on version 2.x and removal on 2.x+ 1, but plain removal on 2.x
+    with no notice on 2.x-1 is not ok)
+
+Small changes which are mentioned in relnotes and have obvious fixes might be
+made (for example if adding a new argument to a long argument list and we
+believe there are no pass-by-position users we might allow the new argument to
+be added to the middle and not the end of the parameter list).
+
+Large backwards-incompatible changes to experimental APIs still require an
+`experimental_foo_v2` or similar backwards-compatible evolution plan to avoid
+breaking users of the existing experimental API.
+
+No API endpoint should stay in experimental forever. If a particular
+experimental API hasn't had major changes in two minor releases we should remove
+the experimental annotation from the API name or delete it. If we do want to
+delete it we need to have a deprecation plan that can migrate all users to some
+other API endpoint or composition of existing APIs.
+
+When removing the experimental annotation we should, if at all possible, allow
+escape routes to not break existing code. This means toplevel symbols
+`tf.experimental.foo` and methods like `tf.Class.experimental_foo` should get a
+deprecation warning on 2.x before deletion on 2.x+1; we should use the
+doc_controls decorators to not pollute API docs with deprecated "graduated"
+experimental APIs. For experimental function arguments we should consider
+catching **kwargs to raise the proper warnings for at least one version.
