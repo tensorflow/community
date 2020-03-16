@@ -217,7 +217,10 @@ to add an API with experimental in the name.)
 
 No API with known deficiencies should be added to experimental. Experimental
 APIs should, to the best of our knowledge, not be expected to change in a known
-way (no argument with a known bad name, etc).
+way (no argument with a known bad name, etc). Experimental can, however, be used
+for APIs which are a work-in-progress: it's fine to add experimental methods to
+a base class even if those methods are only implemented on some subclasses as
+long as we expect all classes to eventually implement those.
 
 The same amount of due diligence required for a real API is required for an
 experimental API: this means tests, benchmarks, documentation, end-to-end
