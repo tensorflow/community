@@ -1,8 +1,8 @@
-# tf-api-owners review practices
+#  tensorflow/api-owners review practices
 
 ## Overview
 
-This is an attempt to gather commonly discussed topics when doing tf-api-owners
+This is an attempt to gather commonly discussed topics when doing API
 reviews. It’ll hopefully be a useful resource to both API owners and people
 proposing API changes.  Process TF API Owners meet twice weekly to discuss
 changes. We try to get to PRs on the next meeting, but we don’t always make it
