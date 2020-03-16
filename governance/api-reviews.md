@@ -79,7 +79,7 @@ linalg or svd). When in doubt we ask domain experts or use web search to see
 what spelling is most common.
 
 If possible we prefer to name things in a similar way to numpy (e.g., we would
-not pick einsum as a name, but numpy and MatLab before it has, and that
+not pick einsum as a name, but numpy and others before it have, and that
 precedent is very strong).
 
 We prefer experimental namespaces (i.e. tf.data.experimental.foobar) over
@@ -207,6 +207,6 @@ Keras has its own external API and maintainers, as well as an internal
 team. Keras API changes tend to be cross-cutting as core Keras classes are base
 classes to many TF API endpoints. We generally only look at keras changes after
 a keras owner (say, fchollet or karmel) has already approved it on their
-end. fchollet has guidelines for changes to the Keras API at
-go/keras-api-guidelines. These include many generally good practices that are
-useful to keep in mind outside of Keras as well.
+end. fchollet has guidelines for changes to the Keras API (location TBD). These
+include many generally good practices that are useful to keep in mind outside of
+Keras as well.
