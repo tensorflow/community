@@ -59,7 +59,7 @@ One of our goals is to make `ParameterServerStrategy`’s API consistent with ot
 
 #### Constraints
 
-Function is first-class citizen. Users should only schedule functions instead of running individual ops, in addition to creating variables.
+Function is first-class citizen. Users should only schedule functions instead of running individual ops, in addition to creating variables. We will only support `tf.function`s. Scheduling arbitrary Python functions will not be supported in the first cut.
 
 Users can occasionally run individual ops on the client, only for reporting purposes such as printing a metric’s value.
 
@@ -94,6 +94,9 @@ class ParameterServerStrategyV2:
 
     If there are barriers in `replica_fn`, it is users' responsibility to make
     sure they won't cause deadlock.
+    
+    It will throw an exception if any previously scheduled functions have
+    non-retryable errors.
     """
     pass
   
@@ -169,7 +172,7 @@ with strategy.scope():
     strategy.join()
     model.save()  # save checkpoint/summary...
     print ("Loss = %f, accuracy = %f" % (
-        strategy.local_results(loss), accuracy.result()))
+        strategy.local_results(loss) or float('nan'), accuracy.result()))
 ```
 
 
@@ -183,7 +186,7 @@ Another option from calling `join` every epoch, users can choose to schedule all
 with strategy.scope():
   # … omitted
   for _ in range(total_steps)):
-    strategy.schedule(step_fn, args=(iterators,))
+    strategy.schedule(step_fn, args=(distributed_iter,))
 
   # Print accuracy value every one minute.
   while not strategy.done():
@@ -257,7 +260,7 @@ For functions that bound to a specific worker, e.g. resource creation function, 
 When the failed worker is back, we will update the cluster configuration with `context.update_server_def` which would also reset all the states. After resources on the restarted worker are built, we can resume scheduling functions on the worker. 
 
 
-###### When materialing a `Future` object
+###### When materializing a `Future` object
 
 It is possible that a function is executed but its corresponding worker fails when users try to consume its output. In this case, we will give users a `None` value and set an error in the `Future` object.
 
