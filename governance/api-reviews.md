@@ -215,7 +215,9 @@ When adding new ops, look for:
 
 Experimental APIs are APIs which have the word 'experimental' somewhere in their
 name; for example `tf.experimental.foo`, or `tf.foo.experimental.Bar`, or
-`tf.foo(experimental_bar=True)` or `tf.Foo().experimental_bar()`.
+`tf.foo(experimental_bar=True)` or `tf.Foo().experimental_bar()`. We generally
+prefer experimental namespaces when possible, so prefer
+`tf.foo.experimental.Bar` over `tf.foo.ExperimentalBar`.
 
 Experimental APIs are APIs intended to be added to TensorFlow as-is, but which
 we reserve the right to change in backwards-incompatible ways if we have
@@ -246,7 +248,7 @@ Experimental APIs are not a license to break users. This means:
 
 Small changes which are mentioned in relnotes and have obvious fixes might be
 made (for example if adding a new argument to a long argument list and we
-believe there are no pass-by-position users we might allow the new argument to
+believe there are few pass-by-position users we might allow the new argument to
 be added to the middle and not the end of the parameter list).
 
 Large backwards-incompatible changes to experimental APIs still require an
