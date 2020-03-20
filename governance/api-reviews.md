@@ -252,4 +252,4 @@ escape routes to not break existing code. This means toplevel symbols
 deprecation warning on 2.x before deletion on 2.x+1; we should use the
 doc_controls decorators to not pollute API docs with deprecated "graduated"
 experimental APIs. For experimental function arguments we should consider
-catching **kwargs to raise the proper warnings for at least one version.
+catching `**kwargs` to raise the proper warnings for at least one version.
