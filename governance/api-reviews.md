@@ -228,7 +228,7 @@ Experimental APIs are not a license to break users. This means:
     to help migrate users away
  2. experimental APIs are not removed without warning and don't have
     backwards-incompatible changes made to them without warning (the warning can be
-    a deprecation on version 2.x and removal on 2.x+ 1, but plain removal on 2.x
+    a deprecation on version 2.x and removal on 2.x+1, but plain removal on 2.x
     with no notice on 2.x-1 is not ok)
 
 Small changes which are mentioned in relnotes and have obvious fixes might be
