@@ -158,6 +158,16 @@ does not give license to new APIs to be bad in the same way. Improvement must be
 balanced with consistency, however, and sometimes it’s okay to carry small
 imperfections into new APIs for the sake of consistency with old APIs.
 
+### Optional arguments with default values
+
+Many APIs have optional arguments with a default value. Our recommendation is to
+use `None` as the default value of any optional arguments and have the
+implementation be responsible for handnling it as opposed to using a default
+value that directly represents the behavior (e.g. `aggregate='sum'`).  The
+latter prevents the implementation from distinguishing between the caller not
+setting the argument vs. the caller setting the argument to the default value,
+which may be needed when the default behavior is changing.
+
 ### Does it belong in TF at all?
 
 As TF evolves there’s a tendency to put everything inside of it, with costs
