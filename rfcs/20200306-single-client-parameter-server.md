@@ -289,7 +289,7 @@ Keeping track of resources and rebuilding them will be achieved depending how us
 *   we will capture the creation of worker-local variables via variable creator scopes.
 *   in the future we will provide users an API to create worker-local resources. We will capture these resources in the API.
 
-If users create iterators or other resources inside a function but don’t expose them as outputs, we will not rebuild them.
+If users create iterators or other resources inside a function but don’t expose them as outputs, we don't need to rebuild them.
 
 
 #### The Unknown of Scheduled Functions
