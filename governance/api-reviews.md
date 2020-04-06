@@ -202,7 +202,10 @@ prefer experimental namespaces when possible, so prefer
 
 Experimental APIs are APIs intended to be added to TensorFlow as-is, but which
 we reserve the right to change in backwards-incompatible ways if we have
-to.
+to. This is different from apis in `tensorflow/addons`, many of which are not
+necessarily intended to be added to core TF as they might have a more narrow use
+case initially (if APIs in `tensorflow/addons` do become widely useful they can
+"graduate" to core, either using experimental or not).
 
 No temporary APIs should be added to experimental (i.e. "we just need this until
 certain bugfix or certain new feature becomes available" is not a valid reason
