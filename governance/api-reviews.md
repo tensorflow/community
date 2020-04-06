@@ -24,8 +24,8 @@ We avoid backwards-incompatible API changes. We also avoid
 backwards-incompatible behavior changes, such as restricting the set of valid
 inputs to a function or extending the set of valid outputs of a function. Adding
 support for previously not supported behavior is okay, as are changes to
-explicitly experimental APIs (within reason). When needing to provide a new or
-different behavior, we strongly prefer a new version of the API over breaking
+explicitly experimental APIs (see section below). When needing to provide a new
+or different behavior, we strongly prefer a new version of the API over breaking
 backwards compatibility. Note that we are free to deprecate APIs; we just cannot
 break code which relies on their documented behavior. We need to worry about
 backward compatibility both of our python APIs and of the serialized GraphDefs,
@@ -36,15 +36,6 @@ Forward compatibility is more subtle: we should avoid changing the graph
 produced by currently correct python code without a three weeks notice. This
 comes up most frequently when adding new ops, but also applies to non-obvious
 things such as the graph emitted by gradients or pfor.
-
-Including the name “experimental” in an API endpoint allows you to break
-backwards compatibility in the future, as noted above. However, we still prefer
-to mark the experimental API as deprecated for one release before removing it in
-the subsequent release. Please do not use the experimental namespace as an
-escape hatch for bad code or functionality you
-don’t-really-want-but-need-for-now; experimental APIs should be APIs that we
-intend to make standard in the near future, but have some lingering questions to
-resolve first.
 
 
 ### Docstrings 
@@ -89,7 +80,7 @@ the next. We would like new experimental symbols to be things which will
 eventually end up in core TF as opposed to things we expect will be phased out
 with no clear replacement. The best expectation to have for an experimental
 endpoint is that the “experimental” will simply be removed. If you don’t believe
-that’ll work, it should probably not be added in its current form.  
+that’ll work, it should probably not be added in its current form.
 
 ### Style
 
