@@ -249,7 +249,9 @@ No API endpoint should stay in experimental forever. If a particular
 experimental API hasn't had major changes in two minor releases we should remove
 the experimental annotation from the API name or delete it. If we do want to
 delete it we need to have a deprecation plan that can migrate all users to some
-other API endpoint or composition of existing APIs.
+other API endpoint or composition of existing APIs. In rare cases experimental
+APIs can continue to be iterated on after many releases (see TPUStrategy); this
+only applies for fairly large API surfaces.
 
 When removing the experimental annotation we should, if at all possible, allow
 escape routes to not break existing code. This means toplevel symbols
@@ -257,4 +259,6 @@ escape routes to not break existing code. This means toplevel symbols
 deprecation warning on 2.x before deletion on 2.x+1; we should use the
 doc_controls decorators to not pollute API docs with deprecated "graduated"
 experimental APIs. For experimental function arguments we should consider
-catching `**kwargs` to raise the proper warnings for at least one version.
+catching `**kwargs` to raise the proper warnings for at least one version (note
+though that `**kwargs` is generally discouraged from our APIs; we prefer
+explicitly named keyword arguments if at all possible).
