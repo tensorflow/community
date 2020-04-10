@@ -1,6 +1,6 @@
 # Single-client Parameter Server Training
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Yuefeng Zhou (yuefengz@google.com), Rick Chao (rchao@google.com) |
 | **Sponsor**   | Priya Gupta (priyag@google.com)                      |
