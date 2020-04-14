@@ -1,6 +1,6 @@
 # Improved pip package structure
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)       |
+| Status        | [Implemented](https://github.com/tensorflow/tensorflow/commit/5c00e793c61860bbf26778cd4704313e867645be)       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [182](https://github.com/tensorflow/community/pull/182)|
 | **Author(s)** | Anna Revinskaya (annarev@google.com)                 |
