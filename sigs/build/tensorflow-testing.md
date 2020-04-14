@@ -16,7 +16,8 @@ Please submit all bugs, errors, and peculiarities on GitHub. Differences between
 documentation, performance issues, or compatibility problems are all fair game. Please be specific and include all information
 that would be helpful to debug the issue using our issue templates:
 
-* **[Bug / Performance Issue](https://github.com/tensorflow/tensorflow/issues/new?template=00-bug-performance-issue.md)**
+* **[Bug Issue](https://github.com/tensorflow/tensorflow/issues/new?labels=type%3Abug&template=00-bug-issue.md)**
+* **[Performance Issue](https://github.com/tensorflow/tensorflow/issues/new?labels=type%3Aperformance&template=80-performance-issue.md)**
 * **[Build / Installation Issue](https://github.com/tensorflow/tensorflow/issues/new?template=10-build-installation-issue.md)**
 * **[Documentation Issue](https://github.com/tensorflow/tensorflow/issues/new?template=20-documentation-issue.md)**
 * **[Other Issue - Not Listed](https://github.com/tensorflow/tensorflow/issues/new?template=50-other-issues.md)**
