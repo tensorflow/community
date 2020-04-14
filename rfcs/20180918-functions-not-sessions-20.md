@@ -219,7 +219,7 @@ A preview of this implemented in `tf.contrib.eager.defun` today (using <code>[Au
 
 ### Functions that create state
 
-In the above code, no `tf.Variable` objects are created inside a `tf.function` decorated function. This is makes it clear that the code will have the same semantics once wrapped.
+In the above code, no `tf.Variable` objects are created inside a `tf.function` decorated function. This makes it clear that the code will have the same semantics once wrapped.
 
 Note that if the function naturally creates state only on the first trace, all is well:
 
