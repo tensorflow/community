@@ -33,7 +33,7 @@ Information about SIG IO releases and the release team could be found in [RELEAS
 * Project leads:
   - Yong Tang [@yongtang](https://github.com/yongtang) - yong.tang.github@outlook.com
   - Anthony Dmitriev [@dmitrievanthony](https://github.com/dmitrievanthony) - dmitrievanthony@gmail.com
-* TensorFlow technical contact [@mrry](https://github.com/mrry) - mrry@google.com
+* TensorFlow technical contact [@jsimsa](https://github.com/jsimsa) - jsimsa@google.com
 * For administrative questions, contact Edd Wilder-James
   [@ewilderj](https://github.com/ewilderj) - ewj at google
 
