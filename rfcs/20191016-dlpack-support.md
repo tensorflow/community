@@ -1,6 +1,6 @@
 # dlpack support for interoperability with other GPU frameworks
 
-| Status        | (Proposed)       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | 180 (https://github.com/tensorflow/community/pull/180) (update when you have community PR #)|
 | **Author(s)** | eoldridge@nvidia.com, wmjlyjemaine@gmail.com, zhoujinjing09@gmail.com |
