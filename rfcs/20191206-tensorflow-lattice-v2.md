@@ -2,10 +2,10 @@
 
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #) |
+| **RFC #**     | [186](https://github.com/tensorflow/community/pull/186)
 | **Author(s)** | Mahdi Milani Fard (mmilanifard@google.com), Oleksandr Mangylov (amangy@google.com) |
 | **Sponsor**   | Zhenyu Tan (tanzheny@google.com), Karmel Allison (karmel@google.com) |
-| **Updated**   | 2019-12-06                                              |
+| **Updated**   | 2020-04-15                                              |
 
 ## Objective
 
@@ -137,7 +137,7 @@ bias term. It supports monotonicity and fixed-norm constraints.
 linear = tfl.linear_layer.Linear(
     num_input_dims=8,
     # Monotonicity constraints can be defined per dimension or for all dims.
-    monotonicities=1,
+    monotonicities='increasing',
     use_bias=True,
     # You can force the L1 norm to be 1. Since this is a monotonic layer,
     # the coefficients will sum to 1, making this a “weighted average”.
@@ -164,7 +164,7 @@ calibrator = tfl.pwl_calibration_layer.PWLCalibration(
     output_min=0.0,
     output_max=2.0,
     # You can specify monotonicity and other shape constraints for the layer.
-    monotonicity=1,
+    monotonicity='increasing',
     # You can specify TFL regularizers as tuple ('regularizer name', l1, l2).
     # You can also pass any keras Regularizer object.
     kernel_regularizer=('hessian', 0.0, 1e-4),
@@ -208,13 +208,13 @@ This layer support monotonicity, unimodality,
 ```python
 lattice = tfl.lattice_layer.Lattice(
     # Number of vertices along each dimension.
-    lattice_sizes=[2, 2, 3, 4, 2, 2, 3],
+    lattice_sizes=[2, 2, 3, 4],
     # You can specify monotonicity constraints.
-    monotonicities=[1, 0, 1, 1, 1, 1, 1],
+    monotonicities=['increasing', 'none', 'increasing', 'increasing'],
     # You can specify trust constraints between pairs of features. Here we
     # constrain the function to be more responsive to a main feature (index 4)
     # as a secondary conditional feature (index 3) increases (direction 1).
-    edgeworth_trusts=(4, 3, 1),
+    edgeworth_trusts=(3, 2, 1),
     # Output can be bounded.
     output_min=0.0,
     output_max=1.0
@@ -291,7 +291,7 @@ model_config = tfl.configs.CalibratedLatticeEnsembleConfig(
             name='age',
             lattice_size=3,
             # Model output must be monotonically increasing w.r.t. this feature.
-            monotonicity=1,
+            monotonicity='increasing',
             # Per feature regularization.
             regularizer_configs=[
                 tfl.configs.RegularizerConfig(name='calib_hessian', l2=1e-4),
