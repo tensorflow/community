@@ -1,4 +1,4 @@
-# Proposed name: SIG Graphics 
+# SIG Graphics 
 
 ## Goal
 
@@ -42,6 +42,6 @@ Documentation: https://www.tensorflow.org/graphics/overview)
 
 ## Code of Conduct
 
-As with all forums and spaces related to TensorFlow, SIG ??? is subject to
+As with all forums and spaces related to TensorFlow, SIG Graphics is subject to
 the [TensorFlow Code of
 Conduct](https://github.com/tensorflow/tensorflow/blob/master/CODE_OF_CONDUCT.md).
