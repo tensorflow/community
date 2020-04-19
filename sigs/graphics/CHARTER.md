@@ -24,18 +24,17 @@ We have multiple channels for participation, and publicly archive discussions in
 
 ## Resources
 
-* [Tensorflow Graphics code](Repository: https://github.com/tensorflow/graphics
-Documentation: https://www.tensorflow.org/graphics/overview)
+* [Tensorflow Graphics code Repository](https://github.com/tensorflow/graphics)
 * [Tensorflow Graphics documentation](https://www.tensorflow.org/graphics/overview)
 * [Original SIG proposal](https://docs.google.com/document/d/1RBnBuTb0eZropAeawwQKNwqE94mtp7InAvM2y_hitIk/edit#)
 
 ## Contacts
 
 * Project leads:
-  * Julien Valentin [@julienvalentin](https://github.com/julienvalentin), Google (Google)
+  * Julien Valentin [@julienvalentin](https://github.com/julienvalentin), Google
   * Andrea Tagliasacchi [@ataiya](https://github.com/ataiya/), Google
   * Sofien Bouaziz [@sofienbouaziz](https://github.com/sofienbouaziz), Google
-  * [Derek Nowrouzezahrai](http://www.cim.mcgill.ca/~derek/, McGill
+  * [Derek Nowrouzezahrai](http://www.cim.mcgill.ca/~derek/), McGill
 
 * For administrative questions, contact Thea Lamkin
   [@theadactyl](https://github.com/ewilderj) - thealamkin at google
