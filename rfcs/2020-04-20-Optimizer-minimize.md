@@ -3,7 +3,7 @@
 
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [234](https://github.com/tensorflow/community/pull/234) |
 | **Author(s)** | [omalleyt12@](https://github.com/omalleyt12) |
 | **Sponsor**   | apassos@, fchollet@, karmel@                 |
 | **Updated**   | 2020-04-20                                           |
