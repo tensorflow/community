@@ -2,7 +2,7 @@
 
 # Standardized TFX Inputs
 
-Status        | Proposed
+Status        | Accepted
 :------------ | :------------------------------------------------------------
 **RFC #**     | [162](https://github.com/tensorflow/community/pull/162)
 **Author(s)** | Zhuo Peng (zhuo@google.com), Kester Tong (kestert@google.com)

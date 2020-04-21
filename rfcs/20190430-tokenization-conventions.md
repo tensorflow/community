@@ -1,6 +1,6 @@
 # RFC: Tokenization API & Initial Implementations
 
-Status        | Proposed
+Status        | Accepted
 :------------ | :-----------------------------------
 **Author(s)** | Robby Neale (Google)
 **Sponsor**   | Mark Omernick (Google), Greg Billock (Google)
