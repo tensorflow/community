@@ -56,7 +56,7 @@ We currently have three Optimizer endpoints that start at different points in th
 
 * `Optimizer.apply_gradients(..., experimental_aggregate_gradients=False)` - handles 6
 
-However, there is no easy way for Optimizer subclasses to support custom logic in these steps. This proposal suggests a refactoring of the Optimizer class 
+However, there is no easy way for Optimizer subclasses to support custom logic in these steps. This proposal suggests a refactoring of the Optimizer class to achieve these goals.
 
 
 ## Motivation
