@@ -1,6 +1,6 @@
 # Project versioning in the TensorFlow organization
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Edd Wilder-James (ewj@google.com), Martin Wicke (wicke@google.com) |
 | **Sponsor**   | Kevin Haas (khaas@google.com)                 |

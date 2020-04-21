@@ -1,6 +1,6 @@
 # TFX Generic Trainer
 
-| Status        | Proposed                                                  |
+| Status        | Accepted                                                  |
 | :------------ | :-------------------------------------------------------- |
 | **Author(s)** | Jiayi Zhao (jyzhao@google.com)                            |
 | **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com), Zhitao Li (zhitaoli@google.com), Karmel Allison (karmel@google.com) |
