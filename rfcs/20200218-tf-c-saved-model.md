@@ -1,6 +1,6 @@
 # TF SavedModel C/C++ API
 
-| Status      | Proposed                                                                                           |
+| Status      | Accepted                                                                                           |
 | :---------- | :------------------------------------------------------------------------------------------------- |
 | **RFC #**   | [207](https://github.com/tensorflow/community/pull/207)                                            |
 | **Authors** | Brian Zhao (bmzhao@google.com), Hye Soo Yang (hyey@google.com), Paige Bailey (webpaige@google.com) |
