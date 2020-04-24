@@ -1,6 +1,6 @@
 # TensorFlow Lattice 2.0
 
-| Status        | Proposed                                                |
+| Status        | Accepted                                                |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [186](https://github.com/tensorflow/community/pull/186)
 | **Author(s)** | Mahdi Milani Fard (mmilanifard@google.com), Oleksandr Mangylov (amangy@google.com) |

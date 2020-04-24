@@ -1,6 +1,6 @@
 # RFC: Tokenization API & Initial Implementations
 
-Status        | Proposed
+Status        | Accepted
 :------------ | :-----------------------------------
 **Author(s)** | Robby Neale (Google)
 **Sponsor**   | Mark Omernick (Google), Greg Billock (Google)
@@ -281,9 +281,7 @@ class MyCustomTokenizer(Tokenizer):
         y=tf.expand_dims(script_tokenized.flat_values, 1),
         x=unicode_char_split.values)
 
-    # put back into [batch, (num
-
-update conventions doc -_tokens), (num_unicode_chars)]
+    # put back into [batch, (num_tokens), (num_unicode_chars)]
     mix_tokenized = tf.RaggedTensor.from_row_lengths(
         values=unicode_split_tokens, row_lengths=script_tokenized.row_lengths())
 

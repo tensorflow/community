@@ -1,6 +1,6 @@
 # TensorFlow 2.0: Optimizer unification
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Francois Chollet (fchollet@google.com)               |
 | **Sponsor**   | Martin Wicke (wicke@google.com)                      |

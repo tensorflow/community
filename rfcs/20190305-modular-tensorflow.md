@@ -1,6 +1,6 @@
 # Modular TensorFlow
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Gunhan Gulsoy (gunan@google.com)                     |
 | **Sponsor**   | Martin Wicke (wicke@google.com)                      |

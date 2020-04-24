@@ -15,22 +15,21 @@ Facilitate community-contributed graphics, 3D and geometric components to [tenso
 
 ## Resources
 
-* [Tensorflow Graphics code](Repository: https://github.com/tensorflow/graphics
-Documentation: https://www.tensorflow.org/graphics/overview)
+* [Tensorflow Graphics code Repository](https://github.com/tensorflow/graphics)
 * [Tensorflow Graphics documentation](https://www.tensorflow.org/graphics/overview)
 * [Original SIG proposal](https://docs.google.com/document/d/1RBnBuTb0eZropAeawwQKNwqE94mtp7InAvM2y_hitIk/edit#)
 
 ## Contacts
 
 * Project leads:
-  * Julien Valentin [@julienvalentin](https://github.com/julienvalentin), Google (Google)
+  * Julien Valentin [@julienvalentin](https://github.com/julienvalentin), Google
   * Andrea Tagliasacchi [@ataiya](https://github.com/ataiya/), Google
   * Sofien Bouaziz [@sofienbouaziz](https://github.com/sofienbouaziz), Google
   * [Derek Nowrouzezahrai](http://www.cim.mcgill.ca/~derek/), McGill
-
+  
 * For Tensorflow questions, contact Paige Bailey, [dynamicwebpaige](https://github.com/dynamicwebpaige) - webpaige at google dot com
 * For administrative questions, contact Thea Lamkin,[@theadactyl](https://github.com/ewilde) - thealamkin at google dot com
-  
+
 ## Membership
 
 We encourage any researchers and developers working in the computer graphics and computer vision communities to participate in this SIG. Whether you are conducting academic research or building industry applications in this space, we welcome your feedback on and contributions to Tensorflow Graphics’ components and central tooling, and are eager to hear about any downstream research results and implementations of our code. 

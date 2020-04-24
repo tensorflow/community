@@ -1,6 +1,6 @@
 # TFX Container Component Execution Proposal
 
-Status         | Proposed
+Status         | Accepted
 :------------- | :-------
 **Author(s)**  | Ajay Gopinathan (<a href="mailto:ajaygopinathan@google.com">ajaygopinathan@google.com</a>), Hongye Sun (<a href="mailto:hongyes@google.com">hongyes@google.com</a>), Makoto Uchida (<a href="mailto:muchida@google.com">muchida@google.com</a>), Ruoyu Liu (<a href="mailto:ruoyu@google.com">ruoyu@google.com</a>)
 **Sponsor(s)** | Konstantinos Katsiapis (katsiapis@google.com), Pavel Dournov (dournov@google.com), Ramesh Chandra (rameshuc@google.com)
