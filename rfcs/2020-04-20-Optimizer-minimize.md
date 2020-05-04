@@ -206,6 +206,13 @@ Details of proposal:
 (1) Custom gradient clipping
 
 ```python
+def my_gradient_clipping(grads_and_vars):
+  clipped_grads_and_vars = []
+  for grad, v in grads_and_vars:
+    grad = tf.math.minimum(grad, 10)
+    clipped_grads_and_vars.append((grad, v))
+  return clipped_grads_and_vars
+
 optimizer = tf.keras.optimizers.Adam(0.1, transform_gradients=my_gradient_clipping)
 ```
 
