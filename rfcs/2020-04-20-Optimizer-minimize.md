@@ -133,7 +133,9 @@ class Optimizer(object):
       tape=None,
       experimental_aggregate_gradients=False):
     if is_tensor(loss) and not tape:
-      raise ValueError('Must provide tape with tensor loss.')
+      raise ValueError(
+        'When passing a Tensor as the loss, a GradientTape '
+        'must be provided. Found loss: {}'.format(loss))
     tape = tape or GradientTape()
     with tape:
       if callable(loss):
