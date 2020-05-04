@@ -88,7 +88,9 @@ This design will allow users to write full-featured training loops that work for
 class Optimizer(object):
   def __init__(self,
                transform_gradients=None,
-               aggregate_gradients=all_reduce_sum):
+               aggregate_gradients=None):
+     if aggregate_gradients is None:
+       aggregate_gradients = all_reduce_sum
      self.aggregate_gradients_fn = aggregate_gradients
      self.transform_gradients_fns = transform_gradients
 
