@@ -301,5 +301,8 @@ Solution is too Keras-specific, doesn’t solve the general problem.
 
 ## Questions and Discussion Topics
 
-(1) Should these new hooks be private or public methods?
-(2) Should we create an initializer argument for each hook, or only for the ones we expect most users to need (`aggregate_gradients` and `transform_gradients`)?
+(1) What is the naming convention for methods that we want subclasses to override but we don't expect users to call directly?
+
+(2) Methods vs initializer arguments
+
+(a) Should we create an initializer argument for each hook, or only for the ones we expect most users to need (`aggregate_gradients` and `transform_gradients`)?
