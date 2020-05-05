@@ -24,7 +24,7 @@
 
 ## Changes to Implementation (If Needed)
 ```
-Code snippet showing proposed code migration
+Code snippet(s) showing proposed code changes
 ```
 * Discussion on the rationale for changes
 
