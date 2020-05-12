@@ -30,8 +30,8 @@ Code snippet(s) showing proposed code changes
 
 ## Transition Plan
 * Proposed landing place in tf-core
+* Will there be any changes to the API? (e.g. additional parameters or renaming)
 * Deprecation plan for Addons
-    * Will we be able to alias the core implementation? (parameters must be exact match)
 
 ## Relevant GitHub Issues
 
