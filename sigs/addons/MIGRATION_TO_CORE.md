@@ -15,7 +15,8 @@ the move with a larger community audience.
     * Additions which only subclass Keras APIs should submit their migration proposals to 
     [Keras Governance](https://github.com/keras-team/governance)
     
-4. A sponsor from the TF/Keras team must agree to shepard the transition.
+4. A sponsor from the TF/Keras team must agree to shepard the transition and maintain 
+the new API in tensorflow/tensorflow.
    * If no sponsor is obtained after 45 days the RFC will be rejected and will remain 
    as part of Addons.
 5. If a sponsor is obtained, and the RFC is approved, a pull request must move the 
