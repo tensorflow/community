@@ -26,7 +26,7 @@ if possible. If an alias is not possible (e.g. large parameter changes), then a 
 warning will be added and will be removed from TFA after 2 releases. 
 
 
-### Criteria for Migration
+### Criteria for Migration RFC
 * The addition is widely used throughout the community, or has high academic significance.
     * Metrics must be reported in the RFC (OSS usage, H5 index, etc.)
 * The addition is unlikely to have API changes as time progresses
