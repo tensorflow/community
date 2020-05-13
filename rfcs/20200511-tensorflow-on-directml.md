@@ -2,10 +2,10 @@
 
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [243](https://github.com/tensorflow/community/pull/243)|
 | **Author(s)** | Chai Chaoweeraprasit (wchao@microsoft.com), Justin Stoecker (justoeck@microsoft.com), Adrian Tsai (adtsai@microsoft.com), Patrice Vignola (pavignol@microsoft.com) |
 | **Sponsor**   | \[interim\] Alexandre Passos (apassos@google.com)  |
-| **Updated**   | 2020-05-11                                           |
+| **Updated**   | 2020-05-12                                         |
 
 ## Objective
 Implement a new TensorFlow device type and a new set of kernels based on [DirectML](https://docs.microsoft.com/en-us/windows/win32/direct3d12/dml-intro), a hardware-accelerated machine learning library on the DirectX 12 Compute platform. This change broadens the reach of TensorFlow beyond its existing GPU footprint and enables high-performance training and inferencing on Windows devices with any DirectX12-capable GPU.
