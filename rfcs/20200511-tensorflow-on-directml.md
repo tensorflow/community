@@ -3,7 +3,7 @@
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [243](https://github.com/tensorflow/community/pull/243) |
-| **Author(s)** | Chai Chaoweeraprasit (wchao@microsoft.com), Justin Stoecker (justoeck@microsoft.com), Adrian Tsai (adtsai@microsoft.com), Patrice Vignola (pavignol@microsoft.com)     |
+| **Author(s)** | Chai Chaoweeraprasit (wchao@microsoft.com), Justin Stoecker (justoeck@microsoft.com), Adrian Tsai (adtsai@microsoft.com), Patrice Vignola (pavignol@microsoft.com)    |
 | **Sponsor**   | \[interim\] Alexandre Passos (apassos@google.com)  |
 | **Updated**   | 2020-05-13                                         |
 
