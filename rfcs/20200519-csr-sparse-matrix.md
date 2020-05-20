@@ -317,8 +317,9 @@ Other sparse APIs follow NumPy and SciPy APIs. See links in [Supported Operation
 * Any comments on the APIs?
 * Are there any more operations that we should support?
 * Should we add `CSRSparseMatrix` support to existing standard ops as well, e.g., `tf.math.{add,asin,atan,ceil}`, etc?
-* Would love to hear more use cases. 
+* Would love to hear about more use cases. 
 * For neural networks, would CSR be useful for you (while Block CSR is still a future work)?
+* Should we make CSRSparseMatrix a [CompositeTensor](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/python/framework/composite_tensor.py;l=31)? Would the effort be worth it since we will transition to the new TFRT/MLIR backend soon? How should this be prioritized?
 * Should `SparseMatrix` replace `SparseTensor`?
 
 
