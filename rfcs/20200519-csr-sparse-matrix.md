@@ -2,7 +2,7 @@
 
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | 246                                                  |
 | **Author(s)** | Penporn Koanantakool (penporn@google.com)            |
 | **Sponsor**   | Rasmus Larsen (rmlarsen@google.com), Tatiana Shpeisman (shpeisman@google.com)|
 | **Updated**   | 2019-05-19                                           |
