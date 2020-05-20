@@ -99,7 +99,7 @@ We have considered several other sparse formats in addition to CSR.
 * [Tensor algebra compiler (Taco)](http://tensor-compiler.org/kjolstad-oopsla17-tensor-compiler.pdf): Taco is a compiler for sparse tensor algebra. Its storage format is exponentially more generic compared to CSF. 
   * Taco supports any traversal order, and can compress any number of dimensions at once.
   * For a rank k tensor, Taco can express k! * 2^k storage formats, even more so if the tensor is blocked. All the aforementioned formats (CSR, CSC, DCSR, DCSC, BSR, and CSF) can be represented with Taco. 
-  * It has also been [extended](http://tensor-compiler.org/chou-oopsla18-taco-formats.pdf) to support COO and other niche formats such as DIA, ELLPACK, etc.
+  * Taco has also been [extended](http://tensor-compiler.org/chou-oopsla18-taco-formats.pdf) to support COO and other niche formats such as DIA, ELLPACK, etc.
   * Taco can generate fast single-threaded CPU code for arbitrary kernels comprised of basic tensor algebra. 
   * Taco is not quite ready for production use yet. There aren’t vendor-supplied kernels and Taco’s efficient parallel CPU/GPU code generation is still under the work. We are keeping an eye on Taco as a candidate for TensorFlow’s generic sparse tensor support in the future.
 * Hierarchical formats such as [Hierarchically Semi-Separable (HSS)](https://arxiv.org/pdf/1803.10274.pdf) and [Hierarchical COOrdinate (HiCOO)](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8665782): These format stores matrix/tensor partitions recursively. They are too application-specific for our scope.
