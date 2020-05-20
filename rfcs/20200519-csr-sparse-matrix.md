@@ -209,7 +209,7 @@ D_csr = csr.concat([A_csr, B_csr, C_csr], axis=1)
 
 There are CSRSparseMatrix classes on both C++ and Python sides. The C++ CSRSparseMatrix object is stored as a blob in TensorFlow’s Variant tensor. The Python CSRSparseMatrix class is a wrapper of the Variant tensor with some basic matrix manipulation functions such as conversions. The figure below shows the relationship between both classes.
 
-![CSRSparseMatrix classes](2019-05-19-csr-sparse-matrix/classes.png)
+![CSRSparseMatrix classes](20200519-csr-sparse-matrix/classes.png)
 
 
 ### C++ Layer
