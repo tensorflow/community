@@ -35,7 +35,7 @@ tf.config.allow_tensor_float_32_execution(True)
 
 The word "allow" emphasizes only certain devices (Ampere GPUs) and ops (such as matmuls and convolutions) will be affected. Once enabled, all local and remote Ampere GPUs use TF32 for supported float32 ops.
 
-Passing `False` to `allow_tensor_float_32_execution` will disable TF32 if already enabled.
+Passing `False` to `allow_tensor_float_32_execution` will disable TF32 if already enabled. This is useful if multiple models are run sequentially in the same process, where only some should use TF32. It is also useful for tests, as it allows a test class to test both TF32 being enabled and disabled.
 
 We call the function "allow_tensor_float_32_execution" instead of the more concise "allow_tf32_execution" because people may mistakenly interpret the phrase "tf32" to refer to TensorFlow instead of TensorFloat. 
 
