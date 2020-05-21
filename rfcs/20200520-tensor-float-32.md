@@ -47,7 +47,7 @@ tf.config.tensor_float_32_execution_allowed()
 
 Since TF32 only affects Ampere GPUs, moving an op to a GPU can affect numerics. Grappler and other graph optimizations will not consider this, and will freely move ops between devices without regard to numeric stability. As a result, explicitly putting an op on the CPU does not ensure it will use the full float32 precision instead of TF32.
 
-Since TensorFlow 2.3 will not support CUDA 11, which is required for TF32, this API will first be exposed in TensorFlow 2.4. However, Google Cloud will likely cherrypick CUDA 11 and this API into their version of 2.3, so they can offer TF32 support to their customers who use TensorFlow 2.3.
+Since TensorFlow 2.3 will not support CUDA 11, which is required for TF32, this API will first be exposed in TensorFlow 2.4. However, downstream repackagers of TensorFlow (such as Google Cloud) are encouraged to cherrypick CUDA 11 and this API into their version of 2.3, so they can offer TF32 support to their customers who use TensorFlow 2.3.
 
 
 ### Turning TF32 on by default
