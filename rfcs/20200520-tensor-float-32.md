@@ -13,11 +13,11 @@ Allow [TensorFloat-32](https://blogs.nvidia.com/blog/2020/05/14/tensorfloat-32-p
 
 ## Motivation
 
-NVIDIA Ampere, an upcoming generation of NVidia GPUs announced at GTC 2020, introduces a new numeric format called TensorFloat-32, or TF32 for short.
+[NVIDIA Ampere](https://www.nvidia.com/en-us/data-center/nvidia-ampere-gpu-architecture/), an upcoming generation of NVIDIA GPUs announced at GTC 2020, introduces a new numeric format called TensorFloat-32, or TF32 for short.
 TF32 has the range of float32/bfloat16 (i.e. 8 bits of exponent) and the precision of fp16 (i.e. 10 bits of mantissa).
-For the most part, it is not an in-memory format, but tensor cores natively support it as a computation format.
+It is not an in-memory format, but tensor cores natively support it as a computation format.
 TF32 should not be thought of as an in-memory dtype but instead a computation mode that increases performance and decreases numeric precision for certain float32 operations.
-Nvidia has not found any cases where TF32 reduces the convergence of deep learning models.
+NVIDIA has not found any cases where TF32 reduces the convergence of deep learning models.
 
 Upcoming versions of cuDNN, cuBLAS, and other CUDA libraries will expose a mode of execution that has float32 inputs and outputs, but internally truncates float32 to TF32 and uses tensor cores.  This is expected to be sufficiently accurate to reach the same convergence as the “full” float32 mode of execution but significantly faster.  Each element still takes four bytes, so there is still a memory and performance penalty compared to using float16 or bfloat16.
 
