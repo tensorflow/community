@@ -2,10 +2,10 @@
 
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [247](https://github.com/tensorflow/community/pull/247) |
 | **Author(s)** | Reed Wanderman-Milne (reedwm@google.com)             |
 | **Sponsor**   | Sanjoy Das (sanjoy@google.com)                 |
-| **Updated**   | 2020-05/20                                           |
+| **Updated**   | 2020-05-20                                           |
 
 ## Objective
 
