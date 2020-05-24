@@ -1,11 +1,11 @@
 # Transactional File Systems Support
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)                                                |
-| :------------ | :-------------------------------------------------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #) |
-| **Author(s)** | Sami Kama (kamsami@amazon.com)                                                                |
-| **Sponsor**   | Mihai Maruseac (mihaimaruseac@google.com)                                                     |
-| **Updated**   | 2020-05-05                                                                                    |
+| Status        | Proposed                                                |
+| :------------ | :------------------------------------------------------ |
+| **RFC #**     | [945](https://github.com/tensorflow/community/pull/945) |
+| **Author(s)** | Sami Kama (kamsami@amazon.com)                          |
+| **Sponsor**   | Mihai Maruseac (mihaimaruseac@google.com)               |
+| **Updated**   | 2020-05-23                                              |
 
 ## Objective
 
@@ -50,17 +50,16 @@ template <typename T>
 class TokenScope{
   public:
   // Transaction name can be filename or directory name
-    TokenScope(T* fs_,const string& transaction_name):fs(fs_){
-      auto status=fs->StartTransaction(transaction_name,&token);
+    TokenScope(T* fs, const string& transaction_name) : fs(fs_) {
+      auto status = fs->StartTransaction(transaction_name, &token);
     }
     ~TokenScope(){
-      fs->EndTransaction(token);
+      token.owner->EndTransaction(token);
     }
     TokenScope(const TokenScope&) = delete;
-    const std::unique_ptr<TransactionToken>* GetToken() const {return &token;}
+    const TransactionToken* GetToken() const {return &token;}
   private:
-    std::unique_ptr<TransactionToken> token;
-    T* fs;
+    TransactionToken token;
 };
 ```
 
@@ -69,39 +68,39 @@ For a coarse granularity adding `StartTransaction` `EndTransaction` and `GetTran
 ```cpp
 class Filesystem {
   // Transaction Token API extensions
-  virtual Status GetTransactionTokenForFile(const string& file_name,std::unique_ptr<TransactionToken>* token) = 0
-  virtual Status StartTransaction(const string& transaction_name, std::unique_ptr<TransactionToken>* token) = 0;
-  virtual Status EndTransaction(std::unique_ptr<TransactionToken>* token) = 0;
+  virtual Status GetTransactionTokenForFile(const string& file_name,TransactionToken* token) = 0
+  virtual Status StartTransaction(const string& transaction_name, TransactionToken* token) = 0;
+  virtual Status EndTransaction(TransactionToken* token) = 0;
 
   // File creation
-  virtual Status NewRandomAccessFile(const string& fname, std::unique_ptr<RandomAccessFile>* result, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual Status NewWritableFile(const string& fname, std::unique_ptr<WritableFile>* result, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual Status NewAppendableFile(const string& fname, std::unique_ptr<WritableFile>* result, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual Status NewReadOnlyMemoryRegionFromFile(const string& fname, std::unique_ptr<ReadOnlyMemoryRegionFile>* result, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
+  virtual Status NewRandomAccessFile(const string& fname, std::unique_ptr<RandomAccessFile>* result, TransactionToken* token=nullptr) = 0;
+  virtual Status NewWritableFile(const string& fname, std::unique_ptr<WritableFile>* result, TransactionToken* token=nullptr) = 0;
+  virtual Status NewAppendableFile(const string& fname, std::unique_ptr<WritableFile>* result, TransactionToken* token=nullptr) = 0;
+  virtual Status NewReadOnlyMemoryRegionFromFile(const string& fname, std::unique_ptr<ReadOnlyMemoryRegionFile>* result, TransactionToken* token=nullptr) = 0;
 
   // Creating directories
-  virtual Status CreateDir(const string& dirname, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual Status RecursivelyCreateDir(const string& dirname), std::unique_ptr<TransactionToken>* token=nullptr;
+  virtual Status CreateDir(const string& dirname, TransactionToken* token=nullptr) = 0;
+  virtual Status RecursivelyCreateDir(const string& dirname), TransactionToken* token=nullptr;
 
   // Deleting
-  virtual Status DeleteFile(const string& fname, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual Status DeleteDir(const string& dirname, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual Status DeleteRecursively(const string& dirname, int64* undeleted_files, int64* undeleted_dirs, std::unique_ptr<TransactionToken>* token=nullptr);
+  virtual Status DeleteFile(const string& fname, TransactionToken* token=nullptr) = 0;
+  virtual Status DeleteDir(const string& dirname, TransactionToken* token=nullptr) = 0;
+  virtual Status DeleteRecursively(const string& dirname, int64* undeleted_files, int64* undeleted_dirs, TransactionToken* token=nullptr);
 
   // Changing directory contents
-  virtual Status RenameFile(const string& src, const string& target, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual Status CopyFile(const string& src, const string& target, std::unique_ptr<TransactionToken>* token=nullptr);
+  virtual Status RenameFile(const string& src, const string& target, TransactionToken* token=nullptr) = 0;
+  virtual Status CopyFile(const string& src, const string& target, TransactionToken* token=nullptr);
 
   // Filesystem information
-  virtual Status FileExists(const string& fname, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual bool FilesExist(const std::vector<string>& files, std::vector<Status>* status,std::unique_ptr<TransactionToken>* token=nullptr);
-  virtual Status GetChildren(const string& dir, std::vector<string>* result, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual Status Stat(const string& fname, FileStatistics* stat, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual Status IsDirectory(const string& fname, std::unique_ptr<TransactionToken>* token=nullptr);
-  virtual Status GetFileSize(const string& fname, uint64* file_size, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
+  virtual Status FileExists(const string& fname, TransactionToken* token=nullptr) = 0;
+  virtual bool FilesExist(const std::vector<string>& files, std::vector<Status>* status,TransactionToken* token=nullptr);
+  virtual Status GetChildren(const string& dir, std::vector<string>* result, TransactionToken* token=nullptr) = 0;
+  virtual Status Stat(const string& fname, FileStatistics* stat, TransactionToken* token=nullptr) = 0;
+  virtual Status IsDirectory(const string& fname, TransactionToken* token=nullptr);
+  virtual Status GetFileSize(const string& fname, uint64* file_size, TransactionToken* token=nullptr) = 0;
 
   // Globbing
-  virtual Status GetMatchingPaths(const string& pattern, std::vector<string>* results, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
+  virtual Status GetMatchingPaths(const string& pattern, std::vector<string>* results, TransactionToken* token=nullptr) = 0;
 
   // Misc
   virtual void FlushCaches();
@@ -152,40 +151,40 @@ class Env {
   virtual Status RegisterFileSystem(const string& scheme, FileSystemRegistry::Factory factory);
 
   // Transaction Token related
-  virtual Status GetTransactionTokenForFile(const string& file_name,std::unique_ptr<TransactionToken>* token) = 0
-  virtual Status StartTransaction(const string& transaction_name, std::unique_ptr<TransactionToken>* token) = 0;
-  virtual Status EndTransaction(std::unique_ptr<TransactionToken>* token) = 0;
+  virtual Status GetTransactionTokenForFile(const string& file_name, TransactionToken** token) = 0
+  virtual Status StartTransaction(const string& transaction_name, TransactionToken** token) = 0;
+  virtual Status EndTransaction(TransactionToken* token) = 0;
 
   // Creating files, including memory mapped
-  Status NewRandomAccessFile(const string& fname, std::unique_ptr<RandomAccessFile>* result, std::unique_ptr<TransactionToken>* token=nullptr);
-  Status NewWritableFile(const string& fname, std::unique_ptr<WritableFile>* result, std::unique_ptr<TransactionToken>* token=nullptr);
-  Status NewAppendableFile(const string& fname, std::unique_ptr<WritableFile>* result, std::unique_ptr<TransactionToken>* token=nullptr);
-  Status NewReadOnlyMemoryRegionFromFile(const string& fname, std::unique_ptr<ReadOnlyMemoryRegionFile>* result, std::unique_ptr<TransactionToken>* token=nullptr);
+  Status NewRandomAccessFile(const string& fname, std::unique_ptr<RandomAccessFile>* result, TransactionToken* token=nullptr);
+  Status NewWritableFile(const string& fname, std::unique_ptr<WritableFile>* result, TransactionToken* token=nullptr);
+  Status NewAppendableFile(const string& fname, std::unique_ptr<WritableFile>* result, TransactionToken* token=nullptr);
+  Status NewReadOnlyMemoryRegionFromFile(const string& fname, std::unique_ptr<ReadOnlyMemoryRegionFile>* result, TransactionToken* token=nullptr);
 
   // Creating directories
-  Status CreateDir(const string& dirname, std::unique_ptr<TransactionToken>* token=nullptr);
-  Status RecursivelyCreateDir(const string& dirname, std::unique_ptr<TransactionToken>* token=nullptr);
+  Status CreateDir(const string& dirname, TransactionToken* token=nullptr);
+  Status RecursivelyCreateDir(const string& dirname, TransactionToken* token=nullptr);
 
   // Deleting
-  Status DeleteFile(const string& fname, std::unique_ptr<TransactionToken>* token=nullptr);
-  Status DeleteDir(const string& dirname, std::unique_ptr<TransactionToken>* token=nullptr);
-  Status DeleteRecursively(const string& dirname, int64* undeleted_files, int64* undeleted_dirs,std::unique_ptr<TransactionToken>* token=nullptr);
+  Status DeleteFile(const string& fname, TransactionToken* token=nullptr);
+  Status DeleteDir(const string& dirname, TransactionToken* token=nullptr);
+  Status DeleteRecursively(const string& dirname, int64* undeleted_files, int64* undeleted_dirs,TransactionToken* token=nullptr);
 
   // Changing directory contents
-  Status RenameFile(const string& src, const string& target, std::unique_ptr<TransactionToken>* token=nullptr);
-  Status CopyFile(const string& src, const string& target, std::unique_ptr<TransactionToken>* token=nullptr);
+  Status RenameFile(const string& src, const string& target, TransactionToken* token=nullptr);
+  Status CopyFile(const string& src, const string& target, TransactionToken* token=nullptr);
 
   // Filesystem information
-  Status FileExists(const string& fname);
+  Status FileExists(const string& fname, TransactionToken* token=nullptr);
   bool FilesExist(const std::vector<string>& files, std::vector<Status>* status);
-  Status GetChildren(const string& dir, std::vector<string>* result, std::unique_ptr<TransactionToken>* token=nullptr);
-  Status Stat(const string& fname, FileStatistics* stat, std::unique_ptr<TransactionToken>* token=nullptr);
-  Status IsDirectory(const string& fname, std::unique_ptr<TransactionToken>* token=nullptr);
-  Status GetFileSize(const string& fname, uint64* file_size, std::unique_ptr<TransactionToken>* token=nullptr);
+  Status GetChildren(const string& dir, std::vector<string>* result, TransactionToken* token=nullptr);
+  Status Stat(const string& fname, FileStatistics* stat, TransactionToken* token=nullptr);
+  Status IsDirectory(const string& fname, TransactionToken* token=nullptr);
+  Status GetFileSize(const string& fname, uint64* file_size, TransactionToken* token=nullptr);
 
   // Globbing
-  virtual bool MatchPath(const string& path, const string& pattern, std::unique_ptr<TransactionToken>* token=nullptr) = 0;
-  virtual Status GetMatchingPaths(const string& pattern, std::vector<string>* results, std::unique_ptr<TransactionToken>* token=nullptr);
+  virtual bool MatchPath(const string& path, const string& pattern, TransactionToken* token=nullptr) = 0;
+  virtual Status GetMatchingPaths(const string& pattern, std::vector<string>* results, TransactionToken* token=nullptr);
 
   // Misc
   Status FlushFileSystemCaches();
@@ -207,7 +206,9 @@ For the new proposed filesystem plugin mechanism, two possible approaches exists
 - Opaque pointers stay as is, thus no changes is needed in structures. Then each filesystem attach tokens to their own internal structures pointed by `void*`.
 - Structures are extended to keep a pointer `TransactionToken` structure.
 
-Second method is more explicit but constrains all filesystems to use same token type, which is most likely not useful for any filesystem other than the one created it. Thus first solution may allow for more complicated data structures and flexibility to filesystems. Similar to `Env` class, FilesystemOps signatures need to be `TransactionToken` pointers
+Second method is more explicit but constrains all filesystems to use same token type, which is most likely not useful for any filesystem other than the one created it. Thus first solution may allow for more complicated data structures and flexibility to filesystems. Similar to `Env` class, FilesystemOps signatures need to be expanded with `TransactionToken` pointers.
+
+Also in order to help debug transaction related issues, an optional `DecodeTransactionToken` function is proposed. Filesystem plugins can optionally implement this function to decode TransactionToken to human readable format for printing debug log messages.
 
 ```cpp
 // Operations on a TF_Filesystem
@@ -243,9 +244,12 @@ typedef struct TF_FilesystemOps {
   const char* (*const TranslateName)(const TF_Filesystem*, const char*);
 
   // Transaction management
-  void (*const StartTransaction)(const TF_Filesystem*, TransactionToken*);
-  void (*const EndTransaction)(const TF_Filesystem*, TransactionToken*);
-  void (*const GetTransactionTokenForFile)(const TF_Filesystem, const char* file_name, TransactionToken* token);
+  void (*const StartTransaction)(TF_Filesystem*, TransactionToken**);
+  void (*const EndTransaction)(TF_Filesystem*, TransactionToken*);
+  void (*const GetTransactionTokenForFile)(TF_Filesystem*, const char* file_name, TransactionToken** token);
+
+  // Optional Transaction Debugging
+  void (*const DecodeTransactionToken)(const TF_Filesystem*, const TransactionToken*, char**);
 
   // misc
   void (*const Init)(TF_Filesystem*);
@@ -415,6 +419,281 @@ TODO more
 Since the changes are in the framework level, there is no compatibility issue foreseen. Existing code would work as is as it was. Users can augment their code with transaction scopes to improve the performance or solve the issues they are having with non-local file systems.
 
 ## Questions and Discussion Topics
+
+## Alternatives brought up during RFC review
+
+- @alextp suggested wrapping token operations into file system object wrappers, that would be returned from start transaction like operations. This is approach minimizes the change to the api and hides transactions from users. However, it requires users doing file system operations through `Env` api modify their code to use `Filesystem` classes directly. Another implication of this is that all filesystem plugins are accessed through C++ wrappers, and direct access through C layer should be limited if not forbidden. Regardless, Filesystem wrapper idea might be a good approach. This would imply following changes.
+
+```cpp
+class WrappedFileSystem : public Filesystem {
+  WrappedFileSystem(Filesystem* base_fs, TransactionToken* token)
+      : fs_(base_fs), token_(token) {}
+  virtual Status NewRandomAccessFile(const string& fname,
+                                     std::unique_ptr<RandomAccessFile>* result,
+                                     TransactionToken* token = nullptr) {
+    return fs_->NewRandomAccessFile(fname, result, (token ? token : token_));
+  }
+  virtual Status NewWritableFile(const string& fname,
+                                 std::unique_ptr<WritableFile>* result,
+                                 TransactionToken* token = nullptr) {
+    return fs_->NewWritableFile(fname, result, (token ? token : token_));
+  }
+  virtual Status NewAppendableFile(const string& fname,
+                                   std::unique_ptr<WritableFile>* result,
+                                   TransactionToken* token = nullptr) {
+    return fs_->NewAppendableFile(fname, result, (token ? token : token_));
+  }
+  virtual Status NewReadOnlyMemoryRegionFromFile(
+      const string& fname, std::unique_ptr<ReadOnlyMemoryRegionFile>* result,
+      TransactionToken* token = nullptr) {
+    return fs_->NewReadOnlyMemoryRegionFromFile(fname, result,
+                                                (token ? token : token_));
+  }
+
+  // Creating directories
+  virtual Status CreateDir(const string& dirname,
+                           TransactionToken* token = nullptr) {
+    return fs_->CreateDir(dirname, (token ? token : token_));
+  }
+  virtual Status RecursivelyCreateDir(const string& dirname,
+                                      TransactionToken* token = nullptr) {
+    return fs_->RecursivelyCreateDir(dirname, (token ? token : token_));
+  }
+
+  // Deleting
+  virtual Status DeleteFile(const string& fname,
+                            TransactionToken* token = nullptr) {
+    return fs_->DeleteFile(fname, (token ? token : token_));
+  }
+  virtual Status DeleteDir(const string& dirname,
+                           TransactionToken* token = nullptr) {
+    return fs_->DeleteDir(dirname, (token ? token : token_));
+  }
+  virtual Status DeleteRecursively(const string& dirname,
+                                   int64* undeleted_files,
+                                   int64* undeleted_dirs,
+                                   TransactionToken* token = nullptr) {
+    return fs_->DeleteRecursively(dirname, undeleted_files, undeleted_dirs,
+                                  (token ? token : token_));
+  }
+
+  // Changing directory contents
+  virtual Status RenameFile(const string& src, const string& target,
+                            TransactionToken* token = nullptr) {
+    return fs_->RenameFile(src, target, (token ? token : token_));
+  }
+  virtual Status CopyFile(const string& src, const string& target,
+                          TransactionToken* token = nullptr) {
+    return fs_->CopyFile(src, target, (token ? token : token_));
+  }
+
+  // Filesystem information
+  virtual Status FileExists(const string& fname,
+                            TransactionToken* token = nullptr) {
+    return fs_->FileExists(fname, (token ? token : token_));
+  };
+  virtual bool FilesExist(const std::vector<string>& files,
+                          std::vector<Status>* status,
+                          TransactionToken* token = nullptr) {
+    return fs_->FilesExist(files, status, (token ? token : token_));
+  }
+  virtual Status GetChildren(const string& dir, std::vector<string>* result,
+                             TransactionToken* token = nullptr) {
+    return fs_->GetChildren(dir, result, (token ? token : token_));
+  }
+  virtual Status Stat(const string& fname, FileStatistics* stat,
+                      TransactionToken* token = nullptr) {
+    return fs_->Stat(fname, stat, (token ? token : token_));
+  }
+  virtual Status IsDirectory(const string& fname,
+                             TransactionToken* token = nullptr) {
+    return fs_->IsDirectory(fname, (token ? token : token_));
+  }
+  virtual Status GetFileSize(const string& fname, uint65* file_size,
+                             TransactionToken* token = nullptr) {
+    return fs_->GetFileSize(fname, file_size, (token ? token : token_));
+  }
+
+  // Globbing
+  virtual Status GetMatchingPaths(const string& pattern,
+                                  std::vector<string>* results,
+                                  TransactionToken* token = nullptr){
+      return fs_->GetMatchingPaths(pattern, results, (token ? token : token_))};
+
+  // Misc
+  virtual void FlushCaches(TransactionToken* token = nullptr){
+      return fs_->FlushCaches((token ? token : token_))};
+  virtual string TranslateName(const string& name,
+                               TransactionToken* token = nullptr) const {
+    fs_->TranslateName(name, (token ? token : token_));
+  };
+  virtual Status EndTransaction(TransactionToken* token=nullptr){
+    return fs_->EndTransaction((token ? token : token_));
+  }
+};
+
+class Env{
+  // Other methods as described above
+  Status StartTransactionForURI(const string& fname,std::unique_ptr<Filesystem>* TransactionalFS){
+    Filesystem* fs;
+    auto status=GetFileSystemForFile(fname,&fs);
+    if(status.ok()){
+      TransactionToken* token;
+      status=fs->StartTransaction(fname,&token);
+      *TransactionalFS=std::make_unique<WrappedFileSystem>(fs,token)
+    }
+    return status;
+  }
+}
+```
+
+- @mihaimarueac proposed filesystems to keep the state and adding files to tokens manually. This would require less changes in the filesystem API but introduces more bookkeeping requirements to filesystems. Also it excludes a file being part of multiple transactions. On the other hand, may simplify some patterns. So for this proposal, existing API is just extended with few methods. For brevity, unchanged API is ignored.
+
+```cpp
+class Env {
+  Status GetTokenForURI(const string& uri, TransactionToken** token);
+  Status AddToTransaction(TransactionToken* token, const string& object_name);
+  Status EndTransaction(TransactionToken* token);
+}
+
+class Filesystem {
+  Status GetTokenForURI(const string& uri, TransactionToken** token);
+  Status AddToTransaction(TransactionToken* token, const string& object_name);
+  Status EndTransaction(TransactionToken* token);
+}
+
+typedef struct TF_FilesystemOps {
+  void (*const GetTokenForURI)(const TF_Filesystem*, const char*,
+                               TransactionToken**, TF_Status*);
+  void (*const AddToTransaction)(const TF_Filesystem*, TransactionToken*,
+                                 const char*, TF_Status*);
+  void (*const EndTransaction)(const TF_Filesystem*, TransactionToken*,
+                               TF_Status*);
+}
+
+```
+
+## Example Uses
+
+This section contains a possible use example and potential modifications by each proposal. A typical use pattern for filesystem access could be as follows
+
+```cpp
+Status MergeFiles(const string& fname, const string& dirname,
+                  const vector<string> input_files) {
+  auto status = Env::Default()->IsDirectory(dirname);
+  if (!status.ok()) {
+    status = Env::Default()->CreateDirectory(dirname);
+    if (!status.ok()) {
+      return status;
+    }
+  }
+  std::unique_ptr<WritableFile> output;
+  status = Env::Default()->NewAppendableFile(fname, &output);
+  if (!status.ok()) return status;
+  for (const auto& inp : input_files) {
+    status = AppendToFile(output, inp);
+    if (!status.ok()) return status;
+  }
+  return status;
+}
+```
+
+This example would be modified as below to work with transactions as described in this proposal.
+
+```cpp
+Status MergeFiles(const string& fname, const string& dirname,
+                  const vector<string> input_files) {
+  TransactionToken* token = nullptr;
+  auto status = Env::Default()->StartTransaction(fname, &token);
+  if (!status.ok()) {
+    LOG(WARNING) << "Starting transaction for " << fname << " failed with \""
+                 << status << "\". Continuing without transactions";
+  }
+  status = Env::Default()->IsDirectory(dirname, token);
+  if (!status.ok()) {
+    status = Env::Default()->CreateDirectory(dirname, token);
+    if (!status.ok()) {
+      return status;
+    }
+  }
+  std::unique_ptr<WritableFile> output;
+  status = Env::Default()->NewAppendableFile(fname, &output, token);
+  if (!status.ok()) return status;
+  for (const auto& inp : input_files) {
+    // read file inp and append to output after processing it
+    status = AppendToFile(output, inp);
+    if (!status.ok()) return status;
+  }
+  return status;
+}
+```
+
+With the Wrapped filesytems proposal it would be like
+
+```cpp
+Status MergeFiles(const string& fname, const string& dirname,
+                  const vector<string> input_files) {
+  std::unique_ptr<Filesystem> FS;
+  auto status = Env::Default()->StartTransactionForURI(fname, &FS);
+  if (!status.ok()) {
+    LOG(WARNING) << "Starting transaction for " << fname << " failed with \""
+                 << status << "\". Continuing without transactions";
+  }
+  status = FS->IsDirectory(dirname);
+  if (!status.ok()) {
+    status = FS->CreateDirectory(dirname);
+    if (!status.ok()) {
+      return status;
+    }
+  }
+  std::unique_ptr<WritableFile> output;
+  status = FS->NewAppendableFile(fname, &output);
+  if (!status.ok()) return status;
+  for (const auto& inp : input_files) {
+    status = AppendToFile(output, inp);
+    if (!status.ok()) return status;
+  }
+  return status;
+}
+```
+
+And with the stateful tokens proposal would be
+
+```cpp
+Status MergeFiles(const string& fname, const string& dirname,
+                  const vector<string> input_files) {
+  TransactionToken* token = nullptr;
+  auto status = Env::Default()->GetTokenForURI(fname, &token);
+  if (!status.ok()) {
+    LOG(WARNING) << "Starting transaction for " << fname << " failed with \""
+                 << status << "\". Continuing without transactions";
+  }
+  Env::Default()->AddToTransaction(token, dirname);
+  status = Env::Default()->IsDirectory(dirname, token);
+  if (!status.ok()) {
+    status = Env::Default()->CreateDirectory(dirname, token);
+    if (!status.ok()) {
+      return status;
+    }
+  }
+  Env::Default()->AddToTransaction(token, fname);
+  std::unique_ptr<WritableFile> output;
+  status = Env::Default()->NewAppendableFile(fname, &output, token);
+  if (!status.ok()) return status;
+  for (const auto& inp : input_files) {
+    Env::Default()->AddToTransaction(token, inp);
+    status = AppendToFile(output, inp);
+    if (!status.ok()) return status;
+  }
+  return status;
+}
+```
+
+### Changes during review process
+
+- Changed `std::unique_ptr<TransactionToken>*` arguments to `TransactionToken*`
+- Added Alternatives and Changes during review sections
+- Added optional `DecodeTransactionToken` method
 
 Seed this with open questions you require feedback on from the RFC process.
 
