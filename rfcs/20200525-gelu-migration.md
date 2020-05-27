@@ -64,7 +64,9 @@ upstream version.
 
 ## Relevant GitHub Issues
 https://github.com/tensorflow/tensorflow/pull/33945
+
 https://github.com/tensorflow/addons/issues/550
+
 https://github.com/tensorflow/tensorflow/issues/32783
 
 ## Questions and Discussion Topics
