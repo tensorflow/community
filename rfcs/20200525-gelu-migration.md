@@ -22,7 +22,7 @@
     * C++ custom-op added **2019-08-2019 (TFA 0.5.0)**
     * Python composite op added **2020-02-26 (TFA 0.9.0)**
 * We have [performed benchmarking of the GELU activation](https://colab.research.google.com/drive/1rLb4EuydbFg9PbhboXhCDqopcl6BmphG#scrollTo=0GL2x2S4zxW3) 
-which shows there it may be beneficial to retain the custom-ops, but the maintence burden has grown 
+which shows it may be beneficial to retain the custom-ops, but the maintence burden has grown 
 to much for us to continue to support it in Addons.
 * This migration is long over-due but we've struggled with finalizing the migration process.
 
@@ -69,7 +69,7 @@ https://github.com/tensorflow/tensorflow/issues/32783
 
 ## Questions and Discussion Topics
 * Whom from the TF core team would sponsor this migration and ownership of the API?
-* Is it worth brining over the custom-op kernels for CPU/GPU?
+* Is it worth bringing over the custom-op kernels for CPU/GPU?
 
 ## Final Decision
 TBD
