@@ -28,8 +28,8 @@ to much for us to continue to support it in Addons.
 
 ## Implementation Details
 * Link to implementation in Addons:
-    * Python: [https://github.com/tensorflow/addons/blob/r0.10/tensorflow_addons/activations/gelu.py](https://github.com/tensorflow/addons/blob/r0.10/tensorflow_addons/activations/gelu.py)
-    * C++ : [https://github.com/tensorflow/addons/blob/r0.10/tensorflow_addons/custom_ops/activations/cc/kernels/gelu_op.h](https://github.com/tensorflow/addons/blob/r0.10/tensorflow_addons/custom_ops/activations/cc/kernels/gelu_op.h) 
+    * Python: https://github.com/tensorflow/addons/blob/r0.10/tensorflow_addons/activations/gelu.py
+    * C++ : https://github.com/tensorflow/addons/blob/r0.10/tensorflow_addons/custom_ops/activations/cc/kernels/gelu_op.h
 * Does this include custom-op kernels?
     * Yes, but currently proposing to just migrate the python composite op. This may 
     change with discussion in the RFC.
@@ -61,13 +61,15 @@ upstream version.
 * The activation would land in [nn_ops.py](https://github.com/tensorflow/tensorflow/blob/r2.2/tensorflow//python/ops/nn_ops.py) as well as in [keras advaced_activations](https://github.com/tensorflow/tensorflow/blob/r2.2/tensorflow/python/keras/layers/advanced_activations.py)
 * No planned changes to the parameter signatures at this time
 * Addons would deprecate our activation and make a call to the core functionality.
+* After merging to TF Core:
+    * Consolidate/remove https://github.com/tensorflow/models/blob/r2.2.0/official/modeling/activations/gelu.py
+    * Consolidate/remove https://github.com/tensorflow/models/blob/r2.2.0/official/modeling/activations/gelu_test.py
+    * Consolidate/remove https://github.com/tensorflow/models/blob/r2.2.0/official/nlp/xlnet/xlnet_modeling.py#L29
 
 ## Relevant GitHub Issues
-https://github.com/tensorflow/tensorflow/pull/33945
-
-https://github.com/tensorflow/addons/issues/550
-
-https://github.com/tensorflow/tensorflow/issues/32783
+* https://github.com/tensorflow/tensorflow/pull/33945
+* https://github.com/tensorflow/addons/issues/550
+* https://github.com/tensorflow/tensorflow/issues/32783
 
 ## Questions and Discussion Topics
 * Whom from the TF core team would sponsor this migration and ownership of the API?
