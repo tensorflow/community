@@ -5,7 +5,7 @@
 | **RFC #**     | 246                                                  |
 | **Author(s)** | Penporn Koanantakool (penporn@google.com)            |
 | **Sponsor**   | Rasmus Larsen (rmlarsen@google.com), Tatiana Shpeisman (shpeisman@google.com)|
-| **Updated**   | 2019-05-19                                           |
+| **Updated**   | 2019-05-28                                           |
 
 ## Objective
 
@@ -136,6 +136,8 @@ CSRSparseMatrix is compatible with all platforms supported by TensorFlow.
 
 
 ### Tutorials and Examples
+Once the implementation is complete, we plan to post a tutorial on the TensorFlow blog or the TensorFlow Tutorial section. All Python and C++ APIs will be documented on the TensorFlow website just like other TensorFlow ops.
+
 The following snippet shows how CSRSparseMatrix can be used in Python.
 ```Python
 import tf.linalg.experimental.sparse as csr
@@ -191,7 +193,7 @@ D_csr = csr.concat([A_csr, B_csr, C_csr], axis=1)
 * This design will conform to the backward and forward compatibility requirements once it is moved outside the experimental package. It only adds new functionalities without making changes to existing features.
 * How this proposal interacts with other parts of the TensorFlow Ecosystem:
   * TFLite: TFLite already supports the CSR format. TensorFlow should be able to pass the format to TFLite without problems.
-  * Distribution strategies: Don’t plan on interacting with this in this initial phase. Could overlap with DTensor.
+  * Distribution strategies: Don’t plan on interacting with this in this initial phase.
   * tf.function: Should work just like any other ops.
   * GPU: We plan to make all CSRSparseMatrix operations work on GPUs.
   * TPU: We don’t plan on supporting CSRSparseMatrix on TPUs yet.
@@ -283,7 +285,7 @@ The Python [CSRSparseMatrix](https://cs.opensource.google/tensorflow/tensorflow/
 
 
 ### Shape Inference
-`Variant tensors` are perceived as scalars in TensorFlow. For proper shape inferences, we store `CSRSparseMatrix`’s shape and data type in a shape inference primitive, [ShapeAndType](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/core/framework/shape_inference.h;l=133), and access them through [input_handle_shapes_and_types](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/core/framework/shape_inference.h;l=584) and [set_output_handle_shapes_and_types](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/core/framework/shape_inference.h;l=588) during shape inference.
+`Variant` tensors are perceived as scalars in TensorFlow. For proper shape inference, we store `CSRSparseMatrix`’s shape and data type in a shape inference primitive, [ShapeAndType](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/core/framework/shape_inference.h;l=133), and access them through [input_handle_shapes_and_types](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/core/framework/shape_inference.h;l=584) and [set_output_handle_shapes_and_types](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/core/framework/shape_inference.h;l=588) during shape inference.
 
 
 ### APIs
