@@ -4,8 +4,8 @@
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [247](https://github.com/tensorflow/community/pull/247) |
 | **Author(s)** | Reed Wanderman-Milne (reedwm@google.com)             |
-| **Sponsor**   | Sanjoy Das (sanjoy@google.com)                 |
-| **Updated**   | 2020-05-20                                           |
+| **Sponsor**   | Sanjoy Das (sanjoy@google.com)                       |
+| **Updated**   | 2020-06-10                                           |
 
 ## Objective
 
@@ -71,10 +71,14 @@ Another advantage of turning on TF32 by default is that it makes TensorFlow’s 
 
 ### Remote devices
 
-Enabling TF32 will affect remote Ampere GPUs in addition to local Ampere GPUs. In particular, it will affect devices on hosts connected to via [`tf.config.experimental_connect_to_host`](https://www.tensorflow.org/api_docs/python/tf/config/experimental_connect_to_host) or [`tf.config.experimental_connect_to_cluster`](https://www.tensorflow.org/api_docs/python/tf/config/experimental_connect_to_cluster). The initial, unexposed version of the function in TensorFlow 2.3 may only support local devices, not remote devices, if we do not have time to implement remote device support.
+Enabling TF32 will affect remote Ampere GPUs in addition to local Ampere GPUs. In particular, it will affect devices on hosts connected to via [`tf.config.experimental_connect_to_host`](https://www.tensorflow.org/api_docs/python/tf/config/experimental_connect_to_host) or [`tf.config.experimental_connect_to_cluster`](https://www.tensorflow.org/api_docs/python/tf/config/experimental_connect_to_cluster). The initial, unexposed version of the function in TensorFlow 2.3 will likely only support local devices, not remote devices, since we will probably not have time to implement remote device support.
+
+We will need to issue an RPC to remote devices when TF32 is enabled or disabled. This means calling `allow_tensor_float_32_execution` will be a fairly heavy function call. It should only be used at the beginning of the program, or in between executing two models or tests. It is not intended to be used within a single model to make parts of it run in TF32 and parts of it run in float32, especially considering that approach would also not work within a `tf.function`.
 
 ### Alternatives considered
 
 We could have an API to enable TF32 on a per-op basis, to allow users to run only part of their model in TF32. This would be useful if they discover certain TF32 ops in their model need the full float32 precision. However, we anticipate that almost every model can run safely in TF32, so we do not think this alternative is necessary. If we discover specifying TF32 on a per-op basis is useful, we can later add a TF32 scope or some other mechanism to do this.
+
+We could disallow enabling/disabling TF32 once a tensor has been created. This makes dealing with remote devices simpler, since we would only have to modify an RPC to create a context with TF32 enabled. We would not have to support updating a context to enable/disable TF32 after the context has been created. `tf.config.set_visible_devices` has this behavior. However, this is more limiting, and it will be non obvious to users that they have to enable TF32 before creating any tensors.
 
 We could export this API in TensorFlow 2.3. The issue is we don’t plan on building TensorFlow 2.3 with CUDA 11. Without CUDA 11 support, TF32 cannot be used, so the API would not be usable except by those who build TensorFlow from source.
