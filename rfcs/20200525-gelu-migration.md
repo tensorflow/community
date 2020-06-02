@@ -5,8 +5,8 @@
 | **RFC #**   | TBD after PR |                                       |
 | **Authors** | Tzu-Wei Sung (@WindQAQ) & Sean Morgan (@seanpmorgan) |
 | **Sponsor** | TBD   |
-| **Updated** | 2020-05-XX |
-| **Sponsorship Deadline** | 2020-07-XX (45 Days after submission)  |
+| **Updated** | 2020-06-02 |
+| **Sponsorship Deadline** | 2020-07-17 (45 Days after submission)  |
 
 ## Rationale for Migration
 * [Gaussian Error Linear Units (GELUs)](https://arxiv.org/pdf/1606.08415.pdf) cited 600+ times
@@ -58,7 +58,8 @@ upstream version.
 
 
 ## Transition Plan
-* The activation would land in [nn_ops.py](https://github.com/tensorflow/tensorflow/blob/r2.2/tensorflow//python/ops/nn_ops.py) as well as in [keras advaced_activations](https://github.com/tensorflow/tensorflow/blob/r2.2/tensorflow/python/keras/layers/advanced_activations.py)
+* The activation would land in [nn_ops.py](https://github.com/tensorflow/tensorflow/blob/r2.2/tensorflow//python/ops/nn_ops.py), [keras activations](https://github.com/tensorflow/tensorflow/blob/r2.2/tensorflow/python/keras/activations.py),
+ and possibly in [keras advaced_activation layers](https://github.com/tensorflow/tensorflow/blob/r2.2/tensorflow/python/keras/layers/advanced_activations.py)
 * No planned changes to the parameter signatures at this time
 * Addons would deprecate our activation and make a call to the core functionality.
 * After merging to TF Core:
