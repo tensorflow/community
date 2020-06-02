@@ -2,7 +2,7 @@
 
 | Status      | Proposed (Waiting for Sponsor)                                                                                           |
 | :---------- | :------------------------------------------------------------------------------------------------- |
-| **RFC #**   | TBD after PR |                                       |
+| **RFC #**   | [252](https://github.com/tensorflow/community/pull/252) |                                       |
 | **Authors** | Tzu-Wei Sung (@WindQAQ) & Sean Morgan (@seanpmorgan) |
 | **Sponsor** | TBD   |
 | **Updated** | 2020-06-02 |
