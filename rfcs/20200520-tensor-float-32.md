@@ -1,6 +1,6 @@
 # TensorFloat-32 in TensorFlow
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [247](https://github.com/tensorflow/community/pull/247) |
 | **Author(s)** | Reed Wanderman-Milne (reedwm@google.com)             |
