@@ -1,6 +1,6 @@
 # Kernel and Op Implementation and Registration API
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | James Ring (sjr@google.com).                                      |
 | **Sponsor**   | Günhan Gülsoy (gunan@google.com)                                  |
