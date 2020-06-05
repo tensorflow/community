@@ -669,16 +669,16 @@ Status MergeFiles(const string& fname, const string& dirname,
                  << status << "\". Continuing without transactions";
   }
   Env::Default()->AddToTransaction(token, dirname);
-  status = Env::Default()->IsDirectory(dirname, token);
+  status = Env::Default()->IsDirectory(dirname);
   if (!status.ok()) {
-    status = Env::Default()->CreateDirectory(dirname, token);
+    status = Env::Default()->CreateDirectory(dirname);
     if (!status.ok()) {
       return status;
     }
   }
   Env::Default()->AddToTransaction(token, fname);
   std::unique_ptr<WritableFile> output;
-  status = Env::Default()->NewAppendableFile(fname, &output, token);
+  status = Env::Default()->NewAppendableFile(fname, &output;
   if (!status.ok()) return status;
   for (const auto& inp : input_files) {
     Env::Default()->AddToTransaction(token, inp);
