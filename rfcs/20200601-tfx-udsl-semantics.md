@@ -202,10 +202,10 @@ combinations with synchronous execution in it. We propose to support
 asynchronous execution, which will help us to cover all combinations in the
 table.
 
-                      | Synchronous execution                                                                                            | Asynchronous execution
-:-------------------: | :--------------------------------------------------------------------------------------------------------------: | :--------------------:
-**Synchronous data**  | Default mode in existing TFX DSL                                                                                 | Not meaningful
-**Asynchronous data** | Supported through [Resolvers](https://github.com/tensorflow/community/blob/master/rfcs/20190828-tfx-resolver.md) | Introduced in this RFC
+|                       | Synchronous execution | Asynchronous execution|
+| :-------------------: | :-------------------: | :-------------------: |
+| **Synchronous data**  | Default mode in existing TFX DSL | Not meaningful |
+| **Asynchronous data** | Supported through [Resolvers](https://github.com/tensorflow/community/blob/master/rfcs/20190828-tfx-resolver.md) | Introduced in this RFC |
 
 By supporting asynchronous execution pipelines, we are able to address all use
 cases mentioned in the [Background](#Background) section:
