@@ -2,7 +2,7 @@
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)       |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [255](https://github.com/tensorflow/community/pull/255) (update when you have community PR #)|
 | **Author(s)** | Kathy Wu (kathywu@google.com)                        |
 | **Sponsor**   | karmel (karmel@google.com)                           |
 | **Updated**   | 2020-06-10                                           |
