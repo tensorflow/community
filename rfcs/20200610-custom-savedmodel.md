@@ -318,4 +318,4 @@ The proposed changes allow **all modifications** to the object graph.
 
 ## Questions and Discussion Topics
 
-Seed this with open questions you require feedback on from the RFC process.
+* Should this impact `tf.train.Checkpoints`? i.e. Should we allow tf.Checkpoint to save and restore checkpoints using the dependencies listed in the custom serializer?
