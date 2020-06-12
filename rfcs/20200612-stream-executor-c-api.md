@@ -1,9 +1,11 @@
 # StreamExecutor C API
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)          |
+| Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #) |
-| **Author(s)** | Anna Revinskaya (annarev@google.com), Penporn Koanantakool (penporn@google.com), Russell Power (power@google.com), Yi Situ (yisitu@google.com) |
+| **RFC #**     | [257](https://github.com/tensorflow/community/pull/257) |
+| **Author(s)** | Anna Revinskaya (annarev@google.com), Penporn           |
+:               : Koanantakool (penporn@google.com), Russell Power        :
+:               : (power@google.com), Yi Situ (yisitu@google.com)         :
 | **Sponsor**   | Gunhan Gulsoy (gunan@tensorflow.org)                    |
 | **Updated**   | 2020-06-11                                              |
 
