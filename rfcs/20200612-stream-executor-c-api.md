@@ -3,10 +3,8 @@
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [257](https://github.com/tensorflow/community/pull/257) |
-| **Author(s)** | Anna Revinskaya (annarev@google.com), Penporn           |
-:               : Koanantakool (penporn@google.com), Russell Power        :
-:               : (power@google.com), Yi Situ (yisitu@google.com)         :
-| **Sponsor**   | Gunhan Gulsoy (gunan@tensorflow.org)                    |
+| **Author(s)** | Anna Revinskaya (annarev@google.com), Penporn Koanantakool (penporn@google.com), Russell Power (power@google.com), Yi Situ (yisitu@google.com) |
+| **Sponsor**   | Gunhan Gulsoy (gunan@google.com)                        |
 | **Updated**   | 2020-06-11                                              |
 
 # Objective
