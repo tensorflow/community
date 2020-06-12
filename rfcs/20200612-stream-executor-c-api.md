@@ -1,4 +1,4 @@
-# Title of RFC
+# StreamExecutor C API
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)          |
 | :------------ | :------------------------------------------------------ |
