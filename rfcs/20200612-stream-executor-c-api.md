@@ -418,14 +418,6 @@ class CStream : public StreamInterface {
 };
 ```
 
-## Platform registration
-
-This document just introduces the StreamExecutorInterface C API itself. RFC(s)
-for how this API will be used inside TensorFlow will be sent separately.
-
-Specifically, external contributors from Intel are planning to send an RFC for a
-CustomDevice registration that uses this API.
-
 ## Stability / User Impact
 
 The C API will be placed under _tensorflow/c/experimental/_ directory.
@@ -463,7 +455,8 @@ to the repository.)
 
 *   The C API would increase the binary size and the build time, but not
     significantly so. We don’t expect it to affect startup time / test times.
-*   The TensorFlow DevInfra team will maintain this code.
+*   The TensorFlow DevInfra team will maintain this code. StreamExecutor C API
+    will be packaged along with other C APIs that TensorFlow currently has.
 
 ## Platforms and Environments
 
@@ -492,3 +485,8 @@ How will this proposal interact with other parts of the TensorFlow Ecosystem?
     wouldn’t need this C API. Other GPU/devices can use this C API if the
     functionality coverage is sufficient for them.
 *   **SavedModel: **The C API will not be serialized to a SavedModel.
+
+## Questions and Discussion Topics
+
+*   Any comments on the API design? Any missing functionality?
+*   Please let us know if you plan to use this C API for device integration.
