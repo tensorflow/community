@@ -10,18 +10,18 @@
 # Objective
 
 Provide basic device management C API to allow new devices to modularly connect
-to the legacy TensorFlow runtime.
+to the current TensorFlow runtime.
 
 ## Goals
 
 *   C API wrapper of a subset of methods in StreamExecutorInterface.
-*   Eventual API and ABI stability
+*   Best-effort API and ABI stability after an initial experimental phase.
 
 ## Non-goals
 
 *   Compatibility with the
     [new TensorFlow stack](https://blog.tensorflow.org/2020/04/tfrt-new-tensorflow-runtime.html).
-*   Generic potpourri C API for all kinds of devices.
+*   APIs that will expose all device-specific capabilities. 
 
 # Motivation
 
@@ -36,7 +36,7 @@ device addition in a modular manner: contributors code outside of the TensorFlow
 repository and distribute a binary module which would connect to TensorFlow at
 runtime through a stable application binary interface (ABI).
 
-The new TensorFlow stack, composed of
+The new TensorFlow stack, based on
 [TFRT](https://blog.tensorflow.org/2020/04/tfrt-new-tensorflow-runtime.html) and
 [MLIR](https://www.tensorflow.org/mlir), is designed with this in mind. However,
 it is still in an active development phase and is not ready for third-party
@@ -48,16 +48,14 @@ code reuse.)
 In the meantime, we plan to provide limited device integration support for the
 current TensorFlow stack through
 [Modular TensorFlow](https://github.com/tensorflow/community/blob/master/rfcs/20190305-modular-tensorflow.md).
-We anticipate three main functionalities within a device plugin module:
+We anticipate three major functionalities within a device plugin module:
 
 *   Device registration: Will be addressed in a different RFC.
 *   Device management: The focus of this RFC.
 *   Kernel and op registration and implementation:
     [C API](https://github.com/tensorflow/community/blob/master/rfcs/20190814-kernel-and-op-registration.md).
 
-A key part of TensorFlow device implementation is the class called
-[StreamExecutor](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/stream_executor/stream_executor_pimpl.h;l=73),
-which handles work execution and memory management. It provides a set of methods
+[StreamExecutor](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/stream_executor/stream_executor_pimpl.h;l=73) is TensorFlow's main device manager, responsible for work execution and memory management. It provides a set of methods
 (such as
 [Memcpy](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/stream_executor/stream_executor_internal.h;l=240))
 that can be customized for a particular device.
@@ -74,6 +72,10 @@ A decoupled way to add a new device to TensorFlow.
 *   Faster time-to-solution: Does not need code review from the TensorFlow team.
 *   Lower maintenance efforts: Only C-API-related changes could break the
     integration. Unrelated TensorFlow changes would not break the code.
+       *    The C APIs may be changed during the initial experimental phase based 
+            on developer experience and feedback. When the APIs become more mature, 
+            we will try to keep them stable (in a best-effort manner) until the new 
+            TensorFlow stack is available.
 
 # Design Proposal
 
@@ -423,7 +425,7 @@ make the best effort to perform any updates in a backwards compatible way. For
 e.g. we plan to keep track of struct sizes.
 
 After a bake-in period of 6 months we will revisit and consider moving the API
-to _tensorflow/c/ _directory.
+to _tensorflow/c/_ directory.
 
 ## Alternatives Considered
 
@@ -467,7 +469,7 @@ to the repository.)
 ## Best Practices
 
 *   Going forward, Modular TensorFlow will be the only way to integrate new
-    devices to the current TensorFlow stack.
+    third-party devices to the current TensorFlow stack.
 *   For device integrations that can be done in 2021 or later, we strongly
     encourage waiting to integrate with the new TensorFlow stack instead.
 
@@ -481,7 +483,7 @@ How will this proposal interact with other parts of the TensorFlow Ecosystem?
 *   **GPU/TPU:** Certain GPUs and TPUs are already supported in TensorFlow and
     wouldn’t need this C API. Other GPU/devices can use this C API if the
     functionality coverage is sufficient for them.
-*   **SavedModel: **The C API will not be serialized to a SavedModel.
+*   **SavedModel:** The C API will not be serialized to a SavedModel.
 
 ## Questions and Discussion Topics
 
