@@ -20,7 +20,7 @@ to the current TensorFlow runtime.
 ## Non-goals
 
 *   Compatibility with the
-    [new TensorFlow stack](https://blog.tensorflow.org/2020/04/tfrt-new-tensorflow-runtime.html).
+    [new TensorFlow runtime stack](https://blog.tensorflow.org/2020/04/tfrt-new-tensorflow-runtime.html).
 *   APIs that will expose all device-specific capabilities. 
 
 # Motivation
@@ -53,7 +53,7 @@ We anticipate three major functionalities within a device plugin module:
 *   Device registration: Will be addressed in a different RFC.
 *   Device management: The focus of this RFC.
 *   Kernel and op registration and implementation:
-    [C API](https://github.com/tensorflow/community/blob/master/rfcs/20190814-kernel-and-op-registration.md).
+    [RFC Accepted](https://github.com/tensorflow/community/blob/master/rfcs/20190814-kernel-and-op-registration.md). [C API implemented](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/c/).
 
 [StreamExecutor](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/stream_executor/stream_executor_pimpl.h;l=73) is TensorFlow's main device manager, responsible for work execution and memory management. It provides a set of methods
 (such as
