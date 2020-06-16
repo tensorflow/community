@@ -407,8 +407,7 @@ Initially, we won’t have any compatibility guarantees. At the same time we wil
 make the best effort to perform any updates in a backwards compatible way. For
 e.g. we plan to keep track of struct sizes.
 
-After a bake-in period of 6 months we will revisit and consider moving the API
-to _tensorflow/c/_ directory.
+We will have an initial bake-in period before we consider moving the API out of experimental directory.
 
 ## Alternatives Considered
 
