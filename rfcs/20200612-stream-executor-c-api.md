@@ -88,23 +88,6 @@ plan to wrap only a subset of key StreamExecutorInterface functionality.
 See proposed C API below:
 
 ```cpp
-#define TF_CAPI_EXPORT
-#else
-#if defined(_WIN32)
-#ifdef TF_COMPILE_LIBRARY
-#define TF_CAPI_EXPORT __declspec(dllexport)
-#else
-#define TF_CAPI_EXPORT __declspec(dllimport)
-#endif  // TF_COMPILE_LIBRARY
-#else
-#define TF_CAPI_EXPORT __attribute__((visibility("default")))
-#endif  // _WIN32
-#endif  // SWIG
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef SE_Stream_st* SE_Stream;
 typedef SE_Event_st* SE_Event;
 typedef SE_Timer_st* SE_Timer;
@@ -116,8 +99,8 @@ typedef struct SE_PlatformId {
 
 typedef struct SE_TimerFns {
  const size_t struct_size;
- int64_t (*nanoseconds)(SE_Timer timer);
- int64_t (*microseconds)(SE_Timer timer);
+ uint64_t (*nanoseconds)(SE_Timer timer);
+ uint64_t (*microseconds)(SE_Timer timer);
 } SE_Timer;
 
 typedef struct SE_AllocatorStats {
