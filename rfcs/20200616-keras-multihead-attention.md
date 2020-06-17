@@ -302,7 +302,7 @@ No dependencies.
 
 *   We will first introduce the layer as
     `tf.keras.layers.experimental.MultiHeadAttention` and
-    `tf.keras.layers.experimental.MaskedSoftmax`.
+    `tf.keras.layers.experimental.EinsumDense`.
 
 ## Detailed Design
 
