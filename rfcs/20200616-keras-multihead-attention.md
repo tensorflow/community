@@ -311,7 +311,11 @@ No dependencies.
 
 *   We will first introduce the layer as
     `tf.keras.layers.experimental.MultiHeadAttention` and
-    `tf.keras.layers.experimental.EinsumDense`.
+    `tf.keras.layers.experimental.EinsumDense`. When the APIs are stable and
+    functionalities are fully verified, the next step is to
+    graduate as core keras layers by removing `experimental` scope.
+    
+    
 
 ## Detailed Design
 
