@@ -2,8 +2,7 @@
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)          |
 | :------------ | :------------------------------------------------------ |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
-:               : (update when you have community PR #)                   :
+| **RFC #**     | [260](https://github.com/tensorflow/community/pull/260) |
 | **Author(s)** | Hongkun Yu (hongkuny@google.com)                        |
 | **Sponsor**   | Francois Chollet (fchollet@google.com)                  |
 | **Updated**   | 2020-06-16                                              |
