@@ -3,7 +3,7 @@
 | Status        | (Proposed / Accepted / Implemented / Obsolete)          |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [260](https://github.com/tensorflow/community/pull/260) |
-| **Author(s)** | Hongkun Yu (hongkuny@google.com)                        |
+| **Author(s)** | Hongkun Yu (hongkuny@google.com), Mark Omernick (momernick@google.com)    |
 | **Sponsor**   | Francois Chollet (fchollet@google.com)                  |
 | **Updated**   | 2020-06-16                                              |
 
@@ -241,6 +241,15 @@ we would like to introduce an optional argument `attention_mask` for
 `tf.keras.layers.Attention`. In the reduced case of `tf.keras.layers.Attention`,
 the shape is (batch_size, target_length, source_length). Whenever
 `attention_mask` is specified, the `mask` argument is OK to be skipped.
+
+* TFA `MultiHeadAttention` Deprecation and Re-mapping
+
+[MultiHeadAttention](https://github.com/tensorflow/addons/blob/master/tensorflow_addons/layers/multihead_attention.py) has been released. The proposed `MultiHeadAttention` has similar `__init__` arguments
+and `call` interface, where the minor differences are argument names and the attention `mask` shape.
+We expect the new `MultiHeadAttention` keras layer will 
+cover the functionalities. Once the implementation are merged as experimental layers,
+we will work with TF Addons team to design the deprecation and re-mapping procedure.
+
 
 ### Alternatives Considered
 
