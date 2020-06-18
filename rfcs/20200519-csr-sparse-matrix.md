@@ -1,6 +1,6 @@
 # CSR Sparse Matrix
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | 246                                                  |
 | **Author(s)** | Penporn Koanantakool (penporn@google.com)            |
