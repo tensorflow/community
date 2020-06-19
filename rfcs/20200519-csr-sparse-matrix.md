@@ -24,7 +24,7 @@ Support the [compressed sparse row (CSR)](https://en.wikipedia.org/wiki/Sparse_m
 
 ## Motivation
 
-Sparse tensor representation has a significant impact on performance. Modern architectures are most suited for non-random, bulk memory accesses. Sparse formats that optimize for data locality and reuse can achieve large performance gains. TensorFlow currently stores sparse tensors in [coordinate (COO)](https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor) format, which works well for tensors with very few nonzeroes, and is inefficient otherwise. Deep learning and sparse linear algebra applications typically do not have sufficient sparsities to benefit from the COO format. The compressed sparse row (CSR) format is one of the most commonly used formats. It generally requires less storage and is faster than COO, sometimes by up to orders of magnitudes.
+Sparse tensor representation has a significant impact on performance. Modern architectures are most suited for non-random, bulk memory accesses. Sparse formats that optimize for data locality and reuse can achieve large performance gains. TensorFlow currently stores sparse tensors in [coordinate (COO)](https://www.tensorflow.org/api_docs/python/tf/sparse/SparseTensor) format, which works well for tensors with very few nonzeroes, and is inefficient otherwise. Deep learning and sparse linear algebra applications typically do not have sufficient sparsities to benefit from the COO format. The compressed sparse row (CSR) format is one of the most commonly used formats. It generally requires less storage and is faster than COO, sometimes by up to orders of magnitude.
 
 We propose supporting the CSR format in TensorFlow to accelerate sparse linear algebra and applicable deep learning applications in TensorFlow. 
 
@@ -46,6 +46,14 @@ All kernel implementations are in C++, with a Python wrapper for Python APIs. Du
 
 ### Supported Operations
 See APIs in the Detailed Design section.
+* Construction ops:
+  * From a dense tensor.
+  * From a SparseTensor.
+  * From given `batch_pointers`, `row_pointers`, `col_indices`, and `values` arrays.
+* Op that returns CSR components.
+* Conversions ops: 
+  * Convert to and from dense tensor
+  * Convert to and from SparseTensor.
 * Sparse linear algebra ops: 
   * Sparse matrix-vector multiplication (SpMV)
   * Sparse-dense matrix multiplication (SpMM)
@@ -55,12 +63,9 @@ See APIs in the Detailed Design section.
   * Sparse Cholesky factorization
   * Sparse LU factorization
   * Sparse QR factorization
-* Conversions ops: 
-  * Convert to and from dense tensor
-  * Convert to and from SparseTensor.
 
 General ops, borrowing APIs from numpy and scipy ([sparse](https://docs.scipy.org/doc/scipy/reference/sparse.html), [sparse.csr_matrix](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html)) packages.
-* Construction ops: [eye](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.eye.html) and [rand](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.rand.html)
+* Generation ops: [eye](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.eye.html) and [rand](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.rand.html)
 * Unary ops that preserve sparsity structure:
   * [sin](https://docs.scipy.org/doc/numpy/reference/generated/numpy.sin.html), [cos](https://docs.scipy.org/doc/numpy/reference/generated/numpy.cos.html), [tan](https://docs.scipy.org/doc/numpy/reference/generated/numpy.tan.html), [sinh](https://docs.scipy.org/doc/numpy/reference/generated/numpy.sinh.html), [cosh](https://docs.scipy.org/doc/numpy/reference/generated/numpy.cosh.html), [tanh](https://docs.scipy.org/doc/numpy/reference/generated/numpy.tanh.html)
   * [arcsin](https://docs.scipy.org/doc/numpy/reference/generated/numpy.arcsin.html), [arcsinh](https://docs.scipy.org/doc/numpy/reference/generated/numpy.arcsinh.html), [arccos](https://docs.scipy.org/doc/numpy/reference/generated/numpy.arccos.html), [arccosh](https://docs.scipy.org/doc/numpy/reference/generated/numpy.arccosh.html), [arctan](https://docs.scipy.org/doc/numpy/reference/generated/numpy.arctan.html), [arctanh](https://docs.scipy.org/doc/numpy/reference/generated/numpy.arctanh.html)
@@ -74,6 +79,8 @@ General ops, borrowing APIs from numpy and scipy ([sparse](https://docs.scipy.or
   * [eliminate_zeros](https://docs.scipy.org/doc/scipy-0.14.0/reference/generated/scipy.sparse.csr_matrix.eliminate_zeros.html)
   * [sum_duplicates](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.sum_duplicates.html)
   * [transpose](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.transpose.html)
+* Binary element-wise ops that preserve sparsity structure:
+  * [with_values](https://www.tensorflow.org/api_docs/python/tf/RaggedTensor#with_values)
 * Binary element-wise ops (may change sparsity structure):
   * [maximum](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.maximum.html), [minimum](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.minimum.html)
   * add, sub, [multiply](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.multiply.html), divide, [dot](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.dot.html)
@@ -87,6 +94,7 @@ General ops, borrowing APIs from numpy and scipy ([sparse](https://docs.scipy.or
 * Ops that returns indices: 
   * [argmax](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.argmax.html), [argmin](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.argmin.html), [diagonal](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.diagonal.html), [nonzero](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.nonzero.html)
 
+The ops will support broadcasting when possible.
 
 ### Alternatives Considered
 We have considered several other sparse formats in addition to CSR.
@@ -194,7 +202,7 @@ D_csr = csr.concat([A_csr, B_csr, C_csr], axis=1)
 * How this proposal interacts with other parts of the TensorFlow Ecosystem:
   * TFLite: TFLite already supports the CSR format. TensorFlow should be able to pass the format to TFLite without problems.
   * Distribution strategies: Don’t plan on interacting with this in this initial phase.
-  * tf.function: Should work just like any other ops.
+  * tf.function: Can be made to work with tf.function. Will work straightforwardly if CSRSparseMatrix is a [CompositeTensor](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0:tensorflow/python/framework/composite_tensor.py;l=31).
   * GPU: We plan to make all CSRSparseMatrix operations work on GPUs.
   * TPU: We don’t plan on supporting CSRSparseMatrix on TPUs yet.
   * SavedModel: Should work just like any other ops/tensors.
@@ -215,7 +223,7 @@ There are CSRSparseMatrix classes on both C++ and Python sides. The C++ CSRSpars
 
 
 ### C++ Layer
-The C++ [CSRSparseMatrix](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/sparse/sparse_matrix.h;l=35) class has the following properties:
+The C++ [CSRSparseMatrix](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0:tensorflow/core/kernels/sparse/sparse_matrix.h;l=35) class has the following properties:
 
 <table>
     <tr><th align="left">Property</th><th align="left">Description</th></tr>
@@ -275,7 +283,7 @@ The C++ [CSRSparseMatrix](https://cs.opensource.google/tensorflow/tensorflow/+/m
 
 
 ### Python Layer
-The Python [CSRSparseMatrix](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/python/ops/linalg/sparse/sparse_csr_matrix_ops.py;l=315) class is a subclass of [SparseMatrix](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/python/ops/linalg/sparse/sparse_csr_matrix_ops.py;l=248), which stores common sparse matrix properties. Other new sparse formats can be added as subclasses of SparseMatrix. CSRSparseMatrix has the following properties:
+The Python [CSRSparseMatrix](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0:tensorflow/python/ops/linalg/sparse/sparse_csr_matrix_ops.py;l=315) class is a subclass of [SparseMatrix](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0:tensorflow/python/ops/linalg/sparse/sparse_csr_matrix_ops.py;l=248), which stores common sparse matrix properties. Other new sparse formats can be added as subclasses of SparseMatrix. CSRSparseMatrix has the following properties:
 
 | Property  | Description                          |
 | :-------- | :----------------------------------- |
@@ -285,7 +293,7 @@ The Python [CSRSparseMatrix](https://cs.opensource.google/tensorflow/tensorflow/
 
 
 ### Shape Inference
-`Variant` tensors are perceived as scalars in TensorFlow. For proper shape inference, we store `CSRSparseMatrix`’s shape and data type in a shape inference primitive, [ShapeAndType](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/core/framework/shape_inference.h;l=133), and access them through [input_handle_shapes_and_types](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/core/framework/shape_inference.h;l=584) and [set_output_handle_shapes_and_types](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/core/framework/shape_inference.h;l=588) during shape inference.
+`Variant` tensors are perceived as scalars in TensorFlow. For proper shape inference, we store `CSRSparseMatrix`’s shape and data type in a shape inference primitive, [ShapeAndType](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0:tensorflow/core/framework/shape_inference.h;l=133), and access them through [input_handle_shapes_and_types](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0:tensorflow/core/framework/shape_inference.h;l=584) and [set_output_handle_shapes_and_types](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0:tensorflow/core/framework/shape_inference.h;l=588) during shape inference.
 
 
 ### APIs
@@ -321,7 +329,7 @@ Other sparse APIs follow NumPy and SciPy APIs. See links in [Supported Operation
 * Should we add `CSRSparseMatrix` support to existing standard ops as well, e.g., `tf.math.{add,asin,atan,ceil}`, etc?
 * Would love to hear about more use cases. 
 * For neural networks, would CSR be useful for you (while Block CSR is still a future work)?
-* Should we make CSRSparseMatrix a [CompositeTensor](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0-rc4:tensorflow/python/framework/composite_tensor.py;l=31)? Would the effort be worth it since we will transition to the new TFRT/MLIR backend soon? How should this be prioritized?
+* Should we make CSRSparseMatrix a [CompositeTensor](https://cs.opensource.google/tensorflow/tensorflow/+/v2.2.0:tensorflow/python/framework/composite_tensor.py;l=31)? Would the effort be worth it since we will transition to the new TFRT/MLIR backend soon? How should this be prioritized?
 * Should `SparseMatrix` replace `SparseTensor`?
 
 
