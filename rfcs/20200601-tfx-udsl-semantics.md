@@ -419,7 +419,8 @@ ML pipelines that will uniformly support:
 
 Beside that, we will also explore:
 
--   Options and APIs to support custom triggering logic for single node as well
-    as sub-pipelines.
+-   Formalizing `TriggerPolicy` as part of the node abstraction. This also
+    include exploring options and APIs to support custom triggering logic for
+    single node as well as sub-pipelines.
 -   Options and APIs to support parallel executor runs within a component to add
     more efficiencies and flexibilities.
