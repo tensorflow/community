@@ -1,6 +1,6 @@
 # Advanced TFX DSL semantics
 
-| Status        | Proposed                                                    |
+| Status        | Accepted                                                    |
 | :------------ | :---------------------------------------------------------- |
 | **Author(s)** | Ruoyu Liu (ruoyu@google.com), Konstantin Shtoyk (kostik@google.com), Mitch Trott (trott@google.com), Zhitao Li (zhitaoli@google.com) |
 | **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com)               |
