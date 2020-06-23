@@ -369,8 +369,8 @@ For example, Stream customization might look as follows:
 ```cpp
 class CStream : public StreamInterface {
  public:
-  explicit CStream(TF_StreamExecutor* device,
-                   TF_StreamExecutor* stream_executor) :
+  explicit CStream(SE_Device* device,
+                   SE_StreamExecutor* stream_executor) :
     device_(device), stream_executor_(stream_executor),
     stream_handle_(nullptr) {
   }
@@ -394,8 +394,8 @@ class CStream : public StreamInterface {
   }
 
  private:
-  TF_StreamExecutor* device_;  // not owned
-  TF_StreamExecutorFns* stream_executor_;  // not owned
+  SE_Device* device_;  // not owned
+  SE_StreamExecutor* stream_executor_;  // not owned
   SE_Stream stream_handle_;
 };
 ```
