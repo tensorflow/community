@@ -3,7 +3,7 @@
 | Status        | (Proposed / Accepted / Implemented / Obsolete)          |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [260](https://github.com/tensorflow/community/pull/260) |
-| **Author(s)** | Hongkun Yu (hongkuny@google.com), Mark Omernick (momernick@google.com)    |
+| **Author(s)** | Hongkun Yu (hongkuny@google.com), Mark Omernick (momernick@google.com) |
 | **Sponsor**   | Francois Chollet (fchollet@google.com)                  |
 | **Updated**   | 2020-06-16                                              |
 
@@ -83,7 +83,7 @@ test_layer = MultiHeadAttention(
     num_heads=2, key_size=2, return_attention_scores=True)
 target = np.array([[[0.1, 0.2], [0.0, 0.0]]])
 source = np.array([[[0.1, 0.2], [3.0, 1.0]]])
-output, scores = test_layer([target, source])
+output, scores = test_layer(query=target, value=source)
 scores = tf.math.reduce_sum(scores, axis=1) # shape = (1, 2, 2)
 ```
 
@@ -96,7 +96,7 @@ mask_shape = [2, 3, 4, 3, 2]
 query = 10 * np.random.random_sample(query_shape)
 value = 10 * np.random.random_sample(value_shape)
 mask_data = np.random.randint(2, size=mask_shape).astype("bool")
-output = test_layer([query, value], mask_data)
+output = test_layer(query=query, value=value, attention_mask=mask_data)
 ```
 
 ### Interface
@@ -134,7 +134,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
   >>> target = tf.keras.Input(shape=[8, 16])
   >>> source = tf.keras.Input(shape=[4, 16])
   >>> mask_tensor = tf.keras.Input(shape=[8, 4])
-  >>> output_tensor, weights = layer([target, source], attention_mask=mask_tensor)
+  >>> output_tensor, weights = layer(query=target, value=source
+  ...                                attention_mask=mask_tensor)
   >>> print(output_tensor.shape), print(weights.shape)
   (None, 8, 16)  (None, 2, 8, 4)
 
@@ -142,7 +143,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
   >>> layer = MultiHeadAttention(num_heads=2, key_size=2, attention_axes=(2, 3))
   >>> input_tensor = tf.keras.Input(shape=[5, 3, 4, 16])
-  >>> output_tensor = layer([input_tensor, input_tensor])
+  >>> output_tensor = layer(query=input_tensor, value=input_tensor)
   >>> print(output_tensor.shape)
   (None, 5, 3, 4, 16)
 
@@ -167,7 +168,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
     bias_constraint: Constraint for dense layer kernels.
   """
 
-  def call(self, inputs, attention_mask=None):
+  def call(self, query, value, key=None, attention_mask=None):
     """Implements the forward pass.
 
     Size glossary:
@@ -180,10 +181,9 @@ class MultiHeadAttention(tf.keras.layers.Layer):
       * Value (source) attention axes shape (S), the rank must match the target.
 
     Args:
-      inputs: List of the following tensors:
-        * query: Query `Tensor` of shape `[B, T, dim]`.
-        * value: Value `Tensor` of shape `[B, S, dim]`.
-        * key: Optional key `Tensor` of shape `[B, S, dim]`. If not given, will
+      query: Query `Tensor` of shape `[B, T, dim]`.
+      value: Value `Tensor` of shape `[B, S, dim]`.
+      key: Optional key `Tensor` of shape `[B, S, dim]`. If not given, will
           use `value` for both `key` and `value`, which is the most common case.
       attention_mask: a boolean mask of shape `[B, T, S]`, that prevents
         attention to certain positions.
@@ -242,14 +242,15 @@ we would like to introduce an optional argument `attention_mask` for
 the shape is (batch_size, target_length, source_length). Whenever
 `attention_mask` is specified, the `mask` argument is OK to be skipped.
 
-* TFA `MultiHeadAttention` Deprecation and Re-mapping
+*   TFA `MultiHeadAttention` Deprecation and Re-mapping
 
-[MultiHeadAttention](https://github.com/tensorflow/addons/blob/master/tensorflow_addons/layers/multihead_attention.py) has been released. The proposed `MultiHeadAttention` has similar `__init__` arguments
-and `call` interface, where the minor differences are argument names and the attention `mask` shape.
-We expect the new `MultiHeadAttention` keras layer will 
-cover the functionalities. Once the implementation are merged as experimental layers,
-we will work with TF Addons team to design the deprecation and re-mapping procedure.
-
+[MultiHeadAttention](https://github.com/tensorflow/addons/blob/master/tensorflow_addons/layers/multihead_attention.py)
+has been released. The proposed `MultiHeadAttention` has similar `__init__`
+arguments and `call` interface, where the minor differences are argument names
+and the attention `mask` shape. We expect the new `MultiHeadAttention` keras
+layer will cover the functionalities. Once the implementation are merged as
+experimental layers, we will work with TF Addons team to design the deprecation
+and re-mapping procedure.
 
 ### Alternatives Considered
 
@@ -307,15 +308,13 @@ No dependencies.
     and serializable to SavedModel. These are tested inside TensorFlow Model
     Garden applications.
 
-### User Impact
+### User Impacteisum
 
 *   We will first introduce the layer as
     `tf.keras.layers.experimental.MultiHeadAttention` and
     `tf.keras.layers.experimental.EinsumDense`. When the APIs are stable and
-    functionalities are fully verified, the next step is to
-    graduate as core keras layers by removing `experimental` scope.
-    
-    
+    functionalities are fully verified, the next step is to graduate as core
+    keras layers by removing `experimental` scope.
 
 ## Detailed Design
 
@@ -323,17 +322,17 @@ The layer has been implemented as the
 [MultiHeadAttention](https://github.com/tensorflow/models/blob/master/official/nlp/modeling/layers/attention.py#L116)
 inside TensorFlow Model Garden.
 
-First, as we rely on `tf.eisum` to define projections and attention computation,
-we need to figure out the einsum notation of each computation. Furthermore, to
-make the layer generalize to high-dimension cases, i.e. there are more than one
-batch dimensions and attention softmax can be performed on multiple axes, we
-need to track the batch axes and attention axes inside einsum notations. We use
-a vector of chars and use two local methods to generate einsum notations for
-projections and attentions.
+First, as we rely on `tf.einsum` to define projections and attention
+computation, we need to figure out the einsum notation of each computation.
+Furthermore, to make the layer generalize to high-dimension cases, i.e. there
+are more than one batch dimensions and attention softmax can be performed on
+multiple axes, we need to track the batch axes and attention axes inside einsum
+notations. We use a vector of chars and use two local methods to generate einsum
+notations for projections and attentions.
 
 Second, the layer by default implements the most common dot-product attention.
 There are various ways to implement the attention computation, so we modulize it
-as two methods `_build_attention` and `_compute_attention`. Thus, users may be
+as two methods `build_attention` and `compute_attention`. Thus, users will be
 able to just override them to get a new keras layer with a novel attention
 method. For example, we implemented
 [TalkingHeadAttention](https://github.com/tensorflow/models/blob/master/official/nlp/modeling/layers/talking_heads_attention.py)
