@@ -48,9 +48,9 @@ code reuse.)
 In the meantime, we plan to provide limited device integration support for the
 current TensorFlow stack through
 [Modular TensorFlow](https://github.com/tensorflow/community/blob/master/rfcs/20190305-modular-tensorflow.md).
-We anticipate three major functionalities within a device plugin module:
+We anticipate three basic functionalities within a device plugin module:
 
-*   Device registration: Will be addressed in a different RFC.
+*   Device registration: Addressed in a different RFC, [Adding Pluggable Device for TensorFlow](https://github.com/tensorflow/community/pull/262).
 *   Device management: The focus of this RFC.
 *   Kernel and op registration and implementation:
     [RFC Accepted](https://github.com/tensorflow/community/blob/master/rfcs/20190814-kernel-and-op-registration.md). [C API implemented](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/c/).
