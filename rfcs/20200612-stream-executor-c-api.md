@@ -206,8 +206,8 @@ typedef struct SE_StreamExecutor {
   // internals.
   void (*create_stream)(SE_Device* executor, SE_Stream*, TF_Status*);
 
-  // Deletes SE_Stream and deallocates any underlying resources.
-  void (*delete_stream)(SE_Device* executor, SE_Stream stream);
+  // Destroys SE_Stream and deallocates any underlying resources.
+  void (*destroy_stream)(SE_Device* executor, SE_Stream stream);
 
   // Causes dependent to not begin execution until other has finished its
   // last-enqueued work.
@@ -224,8 +224,8 @@ typedef struct SE_StreamExecutor {
   void (*create_event)(
       SE_Device* executor, TF_Event* event, TF_Status* status);
 
-  // Delete SE_Event and perform any platform-specific deallocation and cleanup of an event.
-  void (*delete_event)(
+  // Destroy SE_Event and perform any platform-specific deallocation and cleanup of an event.
+  void (*destroy_event)(
       SE_Device* executor, SE_Event event, TF_Status* status);
 
   // Requests the current status of the event from the underlying platform.
@@ -246,8 +246,8 @@ typedef struct SE_StreamExecutor {
   // internals.
   void (*create_timer)(SE_Device* executor, SE_Timer* timer, TF_Status* status);
 
-  // Deletes timer and deallocates timer resources on the underlying platform.
-  void (*delete_timer)(SE_Device* executor, SE_Timer timer);
+  // Destroy timer and deallocates timer resources on the underlying platform.
+  void (*destroy_timer)(SE_Device* executor, SE_Timer timer);
 
   // Records a start event for an interval timer.
   TF_BOOL (*start_timer)(
@@ -302,9 +302,9 @@ TF_CAPI_EXPORT SE_Platform* SE_NewPlatform(
      SE_PlatformId* id,
      int32_t visible_device_count,
      SE_Device* (*create_device)(SE_Options* options, TF_Status* status),
+     void (*destroy_device)(SE_Device* device),
      SE_StreamExecutor* (*create_stream_executor)(TF_Status* status),
-     void (*delete_device)(SE_Device* device),
-     void (*delete_stream_executor)(SE_StreamExecutor* stream_executor);
+     void (*destroy_stream_executor)(SE_StreamExecutor* stream_executor);
 );
 
 TF_CAPI_EXPORT void SE_RegisterPlatform(
@@ -324,7 +324,7 @@ TF_CAPI_EXPORT void SE_RegisterPlatform(
 
 ## Usage example
 
-Define functions that create and delete `SE_Device` and `SE_StreamExecutor`:
+Define functions that create and destroy `SE_Device` and `SE_StreamExecutor`:
 
 ```cpp
 SE_Device* create_device(SE_Options* options, TF_Status* status) {
@@ -339,12 +339,12 @@ SE_StreamExecutor* create_stream_executor(TF_Status* status) {
   ...
   return se;
 }
-void delete_device(SE_Device* device) {
-  -- delete device handle here --
+void destroy_device(SE_Device* device) {
+  -- destroy device handle here --
   ...
   delete device;
 }
-void delete_stream_executor(SE_StreamExecutor* stream_executor) {
+void destroy_stream_executor(SE_StreamExecutor* stream_executor) {
   delete stream_executor;
 }
 ```
