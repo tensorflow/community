@@ -88,39 +88,61 @@ plan to wrap only a subset of key StreamExecutorInterface functionality.
 See proposed C API below:
 
 ```cpp
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef SE_Stream_st* SE_Stream;
 typedef SE_Event_st* SE_Event;
 typedef SE_Timer_st* SE_Timer;
 typedef TF_Status* (*TF_StatusCallbackFn)(void*);
 
+#ifndef TF_BOOL_DEFINED
+#define TF_BOOL int8_t
+#endif // TF_BOOL_DEFINED
+
+#ifndef TF_OFFSET_OF_END
+#define TF_OFFSET_OF_END(TYPE, MEMBER) (offsetof(TYPE, MEMBER) + sizeof(((TYPE *)0)->MEMBER))
+#endif // TF_OFFSET_OF_END
+
 typedef struct SE_PlatformId {
+ size_t struct_size;
  void* id;  // aka stream_executor::Platform::Id
 } SE_PlatformId;
 
-typedef struct SE_TimerFns {
- const size_t struct_size;
+#define SE_PLATFORMID_STRUCT_SIZE TF_OFFSET_OF_END(SE_PlatformId, id)
+
+typedef struct SE_Timer {
+ size_t struct_size;
  uint64_t (*nanoseconds)(SE_Timer timer);
  uint64_t (*microseconds)(SE_Timer timer);
 } SE_Timer;
 
+#define SE_TIMER_STRUCT_SIZE TF_OFFSET_OF_END(SE_Timer, microseconds)
+
 typedef struct SE_AllocatorStats {
-  const size_t struct_size;
+  size_t struct_size;
   int64_t num_allocs;
   int64_t bytes_in_use;
   int64_t peak_bytes_in_use;
   int64_t largest_alloc_size;
 
-  bool has_bytes_limit;
+  int8_t has_bytes_limit;
   int64_t bytes_limit;
 
   int64_t bytes_reserved;
   int64_t peak_bytes_reserved;
 
-  bool has_bytes_reservable_limit;
+  int8_t has_bytes_reservable_limit;
   int64_t bytes_reservable_limit;
 
   int64_t largest_free_block_bytes;
 } SE_AllocatorStats;
+
+#define SE_ALLOCATORSTATS_STRUCT_SIZE TF_OFFSET_OF_END(SE_AllocatorStats, largest_free_block_bytes)
 
 typedef enum SE_EventStatus {
   SE_EVENT_UNKNOWN,
@@ -130,12 +152,14 @@ typedef enum SE_EventStatus {
 } SE_EventStatus;
 
 typedef struct SE_Options {
-  const size_t struct_size;
-  int ordinal;
+  size_t struct_size;
+  int32_t ordinal;
 };
 
+#define SE_OPTIONS_STRUCT_SIZE TF_OFFSET_OF_END(SE_Options, ordinal)
+
 typedef struct SE_Device {
-  const size_t struct_size;
+  size_t struct_size;
   char* name;
   size_t name_len;
 
@@ -147,8 +171,10 @@ typedef struct SE_Device {
   void* data;
 };
 
+#define SE_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SE_Device, data)
+
 typedef struct SE_StreamExecutor {
-  const size_t struct_size;
+  size_t struct_size;
 
   /*** ALLOCATION CALLBACKS ***/
   // Synchronously allocates size bytes on the underlying platform and returns
@@ -157,6 +183,7 @@ typedef struct SE_StreamExecutor {
   TF_DeviceMemoryBase* (*allocate)(
       SE_Device* se, uint64_t size, int64_t memory_space);
 
+
   // Deallocate the DeviceMemory previously allocated via this interface.
   // Deallocation of a nullptr-representative value is permitted.
   void (*deallocate)(
@@ -164,12 +191,12 @@ typedef struct SE_StreamExecutor {
 
 
   // Return allocator statistics.
-  bool (*get_allocator_stats)(SE_Device* executor,
+  TF_BOOL (*get_allocator_stats)(SE_Device* executor,
                               SE_AllocatorStats* stats);
   // Returns the underlying device memory usage information, if it is available.
   // If it is not available (false is returned), free/total may not be
   // initialized.
-  bool (*device_memory_usage)(
+  TF_BOOL (*device_memory_usage)(
       SE_Device* executor, int64_t* free, int64_t* total);
 
 
@@ -184,7 +211,7 @@ typedef struct SE_StreamExecutor {
 
   // Causes dependent to not begin execution until other has finished its
   // last-enqueued work.
-  bool (*create_stream_dependency)(
+  TF_BOOL (*create_stream_dependency)(
       SE_Device* executor, SE_Stream dependent,
       SE_Stream other);
 
@@ -223,18 +250,18 @@ typedef struct SE_StreamExecutor {
   void (*delete_timer)(SE_Device* executor, SE_Timer timer);
 
   // Records a start event for an interval timer.
-  bool (*start_timer)(
+  TF_BOOL (*start_timer)(
       SE_Device* executor, SE_Stream stream, SE_Timer timer);
 
 
   // Records a stop event for an interval timer.
-  bool (*stop_timer)(
+  TF_BOOL (*stop_timer)(
       SE_Device* executor, SE_Stream stream, SE_Timer timer);
 
   /*** MEMCPY CALLBACKS ***/
   // Entrains a memcpy operation onto stream, with a host destination location
   // host_dst and a device memory source, with target size size.
-  bool (*memcpy_to_host)(
+  TF_BOOL (*memcpy_to_host)(
       SE_Device* executor, SE_Stream stream,
       void* host_dst,
       const SE_DeviceMemoryBase* device_src,
@@ -243,7 +270,7 @@ typedef struct SE_StreamExecutor {
   // Entrains a memcpy operation onto stream, with a device destination location
   // and a host memory source, with target size size
 
-  bool (*memcpy_from_host)(
+  TF_BOOL (*memcpy_from_host)(
       SE_Device* executor, SE_Stream stream,
       SE_DeviceMemoryBase* device_dst,
       const void* host_src, uint64_t size);
@@ -257,35 +284,37 @@ typedef struct SE_StreamExecutor {
 
   // Synchronizes all activity occurring in the StreamExecutor's context (most
   // likely a whole device).
-  bool (*synchronize_all_activity)(SE_Device* executor);
+  TF_BOOL (*synchronize_all_activity)(SE_Device* executor);
 
   // Obtains metadata about the underlying device.
-  void fill_device_description(SE_Device* executor,
+  void (*fill_device_description)(SE_Device* executor,
                                SE_DeviceDescription* description,
                                TF_Status* status);
 
   // Entrains on a stream a user-specified function to be run on the host.
-  bool host_callback(SE_Device* executor, SE_Stream* stream,
+  TF_BOOL (*host_callback)(SE_Device* executor, SE_Stream* stream,
                      TF_StatusCallbackFn callback_fn, void* ctx);
-} SE_Device;
+} SE_StreamExecutor;
 
-TF_CAPI_EXPORT extern SE_Platform* SE_NewPlatform(
-     SE_PlatformId id,
-     int visible_device_count,
+#define SE_STREAMEXECUTOR_STRUCT_SIZE TF_OFFSET_OF_END(SE_StreamExecutor, host_callback)
+
+TF_CAPI_EXPORT SE_Platform* SE_NewPlatform(
+     SE_PlatformId* id,
+     int32_t visible_device_count,
      SE_Device* (*create_device)(SE_Options* options, TF_Status* status),
      SE_StreamExecutor* (*create_stream_executor)(TF_Status* status),
      void (*delete_device)(SE_Device* device),
      void (*delete_stream_executor)(SE_StreamExecutor* stream_executor);
 );
 
-TF_CAPI_EXPORT extern void SE_RegisterPlatform(
+TF_CAPI_EXPORT void SE_RegisterPlatform(
      char* name,
      size_t name_len,
      SE_Platform* platform,
      TF_Status* status);
 
 #ifdef __cplusplus
-} /* end extern "C" */
+} // extern "C"
 #endif
 ```
 
@@ -299,13 +328,13 @@ Define functions that create and delete `SE_Device` and `SE_StreamExecutor`:
 
 ```cpp
 SE_Device* create_device(SE_Options* options, TF_Status* status) {
-  SE_Device* se = new SE_Device();
+  SE_Device* se = new SE_Device{ SE_DEVICE_STRUCT_SIZE };
   se->device_handle = get_my_device_handle();
   ...
   return se;
 }
 SE_StreamExecutor* create_stream_executor(TF_Status* status) {
-  SE_StreamExecutor* se_fns = new SE_StreamExecutor();
+  SE_StreamExecutor* se_fns = new SE_StreamExecutor{ SE_STREAMEXECUTOR_STRUCT_SIZE };
   se->memcpy_from_host = my_device_memcpy_from_host_function;
   ...
   return se;
@@ -325,13 +354,13 @@ Create a new platform using `SE_NewPlatform` and register it using
 
 ```cpp
 void RegisterMyCustomPlatform() {
-  static plugin_id_value = 123;
-  SE_PlatformId id;
+  static const int32_t plugin_id_value = 123;
+  SE_PlatformId id{ SE_PLATFORMID_STRUCT_SIZE };
   id.id = &plugin_id_value;
-  int visible_device_count = 2;
+  int32_t visible_device_count = 2;
 
   SE_Platform* custom_platform = SE_NewPlatform(
-     id, visible_device_count,
+     &id, visible_device_count,
      create_device, create_stream_executor,
      delete_device, delete_stream_executor);
 
