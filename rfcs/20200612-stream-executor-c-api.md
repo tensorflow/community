@@ -115,11 +115,11 @@ typedef struct SE_PlatformId {
 
 #define SE_PLATFORMID_STRUCT_SIZE TF_OFFSET_OF_END(SE_PlatformId, id)
 
-typedef struct SE_Timer {
+typedef struct SE_TimerFns {
  size_t struct_size;
  uint64_t (*nanoseconds)(SE_Timer timer);
  uint64_t (*microseconds)(SE_Timer timer);
-} SE_Timer;
+} SE_TimerFns;
 
 #define SE_TIMER_STRUCT_SIZE TF_OFFSET_OF_END(SE_Timer, microseconds)
 
