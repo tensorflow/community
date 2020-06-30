@@ -101,7 +101,7 @@ typedef SE_Timer_st* SE_Timer;
 typedef TF_Status* (*TF_StatusCallbackFn)(void*);
 
 #ifndef TF_BOOL_DEFINED
-#define TF_BOOL int8_t
+#define TF_BOOL unsigned char
 #endif // TF_BOOL_DEFINED
 
 #ifndef TF_OFFSET_OF_END
