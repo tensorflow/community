@@ -160,7 +160,7 @@ typedef struct SE_Options {
 
 typedef struct SE_Device {
   size_t struct_size;
-  char* name;
+  const char* name;
   size_t name_len;
 
   // Device vendor can store handle to their device representation
@@ -308,7 +308,7 @@ TF_CAPI_EXPORT SE_Platform* SE_NewPlatform(
 );
 
 TF_CAPI_EXPORT void SE_RegisterPlatform(
-     char* name,
+     const char* name,
      size_t name_len,
      SE_Platform* platform,
      TF_Status* status);
