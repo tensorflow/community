@@ -220,9 +220,9 @@ typedef struct SE_StreamExecutor {
                      TF_Status* status);
 
   /*** EVENT CALLBACKS ***/
-  // Create TF_Event. Performs platform-specific allocation and initialization of an event.
+  // Create SE_Event. Performs platform-specific allocation and initialization of an event.
   void (*create_event)(
-      SE_Device* executor, TF_Event* event, TF_Status* status);
+      SE_Device* executor, SE_Event* event, TF_Status* status);
 
   // Destroy SE_Event and perform any platform-specific deallocation and cleanup of an event.
   void (*destroy_event)(
