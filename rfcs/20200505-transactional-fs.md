@@ -68,7 +68,7 @@ For a coarse granularity adding `StartTransaction` `EndTransaction` and `GetTran
 ```cpp
 class Filesystem {
   // Transaction Token API extensions
-  virtual Status GetTransactionTokenForFile(const string& file_name,TransactionToken* token) = 0
+  virtual Status GetTransactionTokenForFile(const string& file_name,TransactionToken* token) = 0;
   virtual Status StartTransaction(const string& transaction_name, TransactionToken* token) = 0;
   virtual Status EndTransaction(TransactionToken* token) = 0;
 
@@ -80,7 +80,7 @@ class Filesystem {
 
   // Creating directories
   virtual Status CreateDir(const string& dirname, TransactionToken* token=nullptr) = 0;
-  virtual Status RecursivelyCreateDir(const string& dirname), TransactionToken* token=nullptr;
+  virtual Status RecursivelyCreateDir(const string& dirname, TransactionToken* token=nullptr);
 
   // Deleting
   virtual Status DeleteFile(const string& fname, TransactionToken* token=nullptr) = 0;
@@ -695,6 +695,49 @@ Status MergeFiles(const string& fname, const string& dirname,
 - Added Alternatives and Changes during review sections
 - Added optional `DecodeTransactionToken` method
 
-Seed this with open questions you require feedback on from the RFC process.
+## Final design proposal
+
+During the review meeting it has been decided to merge wrapped filesystem approach and stateful token approach. Then the final proposal is as shown below. The `WrappedFileSystem` and `Filesystem` classes described above are to be extended with three new methods,
+
+```cpp
+class WrappedFileSystem : public Filesystem {
+  // Other methods are ommited for brevity
+  virtual Status AddToTransaction(const string& uri,
+                                  TransactionToken* token = nullptr) {
+    return fs_->AddToTransaction(uri, (token ? token : token_));
+  }
+
+  virtual Status GetTokenOrStartTransaction(const string& uri,
+                                            TransactionToken*& token) {
+    return fs_->GetTokenOrStartTransaction(uri, token);
+  }
+
+  virtual Status DecodeTransaction(const TransactionToken* token = nullptr,
+                                   string* decoded_string) {
+    return fs_->DecodeTransaction((token ?: token : token_), decoded_string);
+  }
+  //...
+};
+```
+
+Then the current C API's `TF_FilesystemOps` table is to be extended by 6 new function pointers.
+
+```cpp
+struct TF_FilesystemOps{
+  // Existing members are not modified
+  // Transaction management
+  void (*const StartTransaction)(TF_Filesystem*, TransactionToken**);
+  void (*const EndTransaction)(TF_Filesystem*, TransactionToken*);
+  void (*const AddToTransaction)(TF_Filesystem* fs, const char* file_name, TransactionToken** token);
+  void (*const GetTransactionTokenForFile)(TF_Filesystem* fs, const char* file_name, TransactionToken** token);
+  void (*const GetOrStartTransactionTokenForFile)(TF_Filesystem* fs, const char* file_name, TransactionToken** token);
+  // Optional Transaction Debugging
+  void (*const DecodeTransactionToken)(const TF_Filesystem*, const TransactionToken*, char**);
+};
+```
+
+The new functions will be null pointers until respective plugins implement them. `ModularFilesystem` implementation will check whether a plugin implements the transactions and will ignore the transaction if it is not implemented, possibly after producing a log message, thus falling back to current transactionless state. Since these function pointers will be added after existing pointers, already compiled plugins will keep functioning and they can be gradually start supporting transactions. Any filesystem plugin that start supporting transaction will be used by the framework.
+
+With these final modifications, there is no need to carry transaction tokens through different compilation units or ops in the graph. For example checkpointing logic can be implemented in an atomic-like way by simply modifying the save and merge ops to use same transaction using accessed file names and directories.
 
 [filesystem_plugin]: https://github.com/tensorflow/community/blob/master/rfcs/20190506-filesystem-plugin-modular-tensorflow.md
