@@ -9,7 +9,7 @@
 
 ## **Objective**
 
-Implement a pluggable device mechanism which allows to run existing TensorFlow programs on a new device without user changing most of the code.  Users only need to install a plugin in a specified directory, and the mechanism is able to discover and plug in the capabilities offered by the plugin. 
+Implement a pluggable device mechanism which allows to run existing TensorFlow programs on a new device without user changing the code.  Users only need to install a plugin in a specified directory, and the mechanism is able to discover and plug in the capabilities offered by the plugin. 
 
 This RFC is based on the Modular TensorFlow  [RFC](https://github.com/tensorflow/community/pull/77), which aims to extend the TensorFlow design to plugin capabilities like adding a new device support.  The modular device interface is based on StreamExecutor C API [RFC](https://github.com/tensorflow/community/pull/257). 
 
