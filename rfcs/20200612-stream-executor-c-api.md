@@ -154,7 +154,7 @@ typedef enum SE_EventStatus {
 typedef struct SE_Options {
   size_t struct_size;
   int32_t ordinal;
-};
+} SE_Options;
 
 #define SE_OPTIONS_STRUCT_SIZE TF_OFFSET_OF_END(SE_Options, ordinal)
 
@@ -169,7 +169,7 @@ typedef struct SE_Device {
 
   // Any kind of data that plugin device might want to store.
   void* data;
-};
+} SE_Device;
 
 #define SE_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SE_Device, data)
 
