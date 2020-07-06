@@ -121,7 +121,7 @@ typedef struct SE_TimerFns {
  uint64_t (*microseconds)(SE_Timer timer);
 } SE_TimerFns;
 
-#define SE_TIMER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(SE_TimerFns, microseconds)
+#define SE_TIMERFNS_STRUCT_SIZE TF_OFFSET_OF_END(SE_TimerFns, microseconds)
 
 typedef struct SE_AllocatorStats {
   size_t struct_size;
