@@ -91,6 +91,10 @@ See proposed C API below:
 #include <stddef.h>
 #include <stdint.h>
 
+#define SE_MAJOR 0
+#define SE_MINOR 0
+#define SE_REVISION 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
