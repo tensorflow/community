@@ -1,7 +1,7 @@
 # Easily Customizable `Optimizer.minimize`
 
 
-| Status        | Proposed       |
+| Status        | In Revision       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [234](https://github.com/tensorflow/community/pull/234) |
 | **Author(s)** | [omalleyt12@](https://github.com/omalleyt12) |
