@@ -91,6 +91,10 @@ See proposed C API below:
 #include <stddef.h>
 #include <stdint.h>
 
+#define SE_MAJOR 0
+#define SE_MINOR 0
+#define SE_REVISION 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -109,22 +113,25 @@ typedef TF_Status* (*TF_StatusCallbackFn)(void*);
 #endif // TF_OFFSET_OF_END
 
 typedef struct SE_PlatformId {
- size_t struct_size;
- void* id;  // aka stream_executor::Platform::Id
+  size_t struct_size;
+  void* ext;
+  void* id;  // aka stream_executor::Platform::Id
 } SE_PlatformId;
 
 #define SE_PLATFORMID_STRUCT_SIZE TF_OFFSET_OF_END(SE_PlatformId, id)
 
 typedef struct SE_TimerFns {
- size_t struct_size;
- uint64_t (*nanoseconds)(SE_Timer timer);
- uint64_t (*microseconds)(SE_Timer timer);
+  size_t struct_size;
+  void* ext;
+  uint64_t (*nanoseconds)(SE_Timer timer);
+  uint64_t (*microseconds)(SE_Timer timer);
 } SE_TimerFns;
 
-#define SE_TIMER_STRUCT_SIZE TF_OFFSET_OF_END(SE_Timer, microseconds)
+#define SE_TIMER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(SE_TimerFns, microseconds)
 
 typedef struct SE_AllocatorStats {
   size_t struct_size;
+  void* ext;
   int64_t num_allocs;
   int64_t bytes_in_use;
   int64_t peak_bytes_in_use;
@@ -153,14 +160,16 @@ typedef enum SE_EventStatus {
 
 typedef struct SE_Options {
   size_t struct_size;
+  void* ext;
   int32_t ordinal;
-};
+} SE_Options;
 
 #define SE_OPTIONS_STRUCT_SIZE TF_OFFSET_OF_END(SE_Options, ordinal)
 
 typedef struct SE_Device {
   size_t struct_size;
-  char* name;
+  void* ext;
+  const char* name;
   size_t name_len;
 
   // Device vendor can store handle to their device representation
@@ -169,12 +178,13 @@ typedef struct SE_Device {
 
   // Any kind of data that plugin device might want to store.
   void* data;
-};
+} SE_Device;
 
 #define SE_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SE_Device, data)
 
 typedef struct SE_StreamExecutor {
   size_t struct_size;
+  void* ext;
 
   /*** ALLOCATION CALLBACKS ***/
   // Synchronously allocates size bytes on the underlying platform and returns
@@ -220,9 +230,9 @@ typedef struct SE_StreamExecutor {
                      TF_Status* status);
 
   /*** EVENT CALLBACKS ***/
-  // Create TF_Event. Performs platform-specific allocation and initialization of an event.
+  // Create SE_Event. Performs platform-specific allocation and initialization of an event.
   void (*create_event)(
-      SE_Device* executor, TF_Event* event, TF_Status* status);
+      SE_Device* executor, SE_Event* event, TF_Status* status);
 
   // Destroy SE_Event and perform any platform-specific deallocation and cleanup of an event.
   void (*destroy_event)(
@@ -244,10 +254,10 @@ typedef struct SE_StreamExecutor {
   /*** TIMER CALLBACKS ***/
   // Creates TF_Timer. Allocates timer resources on the underlying platform and initializes its
   // internals.
-  void (*create_timer)(SE_Device* executor, SE_Timer* timer, TF_Status* status);
+  void (*create_timer)(SE_Device* executor, SE_Timer* timer, SE_TimerFns** timer_fns, TF_Status* status);
 
   // Destroy timer and deallocates timer resources on the underlying platform.
-  void (*destroy_timer)(SE_Device* executor, SE_Timer timer);
+  void (*destroy_timer)(SE_Device* executor, SE_Timer timer, SE_TimerFns* timer_fns);
 
   // Records a start event for an interval timer.
   TF_BOOL (*start_timer)(
@@ -308,7 +318,7 @@ TF_CAPI_EXPORT SE_Platform* SE_NewPlatform(
 );
 
 TF_CAPI_EXPORT void SE_RegisterPlatform(
-     char* name,
+     const char* name,
      size_t name_len,
      SE_Platform* platform,
      TF_Status* status);
