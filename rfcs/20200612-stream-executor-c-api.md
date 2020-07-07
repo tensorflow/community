@@ -112,6 +112,14 @@ typedef TF_Status* (*TF_StatusCallbackFn)(void*);
 #define TF_OFFSET_OF_END(TYPE, MEMBER) (offsetof(TYPE, MEMBER) + sizeof(((TYPE *)0)->MEMBER))
 #endif // TF_OFFSET_OF_END
 
+typedef struct SE_PlatformId {
+  size_t struct_size;
+  void* ext;
+  void* id;  // aka stream_executor::Platform::Id
+} SE_PlatformId;
+
+#define SE_PLATFORMID_STRUCT_SIZE TF_OFFSET_OF_END(SE_PlatformId, id)
+
 typedef struct SE_TimerFns {
   size_t struct_size;
   void* ext;
@@ -120,14 +128,6 @@ typedef struct SE_TimerFns {
 } SE_TimerFns;
 
 #define SE_TIMER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(SE_TimerFns, microseconds)
-
-typedef struct SE_PlatformId {
-  size_t struct_size;
-  void* ext;
-  void* id;  // aka stream_executor::Platform::Id
-} SE_PlatformId;
-
-#define SE_PLATFORMID_STRUCT_SIZE TF_OFFSET_OF_END(SE_PlatformId, id)
 
 typedef struct SE_AllocatorStats {
   size_t struct_size;
