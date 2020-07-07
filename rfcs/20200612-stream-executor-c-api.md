@@ -112,10 +112,19 @@ typedef TF_Status* (*TF_StatusCallbackFn)(void*);
 #define TF_OFFSET_OF_END(TYPE, MEMBER) (offsetof(TYPE, MEMBER) + sizeof(((TYPE *)0)->MEMBER))
 #endif // TF_OFFSET_OF_END
 
+typedef struct SE_TimerFns {
+  size_t struct_size;
+  void* ext;
+  uint64_t (*nanoseconds)(SE_Timer timer);
+  uint64_t (*microseconds)(SE_Timer timer);
+} SE_TimerFns;
+
+#define SE_TIMER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(SE_TimerFns, microseconds)
+
 typedef struct SE_PlatformId {
- size_t struct_size;
- void* ext;
- void* id;  // aka stream_executor::Platform::Id
+  size_t struct_size;
+  void* ext;
+  void* id;  // aka stream_executor::Platform::Id
 } SE_PlatformId;
 
 #define SE_PLATFORMID_STRUCT_SIZE TF_OFFSET_OF_END(SE_PlatformId, id)
@@ -245,10 +254,10 @@ typedef struct SE_StreamExecutor {
   /*** TIMER CALLBACKS ***/
   // Creates TF_Timer. Allocates timer resources on the underlying platform and initializes its
   // internals.
-  void (*create_timer)(SE_Device* executor, SE_Timer* timer, TF_Status* status);
+  void (*create_timer)(SE_Device* executor, SE_Timer* timer, SE_TimerFns** timer_fns, TF_Status* status);
 
   // Destroy timer and deallocates timer resources on the underlying platform.
-  void (*destroy_timer)(SE_Device* executor, SE_Timer timer);
+  void (*destroy_timer)(SE_Device* executor, SE_Timer timer, SE_TimerFns* timer_fns);
 
   // Records a start event for an interval timer.
   TF_BOOL (*start_timer)(
