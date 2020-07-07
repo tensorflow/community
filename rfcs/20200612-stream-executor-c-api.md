@@ -110,6 +110,7 @@ typedef TF_Status* (*TF_StatusCallbackFn)(void*);
 
 typedef struct SE_PlatformId {
  size_t struct_size;
+ void* ext;
  void* id;  // aka stream_executor::Platform::Id
 } SE_PlatformId;
 
@@ -117,6 +118,7 @@ typedef struct SE_PlatformId {
 
 typedef struct SE_TimerFns {
  size_t struct_size;
+ void* ext;
  uint64_t (*nanoseconds)(SE_Timer timer);
  uint64_t (*microseconds)(SE_Timer timer);
 } SE_TimerFns;
@@ -125,6 +127,7 @@ typedef struct SE_TimerFns {
 
 typedef struct SE_AllocatorStats {
   size_t struct_size;
+  void* ext;
   int64_t num_allocs;
   int64_t bytes_in_use;
   int64_t peak_bytes_in_use;
@@ -153,6 +156,7 @@ typedef enum SE_EventStatus {
 
 typedef struct SE_Options {
   size_t struct_size;
+  void* ext;
   int32_t ordinal;
 } SE_Options;
 
@@ -160,6 +164,7 @@ typedef struct SE_Options {
 
 typedef struct SE_Device {
   size_t struct_size;
+  void* ext;
   const char* name;
   size_t name_len;
 
@@ -175,6 +180,7 @@ typedef struct SE_Device {
 
 typedef struct SE_StreamExecutor {
   size_t struct_size;
+  void* ext;
 
   /*** ALLOCATION CALLBACKS ***/
   // Synchronously allocates size bytes on the underlying platform and returns
