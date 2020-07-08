@@ -1,6 +1,6 @@
 # Transactional File Systems Support
 
-| Status        | Proposed                                                |
+| Status        | In Revision                                             |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [945](https://github.com/tensorflow/community/pull/945) |
 | **Author(s)** | Sami Kama (kamsami@amazon.com)                          |
