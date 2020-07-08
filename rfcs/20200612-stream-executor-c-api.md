@@ -308,25 +308,70 @@ typedef struct SE_StreamExecutor {
 
 #define SE_STREAMEXECUTOR_STRUCT_SIZE TF_OFFSET_OF_END(SE_StreamExecutor, host_callback)
 
-TF_CAPI_EXPORT SE_Platform* SE_NewPlatform(
-     SE_PlatformId* id,
-     int32_t visible_device_count,
-     SE_Device* (*create_device)(SE_Options* options, TF_Status* status),
-     void (*destroy_device)(SE_Device* device),
-     SE_StreamExecutor* (*create_stream_executor)(TF_Status* status),
-     void (*destroy_stream_executor)(SE_StreamExecutor* stream_executor);
-);
+typedef struct SE_PlatformParams {
+  size_t struct_size;
+  SE_PlatformId* id;
+  
+  // Callbacks for creating/destroying SE_Device.
+  SE_Device* (*create_device)(SE_Options* options, TF_Status* status);
+  void (*destroy_device)(SE_Device* device);
+  
+  // Callbacks for creating/destroying SE_StreamExecutor.
+  SE_StreamExecutor* (*create_stream_executor)(TF_Status* status);
+  void (*destroy_stream_executor)(SE_StreamExecutor* stream_executor);
+} SE_PlatformParams;
+
+#define SE_PLATFORM_PARAMS_SIZE TF_OFFSET_OF_END(SE_PlatformParams, destroy_stream_executor)
+
+TF_CAPI_EXPORT SE_Platform* SE_NewPlatform(SE_PlatformParams params);
+
+typedef struct SE_PlatformRegistartionParams {
+  size_t struct_size;
+  
+  // Platform name
+  const char* name;
+  size_t name_len;
+  
+  // Device type name. Right now only GPU is supported.
+  char* type;
+  size_t type_len;
+  
+  SE_Platform* platform;
+} SE_PlatformParams;
+
+#define SE_PLATFORM_REGISTRATION_PARAMS_SIZE TF_OFFSET_OF_END(SE_PlatformRegistrationParams, platform)
 
 TF_CAPI_EXPORT void SE_RegisterPlatform(
-     const char* name,
-     size_t name_len,
-     SE_Platform* platform,
+     SE_PlatformRegistartionParams params,
      TF_Status* status);
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 ```
+
+## Registration implementation
+
+Registration will be implemented by registering a new StreamExecutor platform as well as a new TensorFlow device with [DeviceFactory](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/common_runtime/device_factory.h;l=30?q=DeviceFactory).
+
+```cpp
+void SE_RegisterPlatform(
+    SE_PlatformRegistrationParams params, TF_Status* status) {
+   // Register new platform
+   std::unique_ptr<stream_executor::internal::CPlatform> platform(
+        new stream_executor::internal::CPlatform(params));
+   SE_CHECK_OK(
+      stream_executor::MultiPlatformManager::RegisterPlatform(
+          std::move(platform)));
+   
+   // Register PluggableDevice
+   std::string platform_name_str(params.name, params.name_len);
+   std::string type_str(params.type, params.type_len);
+   DeviceFactory::Register(type_str, new PluggableDeviceFactory(platform_name_str), priority);
+}
+```
+
+`PluggableDevice` is covered in a separate RFC: [RFC: Adding Pluggable Device For TensorFlow](https://github.com/tensorflow/community/pull/262).
 
 ## PlatformId
 
