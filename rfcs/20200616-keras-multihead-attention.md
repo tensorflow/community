@@ -1,6 +1,6 @@
 # RFC: Multihead Attention and EinsumDense on Keras
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)          |
+| Status        | Proposed         |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [260](https://github.com/tensorflow/community/pull/260) |
 | **Author(s)** | Hongkun Yu (hongkuny@google.com), Mark Omernick (momernick@google.com) |
