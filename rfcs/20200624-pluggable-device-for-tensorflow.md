@@ -51,34 +51,36 @@ With the RFC, existing TensorFlow GPU programs can run on a plugged device witho
 Upon initialization of TensorFlow, it uses platform independent `LoadLibrary()` to load the dynamic library. The plugin library should be installed to default plugin directory "…python_dir.../site-packages/tensorflow-plugins". The modular tensorflow [RFC](https://github.com/tensorflow/community/pull/77) describes the process of loading plugins. 
 
 During the plugin library initialization, it calls the `SE_ReigsterPlatform()` API to register the stream executor platform (`SE_Platform` struct) to TensorFlow proper. The `SE_ReigsterPlatform()` API is a callback API, part of StreamExecutor C API, which passes necessary information to TensorFlow proper to instantiate a stream executor platform ([se::platform](https://github.com/tensorflow/tensorflow/blob/cb32cf0f0160d1f582787119d0480de3ba8b9b53/tensorflow/stream_executor/platform.h#L93) class) and register to a global object [se::MultiPlatformManager](https://github.com/tensorflow/tensorflow/blob/cb32cf0f0160d1f582787119d0480de3ba8b9b53/tensorflow/stream_executor/multi_platform_manager.h#L82). 
-The stream executor platform must be registered with the name "PluggableDevice".  
 See below code which is an example of registering a PluggableDevice platform with StreamExecutor C API:
 ```cpp
 void RegisterPluggableDevicePlatform() {
   static plugin_id_value = 123;
   SE_PlatformId id;
   id.id = &plugin_id_value;
-  int visible_device_count = get_plugin_device_count;
-  SE_Platform* custom_platform = SE_NewPlatform(
-     id, visible_device_count,
-     create_device, create_stream_executor,
-     delete_device, delete_stream_executor);
+  int visible_device_count = get_plugin_device_count();
+  
+  SE_PlatformParams platform_params {SE_PLATFORM_PARAMS_SIZE, id, 
+                                    create_device, destory_device, 
+                                    create_stream_executor, destory_stream_executor};
+  SE_Platform* custom_platform = SE_NewPlatform(platform_params);
+
+  string platform_name = "MyCustomPlatform";
+  string device_name = "MyCustomDevice";
+
+  SE_PlatformRegistartionParams platform_register_params {SE_PLATFORM_REGISTRATION_PARAMS_SIZE,
+                                                          platform_name.c_str(), platform_name.size(),
+                                                          device_name.c_str(), device_name.size(),
+                                                          custom_platform};
   TF_Status* status = TF_NewStatus();
-  std::string name = "PluggableDevice";
-  SE_RegisterPlatform(
-     name.c_str(), name.size(),
-     custom_platform,
-     status);
+  SE_RegisterPlatform(platform_register_params, status);
 }
 
 ```
-Use static initialization to register the new platform:
+Use dynamic initialization to register the new platform:
 ```cpp
-static bool IsPluggableDevicePlatformRegistered = []() {
- RegisterPluggablePlatform();
- return true;
-}();
-
+void TF_InitPlugin() {
+  RegisterPluggableDevicePlatform(); 
+}
 ```
 
 ### Device Creation
@@ -152,8 +154,8 @@ Two sets of classes need to be defined in TensorFlow proper.
 Plugin authors need to provide those C functions implementation defined in StreamExecutor C API . 
 *  `SE_StreamExecutor` is defined as struct in the C API, both sides(TensorFlow proper and plugins) can access its members. Plugin creates the SE_StreamExecutor and registers its C API implementations to the SE_StreamExecutor.  
 ```cpp
-   SE_StreamExecutor* create_stream_executor() {
-     SE_StreamExecutor* se_nfs = new SE_StreamExecutor();
+   SE_StreamExecutor* create_stream_executor(TF_Status* status) {
+     SE_StreamExecutor* se_nfs = new SE_StreamExecutor{ SE_STREAMEXECUTOR_STRUCT_SIZE };
      se->memcpy_from_host = my_device_memory_from_host_function;
      se->allocate = my_allocate_function;
      …
@@ -162,7 +164,7 @@ Plugin authors need to provide those C functions implementation defined in Strea
 * `SE_Device` is defined as struct in the C API, both sides(TensorFlow proper and plugins) can access its members. Plugin creates the SE_Device and fills its device opaque handle and device name to the SE_Device.
 ```cpp
   SE_Device* create_device(SE_Options* options, TF_Status* status) {
-    SE_Device* se = new SE_Device();
+    SE_Device* se = new SE_Device( SE_DEVICE_STRUCT_SIZE );
     se->device_handle = get_my_device_handle();
     ...
     return se;
