@@ -258,8 +258,8 @@ typedef struct SE_StreamExecutor {
 
   /*** TIMER CALLBACKS ***/
   // Creates TF_Timer. Allocates timer resources on the underlying platform and initializes its
-  // internals.
-  void (*create_timer)(SE_Device* executor, SE_Timer* timer, SE_TimerFns** timer_fns, TF_Status* status);
+  // internals, setting `timer` output variable. Sets values in `timer_fns` struct.
+  void (*create_timer)(SE_Device* executor, SE_Timer* timer, SE_TimerFns* timer_fns, TF_Status* status);
 
   // Destroy timer and deallocates timer resources on the underlying platform.
   void (*destroy_timer)(SE_Device* executor, SE_Timer timer, SE_TimerFns* timer_fns);
