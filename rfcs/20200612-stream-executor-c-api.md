@@ -332,7 +332,7 @@ typedef struct SE_PlatformParams {
   void (*destroy_device)(SE_Device* device);
   
   // Callbacks for creating/destroying SE_StreamExecutor.
-  SE_StreamExecutor* (*create_stream_executor)(TF_Status* status);
+  void (*create_stream_executor)(SE_StreamExecutor*, TF_Status* status);
   void (*destroy_stream_executor)(SE_StreamExecutor* stream_executor);
 } SE_PlatformParams;
 
@@ -409,25 +409,20 @@ DeviceFactory::Register(type_str, new PluggableDeviceFactory(platform_name_str),
 Define functions that create and destroy `SE_Device` and `SE_StreamExecutor`:
 
 ```cpp
-SE_Device* create_device(SE_Options* options, TF_Status* status) {
-  SE_Device* se = new SE_Device{ SE_DEVICE_STRUCT_SIZE };
-  se->device_handle = get_my_device_handle();
+void create_device(SE_Device* device, SE_Options* options, TF_Status* status) {
+  device->device_handle = get_my_device_handle();
   ...
-  return se;
 }
-SE_StreamExecutor* create_stream_executor(TF_Status* status) {
-  SE_StreamExecutor* se_fns = new SE_StreamExecutor{ SE_STREAMEXECUTOR_STRUCT_SIZE };
+void create_stream_executor(SE_StreamExecutor* se, TF_Status* status) {
   se->memcpy_from_host = my_device_memcpy_from_host_function;
   ...
-  return se;
 }
 void destroy_device(SE_Device* device) {
   -- destroy device handle here --
   ...
-  delete device;
 }
 void destroy_stream_executor(SE_StreamExecutor* stream_executor) {
-  delete stream_executor;
+  -- perform any clean up needed for stream executor --
 }
 ```
 
