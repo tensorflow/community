@@ -193,6 +193,8 @@ typedef struct SE_StreamExecutor {
   // Synchronously allocates size bytes on the underlying platform and returns
   // a DeviceMemoryBase representing that allocation. In the case of failure,
   // nullptr is returned.
+  // memory_space is reserved for a potential future usage and should be set
+  // to 0.
   TF_DeviceMemoryBase* (*allocate)(
       SE_Device* se, uint64_t size, int64_t memory_space);
 
