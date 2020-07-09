@@ -329,11 +329,16 @@ typedef struct SE_PlatformParams {
   size_t type_len;
   
   // Callbacks for creating/destroying.
-  void (*create_device)(SE_Device* device, SE_Options* options, TF_Status* status);
+  void (*create_device)(
+      SE_Device* device,  \\ out
+      SE_Options* options, \\ in
+      TF_Status* status);  \\ out
   void (*destroy_device)(SE_Device* device);
   
   // Callbacks for creating/destroying SE_StreamExecutor.
-  void (*create_stream_executor)(SE_StreamExecutor*, TF_Status* status);
+  void (*create_stream_executor)(
+      SE_StreamExecutor*,  \\ out
+      TF_Status* status);  \\ out
   void (*destroy_stream_executor)(SE_StreamExecutor* stream_executor);
 } SE_PlatformParams;
 
