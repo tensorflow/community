@@ -287,7 +287,7 @@ typedef struct SE_StreamExecutor {
       SE_DeviceMemoryBase* device_dst,
       const void* host_src, uint64_t size);
 
-  // Causes the host code to synchronously wait for operations entrained onto
+  // Causes the host code to synchronously wait for operations enqueued onto
   // stream to complete. Effectively a join on the asynchronous device
   // operations enqueued on the stream before this program point.
   void (*block_host_until_done)(
