@@ -83,7 +83,7 @@ A decoupled way to add a new device to TensorFlow.
 
 [StreamExecutorInterface](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/stream_executor/stream_executor_internal.h;l=166?q=StreamExecutorinterface)
 is quite large and some of its methods are only sporadically used. Therefore, we
-plan to wrap only a subset of key StreamExecutorInterface functionality.
+plan to wrap only a subset of key StreamExecutorInterface functionality. We decided on this subset based on the PluggableDevice usecase as well as potential future devices such as TPUs.
 
 See proposed C API below:
 
