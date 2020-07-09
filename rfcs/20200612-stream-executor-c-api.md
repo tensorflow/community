@@ -272,7 +272,7 @@ typedef struct SE_StreamExecutor {
       SE_Device* executor, SE_Stream stream, SE_Timer timer);
 
   /*** MEMCPY CALLBACKS ***/
-  // Entrains a memcpy operation onto stream, with a host destination location
+  // Enqueues a memcpy operation onto stream, with a host destination location
   // host_dst and a device memory source, with target size size.
   TF_BOOL (*memcpy_to_host)(
       SE_Device* executor, SE_Stream stream,
@@ -280,9 +280,8 @@ typedef struct SE_StreamExecutor {
       const SE_DeviceMemoryBase* device_src,
       uint64_t size);
 
-  // Entrains a memcpy operation onto stream, with a device destination location
+  // Enqueues a memcpy operation onto stream, with a device destination location
   // and a host memory source, with target size size
-
   TF_BOOL (*memcpy_from_host)(
       SE_Device* executor, SE_Stream stream,
       SE_DeviceMemoryBase* device_dst,
@@ -304,7 +303,7 @@ typedef struct SE_StreamExecutor {
                                SE_DeviceDescription* description,
                                TF_Status* status);
 
-  // Entrains on a stream a user-specified function to be run on the host.
+  // Enqueues on a stream a user-specified function to be run on the host.
   TF_BOOL (*host_callback)(SE_Device* executor, SE_Stream* stream,
                      TF_StatusCallbackFn callback_fn, void* ctx);
 } SE_StreamExecutor;
