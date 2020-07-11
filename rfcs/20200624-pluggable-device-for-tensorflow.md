@@ -15,7 +15,7 @@ This RFC is based on the Modular TensorFlow  [RFC](https://github.com/tensorflow
 
 ## **Motivation**
 
-When extending TensorFlow to support a new device, one needs to modify TensorFlow code and maintain a special TensorFlow build for the new device. Modular TensorFlow RFC design a plugin architecture for serveral TensorFlow components(`Networking`, `Filesystems`, `Kernel`, `Graph` and `Accelerator backends`). This RFC describes the Accelerator backends module in the Tensorflow proper side, by introducing pluggable device to the TensorFlow device classes.
+When extending TensorFlow to support a new device, one needs to modify TensorFlow code and maintain a special TensorFlow build for the new device. Modular TensorFlow RFC design a plugin architecture for serveral TensorFlow components(`Networking`, `Filesystems`, `Kernel`, `Graph` and `Accelerator backends`). This RFC describes the Accelerator backends module in the TensorFlow proper side, by introducing pluggable device to the TensorFlow device classes.
 
 The pluggable device discovery and initialization is transparent to end users. As long as the device plugin libraries follow the design described in this RFC, it can be plugged to TensorFlow proper and enable TensorFlow to run existing TensorFlow programs on a new device. 
 
@@ -50,48 +50,54 @@ With the RFC, existing TensorFlow GPU programs can run on a plugged device witho
 
 Upon initialization of TensorFlow, it uses platform independent `LoadLibrary()` to load the dynamic library. The plugin library should be installed to default plugin directory "…python_dir.../site-packages/tensorflow-plugins". The modular tensorflow [RFC](https://github.com/tensorflow/community/pull/77) describes the process of loading plugins. 
 
-During the plugin library initialization, it calls the `SE_ReigsterPlatform()` API to register the stream executor platform (`SE_Platform` struct) to TensorFlow proper. The `SE_ReigsterPlatform()` API is a callback API, part of StreamExecutor C API, which passes necessary information to TensorFlow proper to instantiate a stream executor platform ([se::platform](https://github.com/tensorflow/tensorflow/blob/cb32cf0f0160d1f582787119d0480de3ba8b9b53/tensorflow/stream_executor/platform.h#L93) class) and register to a global object [se::MultiPlatformManager](https://github.com/tensorflow/tensorflow/blob/cb32cf0f0160d1f582787119d0480de3ba8b9b53/tensorflow/stream_executor/multi_platform_manager.h#L82). 
-See below code which is an example of registering a PluggableDevice platform with StreamExecutor C API:
+During the plugin library initialization, TensorFlow proper calls the `SE_InitializePlugin` API (part of StreamExecutor C API) to retrieve nescessary informations from the Plugin to instantiate a StreamExecutor Platform([se::platform](https://github.com/tensorflow/tensorflow/blob/cb32cf0f0160d1f582787119d0480de3ba8b9b53/tensorflow/stream_executor/platform.h#L93) class) and register to a global object [se::MultiPlatformManager](https://github.com/tensorflow/tensorflow/blob/cb32cf0f0160d1f582787119d0480de3ba8b9b53/tensorflow/stream_executor/multi_platform_manager.h#L82), TensorFlow proper also gets the device type through `SE_InitializePlugin` and register the `PluggableDeviceFactory`with this type. The device type will be the device strings to be used to access pluggable device with tf.device() in python layer.
+Plugin authors needs to implement `SE_InitializePlugin` and provide the necessary informations:
 ```cpp
-void RegisterPluggableDevicePlatform() {
-  static plugin_id_value = 123;
-  SE_PlatformId id;
+void SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
+  static const int32_t plugin_id_value = 123;
+  SE_PlatformId id{ SE_PLATFORMID_STRUCT_SIZE };
   id.id = &plugin_id_value;
-  int visible_device_count = get_plugin_device_count();
+  int32_t visible_device_count = get_plugin_device_count();
   
-  SE_PlatformParams platform_params {SE_PLATFORM_PARAMS_SIZE, id, 
-                                    create_device, destory_device, 
-                                    create_stream_executor, destory_stream_executor};
-  SE_Platform* custom_platform = SE_NewPlatform(platform_params);
+  std::string name = "MyDevicePlatform";
+  std::string type = "GPU";
 
-  string platform_name = "MyCustomPlatform";
-  string device_name = "MyCustomDevice";
-
-  SE_PlatformRegistartionParams platform_register_params {SE_PLATFORM_REGISTRATION_PARAMS_SIZE,
-                                                          platform_name.c_str(), platform_name.size(),
-                                                          device_name.c_str(), device_name.size(),
-                                                          custom_platform};
-  TF_Status* status = TF_NewStatus();
-  SE_RegisterPlatform(platform_register_params, status);
-}
-
-```
-Use dynamic initialization to register the new platform:
-```cpp
-void TF_InitPlugin() {
-  RegisterPluggableDevicePlatform(); 
+  params.params.id = id;
+  params.params.visible_device_count = visible_device_count;
+  params.params.create_device = create_device;
+  params.params.destroy_device = destroy_device;
+  params.params.create_stream_executor = create_stream_executor;
+  params.params.destroy_stream_executor = destroy_stream_executor;
+  params.params.name = name.c_str();
+  params.params.name_len = name.size();
+  params.params.type = type.c_str();
+  params.params.type_len = type.size();
 }
 ```
-
 ### Device Creation
 
-`PluggableDeviceFactory` is introduced to create the `PluggableDevice`, following the [LocalDevice](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/common_runtime/local_device.h) design pattern. To support existing GPU programs running on a new device without user changing the code, PluggableDeviceFactory is registered as "GPU" name and given higher priority than the default GPU device.  
-&emsp;&emsp;`REGISTER_LOCAL_DEVICE_FACTORY("GPU",PluggableDeviceFactory, 220); // plugged GPU`  
-&emsp;&emsp;`REGISTER_LOCAL_DEVICE_FACTORY("GPU", GPUDeviceFactory, 210);//default GPU`  
-For those vendor who don't want to use "GPU" name, it's optional to register a new device name. For example:   
-&emsp;&emsp;`REGISTER_LOCAL_DEVICE_FACTORY("Third-party device",PluggableDeviceFactory, 230); // plugged third party device`
-
-When a session is created, `PluggableDeviceFactory` creates a `PluggableDevice` object for the plugin device. During the initialization of the `PluggableDevice`, a global object `se::MultiPlatformManager` will find its `se::platform` through its platform name: "PluggableDevice”,  then stream executor platform (`se::platform`) further creates a StreamExecutor object containing a `PluggableDeviceExecutor`, and multiple stream objects(a computation stream and several memory copy streams) supporting the StreamExecutor objects. 
+`PluggableDeviceFactory` is introduced to create the `PluggableDevice`, following the [LocalDevice](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/common_runtime/local_device.h) design pattern. To support existing GPU programs running on a new device without user changing the code, plugin authors can register "GPU" string as the device type through `SE_InitializePlugin` and then TensorFlow proper will register the `PluggableDevice` as "GPU" name with higher priority than the default GPU device.    
+Plugin:
+```
+  SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
+    ...
+    std::string type = "GPU"
+    params.params.type = type.c_str()
+    ...
+  }
+```
+Proper:
+```
+  std::string platform_name_str(params.params.name, params.params.name_len);
+  std::string type_str(params.params.type, params.params.type_len);
+  DeviceFactory::Register(type_str, new PluggableDeviceFactory(platform_name_str), priority); 
+```  
+For those vendors who don't want to use "GPU" name, it's optional to register a new device name.  
+Limitation: when multiple devices registered, their device names should be different, or it will get conflict and the registration will fail. This can be enhanced in the future. A possible solutoin: python layer provides API to let user specify an alternative device name they prefer if there is a conflict, such as:  
+```
+  tf.load_plugin("CustomDeviceName", path_to_plugin_lib)
+```
+When a session is created, `PluggableDeviceFactory` creates a `PluggableDevice` object for the plugin device. During the initialization of the `PluggableDevice`, a global object `se::MultiPlatformManager` will find its `se::platform` through its platform name registered from plugin: "MyDevicePlatform”,  then stream executor platform (`se::platform`) further creates or find a `StreamExecutor` object containing a `PluggableDeviceExecutor`, and multiple stream objects(a computation stream and several memory copy streams) supporting the `StreamExecutor` objects. 
 
 The section below shows some pseudo code to introduce some extension inside the TensorFlow proper for the pluggable device creation. The implementation is based on StreamExecutor C API [RFC](https://github.com/tensorflow/community/pull/257). 
 
@@ -149,7 +155,7 @@ Two sets of classes need to be defined in TensorFlow proper.
    * class `PluggableDeviceTimer`: wraps an opaque handle: SE_Timer to satisfy the platform-independent TimerInterface.
    * class `PluggableDeviceEvent`: wraps an opaque handle: SE_Event to satisfy the platform-independent EventInterface.
 
-**Tensorflow Plugin**
+**TensorFlow Plugin**
 
 Plugin authors need to provide those C functions implementation defined in StreamExecutor C API . 
 *  `SE_StreamExecutor` is defined as struct in the C API, both sides(TensorFlow proper and plugins) can access its members. Plugin creates the SE_StreamExecutor and registers its C API implementations to the SE_StreamExecutor.  
