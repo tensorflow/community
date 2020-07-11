@@ -146,7 +146,7 @@ void TF_Foo(const SE_Device* device) {
   */
 
 }
-``
+```
 
 The plugin, being older, was initializing the recently deprecated SE_Device::data. Since TF_Foo() does not access it anymore, SE_Device::data will be safely ignored (even though it was initialized).
  
