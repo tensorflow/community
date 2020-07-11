@@ -96,6 +96,8 @@ For those vendors who don't want to use "GPU" name, it's optional to register a 
 Limitation: when multiple devices registered, their device names should be different, or it will get conflict and the registration will fail. This can be enhanced in the future. A possible solutoin: python layer provides API to let user specify an alternative device name they prefer if there is a conflict, such as:  
 ```
   tf.load_plugin("CustomDeviceName", path_to_plugin_lib)
+  with tf.device("/CustomDeviceName:0"):
+    ...
 ```
 When a session is created, `PluggableDeviceFactory` creates a `PluggableDevice` object for the plugin device. During the initialization of the `PluggableDevice`, a global object `se::MultiPlatformManager` will find its `se::platform` through its platform name registered from plugin: "MyDevicePlatform”,  then stream executor platform (`se::platform`) further creates or find a `StreamExecutor` object containing a `PluggableDeviceExecutor`, and multiple stream objects(a computation stream and several memory copy streams) supporting the `StreamExecutor` objects. 
 
