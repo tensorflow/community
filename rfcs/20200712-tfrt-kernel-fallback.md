@@ -3,8 +3,7 @@
 | Status        | (Proposed / Accepted / Implemented / Obsolete)          |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
-| **Author(s)** | Anna Revinskaya (annarev@google.com), Jeremy Lau        |
-:               : (lauj@google.com)                                       :
+| **Author(s)** | Anna Revinskaya (annarev@google.com), Jeremy Lau (lauj@google.com) |
 | **Sponsor**   | Jeremy Lau (lauj@google.com)                            |
 | **Updated**   | 2020-07-06                                              |
 
