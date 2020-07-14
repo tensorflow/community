@@ -79,7 +79,7 @@ void SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* statu
 `PluggableDeviceFactory` is introduced to create the `PluggableDevice`, following the [LocalDevice](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/common_runtime/local_device.h) design pattern. To support existing GPU programs running on a new device without user changing the code, plugin authors can register "GPU" string as the device type through `SE_InitializePlugin` and then TensorFlow proper will register the `PluggableDevice` as "GPU" name with higher priority than the default GPU device.    
 Plugin:
 ```
-  SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
+void SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
     ...
     std::string type = "GPU"
     params.params.type = type.c_str()
@@ -108,7 +108,7 @@ The section below shows some pseudo code to introduce some extension inside the 
    PluggableDeviceFactory::CreateDevices(SessionOptions& options, const string& name_prefix, std::vector<std::unique_ptr<Device>>* devices) {
      for (int i = 0; i < options.device_count(); i++) {
       PluggableDevice pluggable_device = CreatePluggableDevice(options,i); //set allocator
-      pluggable_device->Init(options);
+      pluggable_device->Init(options, pluggable_device_platform_name_);
       devices.push_back(std::move(pluggable_device));
      }
    }
@@ -116,8 +116,8 @@ The section below shows some pseudo code to introduce some extension inside the 
 
 2. `PluggableDevice` object binds a StreamExecutor and creates a set of Streams during the initialization.Streams include one compute stream and several memory copy streams.
 ```cpp
-   void PluggableDevice::Init(SessionOption& options) {  
-     se::Platform* platform= se::MultiPlatformManager::PlatformWithName("PluggableDevice");
+   void PluggableDevice::Init(SessionOption& options, const string& platform_name) {  
+     se::Platform* platform= se::MultiPlatformManager::PlatformWithName(platform_name);
      stream_executor_ = platform->ExecutorForDevice(pluggable_dev_id_);
      compute_stream_ = new se::Stream(stream_executor_);
      compute_stream_->Init();
@@ -143,7 +143,7 @@ TensorFlow proper needs to be extended to support a new class `PluggableDevice` 
 
 Two sets of classes need to be defined in TensorFlow proper. 
 * Set 1: `PluggableDevice` related classes 
-   * class `PluggableDevice`:  a class represents a set of new third-party devices, it has a new device type named "PluggableDevice"/DEVICE_PLUGGABLE.
+   * class `PluggableDevice`:  a class represents a set of new third-party devices, its device_type attribute (counter part of DEVICE_GPU, DEVICE_CPU) should be seperated from front-end visible device type name("GPU") to avoid kernel registration conflict with exsiting GPU(CUDA) kernels. it can be an alternative string registered from plugin, or "PLUGGABLE_" + device type(front-end visible device type registered through `SE_InitializePlugin`) as the device_type attribute, depending on StreamExecutor C API and kernel registration  C API design. For the second option(adding "PLUGGABLE_" prefix), Kernel registration C API needs to add the "PLUGGABLE_" prefix to the registered device type so this device_type attribute can be transparently to the plugin authors. For example, plugin authors provide a "GPU" name through `SE_InitializePlugin` and register the kernels to the "GPU" name through `TF_NewKernelBuilder` in plugin side, and TensorFlow Proper takes the "GPU" as the name for Device registration and makes the "PLUGGABLE_GPU" as the device_type attribute (counter part of DEVICE_GPU, DEVICE_CPU) for PluggableDevice. 
    * class `PluggableDeviceFactory`: a device factory to create the PluggableDevice
    * class `PluggableDeviceBFCAllocator`: a PluggableDevice memory allocator that implements a ‘best fit with coalescing’ algorithm.
    * class `PluggableDeviceAllocator`: an allocator that wraps a PluggableDevice allocator.
@@ -191,10 +191,25 @@ Plugin authors need to provide those C functions implementation defined in Strea
 
 This RFC shows an example of registering kernels for PluggableDevice. Kernel and op registration and implementation API is addressed in a separate [RFC](https://github.com/tensorflow/community/blob/master/rfcs/20190814-kernel-and-op-registration.md). 
 
-TensorFlow proper defines a new device_type named DEVICE_PLUGGABLE for PluggableDevice.This device_type is used for the kernel registration and dispatch. Plugin needs to register its kernel implementation with DEVICE_PLUGGABLE type.
+To avoid kernel registration conflict with existing GPU(CUDA) kernels, the backend device_type for kernel registration should be seperated from the front-end visible device type ("GPU"). Two Options:  
+&emsp;option 1) The backend device_type can be an alternative string provided by plugin, and plugin authors use the string for kernel registration.   
+&emsp;option 2) Another option is that plugin authors only need to provide one device type, and Tensorflow proper takes it as the string name for Device registration and makes "PLUGGABLE_" + device type as the device_type attribute in PluggableDevice for kernel registration.  
+
+**Option 1:**  
+Plugin side:
+plugin author provides an alternative string(such as "CUDA") to TensorFlow proper, which seperates from the front-end device type("GPU") and uses this string for kernel registration.
 ```cpp
+void SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
+  ...
+  std::string type = "GPU" // front-end visible device type
+  params.params.type = type.c_str();
+  std::string backend_device_type = "CUDA";
+  params.params.type = backend_device_type.c_str();
+  ...
+}
+
 void InitPlugin() {
-  TF_KernelBuilder* builder = TF_NewKernelBuilder(/*op_name*/"Convolution", DEVICE_PLUGGABLE,
+  TF_KernelBuilder* builder = TF_NewKernelBuilder(/*op_name*/"Convolution", "CUDA", // seperate from front-end visible device type
       &Conv_Create, &Conv_Compute, &Conv_Delete);
   TF_Status* status = TF_NewStatus();
   TF_RegisterKernelBuilder(/*kernel_name*/"Convolution", builder, status);
@@ -202,6 +217,40 @@ void InitPlugin() {
   TF_DeleteStatus(status);
 }
 ```
+**Option 2:**  
+Plugin side:  
+plugin author provides the device type("GPU") for Device registration, and also uses it for kernel registration in plugin side.
+```
+void SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
+  ...
+  std::string type = "GPU" // front-end visible device type
+  params.params.type = type.c_str();
+  ...
+}
+
+void InitPlugin() {
+  TF_KernelBuilder* builder = TF_NewKernelBuilder(/*op_name*/"Convolution", "GPU", // same type as front-end visible device type
+      &Conv_Create, &Conv_Compute, &Conv_Delete);
+  TF_Status* status = TF_NewStatus();
+  TF_RegisterKernelBuilder(/*kernel_name*/"Convolution", builder, status);
+  if (TF_GetCode(status) != TF_OK) { /* handle errors */ }
+  TF_DeleteStatus(status);
+}
+```
+TensorFlow Proper side:  
+TensorFlow Proper uses this device type for Device registration and makes "PLUGGABLE_" + device_type("GPU") as the device_type attribute for kernel registration, this device_type attribute is transparently to the plugin authors.
+```
+TF_KernelBuilder* TF_NewKernelBuilder(
+    const char* op_name, const char* device_name,
+    void* (*create_func)(TF_OpKernelConstruction*),
+    void (*compute_func)(void*, TF_OpKernelContext*),
+    void (*delete_func)(void*)) {
+  ...
+  result->cc_builder->Device(strcat("PLUGGABLE_", device_name)); // "PLUGGABLE_GPU"
+  ...
+}
+```
+
 ### Using stream inside PluggableDevice kernel
 
 The following code shows a convolution kernel implementation using the stream handle. The streams are created during the pluggable device creation. The placer decides which device to use for each OP in the graph. Then the streams associated with the device are used to construct the OpKernelContext for the op computation during the graph execution.
