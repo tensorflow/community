@@ -66,7 +66,7 @@ can provide. It doesn't take into consideration other issues we might face.
 
 ### TFRT Integration Goals
 
-We want to support executing a [BEF](https://github.com/tensorflow/runtime) file
+We want to support executing a [BEF](https://github.com/tensorflow/runtime/blob/master/documents/binary_executable_format.md ) file
 on mobile device that calls kernels using Kernel Fallback mechanism. Users will
 be able to generate a BEF file based on a saved model and we will provide a
 script to create it.
@@ -81,7 +81,7 @@ custom
     implementing all of it would require a significant amount of time. Instead,
     we will start by adding most common and easy functionality. If certain
     functionality is only used by a handful of kernels, it might make sense to
-    implement TFRT native kernels instead. One notable example is
+    implement TFRT native kernels or rely on runtime fallback instead. One notable example is
     [ResourceMgr](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/framework/resource_mgr.h;l=152?q=ResourceMgr).
     We might support it later, but it is definitely not first priority due to
     extra effort required.
@@ -112,7 +112,7 @@ to TensorFlow kernels that minimizes the amount of generated code.
 
 ## User Benefit
 
-Running more kernels on mobile devices would allow TensorFlow users to implement
+Running more kernels on mobile devices would allow TensorFlow Lite users to implement
 a wider range of models.
 
 ## Design Proposal
@@ -315,7 +315,7 @@ TFRTOpKernelContext op_kernel_context(inputs, outputs.size(), op_meta, exec_ctx.
 op->Compute(&op_kernel_context);
 ```
 
-## tfd.kernel\_fallback call structure
+## tf\_fallback.kernel\_fallback call structure
 
 We will be using the following conventions (essentially, these are based on
 Runtime Fallback work that will probably have RFC coming soon):
@@ -332,14 +332,15 @@ Example of invoking Conv3D kernel:
 
 ```
 %tft_c = "tfd.kernel_fallback"(%tft_a, %tft_b) {
-    _op_name = "Conv3D", attr1_name="data_format",
-    attr1_value="string$NDHWC", attr2_name="strides",
-    attr2_value="list(i32)$1,1,1,1,1", attr3_name="dilations",
-    attr3_value="list(i32)$1,1,1,1,1", attr4_name="padding",
-    attr4_value="padding$SAME"}: (!tfd.tensor, !tfd.tensor) -> !tfd.tensor
+    _op_name = "Conv3D",
+    attr1_name="data_format", attr1_value="string$NDHWC",
+    attr2_name="strides", attr2_value="list(i32)$1,1,1,1,1",
+    attr3_name="dilations", attr3_value="list(i32)$1,1,1,1,1",
+    attr4_name="padding", attr4_value="padding$SAME"}: (!tfd.tensor, !tfd.tensor) -> !tfd.tensor
 ```
 
 For example, `dilations` attribute here has a value of `[1, 1, 1, 1, 1]`.
+Note: TFRT orders attributes by name, alphabetically, which is why we use `attrN_value` and `attrN_name` pattern pair.
 
 ## Reusing Kernels
 
@@ -388,7 +389,7 @@ Given current API structure, we can consider two approaches going forward:
 
 1.  TFRT fully supports all functionality available in the C API. This way any
     kernel defined using the C API would be automatically available using either
-    full TensorFlow or the TFRT-to-TF forwarding delegate.
+    full TensorFlow or the TFRT kernel fallback.
 1.  Certain functionality is only available with TF backend. TFRT C API
     implementation falls back to full TensorFlow in these cases.
 
@@ -467,7 +468,7 @@ void TF_RegisterKernelBuilder(const char* name,
 ## TFRT integration
 
 Current preferred direction would generate a
-[BEF](https://github.com/tensorflow/runtime) file in advance and then run that
+[BEF](https://github.com/tensorflow/runtime/blob/master/documents/binary_executable_format.md) file in advance and then run that
 file on a mobile device. Generated BEF file would have to call either native, TF
 Lite, runtime fallback or kernel fallback kernels and provide any glue logic in
 between (such as tensor conversions).
@@ -588,7 +589,7 @@ all of its functionality. In other words we want kernels to extend
 `OpKernelBase` but be added to existing TensorFlow registry as `OpKernel`
 objects.
 
-It seems easiest to me to wrap OpKernelBase some class that extends OpKernel (I
+It seems easiest to me to wrap OpKernelBase with some class that extends OpKernel (I
 call this wrapper WrappedOpKernel below):
 
 ```cpp
