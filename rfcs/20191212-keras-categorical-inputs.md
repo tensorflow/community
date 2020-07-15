@@ -55,7 +55,7 @@ Note the hashed output from KPL will be different than the hashed output from fe
 This feature column is merely for having identical inputs and outputs except mapping out-of-range value into `default_value`, thus can easily be done at data cleaning stage,
 not be part of feature engineering, and hence dropped in this proposal.
 
-3. Replacing `tf.feature_column.categorical_column_with_vocabulary_file` and `tf.feature_column.categorical_column_with_vocabulary_list` with `StringLookup` or `IntegerLookup`
+3. Replacing `tf.feature_column.categorical_column_with_vocabulary_file` and `tf.feature_column.categorical_column_with_vocabulary_list` with `StringLookup` or `IntegerLookup`.
 for string inputs,
 from
 ```python
@@ -86,7 +86,7 @@ any values other than `default_value=-1`.
 Note the out-of-range values for `StringLookup` is prepended, i.e., [0,..., num_oov_tokens) for out-of-range values, whereas for `categorical_colulmn_with_vocabulary_file` is
 appended, i.e., [vocabulary_size, vocabulary_size + num_oov_tokens) for out-of-range values. The former can give you more flexibility when reloading and adding vocab.
 
-for integer inputs,
+For integer inputs,
 from
 ```python
 tf.feature_column.categorical_column_with_vocabulary_file(key, vocabulary_file, vocabulary_size, tf.dtypes.int64, default_value, num_oov_buckets)
@@ -180,7 +180,7 @@ weighted_output = tf.keras.layers.experimental.preprocessing.CategoryEncoding(
   max_tokens=categorical_column.num_buckets)(lookup_output, weight_input)
 ```
 
-8. Replacing `tf.feature_column.shared_embeddings` with a single `tf.keras.layers.Embedding`
+8. Replacing `tf.feature_column.shared_embeddings` with a single `tf.keras.layers.Embedding`.
 Similar to 5, but with multiple categorical inputs:
 from
 ```python
@@ -197,17 +197,17 @@ embedded_watched_video_input = embed_layer(watched_video_input)
 embedded_impression_video_input = embed_layer(impression_video_input)
 ```
 
-9. Replacing `tf.estimator.LinearXXX` with `CategoryEncoding` and `tf.keras.experimental.LinearModel`
+9. Replacing `tf.estimator.LinearXXX` with `CategoryEncoding` and `tf.keras.experimental.LinearModel`.
 LinearClassifier or LinearRegressor treats categorical columns by multi-hot, this can be replaced by encoding layer and Keras linear model, see Workflow 2 for details.
 
-10. Replacing `tf.feature_column.numeric_column` and `tf.feature_column.sequence_numeric_column` with `tf.keras.Input` and `Normalization`
+10. Replacing `tf.feature_column.numeric_column` and `tf.feature_column.sequence_numeric_column` with `tf.keras.Input` and `Normalization`.
 `tf.keras.layers.experimental.preprocessing.Normalization` with `set_weights` on mean and standard deviation.
 
-11. Replacing `tf.feature_column.sequence_categorical_xxx`
+11. Replacing `tf.feature_column.sequence_categorical_xxx`.
 Replacing `tf.feature_column.sequence_categorical_xxx` is similar to `tf.feature_column.categorical_xxx` except `tf.keras.Input` should take time dimension into
 `input_shape` as well.
 
-12. Replacing `tf.feature_column.bucketized_column` with `Discretization`
+12. Replacing `tf.feature_column.bucketized_column` with `Discretization`.
 from
 ```python
 source_column = tf.feature_column.numeric_column(key)
