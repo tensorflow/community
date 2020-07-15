@@ -60,9 +60,9 @@ consideres these methods to be already *supported*).
 
 *   List of kernels and `OpKernelConstruction`/`OpKernelContext` methods they
     require:
-    [spreadsheet](https://docs.google.com/spreadsheets/d/18bOu2gJQnZtCRGPZ4yerEAKUHgp1V429dPdCuzoCSkU/edit?usp=sharing)
+    [here](https://github.com/annarev/community/blob/tfrt_kernel_fallback_rfc/rfcs/20200712-tfrt-kernel-fallback/support_priority.md)
 *   Proposed implementation order for these methods:
-    [spreadsheet](https://docs.google.com/spreadsheets/d/10u6tcTE9PAi45A04nxSz61whSnwhscRLlSUNRPJugIY/edit?usp=sharing)
+    [here](https://github.com/annarev/community/blob/tfrt_kernel_fallback_rfc/rfcs/20200712-tfrt-kernel-fallback/kernel_to_unsupported.md)
 
 Based on these estimates, we can support >= 423 kernels. Note that this number
 is just based on the `OpKernelConstruction`/`OpKernelContext` coverage that we
