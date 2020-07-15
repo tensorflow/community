@@ -9,10 +9,9 @@
 
 ## Objective
 
-This proposal focuses on getting majority of “well-behaved” ops running in
-[TF Lite](https://www.tensorflow.org/lite) by skipping current eager runtime and
-calling kernels directly from [TFRT](https://github.com/tensorflow/runtime) (a new
-TensorFlow runtime).
+This proposal focuses on getting a majority of "well-behaved" TensorFlow ops running efficiently on
+mobile devices by removing the need to execute them via the TensorFlow eager runtime, instead
+calling kernels directly from the new [TFRT](https://github.com/tensorflow/runtime) TensorFlow runtime.
 
 Note that there is an effort to call existing kernels by delegating to
 TensorFlow eager runtime instead. This approach is called Runtime Fallback and
