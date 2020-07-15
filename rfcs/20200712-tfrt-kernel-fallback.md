@@ -24,6 +24,10 @@ mechanisms are as follows:
     existing kernels working in TFRT while reducing binary size to support
     mobile devices.
 
+| Runtime Fallback        |  Kernel Fallback |
+:------------------------:|:-----------------:
+<img src="https://github.com/annarev/community/blob/tfrt_kernel_fallback_rfc/rfcs/20200712-tfrt-kernel-fallback/RuntimeFallbackHighLevelDiagram.png" alt="Runtime Fallback high-level diagram." width="150px"> | <img src="https://github.com/annarev/community/blob/tfrt_kernel_fallback_rfc/rfcs/20200712-tfrt-kernel-fallback/KernelFallbackHighLevelDiagram.png" alt="Kernel Fallback high-level diagram." width="150px">
+
 ## Goals
 
 High level goals of the project:
@@ -119,10 +123,12 @@ a wider range of models.
 
 We propose to call the kernel’s Compute method directly from
 [TFRT](https://github.com/tensorflow/runtime) without going through TensorFlow
-Eager C API first.
-
-We introduce kernel context and registration implementation that support core
+Eager C API first. We introduce kernel context and registration implementation that support core
 kernel functionality with minimal dependencies.
+
+High-level diagram of the proposed design:
+
+<img src="https://github.com/annarev/community/blob/tfrt_kernel_fallback_rfc/rfcs/20200712-tfrt-kernel-fallback/KernelFallbackDiagram.png" alt="Kernel Fallback design diagram." width="400px">
 
 ## Kernel registration
 
