@@ -11,7 +11,7 @@
 
 This proposal focuses on getting majority of “well-behaved” ops running in
 [TF Lite](https://www.tensorflow.org/lite) by skipping current eager runtime and
-calling kernels directly in [TFRT](https://github.com/tensorflow/runtime) (a new
+calling kernels directly from [TFRT](https://github.com/tensorflow/runtime) (a new
 TensorFlow runtime).
 
 Note that there is an effort to call existing kernels by delegating to
@@ -295,7 +295,7 @@ REGISTER_KERNEL_FALLBACK_KERNEL( "AddN", AddNOp<CPUDevice, int32>);
 
 ## Calling kernel
 
-We add a new TFRT BEF kernel called `tfd.kernel_fallback`. This kernel directly
+We add a new TFRT BEF kernel called `tfrt_fallback.kernel_fallback`. This kernel directly
 calls a TF kernel’s `Compute` method by creating `TFRTOpKernel*` data structures
 that forward to corresponding TFRT concepts. For example, the following code
 accesses an input in `llvm::ArrayRef<tfrt::RCReference<tfrt::AsyncValue>>` which
@@ -307,7 +307,7 @@ const Tensor& TFRTOpKernelContext::input(int index) {
 }
 ```
 
-Simplified definition of `tfd.kernel_fallback`:
+Simplified definition of `tfrt_fallback.kernel_fallback`:
 
 ```cpp
 // Instantiate a kernel. This would be a TensorFlow kernel converted to inherit
@@ -321,7 +321,7 @@ TFRTOpKernelContext op_kernel_context(inputs, outputs.size(), op_meta, exec_ctx.
 op->Compute(&op_kernel_context);
 ```
 
-## tf\_fallback.kernel\_fallback call structure
+## tfrt\_fallback.kernel\_fallback call structure
 
 We will be using the following conventions (essentially, these are based on
 Runtime Fallback work that will probably have RFC coming soon):
