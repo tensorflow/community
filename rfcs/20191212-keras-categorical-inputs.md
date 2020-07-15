@@ -1,6 +1,6 @@
 # Keras categorical inputs
 
-| Status        | Completed                                            |
+| Status        | Implemented (https://github.com/tensorflow/community/pull/209) |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Zhenyu Tan (tanzheny@google.com), Francois Chollet (fchollet@google.com)|
 | **Sponsor**   | Karmel Allison (karmel@google.com), Martin Wicke (wicke@google.com) |
@@ -23,7 +23,7 @@ Specifically, by introducing the 5 layers, we aim to address these pain points:
 * Users have to define both feature columns and Keras Inputs for the model, resulting in code duplication and deviation from DRY (Do not repeat yourself) principle. See this [Github issue](https://github.com/tensorflow/tensorflow/issues/27416).
 * Users with large dimension categorical inputs will incur large memory footprint and computation cost, if wrapped with indicator column through `tf.keras.layers.DenseFeatures`.
 * Currently there is no way to correctly feed Keras linear model or dense layer with multivalent categorical inputs or weighted categorical inputs, or shared embedding inputs.
-* feature columns offer black-box implementations, mix feature engineering with trainable objects, and lead to
+* Feature columns offer black-box implementations, mix feature engineering with trainable objects, and lead to
   unintended coding pattern.
 
 ## User Benefit
