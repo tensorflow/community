@@ -1,5 +1,14 @@
-| OpKernel | Unsupported context methods |
-| :---------- | :---------- |
+## Kernel OpKernelContext/OpKernelConstruction method dependencies
+
+Note that this spreadsheet assumes the following methods are supported:
+
+* OpKernelConstruction: `GetAttr`, `CtxFailure`, `CtxFailureWithWarning`, `MatchSignature`.
+* OpKernelContext: `input`, `num_inputs`, `set_output`, `num_outputs`, `allocate_output`, `expected_output_dtype`, `eigen_device`, `CtxFailure`, `CtxFailureWithWarning`, `forward_input_to_output_with_shape`, `ValidateInputsAreSameShape`.
+
+Note: This table is created by analyzing which methods are called down to 2 function calls of indirection. As such it is an approximation.
+
+| OpKernel    | Unsupported context methods |
+| :---------- | :-------------------------- |
 | _HostConstantOp |  |
 | AbortOp |  |
 | AccumulatorApplyGradientOp | tensorflow::OpKernelContext::MatchSignature,tensorflow::OpKernelContext::input_dtype,tensorflow::OpKernelContext::input_ref_mutex,tensorflow::OpKernelContext::mutable_input,tensorflow::OpKernelContext::resource_manager |
