@@ -1,5 +1,12 @@
+## Order of OpKernelContext/OpKernelConstruction method support priority in Kernel Fallback
+
+Note that this list excludes some the methods we already support in our prototype, specifically:
+
+* OpKernelConstruction: `GetAttr`, `CtxFailure`, `CtxFailureWithWarning`.
+* OpKernelContext: `input`, `num_inputs`, `set_output`, `num_outputs`, `allocate_output`, `expected_output_dtype`, `eigen_device`, `CtxFailure`, `CtxFailureWithWarning`.
+
 | Method | Num of kernels supported if implemented |
-| :---------- | :---------- |
+| :----- | :-------------------------------------- |
 | tensorflow::OpKernelContext::resource_manager | 46 |
 | tensorflow::OpKernelContext::forward_input_or_allocate_output | 35 |
 | tensorflow::OpKernelContext::allocate_temp | 40 |
@@ -52,5 +59,5 @@
 | tensorflow::OpKernelContext::run_all_kernels_inline | 1 |
 | tensorflow::OpKernelContext::mutable_input_list | 1 |
 | tensorflow::OpKernelConstruction::function_library | 1 |
-|  | 1 |
+
 
