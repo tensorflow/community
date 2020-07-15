@@ -1,9 +1,13 @@
 ## Order of OpKernelContext/OpKernelConstruction method support priority in Kernel Fallback
 
+Higher priority is assigned to methods that enable us to support the most number of kernels. At the same time, a high-priority method that requires a significant amount of work might be implemented later. `resource_manager` specifically is a frequently-used method, but would require a lot of work. Therefore, we might first implement other methods. Also, number of supported kernels is calculated assuming all methods above it in the table are implemented.
+
 Note that this list excludes some the methods we already support in our prototype, specifically:
 
 * OpKernelConstruction: `GetAttr`, `CtxFailure`, `CtxFailureWithWarning`.
 * OpKernelContext: `input`, `num_inputs`, `set_output`, `num_outputs`, `allocate_output`, `expected_output_dtype`, `eigen_device`, `CtxFailure`, `CtxFailureWithWarning`.
+
+Note: This table is created by analyzing which methods are called down to 2 function calls of indirection. As such it is an approximation.
 
 | Method | Num of kernels supported if implemented |
 | :----- | :-------------------------------------- |
