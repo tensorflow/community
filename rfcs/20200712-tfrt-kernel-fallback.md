@@ -55,7 +55,7 @@ and
 classes. Number of supported kernels will depend on the surface we manage to
 customize. (Note that I have already started prototyping the implementation that
 includes a few common methods such as `input`, `output`. The spreadsheet below
-consideres these methods to be already *supported*).
+considers these methods to be already *supported*).
 
 *   List of kernels and `OpKernelConstruction`/`OpKernelContext` methods they
     require:
