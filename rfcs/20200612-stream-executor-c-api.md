@@ -188,7 +188,7 @@ typedef struct SP_Device {
 
 } SP_Device;
 
-#define SP_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SE_Device, data)
+#define SP_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SP_Device, data)
 
 typedef struct SP_StreamExecutor {
   size_t struct_size;
