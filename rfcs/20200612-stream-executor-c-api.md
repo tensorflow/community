@@ -134,7 +134,7 @@ typedef struct SP_TimerFns {
   uint64_t (*microseconds)(SE_Timer timer);
 } SP_TimerFns;
 
-#define SP_TIMER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(SE_TimerFns, microseconds)
+#define SP_TIMER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(SP_TimerFns, microseconds)
 
 typedef struct SP_AllocatorStats {
   size_t struct_size;
