@@ -21,7 +21,7 @@ the comments to get an answer.
 
 ### Python Versions
 
-TensorFlow supports a range of Python versions, and changes need to be
+TensorFlow supports a range of Python versions and changes need to be
 compatible with all of them. This means that language features not available in
 any of TensorFlow's supported version cannot be used.
 
