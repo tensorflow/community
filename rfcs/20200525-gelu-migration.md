@@ -1,11 +1,11 @@
 # Migrate gelu activation from TensorFlow Addons to TensorFlow Core
 
-| Status      | Proposed (Waiting for Sponsor)                                                                                           |
+| Status      | Accepted                                                                                          |
 | :---------- | :------------------------------------------------------------------------------------------------- |
 | **RFC #**   | [252](https://github.com/tensorflow/community/pull/252) |                                       |
 | **Authors** | Tzu-Wei Sung (@WindQAQ) & Sean Morgan (@seanpmorgan) |
-| **Sponsor** | TBD   |
-| **Updated** | 2020-06-02 |
+| **Sponsor** | @alextp   |
+| **Updated** | 2020-07-15 |
 | **Sponsorship Deadline** | 2020-07-17 (45 Days after submission)  |
 
 ## Rationale for Migration
