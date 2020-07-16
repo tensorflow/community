@@ -3,9 +3,9 @@
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [257](https://github.com/tensorflow/community/pull/257) |
-| **Author(s)** | Anna Revinskaya (annarev@google.com), Penporn Koanantakool (penporn@google.com), Russell Power (power@google.com), Yi Situ (yisitu@google.com) |
+| **Author(s)** | Anna Revinskaya (annarev@google.com), Penporn Koanantakool (penporn@google.com), Yi Situ (yisitu@google.com), Russell Power (power@google.com) |
 | **Sponsor**   | Gunhan Gulsoy (gunan@google.com)                        |
-| **Updated**   | 2020-06-16                                              |
+| **Updated**   | 2020-07-15                                              |
 
 # Objective
 
@@ -85,6 +85,13 @@ A decoupled way to add a new device to TensorFlow.
 is quite large and some of its methods are only sporadically used. Therefore, we
 plan to wrap only a subset of key StreamExecutorInterface functionality. We decided on this subset based on the PluggableDevice usecase as well as potential future devices such as TPUs.
 
+Implementation conventions:
+
+* Structs include `struct_size` parameter. This parameter should be filled in both by TensorFlow and the plugin and can be checked to determine which struct fields are available for current version of TensorFlow.
+* Struct name prefixes indicates which side of the API is responsible for populating the struct:
+  * `SE_` prefix: filled by TensorFlow.
+  * `SP_` prefix: filled by plugins, except `struct_size` which is also filled by TensorFlow when TensorFlow passes it to a callback.
+
 See proposed C API below:
 
 ```cpp
@@ -99,9 +106,9 @@ See proposed C API below:
 extern "C" {
 #endif
 
-typedef SE_Stream_st* SE_Stream;
-typedef SE_Event_st* SE_Event;
-typedef SE_Timer_st* SE_Timer;
+typedef SP_Stream_st* SP_Stream;
+typedef SP_Event_st* SP_Event;
+typedef SP_Timer_st* SP_Timer;
 typedef TF_Status* (*TF_StatusCallbackFn)(void*);
 
 #ifndef TF_BOOL_DEFINED
@@ -120,16 +127,16 @@ typedef struct SE_PlatformId {
 
 #define SE_PLATFORMID_STRUCT_SIZE TF_OFFSET_OF_END(SE_PlatformId, id)
 
-typedef struct SE_TimerFns {
+typedef struct SP_TimerFns {
   size_t struct_size;
   void* ext;
   uint64_t (*nanoseconds)(SE_Timer timer);
   uint64_t (*microseconds)(SE_Timer timer);
-} SE_TimerFns;
+} SP_TimerFns;
 
-#define SE_TIMER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(SE_TimerFns, microseconds)
+#define SP_TIMER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(SE_TimerFns, microseconds)
 
-typedef struct SE_AllocatorStats {
+typedef struct SP_AllocatorStats {
   size_t struct_size;
   void* ext;
   int64_t num_allocs;
@@ -147,9 +154,9 @@ typedef struct SE_AllocatorStats {
   int64_t bytes_reservable_limit;
 
   int64_t largest_free_block_bytes;
-} SE_AllocatorStats;
+} SP_AllocatorStats;
 
-#define SE_ALLOCATORSTATS_STRUCT_SIZE TF_OFFSET_OF_END(SE_AllocatorStats, largest_free_block_bytes)
+#define SP_ALLOCATORSTATS_STRUCT_SIZE TF_OFFSET_OF_END(SE_AllocatorStats, largest_free_block_bytes)
 
 typedef enum SE_EventStatus {
   SE_EVENT_UNKNOWN,
@@ -166,7 +173,7 @@ typedef struct SE_Options {
 
 #define SE_OPTIONS_STRUCT_SIZE TF_OFFSET_OF_END(SE_Options, ordinal)
 
-typedef struct SE_Device {
+typedef struct SP_Device {
   size_t struct_size;
   void* ext;
   const char* name;
@@ -178,14 +185,12 @@ typedef struct SE_Device {
 
   // Any kind of data that plugin device might want to store.
   void* data;
-  
-  // TensorFlow will set this field to `data` passed with SE_PlatformParams.
-  void* platform_data;
-} SE_Device;
 
-#define SE_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SE_Device, data)
+} SP_Device;
 
-typedef struct SE_StreamExecutor {
+#define SP_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SE_Device, data)
+
+typedef struct SP_StreamExecutor {
   size_t struct_size;
   void* ext;
 
@@ -308,16 +313,16 @@ typedef struct SE_StreamExecutor {
   // Enqueues on a stream a user-specified function to be run on the host.
   TF_BOOL (*host_callback)(SE_Device* executor, SE_Stream* stream,
                      TF_StatusCallbackFn callback_fn, void* ctx);
-} SE_StreamExecutor;
+} SP_StreamExecutor;
 
-#define SE_STREAMEXECUTOR_STRUCT_SIZE TF_OFFSET_OF_END(SE_StreamExecutor, host_callback)
+#define SP_STREAMEXECUTOR_STRUCT_SIZE TF_OFFSET_OF_END(SP_StreamExecutor, host_callback)
 
-typedef struct SE_PlatformParams {
+typedef struct SP_Platform {
   size_t struct_size;
   
-  // Free form data set by plugin. It will be pre-filled
-  // in SE_Device passed to create_device.
+  // Free form data set by plugin.
   void* data;
+  
   SE_PlatformId* id;
   
   // Platform name
@@ -340,11 +345,9 @@ typedef struct SE_PlatformParams {
       SE_StreamExecutor*,  \\ out
       TF_Status* status);  \\ out
   void (*destroy_stream_executor)(SE_StreamExecutor* stream_executor);
-} SE_PlatformParams;
+} SP_Platform;
 
-#define SE_PLATFORM_PARAMS_SIZE TF_OFFSET_OF_END(SE_PlatformParams, destroy_stream_executor)
-
-TF_CAPI_EXPORT SE_Platform* SE_NewPlatform(SE_PlatformParams params);
+#define SP_PLATFORM_SIZE TF_OFFSET_OF_END(SP_Platform, destroy_stream_executor)
 
 typedef struct SE_PlatformRegistrationParams {
   size_t struct_size;
@@ -355,8 +358,8 @@ typedef struct SE_PlatformRegistrationParams {
   int32_t minor_version;
   int32_t revision_version;
   
-  // Params must be filled by the plugin.
-  SE_PlatformParams params;
+  // Must be filled by the plugin.
+  SP_Platform platform;  // out
 } SE_PlatformRegistrationParams;
 
 #define SE_PLATFORM_REGISTRATION_PARAMS_SIZE TF_OFFSET_OF_END(SE_PlatformRegistrationParams, platform)
@@ -408,7 +411,7 @@ DeviceFactory::Register(type_str, new PluggableDeviceFactory(platform_name_str),
 
 ## PlatformId
 
-`SE_PlatformId.id` should be set to a unique identifier.
+Currently Platforms registered with StreamExecutor have an id parameter.
 
 ## Usage example
 
