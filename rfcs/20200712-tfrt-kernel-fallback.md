@@ -37,7 +37,7 @@ High level goals of the project:
 We address the first goal by implementing a new fallback mechanism that directly
 calls TensorFlow kernels without going through Eager runtime first. We plan to
 address the second high level goal by trimming down dependencies, switching to
-more compact proto representation, etc..
+more compact proto representation, etc.
 
 ### Op Coverage Goals
 
@@ -116,7 +116,7 @@ to TensorFlow kernels that minimizes the amount of generated code.
 ## User Benefit
 
 Running more kernels on mobile devices would allow TensorFlow Lite users to implement
-a wider range of models.
+a wider range of models. Reduced binary size will also benefit users that currently use TensorFlow Lite's experimental [TensorFlow Select ops] (https://www.tensorflow.org/lite/guide/ops_select), or users that do not use the experimental feature because of that reason.
 
 ## Design Proposal
 
@@ -150,7 +150,7 @@ class TFRTOpKernelFactories {
   //   1. Kernel with the given name is not found.
   //   2. Attributes in op_kernel_construction don't match type constraints
   //      for any of the kernels with this name.
-  //      Note that we consider a constraint to be "not matched" if attribute
+  //      Note that we consider a constraint to be "not matched" if the attribute
   //      it applies to is not in op_kernel_construction.
   std::unique_ptr<TFRTOpKernel> CreateKernel(
       StringPiece kernel_class_name,
@@ -164,7 +164,7 @@ extern llvm::ManagedStatic<TFRTOpKernelFactories>
     tfrt_forwarding_kernel_factories;
 ```
 
-Similar to current TensorFlow kernel registartion, we will introduce a
+Similar to the current TensorFlow kernel registration, we will introduce a
 registration macro that adds a kernel to `TFRTOpKernelFactories`.
 
 ```cpp
@@ -336,7 +336,7 @@ Runtime Fallback work that will probably have RFC coming soon):
 Example of invoking Conv3D kernel:
 
 ```
-%tft_c = "tfd.kernel_fallback"(%tft_a, %tft_b) {
+%tft_c = "tfrt_fallback.kernel_fallback"(%tft_a, %tft_b) {
     _op_name = "Conv3D",
     attr1_name="data_format", attr1_value="string$NDHWC",
     attr2_name="strides", attr2_value="list(i32)$1,1,1,1,1",
