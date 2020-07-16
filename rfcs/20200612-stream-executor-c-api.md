@@ -184,7 +184,7 @@ typedef struct SP_Device {
   void* device_handle;
 
   // Any kind of data that plugin device might want to store.
-  void* data;
+  void* ext;
 
 } SP_Device;
 
