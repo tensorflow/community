@@ -156,7 +156,7 @@ typedef struct SP_AllocatorStats {
   int64_t largest_free_block_bytes;
 } SP_AllocatorStats;
 
-#define SP_ALLOCATORSTATS_STRUCT_SIZE TF_OFFSET_OF_END(SE_AllocatorStats, largest_free_block_bytes)
+#define SP_ALLOCATORSTATS_STRUCT_SIZE TF_OFFSET_OF_END(SP_AllocatorStats, largest_free_block_bytes)
 
 typedef enum SE_EventStatus {
   SE_EVENT_UNKNOWN,
