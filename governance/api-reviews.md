@@ -23,7 +23,7 @@ the comments to get an answer.
 
 TensorFlow supports a range of Python versions, and changes need to be
 compatible with all of them. This means that language features not available in
-TensorFlow's minimum supported version cannot be used. 
+any of TensorFlow's supported version cannot be used.
 
 We regularly reconsider the range of supported versions based on the number of
 affected users (estimated via pip downloads by Python version), and the default
