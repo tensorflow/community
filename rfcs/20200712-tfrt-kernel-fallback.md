@@ -212,7 +212,7 @@ and templating approaches. Key findings are summarized below:
 *   Time difference negligible for full model benchmarks.
 *   A simple scalar op benchmark with Kernel Fallback (runs scalar
     multiplication, division, addition) was only 0.3% slower on mobile with
-    inheritance compared to templates.
+    inheritance compared to templates. The benchmark was run on a real device (Pixel 3) with ABI: arm64-v8a and SDK version: 29.
 *   [basic\_ops\_benchmark](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/basic_ops_benchmark_test.cc?q=basic_ops_benchmark_test)
     with inheritance is significantly slower: ~7% (median) or ~19% (mean)
     (running on Linux). Note that this difference was measured *without* Kernel
