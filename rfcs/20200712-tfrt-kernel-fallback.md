@@ -539,9 +539,8 @@ helps us cut down on binary size.
 
 ## Selecting which kernels to register
 
-We want to add a script to the TF Lite build setup that can determine required
-kernels based on a model. We would then only build these kernels. For now, we
-will only support selective registration when building from source.
+We want to add a script to build configurations that can determine required
+kernels based on a model. We would then only build these kernels. For now, we will only support selective registration when building from source.
 
 Script details still need to be worked out.
 
@@ -552,11 +551,14 @@ Runtime Fallback will call TensorFlow Eager C API (corresponding RFC should be
 published soon). Main trade offs between the two fallbacks are described in the
 table below:
 
-Property    | TFRT Kernel Fallback  | TFRT Runtime Fallback
------------ | --------------------- | ---------------------
-Generality  | Support subset of ops | Support all ops
-Performance | Lower overhead        | Higher overhead
-Binary size | Lower (no TF runtime) | Higher
+Property    | TFRT Kernel Fallback                           | TFRT Runtime Fallback
+----------- | ---------------------------------------------- | ---------------------
+Generality  | Support subset of ops (for e.g. no resources*) | Support all ops
+Performance | Lower overhead                                 | Higher overhead
+Binary size | Lower (no TF runtime)                          | Higher
+
+\* Long term we might support resources, but we consider them lower priority
+due to significant work involved.
 
 ### Performance Implications
 
