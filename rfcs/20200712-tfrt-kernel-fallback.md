@@ -220,10 +220,10 @@ and templating approaches. Key findings are summarized below:
     even those that don't support Kernel Fallback.
 *   Binary size increase when using templates compared to inheritance is
     estimated at 2.6% (based on adding `AddN` op).
-
+    
 Right now, we are leaning towards using inheritance. Seems like time increase is
 only significant for running many scalar ops in a sequence - probably a rare use
-case in the real world.
+case in the real world. (See more details in [Appendix 2](#appendix-2-extension-options))
 
 To use inheritance, we will define `OpKernelConstructionInterface` and
 `OpKernelContextInterface` interfaces. Ideally, these interfaces should be pure
@@ -283,7 +283,7 @@ class OpKernelBase {
 ```
 
 (For details how extending from `OpKernelBase` instead of `OpKernel` would work
-with current TensorFlow runtime see [Appendix 1](#appendix-1))
+with current TensorFlow runtime see [Appendix 1](#appendix-1-kernel-wrapper))
 
 Corresponding .cc file then registers the kernel using the correct kernel and
 context classes. For example, this is how we register `AddN` kernel with TFRT:
@@ -582,7 +582,7 @@ This proposal should not impact compatibility.
 
 Seed this with open questions you require feedback on from the RFC process.
 
-## Appendix 1
+## Appendix 1: Kernel wrapper
 
 As discussed above, we want to convert (some) kernels to extend from
 `OpKernelBase` instead of `OpKernel`. This lets us remove runtime-specific
@@ -644,3 +644,112 @@ This approach has several benefits:
 *   Converted kernels registered with TFRT only depend on `OpKernelBase` (for
     example, they do not have `NodeDef`-related properties that are not
     supported by TFRT).
+    
+## Appendix 2: Extension options
+
+This document proposes to have custom versions of `OpKernel`, `OpKernelContext` and `OpKernelConstruction` classes implemented in terms of TFRT primitives.
+There are a few ways we can approach this implementation. `OpKernel*` classes can be customized using inheritance or templates.
+
+### Inheritance
+
+Inheritance involves defining `OpKernelBase` base class and `OpKernelConstructionInterface`/`OpKernelContextInterface` interfaces. This approach is described in detail in the [core part of this document](#kernel-implementation).
+
+### Templates
+
+Alternatively, we can customize kernel implementation using templates by adding a `template` header to each kernel (consecutively, moving kernel implementations to header files).
+Example of AddN kernel implementation with templates:
+
+```cpp
+template <typename Device, typename T, class OpKernelT,
+          class OpKernelConstructionT, class OpKernelContextT>
+class AddNOp : public OpKernelT {
+public:
+ explicit AddNOp(OpKernelConstructionT* construction) 
+    : OpKernelT(construction) {}
+
+ void Compute(OpKernelContextT* ctx) override {
+   if (!ctx->ValidateInputsAreSameShape(this)) return;
+  ...
+```
+Note, this is the original approach we were thinking of going with, the [actual AddN kernel implementation](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/aggregate_ops.h;l=231?q=aggregate_ops.h) already follows this pattern.
+
+Templates will be specialized at registration time:
+
+```cpp
+REGISTER_FALLBACK_KERNEL(
+   "AddN",
+   AddNOp<CPUDevice, int32, TFRTOpKernel, TFRTOpKernelConstruction, TFRTOpKernelContext>);
+```
+
+### Inheritance vs Templates trade off
+
+<table>
+  <tr>
+   <td>
+   </td>
+   <td>Templates
+   </td>
+   <td>Inheritance
+   </td>
+  </tr>
+  <tr>
+   <td>Latency
+   </td>
+   <td>Same
+   </td>
+   <td>Increase (vtable lookups) (negligible for model benchmarks, 7% median/19% mean increase for `basic_ops_benchmark`)
+   </td>
+  </tr>
+  <tr>
+   <td>Binary size (one implementation linked in)
+   </td>
+   <td>Same
+   </td>
+   <td>Same
+   </td>
+  </tr>
+  <tr>
+   <td>Binary size (two implementations linked in)
+   </td>
+   <td>Increase the most (2.6% estimate for AddN)
+   </td>
+   <td>Increase in some cases*
+   </td>
+  </tr>
+  <tr>
+   <td>Requires kernel changes
+   </td>
+   <td>Yes (move to header, add template declaration)
+   </td>
+   <td>Yes (add include, change OpKernel to OpKernelBase, OpKernel* to OpKernel*Interface)
+   </td>
+  </tr>
+  <tr>
+   <td>Requires kernel changes for kernels *unsupported* by TFRT Kernel Fallback
+   </td>
+   <td>No
+   </td>
+   <td>No
+   </td>
+  </tr>
+  <tr>
+   <td>Effects unconverted kernels
+   </td>
+   <td>No
+   </td>
+   <td>Yes (OpKernelConstruction/OpKernelContext now implement interfaces)
+   </td>
+  </tr>
+</table>
+
+\* Increase will happen when we have intermediate subclass of `OpKernel`. For example, [AveragePoolingOp](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/avgpooling_op.cc;l=56?q=%22:%20public%20UnaryOp%22) extends `UnaryOp` and `UnaryOp` extends `OpKernel`. In this case, `UnaryOp` is the *intermediate subclass*. Now that a kernel can inherit either from `OpKernel` or `OpKernelBase`, we would need two implementations: `UnaryOp` and `UnaryOpBase` respectively. Kernels that support Kernel Fallback and inherit `UnaryOp` now will instead switch to inherit `UnaryOpBase`. Addition of `UnaryOpBase` increases binary size.
+
+### Selected approach
+
+Currently we are thinking of proceeding with the inheritance approach.
+
+Inheritance seems to add negligible overhead to kernels for most benchmarks that we ran.
+However, it does introduce a ~7% median, ~19% mean penalty for [basic_ops_benchmark](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/basic_ops_benchmark_test.cc?q=basic_ops_benchmark&ss=tensorflow%2Ftensorflow) which runs a series of scalar multiplications and is used to measure kernel overhead.
+
+Therefore, we expect that using inheritance would not add a noticeable overhead in most real world models. At the same time, inheritance can simplify code structure and debugging.
+
