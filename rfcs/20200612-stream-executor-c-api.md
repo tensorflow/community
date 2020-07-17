@@ -119,14 +119,6 @@ typedef TF_Status* (*TF_StatusCallbackFn)(void*);
 #define TF_OFFSET_OF_END(TYPE, MEMBER) (offsetof(TYPE, MEMBER) + sizeof(((TYPE *)0)->MEMBER))
 #endif // TF_OFFSET_OF_END
 
-typedef struct SE_PlatformId {
-  size_t struct_size;
-  void* ext;
-  void* id;  // aka stream_executor::Platform::Id
-} SE_PlatformId;
-
-#define SE_PLATFORMID_STRUCT_SIZE TF_OFFSET_OF_END(SE_PlatformId, id)
-
 typedef struct SP_TimerFns {
   size_t struct_size;
   void* ext;
@@ -343,9 +335,7 @@ typedef struct SP_Platform {
   size_t struct_size;
   
   // Free form data set by plugin.
-  void* data;
-  
-  SE_PlatformId* id;
+  void* ext;
   
   // Platform name
   const char* name;
@@ -433,7 +423,7 @@ DeviceFactory::Register(type_str, new PluggableDeviceFactory(platform_name_str),
 
 ## PlatformId
 
-Currently Platforms registered with StreamExecutor have an id parameter.
+StreamExecutor [Platform](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/stream_executor/platform.h;l=114) has an id parameter. This parameter will be hidden from the C API and set internally by TensorFlow instead.
 
 ## Usage example
 
@@ -461,9 +451,6 @@ Define `SE_InitializePlugin` that TensorFlow will call when registering the devi
 
 ```cpp
 void SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
-  static const int32_t plugin_id_value = 123;
-  SE_PlatformId id{ SE_PLATFORMID_STRUCT_SIZE };
-  id.id = &plugin_id_value;
   int32_t visible_device_count = 2;
   
   std::string name = "MyDevice";
