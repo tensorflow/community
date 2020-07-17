@@ -1,11 +1,11 @@
 # TFRT Kernel Fallback
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)          |
+| Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [266](https://github.com/tensorflow/community/pull/266) |
 | **Author(s)** | Anna Revinskaya (annarev@google.com), Jeremy Lau (lauj@google.com) |
 | **Sponsor**   | Jeremy Lau (lauj@google.com)                            |
-| **Updated**   | 2020-07-14                                              |
+| **Updated**   | 2020-07-16                                              |
 
 ## Objective
 
@@ -160,23 +160,22 @@ class TFRTOpKernelFactories {
   llvm::StringMap<std::vector<TFRTOpKernelReg>> factories_;
 };
 
-extern llvm::ManagedStatic<TFRTOpKernelFactories>
-    tfrt_forwarding_kernel_factories;
+extern llvm::ManagedStatic<TFRTOpKernelFactories> fallback_kernel_factories;
 ```
 
 Similar to the current TensorFlow kernel registration, we will introduce a
 registration macro that adds a kernel to `TFRTOpKernelFactories`.
 
 ```cpp
-#define REGISTER_KERNEL_FALLBACK_KERNEL(name, ...) \
-  REGISTER_KERNEL_FALLBACK_KERNEL_UNIQ_HELPER(__COUNTER__, name, __VA_ARGS__)
+#define REGISTER_FALLBACK_KERNEL(name, ...) \
+  REGISTER_FALLBACK_KERNEL_UNIQ_HELPER(__COUNTER__, name, __VA_ARGS__)
 
-#define REGISTER_KERNEL_FALLBACK_KERNEL_UNIQ_HELPER(ctr, name, ...) \
-  REGISTER_KERNEL_FALLBACK_KERNEL_UNIQ(ctr, name, __VA_ARGS__)
+#define REGISTER_FALLBACK_KERNEL_UNIQ_HELPER(ctr, name, ...) \
+  REGISTER_FALLBACK_KERNEL_UNIQ(ctr, name, __VA_ARGS__)
 
-#define REGISTER_KERNEL_FALLBACK_KERNEL_UNIQ(ctr, name, ...)             \
-  static bool global_tfrt_forwarding_kernel_##ctr##_registered_ = []() { \
-    ::tensorflow::tfrt_forwarding_kernel_factories->RegisterFactory(     \
+#define REGISTER_FALLBACK_KERNEL_UNIQ(ctr, name, ...)             \
+  static bool global_fallback_kernel_##ctr##_registered_ = []() { \
+    ::tensorflow::fallback_kernel_factories->RegisterFactory(     \
         name, TFRTOpKernelReg([](TFRTOpKernelConstruction* construction) \
                                   -> std::unique_ptr<TFRTOpKernel> {     \
           return std::make_unique<__VA_ARGS__>(construction);            \
@@ -188,7 +187,36 @@ registration macro that adds a kernel to `TFRTOpKernelFactories`.
 ## Op registration
 
 To support type specification, we will also provide a minimal Op registry and
-corresponding macro `REGISTER_KERNEL_FALLBACK_OP`.
+corresponding macro `REGISTER_KERNEL_FALLBACK_OP`. Sample implementation:
+
+```cpp
+// TFRTOpMetaBuilder class will provide ways to set input, output and
+// attribute specifications.
+class TFRTOpMetaBuilder {
+ public:
+  explicit TFRTOpMetaBuilder(StringPiece op_name);
+  TFRTOpMetaBuilder& Output(StringPiece output_spec);
+  ...
+};
+
+// Registration will add the op to a static map.
+class TFRTOpRegisterer {
+ public:
+  TFRTOpRegisterer(const TFRTOpMetaBuilder& op_builder);
+};
+
+#define REGISTER_KERNEL_FALLBACK_OP(name) \
+  REGISTER_KERNEL_FALLBACK_OP_UNIQ(__COUNTER__, name)
+
+#define REGISTER_KERNEL_FALLBACK_OP_UNIQ(ctr, name)                         \
+  static TFRTOpRegisterer global_fallback_op_meta_builder_##ctr##_ = \
+      TFRTOpMetaBuilder(name)
+```
+
+Usage example:
+```cpp
+REGISTER_KERNEL_FALLBACK_OP("AddN").Output("out: int32");
+```
 
 ## Kernel implementation
 
@@ -252,7 +280,7 @@ class TFRTOpKernelConstruction : public OpKernelConstructionInterface {
 };
 ```
 
-When forwarding, we instantiate the kernel interfaces with TFRT’s lightweight
+When running Kernel Fallback, we instantiate the kernel interfaces with TFRT’s lightweight
 OpKernel definitions, rather than TensorFlow’s
 [heavyweight OpKernel definitions](https://cs.opensource.google/android/platform/superproject/+/master:external/tensorflow/tensorflow/core/framework/op_kernel.h;l=612?q=opkernelcontext)
 for example.
@@ -289,7 +317,7 @@ Corresponding .cc file then registers the kernel using the correct kernel and
 context classes. For example, this is how we register `AddN` kernel with TFRT:
 
 ```cpp
-REGISTER_KERNEL_FALLBACK_KERNEL( "AddN", AddNOp<CPUDevice, int32>);
+REGISTER_FALLBACK_KERNEL( "AddN", AddNOp<CPUDevice, int32>);
 ```
 
 ## Calling kernel
@@ -429,7 +457,7 @@ few notable exceptions:
 *   TFRT Kernel Fallback implementation will use Kernel Fallback registration
     mechanism.
 
-### TFRT forwarding kernel registration using C API
+### TFRT Kernel Fallback registration using C API
 
 We plan to implement C API for TFRT kernel registration that calls TFRT Kernel
 Fallback registration mechanism. Note that this is analogous to TF Lite
@@ -652,7 +680,7 @@ There are a few ways we can approach this implementation. `OpKernel*` classes ca
 
 ### Inheritance
 
-Inheritance involves defining `OpKernelBase` base class and `OpKernelConstructionInterface`/`OpKernelContextInterface` interfaces. This approach is described in detail in the [core part of this document](#kernel-implementation).
+Inheritance involves defining `OpKernelBase` base class and `OpKernelConstructionInterface`/`OpKernelContextInterface` interfaces. This approach is described in detail in the [Kernel implementation](#kernel-implementation) section above.
 
 ### Templates
 
