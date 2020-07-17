@@ -581,6 +581,23 @@ No new dependencies.
     kernels in TF Lite.
 *   Code will be maintained by TensorFlow DevInfra and TFRT teams.
 
+#### Current Status
+
+*  We have a Kernel Fallback prototype
+*  Prototype support for two kernels: `AddN` and `Conv3D`
+*  Current binary size estimates (based on Android arm64 build): 1MB for framework and 100k per kernel per type.
+
+#### Planned work
+
+*  Finalize integration with TFRT.
+*  Convert a subset of TensorFlow kernels to support Kernel Fallback.
+
+#### Success metrics
+
+*  Binary size small enough to run on mobile platforms.
+*  Increased kernel coverage on mobile platforms.
+
+
 ### Platforms and Environments
 
 *   Primarily geared towards mobile platforms but should work on non-mobile
