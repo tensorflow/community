@@ -1,6 +1,6 @@
 # RFC: Multihead Attention and EinsumDense on Keras
 
-| Status        | Proposed         |
+| Status        | Accepted         |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [260](https://github.com/tensorflow/community/pull/260) |
 | **Author(s)** | Hongkun Yu (hongkuny@google.com), Mark Omernick (momernick@google.com) |
@@ -342,8 +342,8 @@ method. For example, we implemented
 [TalkingHeadAttention](https://github.com/tensorflow/models/blob/master/official/nlp/modeling/layers/talking_heads_attention.py)
 introduced by ["Talking-Heads Attention "](https://arxiv.org/abs/2003.02436)
 paper. Using the keras Attention layer as another example, since it supports the
-basic single-head case 1-D attention, we can use it inside `_build_attention`
-and `_compute_attention`.
+basic single-head case 1-D attention, we can use it inside `build_attention`
+and `compute_attention`.
 
 ## Questions and Discussion Topics
 
