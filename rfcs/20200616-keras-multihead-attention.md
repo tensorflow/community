@@ -231,8 +231,9 @@ expension logic and multi-axes softmax will be handled locally in
 
 *   Keras Dense Attention
 
-[tf.keras.layers.Attention](https://www.tensorflow.org/api_docs/python/tf/keras/layers/Attention)
-layer call method takes an optional argument, `mask`, which requires two
+We have two changes proposed to
+[tf.keras.layers.Attention](https://www.tensorflow.org/api_docs/python/tf/keras/layers/Attention).
+(1) The layer call method takes an optional argument, `mask`, which requires two
 tensors, `q_mask` and `v_mask`. They are following keras framework requirements
 with (batch_size, target_length) and (batch_size, source_length) as shapes. This
 limits the flexibility of masking and `MultiHeadAttention` layer generalize the
@@ -241,6 +242,9 @@ we would like to introduce an optional argument `attention_mask` for
 `tf.keras.layers.Attention`. In the reduced case of `tf.keras.layers.Attention`,
 the shape is (batch_size, target_length, source_length). Whenever
 `attention_mask` is specified, the `mask` argument is OK to be skipped.
+(2) The layer does not return attention scores. We will add the bool argument,
+`return_attention_scores` to the __init__ and return the attention score tensor if
+it is true.
 
 *   TFA `MultiHeadAttention` Deprecation and Re-mapping
 
