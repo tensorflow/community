@@ -142,7 +142,7 @@ TensorFlow extension types are defined using two protocols:
 Classes that implement the `tf.ExtensionType` protocol are sometimes also called
 "composite tensors."
 
-Note: We are also considering using registries or base classes rather than
+**Note:** We are also considering using registries or base classes rather than
 protocols; see the section on "Registry vs Protocol vs Base class" for a
 discussion of the pros and cons.
 
@@ -204,7 +204,7 @@ class ExtensionType(Protocol):
     raise NotImplementedError
 ```
 
-Note: `tf.ExtensionType` is a Python `Protocol`, so it does not need to be
+**Note:** `tf.ExtensionType` is a Python `Protocol`, so it does not need to be
 added as an explicit base class.  See [PEP
 544](https://www.python.org/dev/peps/pep-0544/) for details.
 
@@ -243,7 +243,7 @@ class TypeSpec(object):
 
 ##### TypeSpec Job 1: Storing Static Value Data
 
-The first responsibility of a `TypeSpec` subclass is to store any static (non-tensor) data associated with a value.  A few examples will help demonstrate the type of data that is included in `TypeSpec`s:
+The first responsibility of a `TypeSpec` subclass is to store any static (non-tensor) data associated with a value.  A few examples will help demonstrate the type of data that is included in `TypeSpecs`:
 
 * `tf.SparseTensorSpec` includes the dtype and static shape of a sparse tensor.
 * `tf.RaggedTensorSpec` includes the dtype and static shape of a ragged tensor,
@@ -269,9 +269,9 @@ as well.
 The second responsibility of a `TypeSpec` subclass is to serialize `TypeSpec`
 values into a nested structure containing a limited set of Python types (and
 deserialize `TypeSpec` values from those nested structures).  This ensures that
-`TypeSpec`s can be transmitted between processes and stored on disk (e.g., in
-`SavedModels`).  In particular, `TypeSpec`s are serialized as part of
-`SavedModel`s using `tensorflow.StructuredValue` protocol buffers.
+`TypeSpecs` can be transmitted between processes and stored on disk (e.g., in
+`SavedModels`).  In particular, `TypeSpecs` are serialized as part of
+`SavedModels` using `tensorflow.StructuredValue` protocol buffers.
 
 ```python
   @abstractmethod
@@ -363,7 +363,7 @@ that encode the sparse data.
     """
 ```
 
-Note: the restriction that `to_components` and `from_components` may not call
+**Note:** the restriction that `to_components` and `from_components` may not call
 any TensorFlow ops comes from the fact that these methods are used in contexts
 (such as control-flow) where adding new ops to the graph would be problematic.
 
@@ -514,7 +514,7 @@ Notes:
   of the arguments it is called with are compatible with the `TypeSpecs` that
   were used to trace the graph.
 
-* `TypeSpec.most_specific_compatible_type` is used to merge two `TypeSpec`s or
+* `TypeSpec.most_specific_compatible_type` is used to merge two `TypeSpecs` or
   values.  E.g., in `tf.cond(pred, lambda: v1, lambda: v2)`, the `TypeSpec`
   used to reassemble the result is `spec1.most_specific_compatible_type(spec2)`
   (where `spec1=v1.__tf_type_spec__` and `spec2=v2.__tf_type_spec__`).
@@ -533,9 +533,9 @@ into their component `TensorSpecs`.  In particular:
 **tf.nest.flatten:**
 
 * `tf.nest.flatten(composite_tensor, expand_composites=True)` returns a flat
-  list of the `tf.Tensor`s components from `composite_tensor`.
+  list of the `tf.Tensor` components from `composite_tensor`.
 * `tf.nest.flatten(type_spec, expand_composites=True)` returns a flat list of
-  `tf.TensorSpec`s describing the tensor components for `type_spec`.
+  `tf.TensorSpecs` describing the tensor components for `type_spec`.
 
 **tf.nest.pack_sequence_as:**
 
@@ -548,13 +548,13 @@ into their component `TensorSpecs`.  In particular:
   uses `composite_tensor.__tf_type_spec__().from_components` to reconstruct the
   CompositeTensor from components.
 
-Note: When using `tf.nest.pack_sequence_as` with composite tensors, the
+**Note:** When using `tf.nest.pack_sequence_as` with composite tensors, the
 `flat_sequence` argument must be a list of `Tensor`; it may not be a list of
-TensorSpec`.
+`TensorSpec`.
 
 **tf.nest.assert_same_structure:**
 
-* If `x` and `y` are both composite tensors or `TypeSpec`s, then
+* If `x` and `y` are both composite tensors or `TypeSpecs`, then
   `tf.nest.assert_same_structure(x, y, expand_composites=True)` raises an
   exception if there is no `TypeSpec` compatible with both `x` and `y` (as
   determined by calling `TypeSpec.most_specific_compatible_type`).
@@ -585,8 +585,8 @@ back into the original structure.
 
 #### TypeSpec Registry
 
-In order to be used with `SavedModel`s, extension types must register their
-`TypeSpec`s using `tf.register_type_spec`.
+In order to be used with `SavedModels`, extension types must register their
+`TypeSpecs` using `tf.register_type_spec`.
 
 ```python
 def register_type_spec(type_spec_subclass, name=None):
@@ -739,12 +739,12 @@ class StackableTypeSpec(TypeSpec):
 ```
 
 
-Note: The `to_boxed_tensor` and `from_boxed_tensor` methods are typically
+**Note:** The `to_boxed_tensor` and `from_boxed_tensor` methods are typically
 implemented by defining new c++ Kernels that encodes values using tensors with
 `dtype=tf.variant`.  The gradient for `to_boxed_tensor` typically calls
 `from_boxed_tensor`, and vice versa.
 
-Note: one key difference between the "boxed encoding" and the "component
+**Note:** one key difference between the "boxed encoding" and the "component
 encoding" is that `to_boxed_tensor` and `from_boxed_tensor` may (and often do)
 add operations to the graph, while `to_components` and `from_components` may
 not.
@@ -761,21 +761,21 @@ work.
 
 **Why can't we just use tf.stack and tf.unstack?**
 
-> `tf.stack` and `tf.unstack` require that the number of values being stacked
-> (or unstacked) be statically known.  However, the APIs listed above are
-> often used in contexts where the number of values to stack or unstack is not
-> known ahead of time.
+`tf.stack` and `tf.unstack` require that the number of values being stacked
+(or unstacked) be statically known.  However, the APIs listed above are
+often used in contexts where the number of values to stack or unstack is not
+known ahead of time.
 
 **Why can we just use control flow with indexing and concatenation?**
 
-> It would be possible to implement the APIs listed above using a `while_loop`
-> that uses indexing (`value[i]`) to unstack values (one at a time), and
-> `tf.concat` to concatenate them back together (one at a time).  However,
-> indexing individual elements is inefficient for some types (such as
-> `tf.SparseTensor`); and concatenating values back together with `N-1` calls
-> to `tf.concat` is inefficient for most types.  We decided that the poor
-> performance that these operations would have if implemented with indexing
-> and concatenation is unacceptable.
+It would be possible to implement the APIs listed above using a `while_loop`
+that uses indexing (`value[i]`) to unstack values (one at a time), and
+`tf.concat` to concatenate them back together (one at a time).  However,
+indexing individual elements is inefficient for some types (such as
+`tf.SparseTensor`); and concatenating values back together with `N-1` calls
+to `tf.concat` is inefficient for most types.  We decided that the poor
+performance that these operations would have if implemented with indexing
+and concatenation is unacceptable.
 
 
 ### The tf.DispatchableType Protocol
@@ -818,7 +818,7 @@ class DispatchableType(Protocol):
 ```
 
 
-Note: `tf.DispatchableType` is a Python `Protocol`, so it does not need to be
+**Note:** `tf.DispatchableType` is a Python `Protocol`, so it does not need to be
 added as an explicit base class.  See [PEP
 544](https://www.python.org/dev/peps/pep-0544/) for details.
 
@@ -890,9 +890,8 @@ elementwise op will always be `args[0]` (and will not be in `kwargs`).
 
 If multiple arguments to a TensorFlow op implement the `tf.DispatchableType`
 protocol, then we need to decide which one to call first.  We will use the
-following rules (which are [consistent with Numpy’s `__array_function__`
-protocol](https://numpy.org/neps/nep-0018-array-function-protocol.html#trying-
-array-function-methods-until-the-right-one-works)):
+following rules (which are consistent with Numpy’s 
+[`__array_function__` protocol](https://numpy.org/neps/nep-0018-array-function-protocol.html#trying-array-function-methods-until-the-right-one-works)):
 
 * Subclasses are used before superclasses, regardless of position.  I.e., if
   two arguments `x` and `y` both implement `DispatchableType` (with different
@@ -980,7 +979,7 @@ class SimpleMaskedTensorSpec(tf.TypeSpec):
     return (self._shape, self._dtype)
 ```
 
-Note: `SimpleMaskedTensorSpec` uses the default implementations for several
+**Note:** `SimpleMaskedTensorSpec` uses the default implementations for several
 `TypeSpec` methods, such as `is_compatible`, which are defined based on
 `serialize` and `deserialize`.
 
@@ -1079,7 +1078,7 @@ initial release for TF Extension Types, but that we plan to add in the future.
 ### Automatic type casting
 
 Under the current design, extension type values can only be combined if they
-have identical `value_type`s and `component_spec`s.  This can prevent seamless
+have identical `value_types` and `component_specs`.  This can prevent seamless
 interoperation between types.  For example, the following expression is not
 supported under the current design:
 
@@ -1217,7 +1216,7 @@ implemented using protocols.  Two alternative APIs that we considered are:
 
 The following table summarizes some of the pros and cons of each approach:
 
-                                              | Protocol   | Subclass | Registry
+.                                             | Protocol   | Subclass | Registry
 --------------------------------------------- | ---------- | -------- | -------
 Works well with type annotations                    | Y    |    Y     |    N
 Extension type doesn't need to depend on TensorFlow | Y    |    N     |    N
@@ -1236,7 +1235,7 @@ pros and cons.
 To my knowledge, the main use for this attribute is to override the default
 argument names for concrete functions when they are called with the flat-
 arguments calling convention.  The question has been raised as to whether all
-`TypeSpec`s should have a `name` attribute.  My initial feeling is that they
+`TypeSpecs` should have a `name` attribute.  My initial feeling is that they
 should not, because the core concept for `TypeSpec` is a type specification, and
 type specifications are generally not named.  However, feedback on this question
 is welcome, especially when grounded in concrete use cases.  (Does
@@ -1289,7 +1288,7 @@ semantics.
     *   `_flat_tensor_specs` → `boxed_tensor_spec`
     *   `\_to\_batched\_tensor\_list
 
-* Added a registry for `TypeSpec`s.  In the current (internal) design, all
+* Added a registry for `TypeSpecs`.  In the current (internal) design, all
   extension types are listed explicitly in
   `tensorflow/core/protobuf/struct.proto`.  That proto will be extended to allow
   TypSpecs to be encoded using their registered name.
