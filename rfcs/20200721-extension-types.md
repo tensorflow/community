@@ -184,7 +184,7 @@ parts is handled by the extension type's `TypeSpec` subclass.  Thus, the
 `tf.ExtensionType` protocol just requires that we provide a `TypeSpec` for each
 value:
 
-```
+```python
 class ExtensionType(Protocol):
   """Protocol for defining TensorFlow extension types.
 
@@ -220,7 +220,7 @@ Each extension type defines its own subclass of `TypeSpec`, which has four jobs:
 The methods and properties that perform these four jobs are summarized here, and
 described in the sections below:
 
-```
+```python
 class TypeSpec(object):
   # Job 1: Store static data (constructor & properties defined in subclass)
 
@@ -273,7 +273,7 @@ deserialize `TypeSpec` values from those nested structures).  This ensures that
 `SavedModels`).  In particular, `TypeSpec`s are serialized as part of
 `SavedModel`s using `tensorflow.StructuredValue` protocol buffers.
 
-```
+```python
   @abstractmethod
   def serialize(self):
     """Returns a nested tuple containing the state of this TypeSpec.
@@ -325,7 +325,7 @@ reconstructing values into **_components_**, which can be any nested structure
 returns a tuple of the three tensors `(st.indices, st.values, st.dense_shape)`
 that encode the sparse data.
 
-```
+```python
   @abstractmethod
   def to_components(self, value):
     """Encodes `value` as a nested structure.
@@ -375,7 +375,7 @@ for `to_components` and `from_components`.  For example,
 describing each component of the sparse tensor (`indices`, `values`, and
 `dense_shape`).
 
-```
+```python
   @abstractproperty
   def component_specs(self):
     """TypeSpecs for this type's components.
@@ -407,7 +407,7 @@ The final responsibility of `TypeSpec` subclasses is checking equality and
 compatibility between `TypeSpecs`.  Strict value-based equality is implemented
 with `__eq__`:
 
-```
+```python
   def __eq__(self, other):
     """Returns True if `self` and `other` describe the same type.
 
@@ -434,7 +434,7 @@ value with shape `[8, 3]` into a `tf.function` that expects a value with shape
 cases, `TypeSpec` defines the `is_compatible_with` method, which checks whether
 two `TypeSpecs` (or a `TypeSpec` and a value) are compatible:
 
-```
+```python
  def is_compatible_with(self, spec_or_value):
     """Returns true if `spec_or_value` is compatible with this TypeSpec:
 
@@ -482,7 +482,7 @@ though these `TypeSpecs` are incompatible, we can return a value `r` whose
 `TypeSpec` is compatible with both (`r.__tf_type_spec__.shape=[8, None]`).
 These cases are handled by `TypeSpec.most_specific_compatible_type`:
 
-```
+```python
   def most_specific_compatible_type(self, other):
     """Returns the most specific `TypeSpec` compatible with `self` and `other`.
 
@@ -572,7 +572,7 @@ convert a nested structure containing composite tensors to a list of
 `nest.pack_sequence_as` with `expand_composites=True` to reassemble the results
 back into the original structure.
 
-```
+```python
 >>> rt = RaggedTensor(values=v1, row_splits=r)
 >>> st = SparseTensor(indices=i, values=v2, dense_shape=d)
 >>> structure = {'a': rt, 'b': st}
@@ -588,7 +588,7 @@ back into the original structure.
 In order to be used with `SavedModel`s, extension types must register their
 `TypeSpec`s using `tf.register_type_spec`.
 
-```
+```python
 def register_type_spec(type_spec_subclass, name=None):
   """Registers a globally unique name for a `TypeSpec`.
 
@@ -616,7 +616,7 @@ unstacking an arbitrary number of values, such as `tf.data.Dataset.batch`,
 `RaggedTensor` can be batched or unbatched because `RaggedTensorSpec` is a
 `StackableTypeSpec`:
 
-```
+```python
 >>> rt = tf.ragged.constant([[1, 2], [], [3], [4, 5, 6], [7], [8, 9]])
 >>> ds = tf.data.Dataset.from_tensor_slices(rt)
 >>> for x in ds.batch(3):
@@ -638,7 +638,7 @@ if `values=[v<sub>1</sub>, v<sub>2</sub>, …, v<sub>N</sub>]` is a list of valu
 that have the same `type_spec`, then boxing those values, stacking the boxed
 tensors, and unboxing the result is equivalent to stacking the values:
 
-```
+```python
 boxed_tensors = [type_spec.to_boxed_tensor(v) for v in values]
 stacked_tensor = tf.stack(boxed_tensors, axis=0)
 unboxed_stacked_value = type_spec.stacked(N).from_boxed_tensor(stacked_tensor)
@@ -649,7 +649,7 @@ Going in the other direction, if `v` is a single value whose `TypeSpec` is
 `type_spec` and whose `rank>0`, then boxing that value, unstacking the boxed
 tensor, and unboxing the result is equivalent to unstacking the value:
 
-```
+```python
 boxed_tensor = type_spec.to_boxed_tensor(v, minimum_rank=1)
 unstacked_tensors = tf.unstack(boxed_tensor, axis=0, num=N)
 unboxed_unstacked_values = [type_spec.unstacked().from_boxed_tensor(t)
@@ -667,7 +667,7 @@ encoding.
 `StackableTypeSpec` defines the methods `to_boxed_tensor` and
 `from_boxed_tensor` for boxing and unboxing values:
 
-```
+```python
 class StackableTypeSpec(TypeSpec):
 
   @abstractmethod
@@ -785,7 +785,7 @@ Extension types that are "tensor-like" (i.e., which specialize or extend
 behavior of TensorFlow ops when they are called with extension type values:
 
 
-```
+```python
 class DispatchableType(Protocol):
   """Protocol for defining TensorFlow extension types that support dispatch.
 
@@ -916,7 +916,7 @@ corresponding boolean mask, indicating which values are valid.  We begin by
 defining the `SimpleMaskedTensor` class itself.  Note that we make `value` and
 `mask` read-only properties, to ensure that `SimpleMaskedTensor` is immutable:
 
-```
+```python
 class SimpleMaskedTensor(object):
   """Class that pairs a `value` tensor with a corresponding boolean `mask`."""
 
@@ -948,7 +948,7 @@ Checking compatibility      | Considers two MaskedTensors compatible if their dt
 
 The complete code for `SimpleMaskedTensorSpec` is shown below:
 
-```
+```python
 class SimpleMaskedTensorSpec(tf.TypeSpec):
   """Type specification for a `SimpleMaskedTensor`."""
 
@@ -993,7 +993,7 @@ and binary elementwise operations and a handful of other operations in this
 example.
 
 
-```
+```python
 class SimpleMaskedTensor(object):
   # [...definition continued from above...]
 
@@ -1083,7 +1083,7 @@ have identical `value_type`s and `component_spec`s.  This can prevent seamless
 interoperation between types.  For example, the following expression is not
 supported under the current design:
 
-```
+```python
 tf.cond(pred, lambda: dense_tensor, lambda: ragged_tensor)  # not supported
 ```
 
@@ -1091,7 +1091,7 @@ One solution to this problem would be to add support for automatic type-casting
 of `TypeSpec` values.  In particular, we could extend `TypeSpec` with the
 following methods:
 
-```
+```python
   def cast(self, value):
     """Returns a value that is equivalent to `value` and compatible with `self`."""
 
@@ -1139,7 +1139,7 @@ and reconstructing values.  In particular, this would require removing the
 `TypeSpec`, and adding them to `ExtensionType` as:
 
 
-```
+```python
 class ExtensionType(Protocol):
   def __tf_to_components__(self):
     """Encodes `self` as a nested structure."""
