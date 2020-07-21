@@ -1,6 +1,6 @@
 # TensorFlow 2.0: Optimizer unification
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Francois Chollet (fchollet@google.com)               |
 | **Sponsor**   | Martin Wicke (wicke@google.com)                      |
@@ -313,13 +313,13 @@ FtrlOptimizer(learning_rate,
 Proposed signature:
 
 ```Python
-FTRL(learning_rate,
+FTRL(learning_rate=learning_rate,
      learning_rate_power=-0.5,
      initial_accumulator_value=0.1,
      l1_regularization_strength=0.0,
      l2_regularization_strength=0.0,
-     name="FTRL",
-     l2_shrinkage_regularization_strength=0.0)
+     l2_shrinkage_regularization_strength=0.0,
+     name="FTRL")
 ```
 
 

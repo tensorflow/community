@@ -12,11 +12,12 @@ TensorFlow is truly a community effort, and **we would love to have your feedbac
 
 ### 🐞 Report a Bug
 
-Please submit all bugs, errors, and pecularities on GitHub. Differences between documentation and implementation, lack of
+Please submit all bugs, errors, and peculiarities on GitHub. Differences between documentation and implementation, lack of
 documentation, performance issues, or compatibility problems are all fair game. Please be specific and include all information
 that would be helpful to debug the issue using our issue templates:
 
-* **[Bug / Performance Issue](https://github.com/tensorflow/tensorflow/issues/new?template=00-bug-performance-issue.md)**
+* **[Bug Issue](https://github.com/tensorflow/tensorflow/issues/new?labels=type%3Abug&template=00-bug-issue.md)**
+* **[Performance Issue](https://github.com/tensorflow/tensorflow/issues/new?labels=type%3Aperformance&template=80-performance-issue.md)**
 * **[Build / Installation Issue](https://github.com/tensorflow/tensorflow/issues/new?template=10-build-installation-issue.md)**
 * **[Documentation Issue](https://github.com/tensorflow/tensorflow/issues/new?template=20-documentation-issue.md)**
 * **[Other Issue - Not Listed](https://github.com/tensorflow/tensorflow/issues/new?template=50-other-issues.md)**
@@ -37,7 +38,7 @@ If you would like to submit general feedback about TensorFlow (and in particular
 
 **Friction logs** are documents that describe the frustrations and delights of a product, focused around a specific use case (for example, creating an LSTM model for text classification). They're also intended to be brutally honest - feel free to vent or to praise! 😊
 
-An template and example of a TensorFlow friction log can be found [here](https://docs.google.com/document/d/1HVG3t-mgGZKU4iMeguTWGejbnQ54qUTXwdCFkA5xHG0/edit?usp=sharing).
+A template and example of a TensorFlow friction log can be found [here](https://docs.google.com/document/d/1HVG3t-mgGZKU4iMeguTWGejbnQ54qUTXwdCFkA5xHG0/edit?usp=sharing).
 
 Once you have completed such a document, please email it to our [testing team](mailto:testing@tensorflow.org).
 

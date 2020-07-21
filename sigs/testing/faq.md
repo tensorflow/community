@@ -1,6 +1,6 @@
 # TensorFlow 2.0: An Overview
 
-Last Updated: _Mar 6, 2019_
+Last Updated: _September 10, 2019_
 
 A key element of the evolution of TensorFlow (TF) is TF 2.0, which is primarily focused on:
 
@@ -103,7 +103,7 @@ Yes. Use tf.disable_eager_execution() or tf.compat.v1.disable_eager_execution().
 
 **Where can I find a style guide for TensorFlow 2.0?**
 
-There are multiple changes in TensorFlow 2.0 to help support end-user productivity. For a style guide including best practices for API clean-up, @tf.function, see [Effective TF 2.0 Style Guide](https://github.com/tensorflow/docs/blob/master/site/en/r2/guide/effective_tf2.md) and this accompanying [blog post](https://medium.com/tensorflow/effective-tensorflow-2-0-best-practices-and-whats-changed-a0ca48767aff).
+There are multiple changes in TensorFlow 2.0 to help support end-user productivity. For a style guide including best practices for API clean-up, @tf.function, see [Effective TF 2.0 Style Guide](https://www.tensorflow.org/beta/guide/effective_tf2) and this accompanying [blog post](https://medium.com/tensorflow/effective-tensorflow-2-0-best-practices-and-whats-changed-a0ca48767aff).
 
 **Where can I find a mapping of all API symbols in TensorFlow 1.x to their equivalents in TF 2.0, TensorFlow Probability, addons, etc.?**
 
@@ -122,11 +122,11 @@ An upgrade utility called tf_upgrade_v2 is included with every install of Tensor
 
 **How do I convert my code from tf.Session, tf.cond, etc., to @tf.function?**
 
-See [Effective TF 2.0 Style Guide](https://github.com/tensorflow/docs/blob/master/site/en/r2/guide/effective_tf2.md).
+See [Effective TF 2.0 Style Guide](https://www.tensorflow.org/beta/guide/effective_tf2).
 
 **Where can I find a list of all of the changes in TensorFlow 2.0?**
 
-You can find the API symbol 1:1 map [here](https://docs.google.com/spreadsheets/d/1FLFJLzg7WNP6JHODX5q8BDgptKafq_slHpnHVbJIteQ/edit#gid=0), RFCs on Github, and the [Effective TF 2.0 Style Guide](https://github.com/tensorflow/docs/blob/master/site/en/r2/guide/effective_tf2.md).
+You can find the API symbol 1:1 map [here](https://docs.google.com/spreadsheets/d/1FLFJLzg7WNP6JHODX5q8BDgptKafq_slHpnHVbJIteQ/edit#gid=0), RFCs on Github, and the [Effective TF 2.0 Style Guide](https://www.tensorflow.org/beta/guide/effective_tf2).
 
 **How long will TensorFlow 1.x be supported?**
 
@@ -159,8 +159,8 @@ TensorFlow 2.0 API documentation can be found [here](https://www.tensorflow.org/
 
 We recommend that greenfield projects should begin using TensorFlow 2.0. Here’s how to get started:
 - [Udacity Course](https://www.udacity.com/course/intro-to-tensorflow-for-deep-learning--ud187)
-- [DeepLearning.ai Course](https://www.deeplearning.ai/tensorflow-specialization/)
-- [TensorFlow Documentation](https://www.tensorflow.org/alpha)
+- [DeepLearning.ai Course](https://www.deeplearning.ai/tensorflow-in-practice/)
+- [TensorFlow Documentation](https://www.tensorflow.org/beta/)
 
 **I’ve noticed a problem with TensorFlow 2.0. How can I file an issue?**
 
@@ -231,7 +231,7 @@ The original TensorFlow API’s approach to variables had many drawbacks. As det
 
 **What’s the deal with collections?**
 
-Global collections have been removed in TensorFlow 2.0, in favor of variable garbage collecting. For more on variables in TF 2.0, and how they’ve changed since TF 1.x, please refer to the [Effective TF 2.0 Style Guide](https://github.com/tensorflow/docs/blob/master/site/en/r2/guide/effective_tf2.md).
+Global collections have been removed in TensorFlow 2.0, in favor of variable garbage collecting. For more on variables in TF 2.0, and how they’ve changed since TF 1.x, please refer to the [Effective TF 2.0 Style Guide](https://www.tensorflow.org/beta/guide/effective_tf2).
 
 **I use PyTorch, but would like to try TF 2.0. Is there a migration guide?**
 
@@ -250,10 +250,10 @@ No, but we are in the process of creating one. Please reach out through the [Ten
 We will have several models ready for the alpha release (some CPU, some single-node GPU, and some available on a cluster of GPUs). You can track the bugs listed below for more information about timelines and implementation details.
 
 - [ResNet50 v1.5 & Resnet56 CIFAR-10](https://github.com/tensorflow/tensorflow/issues/25340)
-- [NMT Model](https://github.com/tensorflow/tensorflow/issues/25343) ([Example Colab](https://colab.sandbox.google.com/github/tensorflow/docs/blob/master/site/en/r2/tutorials/sequences/nmt_with_attention.ipynb))
-- [Pix2Pix](https://github.com/tensorflow/examples/tree/master/tensorflow_examples/models/pix2pix) ([Example Colab](https://colab.sandbox.google.com/github/tensorflow/docs/blob/master/site/en/r2/tutorials/generative/pix2pix.ipynb))
+- [NMT Model](https://github.com/tensorflow/examples/tree/master/tensorflow_examples/models/nmt_with_attention) ([Example Colab](https://www.tensorflow.org/tutorials/text/nmt_with_attention))
+- [Pix2Pix](https://github.com/tensorflow/examples/tree/master/tensorflow_examples/models/pix2pix) ([Example Colab](https://colab.research.google.com/github/tensorflow/docs/blob/master/site/en/tutorials/generative/pix2pix.ipynb))
 - [DenseNet](https://github.com/tensorflow/examples/tree/master/tensorflow_examples/models/densenet)
-- [Dcgan](https://github.com/tensorflow/examples/tree/master/tensorflow_examples/models/dcgan) ([Example Colab](https://colab.sandbox.google.com/github/tensorflow/docs/blob/master/site/en/r2/tutorials/generative/dcgan.ipynb))
+- [Dcgan](https://github.com/tensorflow/examples/tree/master/tensorflow_examples/models/dcgan) ([Example Colab](https://colab.research.google.com/github/tensorflow/docs/blob/master/site/en/tutorials/generative/dcgan.ipynb))
 - [NCF Model](https://github.com/tensorflow/tensorflow/issues/25344)
 
 **Will static graphs still be supported in TensorFlow 2.0?**
@@ -262,13 +262,13 @@ Yes. For an example, please refer to testing estimator ResNet56 Cifar-10 with co
 
 **While Keras is exciting, what other options will I have for building fully-customizable models?**
 
-You can do a lot with Keras, including [subclassing layers](https://medium.com/tensorflow/what-are-symbolic-and-imperative-apis-in-tensorflow-2-0-dfccecb01021), or writing your own training logic by subclassing Model. If you are a framework developer and you need to be free of the conventions Keras’ classes impose, take a look at tf.Module. ([Variables](https://github.com/tensorflow/docs/blob/master/site/en/r2/guide/variables.md), [Custom Layers](https://critique.corp.google.com/#review/231992098/depot/google3/third_party/py/tensorflow_docs/g3doc/en/tutorials/eager/custom_layers.ipynb))
+You can do a lot with Keras, including [subclassing layers](https://medium.com/tensorflow/what-are-symbolic-and-imperative-apis-in-tensorflow-2-0-dfccecb01021), or writing your own training logic by subclassing Model. If you are a framework developer and you need to be free of the conventions Keras’ classes impose, take a look at tf.Module. ([Variables](https://www.tensorflow.org/guide/variable), [Custom Layers](https://www.tensorflow.org/tutorials/customization/custom_layers))
 
 **What options do I have for distributed training with TensorFlow 2.0?**
 
 You can train your TensorFlow 2.0 models with multiple GPUs today, using distribution strategies. For more information on distributed training, be sure to check out the [TensorFlow 2.0 Project Tracker](https://github.com/orgs/tensorflow/projects/4) on Github, and search for the keyword “dist-strat”.
 
-For further information, see our tutorials [here](https://github.com/tensorflow/docs/tree/master/site/en/r2/tutorials/distribute) and [here](https://github.com/tensorflow/examples/tree/master/tensorflow_examples/models/densenet).
+For further information, see our tutorials [here](https://github.com/tensorflow/docs/tree/master/site/en/tutorials/distribute) and [here](https://github.com/tensorflow/examples/tree/master/tensorflow_examples/models/densenet).
 
 **How can I deploy TF 2.0 models to other platforms (TF.js, TensorFlow Lite, etc.)?**
 
@@ -280,7 +280,7 @@ No.
 
 **What is the preferred format for saving a TF model, going forward? (saved_model or HD5)**
 
-Saved_model is the preferred format. For more on exporting, restoring, and running a saved model in [TensorFlow 2.0](https://www.tensorflow.org/r2/tutorials/beginner/tf2_overview#export_a_savedmodel). This format is compatible with TensorFlow.js, TFLite, and more.
+Saved_model is the preferred format. For more on exporting, restoring, and running a saved model in [TensorFlow 2.0](https://www.tensorflow.org/guide/saved_model). This format is compatible with TensorFlow.js, TFLite, and more.
 
 **Will the TensorFlow team convert all checkpoints available in the tensorflow/models repo to HD5 or saved_model?**
 

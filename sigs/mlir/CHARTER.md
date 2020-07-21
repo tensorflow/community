@@ -1,4 +1,4 @@
-# Proposed name: SIG MLIR
+# MLIR
 
 ## Objective
 
@@ -17,6 +17,7 @@ Anyone involved in or interested in high performance compilers and their applica
 
 * Mailing list: [mlir@tensorflow.org](https://groups.google.com/a/tensorflow.org/forum/#!forum/mlir)
 * GitHub repo: [tensorflow/mlir](https://github.com/tensorflow/mlir)
+* [Agenda document](https://docs.google.com/document/d/1y_9f1AbfgcoVdJh4_aM6-BaSHvrHl8zuA5G4jv_94K8) containing the meeting notes and recordings. 
 
 ## Collaboration
 
@@ -29,7 +30,7 @@ We plan to start by focusing on the Graph Compiler. As such, we’ll have a 45 m
 
 ## Contacts
 
-* Project lead: Tatiana Shpeisman [@tatianashp](https://github.com/tatianashp) - speisman at google
+* Project lead: Tatiana Shpeisman [@tatianashp](https://github.com/tatianashp) - shpeisman at google
 * Project manager: Pankaj Kanwar [@pkanwar23](https://github.com/pkanwar23) - pkanwar at google 
 * For administrative questions, contact Edd Wilder-James
   [@ewilderj](https://github.com/ewilderj) - ewj at google

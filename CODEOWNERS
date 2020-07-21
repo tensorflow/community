@@ -14,9 +14,9 @@ sigs/io/ @martinwicke @ewilderj @mrry @yongtang @dmitrievanthony
 sigs/jvm/ @martinwicke @ewilderj @sjamesr @karllessard @tzolov
 sigs/micro/ @martinwicke @ewilderj @petewarden
 sigs/mlir/ @ewilderj @pkanwar23
-sigs/swift/ @ewilderj @saeta @dynamicwebpaige
+sigs/swift/ @ewilderj @saeta @ematejska
 sigs/testing/ @ewilderj @dynamicwebpaige
 
 # RFCs
 
-rfcs/ @ewilderj @martinwicke @goldiegadde
+rfcs/ @ewilderj @martinwicke @theadactyl @ematejska

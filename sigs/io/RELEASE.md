@@ -23,18 +23,18 @@ At the moment Python package (whl files) is created automatically,
 upon each successful Travis CI on master branch. At the end of
 each Travis CI build on master branch, all whl files
 (2.7, 3.4, 3.5, 3.6, 3.7 on Linux and 2.7 on macOS) are pushed to
-Bintray and are available in:
+Dropbox and are available in:
 
-https://dl.bintray.com/tensorflow-io/tensorflow-io-nightly/
+https://www.dropbox.com/sh/dg0npidir5v1xki/AACor-91kbJh1ScqAdYpxdEca?dl=0
 
 To perform a release in PyPI, first make sure the binary whl files
 are the correct one from corresponding Travis CI build number.
 This could be verified by checking the Travis CI history where at
 the end of the log, the sha256 of all whl files are calculated and displayed.
 The sha256 of each file displayed on Travis CI log should match the sha256
-of the files downloaded from Bintray.
+of the files downloaded from Dropbox.
 
-Once sha256 are verified against every whl files on Bintray, perform
+Once sha256 are verified against every whl files on Dropbox, perform
 a sanity check, then upload all of the whl files
 (2.7, 3.4, 3.5, 3.6, 3.7 on Linux and 2.7 on macOS) to PyPI.org:
 
@@ -45,10 +45,11 @@ twine upload *.whl
 ## CRAN R Package Release
 
 Before submitting the R package to CRAN, manually perform and check the following items:
-* Make sure the documentation in `README.md` and `vignettes` is up-to-date
+* Make sure the documentation in `README.md`, `docs/`, and `vignettes/` is up-to-date
 * Update `Version` field in `DESCRIPTION` file
 * Update `NEWS.md` to include items for this new release
-* Run `devtools::check()` and fix all the notable issues, especially warnings and errors
+* Run `devtools::check()` and fix all the notable issues, especially warnings and errors that appear
+either locally or in [CRAN package check result](https://cran.r-project.org/web/checks/check_results_tfio.html)
 * Update `cran-comments.md` to include any unsolvable issues from `devtools::check()` and
 other comments/responses to CRAN maintainers
 * Run checks on R-hub via `devtools::check_rhub()` and on win-builder via `devtools::check_win_devel()`. This is
@@ -82,3 +83,4 @@ Current Release Team:
 - Anthony Dmitriev - GitHub: [@dmitrievanthony](https://github.com/dmitrievanthony) - PyPI: [dmitrievanthony](https://pypi.org/user/dmitrievanthony)
 - Yuan (Terry) Tang - GitHub: [@terrytangyuan](https://github.com/terrytangyuan) - PyPI: [terrytangyuan](https://pypi.org/user/terrytangyuan)
 - Bryan Cutler - GitHub: [@BryanCutler](https://github.com/BryanCutler) - PyPI: [cutlerb](https://pypi.org/user/cutlerb)
+- Aleksey Vlasenko - GitHub: [@vlasenkoalexey](https://github.com/vlasenkoalexey) - PyPI: [vlasenkoalexey](https://pypi.org/user/vlasenkoalexey)
