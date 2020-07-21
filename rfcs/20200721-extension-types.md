@@ -1216,7 +1216,7 @@ implemented using protocols.  Two alternative APIs that we considered are:
 
 The following table summarizes some of the pros and cons of each approach:
 
-.                                             | Protocol   | Subclass | Registry
+Feature                                       | Protocol   | Subclass | Registry
 --------------------------------------------- | ---------- | -------- | -------
 Works well with type annotations                    | Y    |    Y     |    N
 Extension type doesn't need to depend on TensorFlow | Y    |    N     |    N
