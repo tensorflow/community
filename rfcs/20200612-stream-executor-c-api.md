@@ -220,6 +220,12 @@ typedef struct SP_StreamExecutor {
   // initialized.
   TF_BOOL (*device_memory_usage)(
       SP_Device* executor, int64_t* free, int64_t* total);
+  
+  // Allocate host memory.
+  void* (*host_memory_allocate)(uint64 size);
+  
+  // Deallocate host memory.
+  void (*host_memory_deallocate)(void *mem);
 
 
   /*** STREAM CALLBACKS ***/
