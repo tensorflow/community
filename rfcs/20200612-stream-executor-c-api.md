@@ -222,7 +222,7 @@ typedef struct SP_StreamExecutor {
       SP_Device* executor, int64_t* free, int64_t* total);
   
   // Allocate host memory.
-  void* (*host_memory_allocate)(uint64 size);
+  void* (*host_memory_allocate)(uint64_t size);
   
   // Deallocate host memory.
   void (*host_memory_deallocate)(void *mem);
