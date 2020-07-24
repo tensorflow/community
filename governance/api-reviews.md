@@ -161,7 +161,12 @@ which may be needed when the default behavior is changing.
 
 #### Documented types
 
-Arguments and return values to public APIs must be either be of public types, or inherit from a public type. This ensures that the arguments and return value types are documented and gives users clearer guidance on what can be passed to a public API, and what can they do with the returned values. If it is not desirable for the user to construct these types on their own, one can choose to expose superclass with no constructor, but adequate docstrings.
+Arguments and return values to public APIs must be either public types, or
+inherit from a public type. This ensures that the argument types and return 
+value types are documented and gives users clear guidance on what can be 
+passed to a public API, and what can they do with the returned values. 
+If it is not desirable for the user to construct these types on their own, 
+one can choose to expose superclass with no constructor, but adequate docstrings.
 
 ### Does it belong in TF at all?
 
