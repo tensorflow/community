@@ -585,7 +585,7 @@ No new dependencies.
 
 *  We have a Kernel Fallback prototype
 *  Prototype support for two kernels: `AddN` and `Conv3D`
-*  Current binary size estimates (based on Android arm64 build): 1MB for framework and 100k per kernel per type.
+*  Current binary size estimates (based on Android arm64 build): 900k for framework and 200k per kernel per type (see [Appendix 3](#appendix-3-benchmarking-size)).
 
 #### Planned work
 
@@ -800,3 +800,37 @@ However, it does introduce a ~7% median, ~19% mean penalty for [basic_ops_benchm
 
 Therefore, we expect that using inheritance would not add a noticeable overhead in most real world models. At the same time, inheritance can simplify code structure and debugging.
 
+
+## Appendix 3: Benchmarking size
+
+To benchmark size, we created a git branch that contains Kernel Fallback prototype:
+https://github.com/annarev/tensorflow/tree/kernel_fallback/tensorflow/core/tfrt_fallback/kernel (Note we had to make some other changes: [branch comparison](https://github.com/annarev/tensorflow/compare/master...annarev:kernel_fallback)).
+
+Android settings used when running `./configure`:
+
+* NDK: r18b
+* NDK API level: 19
+* Android build tools version: 30.0.1
+* Android SDK API level: 28
+
+We check size of a dependency by adding it to [//tensorflow/lite/java:libtensorflowlite_jni.so](https://github.com/annarev/tensorflow/blob/kernel_fallback/tensorflow/lite/java/BUILD#L415) target and running
+```
+bazel build -c opt tensorflow/lite/java/libtensorflowlite_jni.so --config=android_arm64 --define=disable_rtti_and_exceptions=true --define disable_eigen_mkldnn_contraction_kernel=true --define=TENSORFLOW_PROTOS=lite
+
+ls -lh bazel-bin/tensorflow/lite/java/libtensorflowlite_jni.so
+```
+
+Findings are presented in the table below:
+
+| Deps                                                       | Size |
+| :--------------------------------------------------------- | :--- |
+| Existing TF Lite                                           | 2.3M |
+| Existing TF Lite + Kernel Fallback framework               | 3.2M |
+| Existing TF Lite + Kernel Fallback framework + 2 kernels\* | 3.6M |
+
+\* Kernels used for benchmarking: AddN registered for int32, Conv3d registered for int32.
+
+Therefore, we estimate the following current size measurements:
+
+* Kernel Fallback framework: 900k
+* Per-kernel per-type: 200k
