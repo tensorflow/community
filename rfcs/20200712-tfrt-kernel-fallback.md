@@ -554,6 +554,7 @@ table below:
 Property    | TFRT Kernel Fallback                           | TFRT Runtime Fallback
 ----------- | ---------------------------------------------- | ---------------------
 Generality  | Support subset of ops (for e.g. no resources*) | Support all ops
+Scalability | Requires per-kernel updates                    | No kernel changes
 Performance | Lower overhead                                 | Higher overhead
 Binary size | Lower (no TF runtime)                          | Higher
 
