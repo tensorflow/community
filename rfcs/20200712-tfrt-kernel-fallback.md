@@ -100,7 +100,7 @@ custom
 Currently, [TF Lite](https://www.tensorflow.org/lite) supports a
 [limited set of ops](https://www.tensorflow.org/lite/guide/ops_compatibility).
 As the range and variety of applications grows, it becomes essential to grow the
-pool of available ops as well, ideally supporting everything that fully-fledged
+pool of available ops on mobile devices, ideally supporting everything that fully-fledged
 TensorFlow supports now.
 
 However, supporting TensorFlow ops on mobile devices presents some challenges.
@@ -115,8 +115,8 @@ to TensorFlow kernels that minimizes the amount of generated code.
 
 ## User Benefit
 
-Running more kernels on mobile devices would allow TensorFlow Lite users to implement
-a wider range of models. Reduced binary size will also benefit users that currently use TensorFlow Lite's experimental [TensorFlow Select ops] (https://www.tensorflow.org/lite/guide/ops_select), or users that do not use the experimental feature because of that reason.
+Running more kernels on mobile devices would allow TensorFlow users to implement
+a wider range of models for mobile devices. Reduced binary size will also benefit users that currently use TensorFlow Lite's experimental [TensorFlow Select ops] (https://www.tensorflow.org/lite/guide/ops_select), or users that do not use the experimental feature because of that reason.
 
 ## Design Proposal
 
