@@ -2,7 +2,7 @@
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Karl Lessard (karl.lessard@gmail.com) |
-| **Sponsored** | Joana Carrasqueira (joanafilipa@google.com) |
+| **Sponsored** | Joana Carrasqueira (joanafilipa@google.com), Rajagopal Ananthanarayanan (ananthr@google.com) |
 | **Updated**   | 2020-07-26                                          |
 
 ## Objective
