@@ -342,13 +342,15 @@ execute the trial (training) on different workers.
 
 At the time of writing, KerasTuner library can be used for parallel tuning with
 single machine `tf.distribute.Strategy`, e.g.,
-[`MirroredStrategy`](https://www.tensorflow.org/api_docs/python/tf/distribute/MirroredStrategy)
-, multi-worker strategy (distributed training for trial) support is on the
-roadmap (note that cluster managing is not part of the library).
+[`MirroredStrategy`](https://www.tensorflow.org/api_docs/python/tf/distribute/MirroredStrategy),
+multi-worker strategy (distributed training for trial) support is on the
+[roadmap of KerasTuner](https://keras-team.github.io/keras-tuner/tutorials/distributed-tuning/#data-parallelism-with-tfdistribute).
+Note that cluster managment of multiple worker machines is part of neither
+the KerasTuner library, nor is planned to be.
 
 At the time of writing, TFX doesn’t have the ability to manage the multi-worker
-cluster and the centralized optimization service, so parallel tuning or
-distributed training is not supported natively in TFX (local or on-prem), but in
+cluster and the centralized optimization service. As a result parallel tuning or
+distributed training is not supported natively in TFX (local or on-prem). In
 the next section, we will discuss the integration for Google Cloud. Similar
 parallel tuning support can be built for other execution environments.
 
