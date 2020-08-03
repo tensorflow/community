@@ -1,4 +1,4 @@
- **Pluggable device for TensorFlow**
+#Pluggable device for TensorFlow
 
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
