@@ -1,6 +1,6 @@
 # Extension Types
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                            |
 :-------------- |:---------------------------------------------------- |
 | **Authors**   | Edward Loper (edloper@google.com) |
 | **Sponsor**   | Alex Passos (apassos@google.com)                     |
