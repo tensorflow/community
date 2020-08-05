@@ -2,7 +2,7 @@
 
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [275](https://github.com/tensorflow/community/pull/275) |
 | **Author(s)** | Allen Lavoie (allenl@google.com), Ashish Agarwal (agarwal@google.com), Peng Wang (wangpeng@google.com), Alexandre Passos (apassos@google.com) |
 | **Sponsor**   | Alexandre Passos (apassos@google.com)  |
 | **Updated**   | 2020-08-05                                           |
