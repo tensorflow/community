@@ -668,6 +668,9 @@ Named “custom devices”, we have several transformations including a [paralle
 
 In contrast, the proposed front-end op handler support will handle functions (in part by migrating to the eager/graph agnostic C API), composition of handlers, and gradients of copy-on/copy-off. As in the existing prototype handlers will need to take a representation of an operation including its attributes; this may require small additions to the eager/graph agnostic API itself.
 
+## Acknowledgments
+
+Op handlers look like [JAX](https://github.com/google/jax)'s composable function transformations if you squint at them, with scopes instead of functions. Thanks to the JAX team for great discussions on an early version of this design.
 
 ## Questions / Discussion Topics
 
