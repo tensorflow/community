@@ -2,7 +2,7 @@
 
 | Status        | Proposed |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [278](https://github.com/tensorflow/community/pull/278)|
 | **Author(s)** | Qianli Zhu (scottzhu@google.com) |
 | **Sponsor**   | Martin Wicke (wicke@google.com), Alex Apassos (apassos@google.com)|
 | **Updated**   | 2020-08-10                                           |
