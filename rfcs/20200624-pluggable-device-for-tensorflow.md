@@ -5,7 +5,7 @@
 | **RFC #**     | [262](https://github.com/tensorflow/community/pull/262)|
 | **Author(s)** | Zhoulong Jiang (zhoulong.jiang@intel.com), Yiqiang Li (yiqiang.li@intel.com),  Eric Lin (eric.lin@intel.com), Jianhui Li (jian.hui.li@intel.com) |
 | **Sponsor**   | Anna Revinskaya (annarev@google.com)                 |
-| **Updated**   | 2020-07-31                                           |
+| **Updated**   | 2020-08-11                                           |
 
 ## **Objective**
 
@@ -112,12 +112,13 @@ Status PluggableDeviceFactory::ListPhysicalDevices(std::vector<string>* devices)
 }
 ```
 `GetDeviceDetails` encodes the subdevice type string and it can be queried by `tf.config.experimental.get_device_details`.  
+```
 Status PluggableDeviceFactory::GetDeviceDetails(int device_index, std::unordered_map<string, string>* details) {
  ... 
  (*details)["subdevice_type"] = sub_device_type_;
  ...
 }
-
+```
 ### Device Creation
 
 `PluggableDeviceFactory` is introduced to create the `PluggableDevice`, following the [LocalDevice](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/common_runtime/local_device.h) design pattern. To support existing GPU programs running on a new device without user changing the code, plugin authors can register the "GPU" device type through `SE_InitializePlugin` and then TensorFlow proper will register the `PluggableDeviceFactory` for "GPU" type with higher priority than the default GPU device.  
