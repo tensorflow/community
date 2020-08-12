@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [278](https://github.com/tensorflow/community/pull/278)|
 | **Author(s)** | Qianli Zhu (scottzhu@google.com) |
-| **Sponsor**   | Martin Wicke (wicke@google.com), Alex Apassos (apassos@google.com)|
+| **Sponsor**   | Martin Wicke (wicke@google.com), Alex Passos (apassos@google.com)|
 | **Updated**   | 2020-08-10                                           |
 | **Intended audience**| tf-api-owners, tf-addons, keras-team, deepmind/sonnet|
 
@@ -97,10 +97,9 @@ and will discuss with the API owner on a case to case basis.
 |python.framework.func_graph.FuncGraph |tf.internal.FuncGraph     |
 |python.framework.combinations.*| tf.internal.test.combinations.* |
 |python.distribute.strategy_combinations.* |tf.internal.test.combinations.* |
-|python.training.tracking.base.no_automatic_dependency_tracking|tf.internal.tracking.no_automatic_dependency_tracking |
 |python.util.object_identity.*|tf.internal.object_identity.* |
-|python.util.tf_decorator.*|tf.internal.decorator.* |
-|python.util.tf_inspect.*|tf.internal.inspect.* |
+|python.util.tf_decorator.TFDecorator|tf.internal.decorator.TFDecorator |
+|python.util.tf_decorator.unwrap|tf.internal.inspect.unwrap |
 
 ### Alternative Names
 1. <b>"tf.internal"</b>: It gives the user the impression that this is not a 
@@ -109,7 +108,7 @@ and will discuss with the API owner on a case to case basis.
 1. <b>"tf.infra"</b>: infrastructure is aligned with "building blocks" and low 
    level functionalities, like file system/network etc. So far, the APIs we want
    to add are still high level APIs and utility functions. 
-1. By Martin <b>"tf._internal"</b>: the extra "_" emphasis in the pythonic way
+1. By Martin <b>"tf.\_internal"</b>: the extra "_" emphasis in the pythonic way
    that this is for private usage.
 
 
