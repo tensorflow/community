@@ -62,7 +62,7 @@ This section describes the user scenarios that are supported/unsupported for Plu
 </div>
 
 * **Supported scenario**: Multiple PluggableDevices registered as different device types.   
-  In the case of installing multiple plugins that register PluggableDevices as different device types, e.g., one is registered as "GPU" device type and another is registered as "XPU" device type, these PluggableDevices can be registered successfully and user can specify the registered device type to run ops on different hardware. Same with scenario1, when one PluggableDevice is registered as "GPU" device type, the default GPUDevice will be overrided.
+  In the case of installing multiple plugins that register PluggableDevices as different device types, e.g., one is registered as "GPU" device type and another is registered as "XPU" device type, these PluggableDevices can be registered successfully and user can specify the registered device type to run ops on different hardware. Same as scenario1, when one PluggableDevice is registered as "GPU" device type, the default GPUDevice will be overrided.
 <div align="center">
 <img src=20200624-pluggable-device-for-tensorflow/scenario3.png>
 </div>
