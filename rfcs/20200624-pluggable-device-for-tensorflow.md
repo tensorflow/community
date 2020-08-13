@@ -5,7 +5,7 @@
 | **RFC #**     | [262](https://github.com/tensorflow/community/pull/262)|
 | **Author(s)** | Zhoulong Jiang (zhoulong.jiang@intel.com), Yiqiang Li (yiqiang.li@intel.com),  Eric Lin (eric.lin@intel.com), Jianhui Li (jian.hui.li@intel.com) |
 | **Sponsor**   | Anna Revinskaya (annarev@google.com)                 |
-| **Updated**   | 2020-08-12                                           |
+| **Updated**   | 2020-08-11                                           |
 
 ## **Objective**
 
@@ -62,7 +62,7 @@ This section describes the user scenarios that are supported/unsupported for Plu
 </div>
 
 * **Supported scenario**: Multiple PluggableDevices registered as different device types.   
-  In the case of installing multiple plugins that register PluggableDevices as different device types, e.g., one is registered as "GPU" device type and another is registered as "XPU" device type, these PluggableDevices can be registered successfully and user can specify the registered device type to run ops on different hardware.
+  In the case of installing multiple plugins that register PluggableDevices as different device types, e.g., one is registered as "GPU" device type and another is registered as "XPU" device type, these PluggableDevices can be registered successfully and user can specify the registered device type to run ops on different hardware. Same with scenario1, when one PluggableDevice is registered as "GPU" device type, the default GPUDevice will be overrided.
 <div align="center">
 <img src=20200624-pluggable-device-for-tensorflow/scenario3.png>
 </div>
@@ -75,30 +75,38 @@ This section describes the user scenarios that are supported/unsupported for Plu
 
 ### Front-end Mirroring mechanism
 This section describes the front-end mirroring mechanism for python users, pointing at previous user scenarios.
-* **device type**  
-   Device type is user visible and controllable. User can specify the device type for the ops. e.g, specify device type as "gpu", "xpu".
+* **device type && subdevice type**  
+   Device type is user visible and controllable. User can specify the device type for the ops. e.g, "gpu", "xpu", "cpu". Subdevice type is user visible and user specify which subdevice to use for the device type(mirroring), e.g.("NVIDIA_GPU", "INTEL_GPU", "AMD_GPU").
    ```
    >> with tf.device("/gpu:0"):
       ...
    >> with tf.device("/xpu:0"):
       ...
    ```
-   user need to manually select a platform when multiple plugins register the same device type, or the plugins initilaization will fail due to device type conflict. e.g, when multiple plugins register the "GPU" device type ,user need to set a higher priority for the plugin.
+* **Front-end mirroring** 
+   In the case of two GPUs in the same system, e.g. NVIDIA GPU + INTEL GPU and installing the Intel GPU plugin.
+  * **Option 1**
+    Only plugged gpu device is visible, PluggableDevice overrides GPUDevice. If user want to use CUDA device, he need to uninstall the plugin
+    ```
+    >> gpu_device = tf.config.experimental.list_physical_devices(`GPU`)
+    >> print(gpu_device)
+    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `INTEL_GPU`]
+    >> with tf.device("/gpu:0"):
+         .. // place ops on PluggableDevice(Intel GPU)
+    ```
+  * **Option 2**
+    Both plugged gpu device and default gpu device are visible, but only one gpu can work at the same time, plugged gpu device is default enabled, if user want to use CUDA device, he need to call mirroring API(set_sub_device_mapping()) to switch to CUDA device.
    ```
-   >> tf.load_plugin_with_highest_priority(path_to_plugin_lib)
-   >> with tf.device("/gpu:0")
-      ...
+    >> gpu_device = tf.config.experimental.list_physical_devices(`GPU`)
+    >> print(gpu_device)
+    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `INTEL_GPU`, enabled]
+    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `NVIDIA_GPU`, not-enabled]
+    >> tf.config.set_subdevice_mapping("NVIDIA_GPU")
+    >> with tf.device("/gpu:0"):
+         .. // place ops on GPUDevice(NVIDIA GPU)
    ```
-* **subdevice type**  
-   Subdevice type is user visible but not controllable. User can query the subdevice type of the device if he wants to know whether the GPU device is NVIDIA_GPU or INTEL_GPU, through [tf.config.experimental.list_physical_devices()](https://www.tensorflow.org/api_docs/python/tf/config/list_physical_devices).
-
-   ```
-   >> gpu_device = tf.config.experimental.list_physical_devices(`GPU`)
-   >> print(gpu_device)
-   [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `INTEL_GPU`]
-   ```
-* **real device name**  
-   Real device name is user visible but not controllable. User can query the real device name(e.g. "Titan V") for the specified device instance through [tf.config.experimental.get_device_details()](https://www.tensorflow.org/api_docs/python/tf/config/experimental/get_device_details).
+* **physical device name**  
+   physical device name is user visible. User can query the physical device name(e.g. "Titan V") for the specified device instance through [tf.config.experimental.get_device_details()](https://www.tensorflow.org/api_docs/python/tf/config/experimental/get_device_details).
    ```
    >> gpu_device = tf.config.experimental.list_physical_devices(`GPU`)
    >> if gpu_device:
