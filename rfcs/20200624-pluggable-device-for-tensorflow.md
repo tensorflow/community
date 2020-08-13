@@ -50,7 +50,7 @@ With the RFC, existing TensorFlow GPU programs can run on a plugged device witho
 
 This section describes the user scenarios that are supported/unsupported for PluggableDevice.  
 * **Supported scenario**: Single PluggableDevice registered as "GPU" device type  
-  In the case of installing one plugin that registers its PluggableDevice as "GPU" device type, the default GPUDevice will be invalid when the plugin is loaded. When user specifies the "GPU" device for ops under `with tf.device("gpu:0")`, PluggableDevice registered will be selected to run those ops.
+  In the case of installing one plugin that registers its PluggableDevice as "GPU" device type, the default GPUDevice will be overrided by PluggableDevice when the plugin is loaded. When user specifies the "GPU" device for ops under `with tf.device("gpu:0")`, PluggableDevice registered will be selected to run those ops.
 <div align="center">
 <img src=20200624-pluggable-device-for-tensorflow/scenario1.png>
 </div>  
@@ -68,43 +68,49 @@ This section describes the user scenarios that are supported/unsupported for Plu
 </div>
 
 * **Non-Supported scenario**: Multiple PluggableDevices registered as the same device type.  
-  In the case of installing multiple plugins that registers PluggableDevice as the same device type, e.g., more than one plugin registers its PluggableDevice as "GPU" device type, these plugins's initialization will fail due to registration conflict. User needs to manually select which platform they want to use(either unloads the conflicting plugin or reconfigures the plugin with python API).
+  In the case of installing multiple plugins that registers PluggableDevice as the same device type, e.g., more than one plugin registers its PluggableDevice as "GPU" device type, these plugins's initialization will fail due to registration conflict. Users need to manually select which platform they want to use(either unloads the conflicting plugin or reconfigures the plugin with python API).
 <div align="center">
 <img src=20200624-pluggable-device-for-tensorflow/scenario4.png>
 </div>
 
-### Front-end Mirroring mechanism
-This section describes the front-end mirroring mechanism for python users, pointing at previous user scenarios.
+### Device mapping mechanism
+This section describes the device mapping mechanism for python users, pointing at previous user scenarios.
 * **Device type && Subdevice type**  
-   Device type is user visible. User can specify the device type for the ops. e.g, "gpu", "xpu", "cpu". Subdevice type is user visible and user can specify which subdevice to use for the device type(mirroring), e.g.("NVIDIA_GPU", "INTEL_GPU", "AMD_GPU").
+   Device type is user visible. User can specify the device type for the ops. e.g, "gpu", "xpu", "cpu". Subdevice type is user visible and user can specify which subdevice to use for the device type(device mapping), e.g.("NVIDIA_GPU", "INTEL_GPU", "AMD_GPU").
    ```
    >> with tf.device("/gpu:0"):
       ...
    >> with tf.device("/xpu:0"):
       ...
    ```
-* **Front-end mirroring** 
-   In the case of two GPUs in the same system, e.g. NVIDIA GPU + INTEL GPU and installing the Intel GPU plugin.
-  * **Option 1**
-    Only plugged gpu device is visible, PluggableDevice(INTEL GPU) overrides the default GPUDevice(NVIDIA GPU). If user want to use NVIDIA GPU, he needs to manually uninstall the plugin.
+* **Device mapping**   
+   In the case of two GPUs in the same system, e.g. NVIDIA GPU + X GPU and installing the X GPU plugin.
+  * **Option 1**: override CUDA device, only plugged gpu device visible  
+    Only plugged gpu device is visible, PluggableDevice(X GPU) overrides the default GPUDevice(CUDA GPU). If users want to use CUDA GPU, they need to manually uninstall the plugin.
     ```
     >> gpu_device = tf.config.experimental.list_physical_devices(`GPU`)
     >> print(gpu_device)
-    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `INTEL_GPU`]
+    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `X_GPU`]
     >> with tf.device("/gpu:0"):
-    >>   .. // place ops on PluggableDevice(Intel GPU)
+    >>   .. // place ops on PluggableDevice(X GPU)
     ```
-  * **Option 2**
-    Both plugged gpu device and default gpu device are visible, but only one gpu can work at the same time, plugged gpu device is default enabled, if user want to use NVIDIA GPU, he need to call mirroring API(set_sub_device_mapping()) to switch to NVIDIA gpu device.
-   ```
+  * **Option 2**: both visible, but plugged gpu is default, user can set the device mapping  
+    Both plugged gpu device and default gpu device are visible, but only one gpu can work at the same time, plugged gpu device is default enabled(with higher priority), if users want to use NVIDIA GPU, they need to call device mapping API(set_sub_device_mapping()) to switch to CUDA device.
+    ```
     >> gpu_device = tf.config.experimental.list_physical_devices(`GPU`)
     >> print(gpu_device)
-    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `INTEL_GPU`, enabled]
-    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `NVIDIA_GPU`, not-enabled]
+    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `X_GPU`, enabled]
+    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `NVIDIA_GPU`, disabled]
+ 
     >> tf.config.set_subdevice_mapping("NVIDIA_GPU")
+    >> gpu_device = tf.config.experimental.list_physical_devices(`GPU`)
+    >> print(gpu_device)
+    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `X_GPU`, disabled]
+    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `NVIDIA_GPU`, enabled]
+    
     >> with tf.device("/gpu:0"):
     >>   .. // place ops on GPUDevice(NVIDIA GPU)
-   ```
+    ```
 * **Physical device name**  
    physical device name is user visible. User can query the physical device name(e.g. "Titan V") for the specified device instance through [tf.config.experimental.get_device_details()](https://www.tensorflow.org/api_docs/python/tf/config/experimental/get_device_details).
    ```
@@ -114,18 +120,17 @@ This section describes the front-end mirroring mechanism for python users, point
    >>    print(details.get(`device_name`)) 
    "TITAN_V, XXX"     
    ```
-
 ### Device Discovery
 
 Upon initialization of TensorFlow, it uses platform independent `LoadLibrary()` to load the dynamic library. The plugin library should be installed to the default plugin directory "…python_dir.../site-packages/tensorflow-plugins". The modular tensorflow [RFC](https://github.com/tensorflow/community/pull/77) describes the process of loading plugins. 
 
-During the plugin library initialization, TensorFlow proper calls the `SE_InitializePlugin` API (part of StreamExecutor C API) to retrieve nescessary informations from the plugin to instantiate a StreamExecutor platform([se::platform](https://github.com/tensorflow/tensorflow/blob/cb32cf0f0160d1f582787119d0480de3ba8b9b53/tensorflow/stream_executor/platform.h#L93) class) and registers the platform to a global object [se::MultiPlatformManager](https://github.com/tensorflow/tensorflow/blob/cb32cf0f0160d1f582787119d0480de3ba8b9b53/tensorflow/stream_executor/multi_platform_manager.h#L82), TensorFlow proper gets a device type and a subdevice type from plugin through `SE_InitializePlugin` and then registers the `PluggableDeviceFactory`with the registered device type. The device type string will be used to access PluggableDevice with tf.device() in python layer. The subdevice type is used for low-level specialization of GPU device(kernel, StreamExecutor, common runtime, grapper, placer..). If the user cares whether he is running on Intel/NVIDIA GPU, he can call python API (such as `tf.config.list_physical_devices`) to get the subdevice type for identification. user can also use `tf.config.get_device_details` to get the real device name(e.g. "TITAN V")for the specified device.  
+During the plugin library initialization, TensorFlow proper calls the `SE_InitializePlugin` API (part of StreamExecutor C API) to retrieve nescessary informations from the plugin to instantiate a StreamExecutor platform([se::platform](https://github.com/tensorflow/tensorflow/blob/cb32cf0f0160d1f582787119d0480de3ba8b9b53/tensorflow/stream_executor/platform.h#L93) class) and registers the platform to a global object [se::MultiPlatformManager](https://github.com/tensorflow/tensorflow/blob/cb32cf0f0160d1f582787119d0480de3ba8b9b53/tensorflow/stream_executor/multi_platform_manager.h#L82), TensorFlow proper gets a device type and a subdevice type from plugin through `SE_InitializePlugin` and then registers the `PluggableDeviceFactory`with the registered device type. The device type string will be used to access PluggableDevice with tf.device() in python layer. The subdevice type is used for low-level specialization of GPU device(kernel, StreamExecutor, common runtime, grapper, placer..). If the users care whether they are running on NVIDIA GPU or X GPU(Intel GPU, Amd GPU..), they can call python API (such as `tf.config.list_physical_devices`) to get the subdevice type for identification. user can also use `tf.config.get_device_details` to get the real device name(e.g. "TITAN V")for the specified device.  
 Plugin authors need to implement `SE_InitializePlugin` and provide the necessary informations:  
 ```cpp
 void SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
   int32_t visible_device_count = get_plugin_device_count();
   
-  std::string name = "My_GPU"; //StreamExecutor platform name && subdevice type
+  std::string name = "X_GPU"; //StreamExecutor platform name && subdevice type
   std::string type = "GPU"; // device type
 
   params.params.id = plugin_id_value;
@@ -277,20 +282,20 @@ Plugin authors need to provide those C functions implementation defined in Strea
 ### PluggableDevice kernel registration
 
 This section shows an example of kernel registration for PluggableDevice. Kernel registration and implementation API is addressed in a separate [RFC](https://github.com/tensorflow/community/blob/master/rfcs/20190814-kernel-and-op-registration.md). 
-To avoid kernel registration conflict with existing GPU(CUDA) kernels, plugin author needs to provide a device type(such as "GPU") as well as a subdevice type(such as "INTEL_GPU") to TensorFlow proper for kernel registration and dispatch. The device type indicates the device the kernel runs on, the subdevice type is for low-level specialization of the device.
+To avoid kernel registration conflict with existing GPU(CUDA) kernels, plugin author needs to provide a device type(such as "GPU") as well as a subdevice type(such as "X_GPU") to TensorFlow proper for kernel registration and dispatch. The device type indicates the device the kernel runs on, the subdevice type is for low-level specialization of the device.
 ```cpp
 void SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
   ...
   std::string type = "GPU" // front-end visible device type
   params.params.type = type.c_str();
-  std::string name = "INTEL_GPU"; // low-level specialization device type
+  std::string name = "X_GPU"; // low-level specialization device type
   params.params.type = name.c_str();
   ...
 }
 
 void InitKernelPlugin() {
   TF_KernelBuilder* builder = TF_NewKernelBuilder(/*op_name*/"Convolution", "GPU", //"GPU" is device type
-      "INTEL_GPU", &Conv_Create, &Conv_Compute, &Conv_Delete); // "INTEL_GPU" is sub device type
+      "X_GPU", &Conv_Create, &Conv_Compute, &Conv_Delete); // "X_GPU" is sub device type
   TF_Status* status = TF_NewStatus();
   TF_RegisterKernelBuilder(/*kernel_name*/"Convolution", builder, status);
   if (TF_GetCode(status) != TF_OK) { /* handle errors */ }
