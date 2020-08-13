@@ -76,7 +76,7 @@ This section describes the user scenarios that are supported/unsupported for Plu
 ### Front-end Mirroring mechanism
 This section describes the front-end mirroring mechanism for python users, pointing at previous user scenarios.
 * **device type && subdevice type**  
-   Device type is user visible and controllable. User can specify the device type for the ops. e.g, "gpu", "xpu", "cpu". Subdevice type is user visible and user specify which subdevice to use for the device type(mirroring), e.g.("NVIDIA_GPU", "INTEL_GPU", "AMD_GPU").
+   Device type is user visible. User can specify the device type for the ops. e.g, "gpu", "xpu", "cpu". Subdevice type is user visible and user can specify which subdevice to use for the device type(mirroring), e.g.("NVIDIA_GPU", "INTEL_GPU", "AMD_GPU").
    ```
    >> with tf.device("/gpu:0"):
       ...
