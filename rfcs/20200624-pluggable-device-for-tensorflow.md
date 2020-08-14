@@ -73,43 +73,28 @@ This section describes the user scenarios that are supported/unsupported for Plu
 <img src=20200624-pluggable-device-for-tensorflow/scenario4.png>
 </div>
 
-### Device mapping mechanism
-This section describes the device mapping mechanism for python users, pointing at previous user scenarios.
-* **Device type && Subdevice type**  
-   Device type is user visible. User can specify the device type for the ops. e.g, "gpu", "xpu", "cpu". Subdevice type is user visible and user can specify which subdevice to use for the device type(device mapping), e.g.("NVIDIA_GPU", "INTEL_GPU", "AMD_GPU").
+### Front-end device string
+This section describes the device string for python users, pointing at previous user scenarios.
+* **Device type**  
+   Device type is user visible. User can specify the device type for the ops. e.g, "gpu", "xpu", "cpu". 
    ```
    >> with tf.device("/gpu:0"):
       ...
    >> with tf.device("/xpu:0"):
       ...
    ```
-* **Device mapping**   
-   In the case of two GPUs in the same system, e.g. NVIDIA GPU + X GPU and installing the X GPU plugin.
-  * **Option 1**: override CUDA device, only plugged gpu device visible  
-    Only plugged gpu device is visible, PluggableDevice(X GPU) overrides the default GPUDevice(CUDA GPU). If users want to use CUDA GPU, they need to manually uninstall the plugin.
+* **Subdevice type**   
+   Subdevice type is user visible, aims at differentiating gpu devices between different hardware vendors. Users can query the subdevice type if they want to know whether the GPU device is "NVIDIA_GPU", "INTEL_GPU" or "AMD_GPU", by invoking [list_physical_devices](https://www.tensorflow.org/api_docs/python/tf/config/list_physical_devices).   
+   
+   This RFC proposes that plugged gpu device will override the default gpu device. When users invoke `list_physical_devices("GPU")`, they can only see the plugged gpu device. If users want to use default GPU device(CUDA), they need to manually uninstall the plugin.  
+   
+   For example, in the case of two GPUs in the same system, e.g. NVIDIA GPU + X GPU and installing the X GPU plugin, only X GPU is visible and usable. If users want to use Nvidia GPU, they need to uninstall the X GPU plugin.
     ```
     >> gpu_device = tf.config.experimental.list_physical_devices(`GPU`)
     >> print(gpu_device)
     [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `X_GPU`]
     >> with tf.device("/gpu:0"):
     >>   .. // place ops on PluggableDevice(X GPU)
-    ```
-  * **Option 2**: both visible, but plugged gpu is default, user can set the device mapping  
-    Both plugged gpu device and default gpu device are visible, but only one gpu can work at the same time, plugged gpu device is default enabled(with higher priority), if users want to use NVIDIA GPU, they need to call device mapping API(set_sub_device_mapping()) to switch to CUDA device.
-    ```
-    >> gpu_device = tf.config.experimental.list_physical_devices(`GPU`)
-    >> print(gpu_device)
-    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `X_GPU`, enabled]
-    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `NVIDIA_GPU`, disabled]
- 
-    >> tf.config.set_subdevice_mapping("NVIDIA_GPU")
-    >> gpu_device = tf.config.experimental.list_physical_devices(`GPU`)
-    >> print(gpu_device)
-    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `X_GPU`, disabled]
-    [PhysicalDevice(name = `physical_device:GPU:0`), device_type = `GPU`, subdevice_type = `NVIDIA_GPU`, enabled]
-    
-    >> with tf.device("/gpu:0"):
-    >>   .. // place ops on GPUDevice(NVIDIA GPU)
     ```
 * **Physical device name**  
    physical device name is user visible. User can query the physical device name(e.g. "Titan V") for the specified device instance through [tf.config.experimental.get_device_details()](https://www.tensorflow.org/api_docs/python/tf/config/experimental/get_device_details).
