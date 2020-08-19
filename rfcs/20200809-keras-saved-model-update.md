@@ -6,14 +6,14 @@
 | **Author(s)** | Kathy Wu (kathywu@google.com)                        |
 | **Sponsor**   | Karmel Allison (karmel@google.com)                   |
 | **Updated**   | 2020-08-20                                           |
-| **Obsoletes** | Obsoletes some of the implentation details in [20190509-keras-saved-model.md](https://github.com/tensorflow/community/blob/master/rfcs/20190509-keras-saved-model.md)          |
+| **Obsoletes** | Obsoletes some of the implementation details in [20190509-keras-saved-model.md](https://github.com/tensorflow/community/blob/master/rfcs/20190509-keras-saved-model.md)          |
 
 ## Objective
 
 The goal of this proposal is to separate core SavedModel and Keras Model serialization. 
 By doing so, Keras will only rely on external API when saving and loading models from the
 SavedModel format. This allows us to define what the process of serializing and
-deserializing high-level objects should be, in clear and uncovoluted terms. 
+deserializing high-level objects should be, in clear and unconvoluted terms. 
 
 This document does not solve existing problems in the Keras model serialization, such as dealing with shared 
 variables between layers.
