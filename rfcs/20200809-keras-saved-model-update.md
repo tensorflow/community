@@ -2,10 +2,10 @@
 
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [281](https://github.com/tensorflow/community/pull/281)|
 | **Author(s)** | Kathy Wu (kathywu@google.com)                        |
 | **Sponsor**   | Karmel Allison (karmel@google.com)                   |
-| **Updated**   | 2020-08-20                                           |
+| **Updated**   | 2020-08-19                                           |
 | **Obsoletes** | Obsoletes some of the implementation details in [20190509-keras-saved-model.md](https://github.com/tensorflow/community/blob/master/rfcs/20190509-keras-saved-model.md)          |
 
 ## Objective
