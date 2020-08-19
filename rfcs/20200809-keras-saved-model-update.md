@@ -82,8 +82,7 @@ The loader returns a dictionary mapping all node paths to the created nodes.
 
 Say that the following object is saved as a SavedModel:
 
-[img]
-
+![example](20200809-keras-saved-model-update/example.png)
 
 Some valid node paths are: `root.v`, `root.child`, `root.child.call`.
 
@@ -119,6 +118,8 @@ To summarize, Keras SavedModels will be produced and loaded following these step
 #### Benchmarks
 With the modified implementation, saving takes a bit more time in order to generate the Keras metadata file, while loading is a lot faster. These measurements are taken from the Keras applications SavedModel benchmarks.
 
+![saving](20200809-keras-saved-model-update/saving.png)
+![loading](20200809-keras-saved-model-update/loading.png)
 
 ### Alternatives Considered
 An alternative that was long considered was having the user register serializer and deserializer functions to each class that should be specially handled during SavedModel serialization and deserialization. However, this idea was put to rest due to the recursive nature of the TensorFlow object graph and the complicated issues [mentioned above](#why-separate-core-vs-high-level-serialization).
