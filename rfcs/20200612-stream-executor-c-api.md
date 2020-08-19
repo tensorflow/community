@@ -177,20 +177,16 @@ typedef struct SE_DeviceMemoryBase {
 
 typedef struct SP_Device {
   size_t struct_size;
-  void* ext;
+  void* ext;  // free-form field filled by plugin
   const char* name;
   size_t name_len;
 
   // Device vendor can store handle to their device representation
   // here.
   void* device_handle;
-
-  // Any kind of data that plugin device might want to store.
-  void* ext;
-
 } SP_Device;
 
-#define SP_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SP_Device, data)
+#define SP_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SP_Device, device_handle)
 
 typedef struct SP_StreamExecutor {
   size_t struct_size;
@@ -289,7 +285,7 @@ typedef struct SP_StreamExecutor {
   /*** MEMCPY CALLBACKS ***/
   // Enqueues a memcpy operation onto stream, with a host destination location
   // host_dst and a device memory source, with target size size.
-  TF_BOOL (*memcpy_to_host)(
+  TF_BOOL (*memcpy_dtoh)(
       SP_Device* executor, SP_Stream stream,
       void* host_dst,
       const SE_DeviceMemoryBase* device_src,
@@ -297,14 +293,21 @@ typedef struct SP_StreamExecutor {
 
   // Enqueues a memcpy operation onto stream, with a device destination location
   // and a host memory source, with target size size
-  TF_BOOL (*memcpy_from_host)(
+  TF_BOOL (*memcpy_htod)(
       SP_Device* executor, SP_Stream stream,
       SE_DeviceMemoryBase* device_dst,
       const void* host_src, uint64_t size);
       
+  // Enqueues a memcpy operation onto stream, with a device destination
+  // location and a device memory source, with target size `size`.
+  void (*memcpy_dtod)(const SP_Device* device, SP_Stream stream,
+                      SP_DeviceMemoryBase* device_dst,
+                      const SP_DeviceMemoryBase* device_src, uint64_t size,
+                      TF_Status* status);
+      
   // Blocks the caller while a data segment of the given size is
   // copied from the device source to the host destination.
-  TF_BOOL (*sync_memcpy_to_host)(
+  TF_BOOL (*sync_memcpy_dtoh)(
       SP_Device* executor,
       void* host_dst,
       const SE_DeviceMemoryBase* device_src,
@@ -312,10 +315,17 @@ typedef struct SP_StreamExecutor {
 
   // Blocks the caller while a data segment of the given size is
   // copied from the host source to the device destination.
-  TF_BOOL (*sync_memcpy_from_host)(
+  TF_BOOL (*sync_memcpy_htod)(
       SP_Device* executor,
       SE_DeviceMemoryBase* device_dst,
       const void* host_src, uint64_t size);
+      
+  // Blocks the caller while a data segment of the given size is copied from the
+  // device source to the device destination.
+  void (*sync_memcpy_dtod)(const SP_Device* device,
+                           SP_DeviceMemoryBase* device_dst,
+                           const SP_DeviceMemoryBase* device_src, uint64_t size,
+                           TF_Status* status);
 
   // Causes the host code to synchronously wait for the event to complete.
   void (*block_host_for_event)(
