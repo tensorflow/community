@@ -82,7 +82,7 @@ The loader returns a dictionary mapping all node paths to the created nodes.
 
 Say that the following object is saved as a SavedModel:
 
-![example](20200809-keras-saved-model-update/example.png)
+![example2](20200809-keras-saved-model-update/example2.png)
 
 Some valid node paths are: `root.v`, `root.child`, `root.child.call`.
 
