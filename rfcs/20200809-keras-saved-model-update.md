@@ -127,8 +127,16 @@ An alternative that was long considered was having the user register serializer 
 ### Breaking changes
 `tf.saved_model.save` will no longer save the metadata added to Keras models. With this, only the Keras `model.save` function will create SavedModels that are compatible with the Keras model loader `tf.keras.models.load_model`. When using the core loader (`tf.saved_model.load`), an object with specific endpoints is loaded. Please see the Keras SavedModel RFC for the list of all attributes that are stored: https://github.com/k-w-w/community/blob/master/rfcs/20190509-keras-saved-model.md#serialization-details
 
+| Saver  | Loader |  |
+| ---- | ---- | ---- | 
+| `tf.saved_model.save` | `tf.saved_model.load` | No change |
+| `tf.keras.models.save_model` | `tf.saved_model.load` | No change |
+| `tf.saved_model.save` | `tf.keras.models.load_model` | **Error** |
+| `tf.keras.models.save_model` | `tf.keras.models.load_model` | No change |
+
+
 #### TF Hub compatibility
-This does not break TensorFlow Hub compatibility, because the library does not rely on the Keras metadata when loading modules. TF Hub uses attributes (e.g. variables, call_and_return_conditional_losses) that are part of the extended object graph, which are automatically saved and loaded with core SavedModel functions. 
+This does not break TensorFlow Hub compatibility, because the library uses the core loader `tf.saved_model.load`, which does not rely on the Keras metadata. TF Hub uses attributes (e.g. variables, call_and_return_conditional_losses) that are part of the extended object graph, which is automatically saved and loaded with core SavedModel functions. 
 
 #### Metadata removal schedule
 
