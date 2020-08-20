@@ -218,11 +218,19 @@ typedef struct SP_StreamExecutor {
       SP_Device* executor, int64_t* free, int64_t* total);
   
   // Allocate host memory.
-  void* (*host_memory_allocate)(uint64_t size);
+  void* (*host_memory_allocate)(TF_Device* device, uint64_t size);
   
   // Deallocate host memory.
-  void (*host_memory_deallocate)(void *mem);
+  void (*host_memory_deallocate)(TF_Device* device, void *mem);
 
+  // Allocates unified memory space of the given size, if supported. Support
+  // should be added by setting `supports_unified_memory` field in
+  // `DeviceDescription`.
+  void* (*unified_memory_allocate)(TF_Device* device, uint64_t bytes);
+  
+  // Deallocates unified memory space previously allocated with
+  // `unified_memory_allocate`.
+  void (*unified_memory_deallocate)(TF_Device* device, void* location);
 
   /*** STREAM CALLBACKS ***/
   // Creates SE_Stream. This call should also Allocate stream
