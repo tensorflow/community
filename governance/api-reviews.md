@@ -157,7 +157,7 @@ in [`tf.keras.layers.Dense`](https://www.tensorflow.org/api_docs/python/tf/keras
 Our recommendation is to use `None` as the default value for _any optional arguments
 that may be adjusted or changed over time_, and have the implementation be responsible
 for handling the value, as opposed to using a default value that directly represents 
-the behavior (e.g. `aggregate='sum'`).  The latter prevents the implementation from
+the behavior (e.g. `num_threads = 10`).  The latter prevents the implementation from
 distinguishing between the caller not setting the argument vs. the caller setting the
 argument to the default value, which may be needed when the default behavior is changing.
 
