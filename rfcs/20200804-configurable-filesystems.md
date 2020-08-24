@@ -46,7 +46,7 @@ class FileSystem{
 
 Since each filesystem will likely to have different set of tunable parameters, a `FilesystemConfig` object can be used to unify the API and allow discovery of existing tunable parameters at runtime. We propose a protobuf object with the following schema
 
-``` proto
+```proto
 message FilesystemAttr{
   message ListValue {
     repeated bytes s = 2;                        // "list(string)"
@@ -132,4 +132,49 @@ This proposal will expose new methods to user to query and modify operational pa
 
 ## Questions and Discussion Topics
 
-Seed this with open questions you require feedback on from the RFC process.
+### Comments and Altrenatives Came Out During Posting Period
+
+During the posting period, some concerns about the protobuf passing through C C++ boundaries has been raised and alternative approaches has been discussed. @mihaimaruseac suggested following structure for crossing plugin-framework boundary.
+
+```cpp
+typedef struct TF_Filesystem_Option_Value {
+  int type_tag;
+  int num_values;
+  union {
+    int64 inv_val;
+    double real_val;
+    struct {
+      char* buf;
+      int buf_length;
+    } buffer_val;
+  } *values;  // owned
+} TF_Filesystem_Option_Value;
+
+typedef struct TF_Filesystem_Option {
+  char* name; // null terminated, owned
+  char* description; // null terminated, owned
+  int per_file;  // bool actually, but bool is not a C type
+  TF_Filesystem_Option_Value *value;  // owned
+} TF_Filesystem_Option;
+```
+
+On framework side these options can be translated to user friendly C++ and Python data structures and helper functions for getting and setting options can be provided in filesystem header file for plugins to use. With this approach all the buffer allocation and dealloactions will be done through allocator functions provided by plugins.
+
+If this schema is prefered C layer methods become
+
+```cpp
+   void (*const get_filesystem_configuration)(TF_Filesystem_Option** options, int *num_options, TF_Status* status);
+   void (*const set_filesystem_configuration)(const TF_Filesystem_Option** options, int num_options, TF_Status* status);
+}
+```
+
+Alternatively API can be expanded with per-option getters and setters in which case methods similar to following would be added to filesystem API
+
+```cpp
+   void (*const get_filesystem_configuration_option)(const char* key, TF_Filesystem_Option *option, TF_Status* status);
+   void (*const set_filesystem_configuration_option)(const TF_Filesystem_Option* option, TF_Status* status);
+   void (*const get_filesystem_configuration_keys)(char** Keys, int *num_keys, TF_Status* status);
+
+```
+
+The first option has the advantage of smaller API surface for plugin developers to implement at the expense of bigger data size crossing the framework-plugin boundary. Adding per-option methods to the API can simplify data preparation for boudary crossing for filesystems that have very large configuration options.
