@@ -488,22 +488,6 @@ class ItemSelector(object):
   `get_selection_mask()` to retrieve a bool `RaggedTensor` mask indicating the
   items that have been selected. For example:
 
-  ```
-  inputs = tf.ragged.constant([
-    [1, 2, 3, 4],
-    [100, 200]
-  ])
-
-  selector = RandomItemSelector(...)
-
-  selected = selector.get_selection_mask(inputs)
-
-  #  selected = [
-  #    [True, False, False, True],
-  #    [True, True],
-  #  ]
-  ```
-
   For subclass writers that wish to implement their own custom, selection
   algorithm, please override `get_selection_mask()`.
 
@@ -556,6 +540,24 @@ class ItemSelector(object):
       broadcasted subitem) is (True) or is not (False) selected.
     """
 ```
+
+##### Example
+
+  ```
+  inputs = tf.ragged.constant([
+    [1, 2, 3, 4],
+    [100, 200]
+  ])
+
+  selector = RandomItemSelector(...)
+
+  selected = selector.get_selection_mask(inputs)
+
+  #  selected = [
+  #    [True, False, False, True],
+  #    [True, True],
+  #  ]
+  ```
 
 #### RandomItemSelector
 
