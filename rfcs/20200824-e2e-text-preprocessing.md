@@ -59,10 +59,10 @@ features {
   feature {
     key: "text"
     bytes_list {
-        value: ["Shall I tell you a lie?\n
- I do despise a liar as I do despise one that is false, or as I despise one that is not true.\n
- The knight, Sir John, is there; and, I beseech you, be ruled by your well-willers. \n
- I will peat the door for Master Page. \n
+        value: ["Shall I tell you a lie?
+ I do despise a liar as I do despise one that is false, or as I despise one that is not true.
+ The knight, Sir John, is there; and, I beseech you, be ruled by your well-willers.
+ I will peat the door for Master Page. 
  Knocks"]
       }
     }
