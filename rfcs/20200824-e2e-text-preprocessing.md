@@ -5,7 +5,7 @@ This RFC will be open for comment until Friday, September 4th, 2020.
 | Status        | (Proposed)                                                            |
 :-------------- |:----------------------------------------------------------------------|
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
-| **Author(s)** | Terry Huang (Google)                                                  |
+| **Author(s)** | Terry Huang (Google), Arno Eigenwillig (Google), Chen Chen (Google)   |
 | **Sponsor**   | Xiaodan Song(Google), Greg Billock (Google), Mark Omernick (Google)   |
 | **Updated**   | 2020-08-24                                                            |
 
@@ -27,7 +27,7 @@ Additionally, many existing Python methods write out processed outputs to files 
 The proposed new set of text preprocessing APIs will allow users to:
 - **Assemble TF input pipelines w/ reusable, well-tested, standard building blocks** that transform their text datasets into model inputs. Being part of the TF graph also enables users to make preprocessing choices dynamically on the fly.
 - **Drastically simplify their model’s inputs to just text.** Users will be able to easily expand to new datasets for training, evaluation or inference. Models deployed to TF Serving can start from text inputs and encapsulate the details of preprocessing.
-- **Reduce risks of training/serving skew** by giving models stronger ownership of the entire preprocessing and postprocessing process.
+- **Reduce risks of training/serving skew** by giving models stronger ownership of the entire preprocessing process.
 - **Reduced complexity and improved input pipeline efficiency** by removing an extra read & write step to transform their datasets and improved efficiency w/ vectorized mapping by processing inputs in batches.
 
 
@@ -151,8 +151,8 @@ def bert_pretrain_preprocess(vocab_lookup_table, features):
   }
 ```
 
-The output of the tf.data pipeline is integer inputs transformed from the raw text and can be fed directly to the model (e.g., bert_pretraining model in model_garden):
-
+The outputs of the tf.data pipeline are integer inputs transformed from the raw text and can be fed directly to the model:
+ 
 ```
 {
 'input_ids': [
@@ -231,7 +231,7 @@ class SplitterWithOffsets(Splitter):
     """
 ```
 
-Splitter subclasses can implement different algorithms for segmenting strings and can even be a trained TF model. We also introduce two concrete implementations of Splitter: RegexSplitter and StateBasedSentenceBreaker). 
+Splitter subclasses can implement different algorithms for segmenting strings and can even be a trained TF model. We also introduce two concrete implementations of Splitter: `RegexSplitter` and `StateBasedSentenceBreaker`). 
 
 
 #### RegexSplitter
