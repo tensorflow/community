@@ -193,7 +193,7 @@ For example, a pre-trained Transformer Encoder can be saved into a Reusable Save
 
 ### Splitter
 
-The current `Tokenizer` and `TokenizerWithOffsets` base classes from RFC 98 will be deprecated and existing subclasses will be migrated to inherit from Splitter and SplitterWithOffsets.
+The current `Tokenizer` and `TokenizerWithOffsets` base classes from [RFC 98](https://github.com/tensorflow/community/pull/98) will be deprecated and existing subclasses will be migrated to inherit from Splitter and SplitterWithOffsets.
 
 ```
 class Splitter(object):
