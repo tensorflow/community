@@ -178,8 +178,7 @@ The output of the tf.data pipeline is integer inputs transformed from the raw te
  'masked_lm_weights': [
    [ 1,  1, 0, 0],
    [ 1, 1, 0, 0],
-],
-'is_next_sentence': [0, 1]
+ ]
 }
 ```
 
