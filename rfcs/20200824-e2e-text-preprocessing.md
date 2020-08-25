@@ -33,7 +33,7 @@ The proposed new set of text preprocessing APIs will allow users to:
 
 ## Design Proposal
 
-We propose a new suite of text preprocessing APIs to empower the end-to-end transformation of text to model inputs in TensorFlow. We propose to provide a suite of Python functions and classes for defining the APIs of reusable building blocks and the actual tensor-to-tensor computations (incorporating the BertTokenizer class, which has existed since 2019). All components are compatible with a tf.data input pipeline for training/evaluation and can be packaged into a SavedModel.
+We propose a new suite of text preprocessing APIs to empower the end-to-end transformation of text to model inputs in TensorFlow. We propose adding a new suite of Python functions and classes in TF.Text which define APIs for reusable building blocks and the actual tensor-to-tensor computations (incorporating the BertTokenizer class, which has existed since 2019). All components are compatible with a tf.data input pipeline for training/evaluation and can be packaged into a SavedModel.
 
 In particular, we propose the following API additions to TF.Text:
 - `Splitter`
