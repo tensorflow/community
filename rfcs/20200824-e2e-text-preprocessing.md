@@ -59,14 +59,18 @@ features {
   feature {
     key: "text"
     bytes_list {
-        value: ["Shall I tell you a lie? I do despise a liar as I do despise one that is false, or as I despise one that is not true. The knight, Sir John, is there; and, I beseech you, be ruled by your well-willers. I will peat the door for Master Page. Knocks"]
+        value: ["Shall I tell you a lie?\n
+ I do despise a liar as I do despise one that is false, or as I despise one that is not true.\n
+ The knight, Sir John, is there; and, I beseech you, be ruled by your well-willers. \n
+ I will peat the door for Master Page. \n
+ Knocks"]
       }
     }
   }
 }
 ```
 
-For training, our goal is to empower users to construct a tf.data pipeline that invokes a custom preprocessing map() function.
+For training, our goal is to empower users to construct a tf.data pipeline that invokes a custom preprocessing `map()` function like the following:
 
 ```
     feature_spec = {
