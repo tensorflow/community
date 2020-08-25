@@ -4,7 +4,7 @@ This RFC will be open for comment until Friday, September 4th, 2020.
 
 | Status        | (Proposed)                                                            |
 :-------------- |:----------------------------------------------------------------------|
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [283](https://github.com/tensorflow/community/pull/283)               |
 | **Author(s)** | Terry Huang (Google), Arno Eigenwillig (Google), Chen Chen (Google)   |
 | **Sponsor**   | Xiaodan Song(Google), Greg Billock (Google), Mark Omernick (Google)   |
 | **Updated**   | 2020-08-24                                                            |
