@@ -25,10 +25,10 @@ Additionally, many existing Python methods write out processed outputs to files 
 ## User Benefit
 
 The proposed new set of text preprocessing APIs will allow users to:
-- *Assemble TF input pipelines w/ reusable, well-tested, standard building blocks* that transform their text datasets into model inputs. Being part of the TF graph also enables users to make preprocessing choices dynamically on the fly.
-- *Drastically simplify their model’s inputs to just text.* Users will be able to easily expand to new datasets for training, evaluation or inference. Models deployed to TF Serving can start from text inputs and encapsulate the details of preprocessing.
-- *Reduce risks of training/serving skew*** by giving models stronger ownership of the entire preprocessing and postprocessing process.
-- *Reduced complexity and improved input pipeline efficiency* by removing an extra read & write step to transform their datasets and improved efficiency w/ vectorized mapping by processing inputs in batches.
+- **Assemble TF input pipelines w/ reusable, well-tested, standard building blocks** that transform their text datasets into model inputs. Being part of the TF graph also enables users to make preprocessing choices dynamically on the fly.
+- **Drastically simplify their model’s inputs to just text.** Users will be able to easily expand to new datasets for training, evaluation or inference. Models deployed to TF Serving can start from text inputs and encapsulate the details of preprocessing.
+- **Reduce risks of training/serving skew** by giving models stronger ownership of the entire preprocessing and postprocessing process.
+- **Reduced complexity and improved input pipeline efficiency** by removing an extra read & write step to transform their datasets and improved efficiency w/ vectorized mapping by processing inputs in batches.
 
 
 ## Design Proposal
