@@ -298,7 +298,7 @@ split = sb.split(text)
 split = [b"Hello (who are you...)", b"foo bar"]
 ```
 
-#### Trimmer
+### Trimmer
 ```
 class Trimmer(object):
   """Trims a list of segments using a predetermined trimming strategy.
