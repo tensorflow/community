@@ -50,7 +50,7 @@ In particular, we propose the following API additions to TF.Text:
 - `combine_segments()`
 - `pad_model_inputs()`
 
-## Input Pipeline
+### Input Pipeline
 
 Say that we have tensorflow.Examples with a single “text” feature, such as:
 
@@ -179,7 +179,7 @@ The output of the tf.data pipeline is integer inputs transformed from the raw te
 }
 ```
 
-## Reusable SavedModels, Serving, and Transfer learning
+### Reusable SavedModels, Serving, and Transfer learning
 The new APIs proposed enable saving task and model-spepcific preprocessing pieces alongside the pre-trained model for use in serving and transfer learning.
 
 For example, a pre-trained Transformer Encoder can be saved into a Reusable SavedModels with multiple entry points: one for the encoder itself, and one with all the end-to-end preprocessing functions and text entry point for a downstream task (e.g. single-segment classification, text-pair classification, etc).
