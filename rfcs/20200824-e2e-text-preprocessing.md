@@ -620,23 +620,17 @@ class MaskValuesChooser(object):
 
   For `mask_token_rate` of the time, replace the item with the `[MASK]` token:
 
-  ```
-  my dog is hairy -> my dog is [MASK]
-  ```
-
+  "my dog is hairy" -> "my dog is [MASK]"
+ 
   For `random_token_rate` of the time, replace the item with a random word:
 
-  ```
-  my dog is hairy -> my dog is apple
-  ```
-
+  "my dog is hairy" -> "my dog is apple"
+ 
   For `1 - mask_token_rate - random_token_rate` of the time, keep the item
   unchanged:
 
-  ```
-  my dog is hairy -> my dog is hairy.
-  ```
-
+  "my dog is hairy" -> "my dog is hairy."
+  
   The default behavior is consistent with the methodology specified in
   `Masked LM and Masking Procedure` described in `BERT: Pre-training of Deep
   Bidirectional Transformers for Language Understanding`
