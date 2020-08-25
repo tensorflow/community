@@ -657,26 +657,16 @@ class MaskValuesChooser(object):
         random token is substituted for tokens selected for masking. Default is
         0.1. NOTE: `mask_token_rate` + `random_token_rate` <= 1.
     """
-    if mask_token_rate is None:
-      raise ValueError("`mask_token_rate` cannot be None")
-    if random_token_rate is None:
-      raise ValueError("`random_token_rate` cannot be None")
-    self._mask_token_rate = mask_token_rate
-    self._random_token_rate = random_token_rate
-    self._mask_token = mask_token
-    self._vocab_size = vocab_size
+
 
   @property
   def mask_token(self):
-    return self._mask_token
 
   @property
   def random_token_rate(self):
-    return self._random_token_rate
 
   @property
   def vocab_size(self):
-    return self._vocab_size
 
   def get_mask_values(self, masked_lm_ids):
     """Get the values used for masking, random injection or no-op.
