@@ -176,7 +176,7 @@ The output of the tf.data pipeline is integer inputs transformed from the raw te
    [ 10124, 136, 0, 0],
  ],
  'masked_lm_weights': [
-   [ 1,  1, 0, 0],
+   [ 1, 1, 0, 0],
    [ 1, 1, 0, 0],
  ]
 }
