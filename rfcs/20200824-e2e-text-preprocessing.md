@@ -609,7 +609,7 @@ class FirstNItemSelector(ItemSelector):
 ```
 
 
-#### MaskValuesChooser
+### MaskValuesChooser
 
 ```
 class MaskValuesChooser(object):
@@ -698,7 +698,7 @@ class MaskValuesChooser(object):
     """
 ```
 
-#### mask_language_model()
+### mask_language_model()
 
 ```
 def mask_language_model(
@@ -748,7 +748,7 @@ def mask_language_model(
   """
 ```
   
-#### Example Usage
+##### Example Usage
 
 `mask_language_model()` can mask or randomly insert items to the inputs at different scales, whether individual wordpieces, tokens or any arbitrary span. For example, with the following input:
 
