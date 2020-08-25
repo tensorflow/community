@@ -214,7 +214,7 @@ class SplitterWithOffsets(Splitter):
   """An abstract base class for splitters that support offsets."""
 
   @abc.abstractmethod
-  def break_sentences_with_offsets(self, input):
+  def split_with_offsets(self, input):
     """Splits `input` into substrings and returns the starting & ending offsets.
 
     Args:
@@ -255,7 +255,7 @@ text_input=[
 ]
 
 sb = text.RegexSplitter(new_sentence_regex="\n")
-sentences =  sb.break_sentences(text_input)
+sentences =  sb.split(text_input)
 
 sentences = [
   [b"Hi there.", b"What time is it?", b"It is gametime."],
@@ -461,7 +461,11 @@ class RoundRobinTrimmer(Trimmer):
   `batch_size`, in which each batch row i will have a budget corresponding to
   `max_length[i]`.
   """
+```
 
+##### Example Usage
+
+```
 trimmer = RoundRobinTrimmer(max_seq_length=[1, 3, 4])
 trimmed_a, trimmed_b = trimmer.trim([segment_a, segment_b])
 
