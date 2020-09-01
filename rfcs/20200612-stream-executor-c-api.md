@@ -100,7 +100,7 @@ See proposed C API below:
 
 #define SE_MAJOR 0
 #define SE_MINOR 0
-#define SE_REVISION 1
+#define SE_PATCH 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -392,7 +392,7 @@ typedef struct SE_PlatformRegistrationParams {
   // StreamExecutor C API version.
   int32_t major_version;
   int32_t minor_version;
-  int32_t revision_version;
+  int32_t patch_version;
   
   // Must be filled by the plugin.
   SP_Platform platform;  // out
