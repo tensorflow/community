@@ -226,7 +226,8 @@ Two sets of classes need to be defined in TensorFlow proper.
    * class `PluggableDevice`: a class represents a set of new third-party devices, its device_type attribute describes what kind of device this is. it can be "GPU" or other device type string. it also has an attribute: subdevice_type, subdevice_type is for low-level specialization of GPU device. It will be part of kernel dispatch key to avoid conflict issue with exiting GPU(CUDA) kernels. The subdevice_type is also used to check whether there is some CUDA specific logic code in grappler and common runtime when the device type is "GPU".
    * class `PluggableDeviceFactory`: a device factory to create the PluggableDevice
    * class `PluggableDeviceBFCAllocator`: a PluggableDevice memory allocator that implements a ‘best fit with coalescing’ algorithm. It extends the BFC algorithm, counter part of GPUBFCAllocator.
-   * class `PluggableDeviceAllocator`: an allocator that wraps a PluggableDevice allocator.
+   * class `PluggableDeviceMemAllocator`: Suballocator for GPU memory.
+   * class `PluggableDeviceProcessState`: manages per-process state when PluggableDevices are present
    * class `PluggableDeviceHostAllocator`: allocator for pinned CPU RAM that is made known to PluggableDevice for the purpose of efficient DMA with PluggableDevice.
    * class `PluggableDeviceEventMgr`: an object to keep track of pending Events in the StreamExecutor streams.
    * class `PluggableDeviceContext`: a wrapper of pluggable device specific context that can be passed to OpKernels.
