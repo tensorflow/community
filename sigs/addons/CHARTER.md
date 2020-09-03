@@ -30,7 +30,7 @@ Everybody with an interest in helping extend TensorFlow with new types of Ops, L
 ## Contacts
 
 * Project leads: Sean Morgan [@seanpmorgan](https://github.com/seanpmorgan),
-  Yan Facai (颜发才) [@facaiy](https://github.com/facaiy)
+  Yan Facai (颜发才) [@facaiy](https://github.com/facaiy), Tzu-Wei Sung [@WindQaQ](https://github.com/windqaq)
 * TensorFlow technical contact [@karmel](https://github.com/karmel) - karmel@google.com
 * For administrative questions, contact Edd Wilder-James [@ewilderj](https://github.com/ewilderj) - ewj at google
 
