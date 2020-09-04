@@ -1,4 +1,4 @@
-# tf.internal API namespace
+# tf._internal API namespace
 
 | Status        | Proposed |
 :-------------- |:---------------------------------------------------- |
@@ -6,11 +6,14 @@
 | **Author(s)** | Qianli Zhu (scottzhu@google.com) |
 | **Sponsor**   | Martin Wicke (wicke@google.com), Alex Passos (apassos@google.com)|
 | **Updated**   | 2020-08-10                                           |
-| **Intended audience**| tf-api-owners, tf-addons, keras-team, deepmind/sonnet|
+| **Intended audience**| tf-api-owners, keras-team|
 
 ## Objective
 
-Adding a new "internal" API namespace in TF to host APIs for framework building/testing, etc. The API will have looser contracts compared to core TF API.
+Adding a new "_internal" API namespace in TF to host APIs for framework building
+/testing, etc. The API namespace will serve as a whitelist for client libraries 
+to gradually migrate off the usage tf private API symbol.
+
 
 ## Motivation
 
@@ -27,63 +30,62 @@ rely on the public TF API only, to avoid any future breakages due to private
 method/class change.
 
 Historically, Keras was an internal component of TF, and relies heavily on a lot
-of private TF utilities and functionalities that are not part of the public API. 
-Exposing those functions into public APIs will be very confusing to the end 
-user, since those functions are useful to framework-builders, but not typical 
-TensorFlow users. In addition, these utilities would be overly restricted by the 
-standard TensorFlow API contract, as we would like to change/remove them more 
-often than the existing core API.
+of private TF utilities and functionalities that are not part of the public 
+API. Exposing those functions into public APIs will be very confusing to the 
+end user who uses tf to build/train models, since those functions are useful to
+framework-builders, but not typical TensorFlow users.
 
 
 ## Design Proposal
 
-Add a new namespace "tensorflow.internal" to host the framework building/testing 
-related APIs. <b>(See alternative naming in the sections below, the naming of 
-the namespace will be discussed in the design meeting.)</b>
+Add a new namespace "tensorflow._internal" to host the framework building/
+testing related APIs that are currently used by other high level API in TF 
+(Keras, and estimator, etc.). This name space will be treated as a protected 
+API, which shouldn't be used by the end users. It will have no API contract 
+compared to core TF API. TF side must be aware of the usage from client lib, 
+so that it can properly test the change to any of those internal API before TF 
+side making any backward incompatible change.
 
 ### Backward compatibility
-The contract for all the APIs under this namespace is looser compared to core TF
-API. It will remain backward compatible for at least 1 minor TF release. 
-
-This means for any API that is added in 2.x release, it will remain the same in 
-2.x+1. If we choose to remove the same API, we will mark it as deprecated in 
-2.x+1, and delete it at 2.x+2 release. TensorFlow is released every 3 months, 
-and this will give enough time for all the clients to change to the new 
-API/alternative.
-
-Any deprecation and backward incompatible API change will be explicitly called 
-out in TF release notes. This applies to both core API and "internal" API.
+There is no API contract for all the functions under this namespace. TF side 
+can make any backward incompatible change at any time. To prevent any breakage 
+caused on the client side, TF must be aware who is using this API, so that any 
+changes to those API will be verified against the client code.
 
 ### Acceptance Criteria
-The candidate of the "internal" API should:
+The candidate of the "_internal" API should:
 
 1. Does NOT fit for core TF API, otherwise it should be exposed as core TF API.
-1. Are effectively required to build/test/deploy a framework or library on top 
-   of TensorFlow, or to integrate such a framework into TensorFlow's API.
-1. Mature enough and won't change behavior/interface for every release. 
+1. Are currently used by other high level API to build/test/deploy a framework 
+   or library on top of TensorFlow, or to integrate such a framework into 
+   TensorFlow's API.
 1. Non-trivial, otherwise the function should be copied to the client side.
-1. Widely used in the implementation of TF public APIs (i.e. new functionality 
-   isn’t immediately added to the tf.internal namespace)
-1. Has at least two downstream libraries which are known to need it.
+1. Widely used in the implementation of TF public APIs or test TF related 
+   features. (i.e. new functionality isn’t immediately added to the tf._internal
+   namespace)
 
 TF API owners will review the new API proposal, and follow the existing review 
 process for core TF API.
 
 
+### Lifespan of the internal API
+The internal API should serve as a temporary solution for the client side, and 
+they should gradually migrate to alternative public TF core API, or other 
+approaches. Once all the usage for a certain internal API has been removed, it 
+will be deleted from the internal API namespace.
+
+
 ### Documentation and Docstring
 The "internal" API should have the same style and standard as the core 
 TensorFlow API, which is documented [here](https://github.com/tensorflow/community/blob/master/governance/api-reviews.md#docstrings). 
-We should explicitly list out the difference between "internal" API and core
-API, and also choose a different place on tensorflow.org so that existing user 
-are not confused.
+We will hide this from the documentation site, since the end users are the 
+target audience for this API.
 
 ### Naming and sub namespace
 Similar "internal" APIs should be grouped together as sub namespaces, e.g., test 
 related APIs should live under "tf.internal.test". This is aligned with the 
 existing TF naming conversion.
 
-Try not to export experimental APIs since the "internal" API should be mature 
-enough.
 
 ### Current candidate
 The following list is created from the private TF method usage within Keras, 
@@ -110,9 +112,3 @@ and will discuss with the API owner on a case to case basis.
    to add are still high level APIs and utility functions. 
 1. By Martin <b>"tf.\_internal"</b>: the extra "_" emphasis in the pythonic way
    that this is for private usage.
-
-
-## Questions and Discussion Topics
-
-1. Naming of the API namespace.
-
