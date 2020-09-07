@@ -93,7 +93,7 @@ table OperatorCode {
 ### How to Read `builtin_code`
 
 The builtin operator code value will co-exist in the two fields. Some old schema
-version three models will have the default value in the new field. Always the
+version 3 models will have the default value in the new field. Always the
 maximum value of the two fields always will be the correct value.
 
 ```
@@ -111,13 +111,13 @@ maximum value of the two fields always will be the correct value.
 
 The details will be described in the following sections.
 
-##### Supporting schema version three models
+##### Supporting schema version 3 models
 
 The TensorFlow Lite library built after the proposal will read the existing
 `deprecated_builtin_code` field from old model files.
 
-The new `builtin_code` field is not available in the v3 models. Flatbuffer
-library will feed zero value, which is the default value in the v3a schema. The
+The new `builtin_code` field is not available in the version 3 models. Flatbuffer
+library will feed zero value, which is the default value in the version 3a schema. The
 actual builtin operatore code value will exist in the deprecated, renamed
 `deprecated_builtin_code` field. At the same time, it implies that
 `deprecated_builtin_code` >= `builtin_code` and the maximum value of the two
@@ -156,9 +156,9 @@ BuiltinOperator GetBuiltinCode(const OperatorCodeT *op_code);
 The above library also provides the following `OperatorCode` table object
 creation methods for backward compatibility.
 
-These are manually copied from the flatbuffer generated code from schema v3.
-They serve as overloads for the v3a's CreateOperatorCode functions in
-schema_generated.h and enable code that still assumes flatbuffer schema v3 to be
+These are manually copied from the flatbuffer generated code from schema version 3.
+They serve as overloads for the version 3a's CreateOperatorCode functions in
+schema_generated.h and enable code that still assumes flatbuffer schema version 3 to be
 unchanged with the inclusion of the schema_utils header.
 
 ```
