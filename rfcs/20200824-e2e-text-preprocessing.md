@@ -2,7 +2,7 @@ This RFC will be open for comment until Friday, September 4th, 2020.
 
 # RFC: End-to-end text preprocessing with TF.Text
 
-| Status        | (Proposed)                                                            |
+| Status        | Accepted                                                            |
 :-------------- |:----------------------------------------------------------------------|
 | **RFC #**     | [283](https://github.com/tensorflow/community/pull/283)               |
 | **Author(s)** | Terry Huang (Google), Arno Eigenwillig (Google), Chen Chen (Google)   |
