@@ -5,7 +5,7 @@
 | **RFC #**     | [266](https://github.com/tensorflow/community/pull/266) |
 | **Author(s)** | Anna Revinskaya (annarev@google.com), Jeremy Lau (lauj@google.com) |
 | **Sponsor**   | Jeremy Lau (lauj@google.com)                            |
-| **Updated**   | 2020-07-16                                              |
+| **Updated**   | 2020-09-09                                              |
 
 ## Objective
 
@@ -242,10 +242,7 @@ and templating approaches. Key findings are summarized below:
     multiplication, division, addition) was only 0.3% slower on mobile with
     inheritance compared to templates. The benchmark was run on a real device (Pixel 3) with ABI: arm64-v8a and SDK version: 29.
 *   [basic\_ops\_benchmark](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/basic_ops_benchmark_test.cc?q=basic_ops_benchmark_test)
-    with inheritance is significantly slower: ~7% (median) or ~19% (mean)
-    (running on Linux). Note that this difference was measured *without* Kernel
-    Fallback. Adding inheritance would impact all existing TensorFlow kernels
-    even those that don't support Kernel Fallback.
+    with inheritance was originally measured to be significantly slower: ~7% (median). However, we determined that the regression goes away if we use `final` keywords. (More details in [Appendix 2](#appendix-2-extension-options).)
 *   Binary size increase when using templates compared to inheritance is
     estimated at 2.6% (based on adding `AddN` op).
     
@@ -260,7 +257,7 @@ that calls per-device pure-virtual implementations.
 
 We will then introduce `TFRTOpKernelConstruction` and `TFRTOpKernelContext`
 subclasses that implement `OpKernelConstructionInterface` and
-`OpKernelContextInterface` in terms of TFRT data structures. Example how
+`OpKernelContextInterface` in terms of TFRT data structures. Here's an example of how
 `TFRTOpKernelConstruction` might look like:
 
 ```cpp
@@ -745,7 +742,7 @@ REGISTER_FALLBACK_KERNEL(
    </td>
    <td>Same
    </td>
-   <td>Increase (vtable lookups) (negligible for model benchmarks, 7% median/19% mean increase for `basic_ops_benchmark`)
+   <td>We expect increase due to vtable lookups. However, increase is negligible (0-2%) in our benchmarks when using `final` keywords *
    </td>
   </tr>
   <tr>
@@ -761,7 +758,7 @@ REGISTER_FALLBACK_KERNEL(
    </td>
    <td>Increase the most (2.6% estimate for AddN)
    </td>
-   <td>Increase in some cases*
+   <td>Increase in some cases**
    </td>
   </tr>
   <tr>
@@ -790,14 +787,15 @@ REGISTER_FALLBACK_KERNEL(
   </tr>
 </table>
 
-\* Increase will happen when we have intermediate subclass of `OpKernel`. For example, [AveragePoolingOp](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/avgpooling_op.cc;l=56?q=%22:%20public%20UnaryOp%22) extends `UnaryOp` and `UnaryOp` extends `OpKernel`. In this case, `UnaryOp` is the *intermediate subclass*. Now that a kernel can inherit either from `OpKernel` or `OpKernelBase`, we would need two implementations: `UnaryOp` and `UnaryOpBase` respectively. Kernels that support Kernel Fallback and inherit `UnaryOp` now will instead switch to inherit `UnaryOpBase`. Addition of `UnaryOpBase` increases binary size.
+
+&ast; We initially measured a ~7% increase in latency for [basic_ops_benchmark](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/basic_ops_benchmark_test.cc;l=65;drc=51caa2b03f2975be51ab3f03999f35046b34f4af) . This benchmark runs a series of scalar multiplications and devisions and primarily measures kernel overhead. However, we determined that declaring `OpKernelContext` and `OpKernelConstruction` final gets read of this regression. `final` helps because a call made by a kernel is the tip of the iceberg - the called functions then make multiple calls to other functions in the same class. For example, [OpKernelContext::forward_input_or_allocate_output](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/framework/op_kernel.h;l=1647;drc=b64dfc0c63defad2704f224dff2aa3cf97469f91) implementation calls >10 other functions in `OpKernelContext`.
+
+
+&ast;&ast; Increase will happen when we have intermediate subclass of `OpKernel`. For example, [AveragePoolingOp](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/avgpooling_op.cc;l=56?q=%22:%20public%20UnaryOp%22) extends `UnaryOp` and `UnaryOp` extends `OpKernel`. In this case, `UnaryOp` is the *intermediate subclass*. Now that a kernel can inherit either from `OpKernel` or `OpKernelBase`, we would need two implementations: `UnaryOp` and `UnaryOpBase` respectively. Kernels that support Kernel Fallback and inherit `UnaryOp` now will instead switch to inherit `UnaryOpBase`. Addition of `UnaryOpBase` increases binary size.
 
 ### Selected approach
 
-Currently we are thinking of proceeding with the inheritance approach.
-
-Inheritance seems to add negligible overhead to kernels for most benchmarks that we ran.
-However, it does introduce a ~7% median, ~19% mean penalty for [basic_ops_benchmark](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/basic_ops_benchmark_test.cc?q=basic_ops_benchmark&ss=tensorflow%2Ftensorflow) which runs a series of scalar multiplications and is used to measure kernel overhead.
+Currently we are thinking of proceeding with the inheritance approach as it doesn't seem to cause a significant performance regression based on our benchmarks.
 
 Therefore, we expect that using inheritance would not add a noticeable overhead in most real world models. At the same time, inheritance can simplify code structure and debugging.
 
