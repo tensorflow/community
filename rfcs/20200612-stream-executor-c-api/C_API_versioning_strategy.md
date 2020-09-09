@@ -42,12 +42,14 @@ This section outlines when to update version numbers specific to SE C API
   eventually deprecating the member with the old name.
 * Fields that cannot be 0 or `NULL` can be deprecated in a backwards compatible
   manner by zero-initialization. 
-  * Plug-ins must perform input validation on these fields for 0 and `NULL`
-    before consuming them.
+  * If the field is set by core TensorFlow, plug-ins must perform input validation
+    on these fields for 0 and `NULL` before accessing them.
       * Plug-ins know the fields are deprecated when they find 0 or `NULL` in
         these fields.
+  * If the field is set by plug-in, TF can check if the field is non-zero (or not
+    `NULL`) and print a warning if so.
   * Such fields must be explicitly marked by comments, to ensure all plug-ins
-    have consistent behavior (e.g., non of the plug-ins is using 0 or `NULL` as
+    have consistent behavior (e.g., none of the plug-ins is using 0 or `NULL` as
     a special case). See `// 0 is no-op` and `// NULL is no-op` in the 
     [By value inspection](#By-value-inspection) section for example.
 
@@ -240,7 +242,7 @@ renaming device_handle to dev_handle) or changing of member types (e.g., from
 `int` to `float`) are considered as
 [deprecation with extension](#Deprecation-with-extension).
 
-
+The following code snippet shows deprecation of `new_field1`.
 ```diff
 #define SE_MAJOR 1
 - #define SE_MINOR 1
@@ -289,8 +291,8 @@ void take_toy(const Toy* toy) {
 ```
 
 The producer, being older, initializes the recently deprecated `new_field1`.
-Since `take_toy` does not access it anymore, `new_field1` will be safely ignored
-(even though it was initialized).
+Since consumer's `take_toy` does not access it anymore, `new_field1` will be
+safely ignored (even though it was initialized).
 
 ### Producer Has Newer Header Files
 
@@ -308,7 +310,7 @@ Toy* create_toy() {
 // Consumer implementation has v1.1.0 headers.
 void take_toy(const Toy* toy) {
 + // `new_field1` is `NULL` so it is safely ignored.
-+ // Can also add code raise an error here when `NULL` is detected.
++ // Can also add code to raise an error here when `NULL` is detected.
   if (toy->struct_size > offsetof(Toy, new_field1) && new_field1 != NULL) {
     // Safe to access `new_field1`.
   }
@@ -324,7 +326,7 @@ This way, plug-ins can safely remove implementation of deprecated functionality.
 
 This is the more common form of deprecation where the struct is extended with a
 new attribute that replaces an existing one. The analysis is the same as
-[Adding functionality](#Adding-functionality) and
+[Extending functionality](#Extending-functionality) and
 [Deprecating functionality](#Deprecating-functionality) combined.
 General guidelines:
 * Add comments saying which field will be deprecated and which one will replace
