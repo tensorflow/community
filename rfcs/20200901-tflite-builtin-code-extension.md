@@ -36,8 +36,8 @@ enum BuiltinOperator : byte {
 ```
 
 TensorFlow Lite keeps extending to support more domains in ML and users require
-more builtin operators to increase ML model coverage on device, for example,
-Hash table support and so on.
+more builtin operators to increase ML model coverage on device, for example Hash
+table support and so on.
 
 ### Compatibility issues
 
@@ -84,7 +84,7 @@ table OperatorCode {
   // This field is introduced for resolving op builtin operator code shortage problem
   // (the original BuiltinOperator enum field was represented as a byte).
   // This field will be used when the value of the extended builtin_code field
-  // has greater than BuiltinOperator_PLACEHOLDER_FOR_GREATER_OP_CODES.
+  // is greater than BuiltinOperator_PLACEHOLDER_FOR_GREATER_OP_CODES.
   builtin_code:BuiltinOperator;
 }
 
@@ -92,9 +92,10 @@ table OperatorCode {
 
 ### How to Read `builtin_code`
 
-The builtin operator code value will co-exist in the two fields. Some old schema
-version 3 models will have the default value in the new field. Always the
-maximum value of the two fields always will be the correct value.
+The builtin operator code value will co-exist in the two fields. Old schema
+version 3 models will have the default value in the new field. For those old
+schema models, the `deprecated_builtin_code` field should be read when the
+default value is set in the new `builtin_code` field.
 
 ```
   BuiltinOperator builtin_code = (op_code->builtin_code ? op_code->builtin_code
@@ -118,9 +119,7 @@ The TensorFlow Lite library built after the proposal will read the existing
 The new `builtin_code` field is not available in the version 3 models. Flatbuffer
 library will feed zero value, which is the default value in the version 3a schema. The
 actual builtin operator code value will exist in the deprecated, renamed
-`deprecated_builtin_code` field. At the same time, it implies that
-`deprecated_builtin_code` >= `builtin_code` and the maximum value of the two
-fields will be same as `deprecated_builtin_code'.
+`deprecated_builtin_code` field.
 
 ##### Compatibility with old TensorFlow Lite libraries
 
