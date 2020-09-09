@@ -3,9 +3,9 @@
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [257](https://github.com/tensorflow/community/pull/257) |
-| **Author(s)** | Anna Revinskaya (annarev@google.com), Penporn Koanantakool (penporn@google.com), Russell Power (power@google.com), Yi Situ (yisitu@google.com) |
+| **Author(s)** | Anna Revinskaya (annarev@google.com), Penporn Koanantakool (penporn@google.com), Yi Situ (yisitu@google.com), Russell Power (power@google.com) |
 | **Sponsor**   | Gunhan Gulsoy (gunan@google.com)                        |
-| **Updated**   | 2020-06-16                                              |
+| **Updated**   | 2020-07-15                                              |
 
 # Objective
 
@@ -85,6 +85,13 @@ A decoupled way to add a new device to TensorFlow.
 is quite large and some of its methods are only sporadically used. Therefore, we
 plan to wrap only a subset of key StreamExecutorInterface functionality. We decided on this subset based on the PluggableDevice usecase as well as potential future devices such as TPUs.
 
+Implementation conventions:
+
+* Structs include `struct_size` parameter. This parameter should be filled in both by TensorFlow and the plugin and can be checked to determine which struct fields are available for current version of TensorFlow.
+* Struct name prefixes indicates which side of the API is responsible for populating the struct:
+  * `SE_` prefix: filled by TensorFlow.
+  * `SP_` prefix: filled by plugins, except `struct_size` which is also filled by TensorFlow when TensorFlow passes it to a callback.
+
 See proposed C API below:
 
 ```cpp
@@ -93,15 +100,15 @@ See proposed C API below:
 
 #define SE_MAJOR 0
 #define SE_MINOR 0
-#define SE_REVISION 1
+#define SE_PATCH 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef SE_Stream_st* SE_Stream;
-typedef SE_Event_st* SE_Event;
-typedef SE_Timer_st* SE_Timer;
+typedef SP_Stream_st* SP_Stream;
+typedef SP_Event_st* SP_Event;
+typedef SP_Timer_st* SP_Timer;
 typedef TF_Status* (*TF_StatusCallbackFn)(void*);
 
 #ifndef TF_BOOL_DEFINED
@@ -112,24 +119,16 @@ typedef TF_Status* (*TF_StatusCallbackFn)(void*);
 #define TF_OFFSET_OF_END(TYPE, MEMBER) (offsetof(TYPE, MEMBER) + sizeof(((TYPE *)0)->MEMBER))
 #endif // TF_OFFSET_OF_END
 
-typedef struct SE_PlatformId {
-  size_t struct_size;
-  void* ext;
-  void* id;  // aka stream_executor::Platform::Id
-} SE_PlatformId;
-
-#define SE_PLATFORMID_STRUCT_SIZE TF_OFFSET_OF_END(SE_PlatformId, id)
-
-typedef struct SE_TimerFns {
+typedef struct SP_TimerFns {
   size_t struct_size;
   void* ext;
   uint64_t (*nanoseconds)(SE_Timer timer);
   uint64_t (*microseconds)(SE_Timer timer);
-} SE_TimerFns;
+} SP_TimerFns;
 
-#define SE_TIMER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(SE_TimerFns, microseconds)
+#define SP_TIMER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(SP_TimerFns, microseconds)
 
-typedef struct SE_AllocatorStats {
+typedef struct SP_AllocatorStats {
   size_t struct_size;
   void* ext;
   int64_t num_allocs;
@@ -147,9 +146,9 @@ typedef struct SE_AllocatorStats {
   int64_t bytes_reservable_limit;
 
   int64_t largest_free_block_bytes;
-} SE_AllocatorStats;
+} SP_AllocatorStats;
 
-#define SE_ALLOCATORSTATS_STRUCT_SIZE TF_OFFSET_OF_END(SE_AllocatorStats, largest_free_block_bytes)
+#define SP_ALLOCATORSTATS_STRUCT_SIZE TF_OFFSET_OF_END(SP_AllocatorStats, largest_free_block_bytes)
 
 typedef enum SE_EventStatus {
   SE_EVENT_UNKNOWN,
@@ -166,26 +165,30 @@ typedef struct SE_Options {
 
 #define SE_OPTIONS_STRUCT_SIZE TF_OFFSET_OF_END(SE_Options, ordinal)
 
-typedef struct SE_Device {
+typedef struct SE_DeviceMemoryBase {
   size_t struct_size;
   void* ext;
+  void* opaque;
+  uint64_t size;
+  uint64_t payload;
+} SE_DeviceMemoryBase;
+
+#define SE_DEVICE_MEMORY_BASE_STRUCT_SIZE TF_OFFSET_OF_END(SE_DeviceMemoryBase, payload)
+
+typedef struct SP_Device {
+  size_t struct_size;
+  void* ext;  // free-form field filled by plugin
   const char* name;
   size_t name_len;
 
   // Device vendor can store handle to their device representation
   // here.
   void* device_handle;
+} SP_Device;
 
-  // Any kind of data that plugin device might want to store.
-  void* data;
-  
-  // TensorFlow will set this field to `data` passed with SE_PlatformParams.
-  void* platform_data;
-} SE_Device;
+#define SP_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SP_Device, device_handle)
 
-#define SE_DEVICE_STRUCT_SIZE TF_OFFSET_OF_END(SE_Device, data)
-
-typedef struct SE_StreamExecutor {
+typedef struct SP_StreamExecutor {
   size_t struct_size;
   void* ext;
 
@@ -196,155 +199,191 @@ typedef struct SE_StreamExecutor {
   // memory_space is reserved for a potential future usage and should be set
   // to 0.
   TF_DeviceMemoryBase* (*allocate)(
-      SE_Device* se, uint64_t size, int64_t memory_space);
+      SP_Device* se, uint64_t size, int64_t memory_space);
 
 
-  // Deallocate the DeviceMemory previously allocated via this interface.
+  // Deallocate the device memory previously allocated via this interface.
   // Deallocation of a nullptr-representative value is permitted.
   void (*deallocate)(
-      SE_Device* se, TF_DeviceMemoryBase* memory);
+      SP_Device* se, SE_DeviceMemoryBase* memory);
 
 
-  // Return allocator statistics.
-  TF_BOOL (*get_allocator_stats)(SE_Device* executor,
-                              SE_AllocatorStats* stats);
+  // Fill SP_AllocatorStats with allocator statistics.
+  TF_BOOL (*get_allocator_stats)(SP_Device* executor,
+                                 SP_AllocatorStats* stats);
   // Returns the underlying device memory usage information, if it is available.
   // If it is not available (false is returned), free/total may not be
   // initialized.
   TF_BOOL (*device_memory_usage)(
-      SE_Device* executor, int64_t* free, int64_t* total);
+      SP_Device* executor, int64_t* free, int64_t* total);
+  
+  // Allocate host memory.
+  void* (*host_memory_allocate)(TF_Device* device, uint64_t size);
+  
+  // Deallocate host memory.
+  void (*host_memory_deallocate)(TF_Device* device, void *mem);
 
+  // Allocates unified memory space of the given size, if supported. Support
+  // should be added by setting `supports_unified_memory` field in
+  // `DeviceDescription`.
+  void* (*unified_memory_allocate)(TF_Device* device, uint64_t bytes);
+  
+  // Deallocates unified memory space previously allocated with
+  // `unified_memory_allocate`.
+  void (*unified_memory_deallocate)(TF_Device* device, void* location);
 
   /*** STREAM CALLBACKS ***/
   // Creates SE_Stream. This call should also Allocate stream
   // resources on the underlying platform and initializes its
   // internals.
-  void (*create_stream)(SE_Device* executor, SE_Stream*, TF_Status*);
+  void (*create_stream)(SP_Device* executor, SP_Stream*, TF_Status*);
 
   // Destroys SE_Stream and deallocates any underlying resources.
-  void (*destroy_stream)(SE_Device* executor, SE_Stream stream);
+  void (*destroy_stream)(SP_Device* executor, SP_Stream stream);
 
   // Causes dependent to not begin execution until other has finished its
   // last-enqueued work.
   TF_BOOL (*create_stream_dependency)(
-      SE_Device* executor, SE_Stream dependent,
-      SE_Stream other);
+      SP_Device* executor, SP_Stream dependent,
+      SP_Stream other);
 
   // Without blocking the device, retrieve the current stream status.
-  void (*get_status)(SE_Device* executor, SE_Stream stream,
+  void (*get_status)(SP_Device* executor, SP_Stream stream,
                      TF_Status* status);
 
   /*** EVENT CALLBACKS ***/
-  // Create SE_Event. Performs platform-specific allocation and initialization of an event.
+  // Create SP_Event. Performs platform-specific allocation and initialization of an event.
   void (*create_event)(
-      SE_Device* executor, SE_Event* event, TF_Status* status);
+      SP_Device* executor, SP_Event* event, TF_Status* status);
 
   // Destroy SE_Event and perform any platform-specific deallocation and cleanup of an event.
   void (*destroy_event)(
-      SE_Device* executor, SE_Event event, TF_Status* status);
+      SP_Device* executor, SP_Event event, TF_Status* status);
 
   // Requests the current status of the event from the underlying platform.
   SE_EventStatus (*poll_for_event_status)(
-      SE_Device* executor, SE_Event event);
+      SP_Device* executor, SP_Event event);
   // Inserts the specified event at the end of the specified stream.
   void (*record_event)(
-      SE_Device* executor, SE_Stream stream,
-      SE_Event event, TF_Status* status);
+      SP_Device* executor, SP_Stream stream,
+      SP_Event event, TF_Status* status);
 
   // Wait for the specified event at the end of the specified stream.
   void (*wait_for_event)(
-      SE_Device* executor, SE_Stream stream,
-      SE_Event event, TF_Status* status);
+      SP_Device* executor, SP_Stream stream,
+      SP_Event event, TF_Status* status);
 
   /*** TIMER CALLBACKS ***/
   // Creates TF_Timer. Allocates timer resources on the underlying platform and initializes its
   // internals, setting `timer` output variable. Sets values in `timer_fns` struct.
-  void (*create_timer)(SE_Device* executor, SE_Timer* timer, SE_TimerFns* timer_fns, TF_Status* status);
+  void (*create_timer)(SP_Device* executor, SP_Timer* timer, SP_TimerFns* timer_fns, TF_Status* status);
 
   // Destroy timer and deallocates timer resources on the underlying platform.
-  void (*destroy_timer)(SE_Device* executor, SE_Timer timer, SE_TimerFns* timer_fns);
+  void (*destroy_timer)(SP_Device* executor, SP_Timer timer, SP_TimerFns* timer_fns);
 
   // Records a start event for an interval timer.
   TF_BOOL (*start_timer)(
-      SE_Device* executor, SE_Stream stream, SE_Timer timer);
+      SP_Device* executor, SP_Stream stream, SP_Timer timer);
 
 
   // Records a stop event for an interval timer.
   TF_BOOL (*stop_timer)(
-      SE_Device* executor, SE_Stream stream, SE_Timer timer);
+      SP_Device* executor, SP_Stream stream, SP_Timer timer);
 
   /*** MEMCPY CALLBACKS ***/
   // Enqueues a memcpy operation onto stream, with a host destination location
   // host_dst and a device memory source, with target size size.
-  TF_BOOL (*memcpy_to_host)(
-      SE_Device* executor, SE_Stream stream,
+  TF_BOOL (*memcpy_dtoh)(
+      SP_Device* executor, SP_Stream stream,
       void* host_dst,
       const SE_DeviceMemoryBase* device_src,
       uint64_t size);
 
   // Enqueues a memcpy operation onto stream, with a device destination location
   // and a host memory source, with target size size
-  TF_BOOL (*memcpy_from_host)(
-      SE_Device* executor, SE_Stream stream,
+  TF_BOOL (*memcpy_htod)(
+      SP_Device* executor, SP_Stream stream,
       SE_DeviceMemoryBase* device_dst,
       const void* host_src, uint64_t size);
+      
+  // Enqueues a memcpy operation onto stream, with a device destination
+  // location and a device memory source, with target size `size`.
+  void (*memcpy_dtod)(const SP_Device* device, SP_Stream stream,
+                      SP_DeviceMemoryBase* device_dst,
+                      const SP_DeviceMemoryBase* device_src, uint64_t size,
+                      TF_Status* status);
+      
+  // Blocks the caller while a data segment of the given size is
+  // copied from the device source to the host destination.
+  TF_BOOL (*sync_memcpy_dtoh)(
+      SP_Device* executor,
+      void* host_dst,
+      const SE_DeviceMemoryBase* device_src,
+      uint64_t size);
 
-  // Causes the host code to synchronously wait for operations enqueued onto
-  // stream to complete. Effectively a join on the asynchronous device
-  // operations enqueued on the stream before this program point.
-  void (*block_host_until_done)(
-      SE_Device* executor, SE_Stream stream,
-      TF_Status* status);
+  // Blocks the caller while a data segment of the given size is
+  // copied from the host source to the device destination.
+  TF_BOOL (*sync_memcpy_htod)(
+      SP_Device* executor,
+      SE_DeviceMemoryBase* device_dst,
+      const void* host_src, uint64_t size);
+      
+  // Blocks the caller while a data segment of the given size is copied from the
+  // device source to the device destination.
+  void (*sync_memcpy_dtod)(const SP_Device* device,
+                           SP_DeviceMemoryBase* device_dst,
+                           const SP_DeviceMemoryBase* device_src, uint64_t size,
+                           TF_Status* status);
+
+  // Causes the host code to synchronously wait for the event to complete.
+  void (*block_host_for_event)(
+      SP_Device* executor, SP_Event event, TF_Status* status);
 
   // Synchronizes all activity occurring in the StreamExecutor's context (most
   // likely a whole device).
-  TF_BOOL (*synchronize_all_activity)(SE_Device* executor);
+  TF_BOOL (*synchronize_all_activity)(SP_Device* executor);
 
   // Obtains metadata about the underlying device.
-  void (*fill_device_description)(SE_Device* executor,
-                               SE_DeviceDescription* description,
-                               TF_Status* status);
+  void (*fill_device_description)(SP_Device* executor,
+                                  SP_DeviceDescription* description,
+                                  TF_Status* status);
 
   // Enqueues on a stream a user-specified function to be run on the host.
-  TF_BOOL (*host_callback)(SE_Device* executor, SE_Stream* stream,
-                     TF_StatusCallbackFn callback_fn, void* ctx);
-} SE_StreamExecutor;
+  TF_BOOL (*host_callback)(SP_Device* executor, SP_Stream* stream,
+                           TF_StatusCallbackFn callback_fn, void* ctx);
+} SP_StreamExecutor;
 
-#define SE_STREAMEXECUTOR_STRUCT_SIZE TF_OFFSET_OF_END(SE_StreamExecutor, host_callback)
+#define SP_STREAMEXECUTOR_STRUCT_SIZE TF_OFFSET_OF_END(SP_StreamExecutor, host_callback)
 
-typedef struct SE_PlatformParams {
+typedef struct SP_Platform {
   size_t struct_size;
   
-  // Free form data set by plugin. It will be pre-filled
-  // in SE_Device passed to create_device.
-  void* data;
-  SE_PlatformId* id;
+  // Free form data set by plugin.
+  void* ext;
   
   // Platform name
   const char* name;
   size_t name_len;
   
-  // Device type name. Right now only GPU is supported.
+  // Device type name, for example GPU.
   char* type;
   size_t type_len;
   
   // Callbacks for creating/destroying.
   void (*create_device)(
-      SE_Device* device,  \\ out
+      SP_Device* device,  \\ out
       SE_Options* options, \\ in
       TF_Status* status);  \\ out
-  void (*destroy_device)(SE_Device* device);
+  void (*destroy_device)(SP_Device* device);
   
   // Callbacks for creating/destroying SE_StreamExecutor.
   void (*create_stream_executor)(
-      SE_StreamExecutor*,  \\ out
+      SP_StreamExecutor*,  \\ out
       TF_Status* status);  \\ out
-  void (*destroy_stream_executor)(SE_StreamExecutor* stream_executor);
-} SE_PlatformParams;
+  void (*destroy_stream_executor)(SP_StreamExecutor* stream_executor);
+} SP_Platform;
 
-#define SE_PLATFORM_PARAMS_SIZE TF_OFFSET_OF_END(SE_PlatformParams, destroy_stream_executor)
-
-TF_CAPI_EXPORT SE_Platform* SE_NewPlatform(SE_PlatformParams params);
+#define SP_PLATFORM_SIZE TF_OFFSET_OF_END(SP_Platform, destroy_stream_executor)
 
 typedef struct SE_PlatformRegistrationParams {
   size_t struct_size;
@@ -353,10 +392,10 @@ typedef struct SE_PlatformRegistrationParams {
   // StreamExecutor C API version.
   int32_t major_version;
   int32_t minor_version;
-  int32_t revision_version;
+  int32_t patch_version;
   
-  // Params must be filled by the plugin.
-  SE_PlatformParams params;
+  // Must be filled by the plugin.
+  SP_Platform platform;  // out
 } SE_PlatformRegistrationParams;
 
 #define SE_PLATFORM_REGISTRATION_PARAMS_SIZE TF_OFFSET_OF_END(SE_PlatformRegistrationParams, platform)
@@ -408,26 +447,26 @@ DeviceFactory::Register(type_str, new PluggableDeviceFactory(platform_name_str),
 
 ## PlatformId
 
-`SE_PlatformId.id` should be set to a unique identifier.
+StreamExecutor [Platform](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/stream_executor/platform.h;l=114) has an id parameter. This parameter will be hidden from the C API and set internally by TensorFlow instead.
 
 ## Usage example
 
 Define functions that create and destroy `SE_Device` and `SE_StreamExecutor`:
 
 ```cpp
-void create_device(SE_Device* device, SE_Options* options, TF_Status* status) {
+void create_device(SP_Device* device, SE_Options* options, TF_Status* status) {
   device->device_handle = get_my_device_handle();
   ...
 }
-void create_stream_executor(SE_StreamExecutor* se, TF_Status* status) {
+void create_stream_executor(SP_StreamExecutor* se, TF_Status* status) {
   se->memcpy_from_host = my_device_memcpy_from_host_function;
   ...
 }
-void destroy_device(SE_Device* device) {
+void destroy_device(SP_Device* device) {
   -- destroy device handle here --
   ...
 }
-void destroy_stream_executor(SE_StreamExecutor* stream_executor) {
+void destroy_stream_executor(SP_StreamExecutor* stream_executor) {
   -- perform any clean up needed for stream executor --
 }
 ```
@@ -436,9 +475,6 @@ Define `SE_InitializePlugin` that TensorFlow will call when registering the devi
 
 ```cpp
 void SE_InitializePlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
-  static const int32_t plugin_id_value = 123;
-  SE_PlatformId id{ SE_PLATFORMID_STRUCT_SIZE };
-  id.id = &plugin_id_value;
   int32_t visible_device_count = 2;
   
   std::string name = "MyDevice";
@@ -461,8 +497,8 @@ TensorFlow will call `InitializeSEPlugin` when registering the plugin.
 
 ## Stream/Timer/Event representation
 
-API extension would require defining SE\_Stream\_st, SE\_Event\_st and
-SE\_Timer\_st structs. From the point of view of TensorFlow, we will treat their
+API extension would require defining SP\_Stream\_st, SP\_Event\_st and
+SP\_Timer\_st structs. From the point of view of TensorFlow, we will treat their
 pointers as opaque.
 
 Underneath, StreamExecutor will rely on customized implementations of
@@ -475,8 +511,8 @@ For example, Stream customization might look as follows:
 ```cpp
 class CStream : public StreamInterface {
  public:
-  explicit CStream(SE_Device* device,
-                   SE_StreamExecutor* stream_executor) :
+  explicit CStream(SP_Device* device,
+                   SP_StreamExecutor* stream_executor) :
     device_(device), stream_executor_(stream_executor),
     stream_handle_(nullptr) {
   }
@@ -495,14 +531,14 @@ class CStream : public StreamInterface {
     }
   }
 
-  SE_Stream Handle() {
+  SP_Stream Handle() {
     return stream_handle_;
   }
 
  private:
-  SE_Device* device_;  // not owned
-  SE_StreamExecutor* stream_executor_;  // not owned
-  SE_Stream stream_handle_;
+  SP_Device* device_;  // not owned
+  SP_StreamExecutor* stream_executor_;  // not owned
+  SP_Stream stream_handle_;
 };
 ```
 
