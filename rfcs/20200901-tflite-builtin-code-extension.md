@@ -35,9 +35,9 @@ enum BuiltinOperator : byte {
 }
 ```
 
-TensorFlow Lite keeps extending more domains in ML and and users require more
-builtin operators to increase ML model coverage on device, for example, Hash
-table support and so on.
+TensorFlow Lite keeps extending to support more domains in ML and users require
+more builtin operators to increase ML model coverage on device, for example,
+Hash table support and so on.
 
 ### Compatibility issues
 
@@ -48,7 +48,7 @@ Lite.
 
 The compatibility issue of newly generated models, that will contain new builtin
 operators after this proposal's change, from old TensorFlow Lite libraries won't
-be issues because the TensorFlow Lite library's version always should be the
+be a problem because the TensorFlow Lite library's version always should be the
 same or the newer than the TensorFlow Lite Converter API's version for builtin
 operator availability.
 
@@ -84,7 +84,7 @@ table OperatorCode {
   // This field is introduced for resolving op builtin operator code shortage problem
   // (the original BuiltinOperator enum field was represented as a byte).
   // This field will be used when the value of the extended builtin_code field
-  // has greater than BulitinOperator_PLACEHOLDER_FOR_GREATER_OP_CODES.
+  // has greater than BuiltinOperator_PLACEHOLDER_FOR_GREATER_OP_CODES.
   builtin_code:BuiltinOperator;
 }
 
@@ -97,9 +97,8 @@ version 3 models will have the default value in the new field. Always the
 maximum value of the two fields always will be the correct value.
 
 ```
-  BuiltinOperator builtin_code = builtin_code = std::max(
-        op_code->builtin_code,
-        static_cast<BuiltinOperator>(op_code->deprecated_builtin_code));
+  BuiltinOperator builtin_code = (op_code->builtin_code ? op_code->builtin_code
+        : static_cast<BuiltinOperator>(op_code->deprecated_builtin_code));
 ```
 
 #### Handling compatibility issues
@@ -118,10 +117,10 @@ The TensorFlow Lite library built after the proposal will read the existing
 
 The new `builtin_code` field is not available in the version 3 models. Flatbuffer
 library will feed zero value, which is the default value in the version 3a schema. The
-actual builtin operatore code value will exist in the deprecated, renamed
+actual builtin operator code value will exist in the deprecated, renamed
 `deprecated_builtin_code` field. At the same time, it implies that
 `deprecated_builtin_code` >= `builtin_code` and the maximum value of the two
-fields will be same with `deprecated_builtin_code'.
+fields will be same as `deprecated_builtin_code'.
 
 ##### Compatibility with old TensorFlow Lite libraries
 
@@ -143,9 +142,9 @@ option.
 
 After the proposal is landed, the codes, that read builtin operator code from
 TensorFlow Lite Flatbuffer, requires accessing both `builtin_code` and
-`USE_DEPRECATED_BUILTIN_CODE` fields.
+`deprecated_builtin_code` fields.
 
-To avoid reduandant logics in a lot of places, the RFC proposes the following
+To avoid redundant logics in a lot of places, the RFC proposes the following
 helper functions in the new C++ library, `tensorflow/lite/schema:schema_utils`.
 
 ```
