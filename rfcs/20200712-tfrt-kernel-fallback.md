@@ -14,8 +14,7 @@ mobile devices by removing the need to execute them via the TensorFlow eager run
 calling kernels directly from the new [TFRT](https://github.com/tensorflow/runtime) TensorFlow runtime.
 
 Note that there is an effort to call existing kernels by delegating to
-TensorFlow eager runtime instead. This approach is called Runtime Fallback and
-corresponding RFC will be published soon. The goals of the two fallback
+TensorFlow eager runtime instead. This approach is called Runtime Fallback. The goals of the two fallback
 mechanisms are as follows:
 
 *   Runtime Fallback aims to reuse all current TensorFlow kernels in TFRT.
@@ -39,11 +38,13 @@ calls TensorFlow kernels without going through Eager runtime first. We plan to
 address the second high level goal by trimming down dependencies, switching to
 more compact proto representation, etc.
 
+Note that TensorFlow's current mobile solution is called [TensorFlow Lite](https://www.tensorflow.org/lite). At the same time, there is a work-in-progress effort to enable [TFRT](https://github.com/tensorflow/runtime) to run on mobile. This document focuses on the way TFRT would call kernels when running on mobile devices. Details of the way TFRT itself would be executed on mobile platforms are outside of the scope of this document.
+
+
 ### Op Coverage Goals
 
 First of all, we plan to target all the easier-to-support ops that don’t require
-implementing extensive pieces of infrastructure, but at the same time provide
-the most value to the TF Lite team.
+implementing extensive pieces of infrastructure.
 
 We analysed how many kernels we can support in the future and include our
 findings in the following spreadsheets. As we describe in
@@ -90,8 +91,7 @@ custom
     extra effort required.
 *   Gradients would not be supported by the first iteration of Kernel Fallback,
     but we might revisit it later.
-*   Exact details of TFRT integration are still being worked out by TFRT and TF
-    Lite teams. Since these teams might change the plan, exact details are not a
+*   Exact details of TFRT integration are still being worked out by TFRT and TensorFlow mobile teams. Since these teams might change the plan, exact details are not a
     part of this doc. The take away is that we will integrate kernel fallback
     following the approach they decide on.
 
@@ -104,7 +104,7 @@ pool of available ops on mobile devices, ideally supporting everything that full
 TensorFlow supports now.
 
 However, supporting TensorFlow ops on mobile devices presents some challenges.
-Specifically, binary size on mobile platforms should be restricted. TF Lite team
+Specifically, binary size on mobile platforms should be restricted. TensorFlow mobile team
 provided us with the following *ideal* numbers:
 
 *   100-200k overhead to call TF kernels
@@ -247,12 +247,11 @@ and templating approaches. Key findings are summarized below:
     estimated at 2.6% (based on adding `AddN` op).
     
 Right now, we are leaning towards using inheritance. Seems like time increase is
-only significant for running many scalar ops in a sequence - probably a rare use
-case in the real world. (See more details in [Appendix 2](#appendix-2-extension-options))
+only not significant. (See more details in [Appendix 2](#appendix-2-extension-options))
 
 To use inheritance, we will define `OpKernelConstructionInterface` and
 `OpKernelContextInterface` interfaces. Ideally, these interfaces should be pure
-virtual. However, we will have one exception - templated `eigen_device` method
+virtual. However, we will have some exception - for e.g. templated `eigen_device` method
 that calls per-device pure-virtual implementations.
 
 We will then introduce `TFRTOpKernelConstruction` and `TFRTOpKernelContext`
@@ -261,7 +260,7 @@ subclasses that implement `OpKernelConstructionInterface` and
 `TFRTOpKernelConstruction` might look like:
 
 ```cpp
-class TFRTOpKernelConstruction : public OpKernelConstructionInterface {
+class TFRTOpKernelConstruction final : public OpKernelConstructionInterface {
  public:
   explicit TFRTOpKernelConstruction(AttrMap attributes);
   ~TFRTOpKernelConstruction() override {};
@@ -348,7 +347,7 @@ op->Compute(&op_kernel_context);
 ## tfrt\_fallback.kernel\_fallback call structure
 
 We will be using the following conventions (essentially, these are based on
-Runtime Fallback work that will probably have RFC coming soon):
+Runtime Fallback work):
 
 *   Attributes are passed as key-value pairs, where both key and value are
     represented as strings.
@@ -506,7 +505,7 @@ between (such as tensor conversions).
 We also need to consider how kernel or runtime fallback will be selected. This
 could be a parameter at BEF file creation step. It might also be good to package
 both runtime and kernel fallback implementations in a BEF file to be selected at
-runtime.
+runtime (packaging both is only relevant for non-mobile usecase since it would prevent us from reducing binary size).
 
 ## Size Reduction
 
@@ -564,9 +563,6 @@ due to significant work involved.
     `OpKernelConsturction`.
 *   Speed up for lighter weight kernel calls.
 
-We will run benchmarks to check performance numbers as we work on the
-implementation.
-
 ### Dependencies
 
 No new dependencies.
@@ -576,7 +572,7 @@ No new dependencies.
 *   Build / startup time / binary size will be impacted by additional code added
     to implement Kernel Fallback. At the same time one of the goals of Kernel
     Fallback is to provide a lower-binary-size way to run existing TensorFlow
-    kernels in TF Lite.
+    kernels on mobile.
 *   Code will be maintained by TensorFlow DevInfra and TFRT teams.
 
 #### Current Status
