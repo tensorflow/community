@@ -419,7 +419,7 @@ typedef struct SP_StreamExecutor {
   void (*synchronize_all_activity)(const SP_Device* device, TF_Status* status);
 
   // Enqueues on a stream a user-specified function to be run on the host.
-  // `callback_arg` shall be passed as the first argument to `callback_fn`.
+  // `callback_arg` must be passed as the first argument to `callback_fn`.
   TF_Bool (*host_callback)(SP_Device* device, SP_Stream stream,
                            SE_StatusCallbackFn callback_fn, void* callback_arg);
 } SP_StreamExecutor;
@@ -452,7 +452,8 @@ typedef struct SP_Platform {
   size_t visible_device_count;
 
   // Whether this platform supports unified memory.
-  // Unified memory is a single memory address space accessible from any device.
+  // Unified memory is a single memory address space that virtualizes device and 
+  // host memory addresses. It is accessible to both the device and host.
   TF_Bool supports_unified_memory;
 } SP_Platform;
 
@@ -546,8 +547,6 @@ SE_PlatformRegistrationParams params;
 TF_Status status;
 
 initialize_fn(&params, &status);
-
-initialize_fn(&params, status);
    
 // Register new platform
 std::unique_ptr<stream_executor::internal::CPlatform> platform(
