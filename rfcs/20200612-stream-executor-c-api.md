@@ -90,12 +90,12 @@ StreamExecutor C API follows Semantic Versioning 2.0.0 ([semver](http://semver.o
 Each release version has a format `MAJOR.MINOR.PATCH`, as outlined in
 [TensorFlow version compatibility](https://www.tensorflow.org/guide/versions#semantic_versioning_20).
 We also use struct sizes to track compatibility. More details on functionality
-extension and deprecation in [StreamExecutor C API Versioning Strategy](20200612-stream-executor-c-api/C_API_versioning_strategy.md).
+extension and deprecation can be found in [StreamExecutor C API Versioning Strategy](20200612-stream-executor-c-api/C_API_versioning_strategy.md).
 
 The C API will have an initial bake-in period, where we won’t have any
 compatibility guarantees. However, we will make the best effort to perform any
 updates in a backwards compatible way. For example, we plan to keep track of
-struct sizes. 
+struct sizes.  During this period, the API will be kept at `MAJOR` version 0.
 
 The C API will be placed in [tensorflow/c/experimental](https://cs.opensource.google/tensorflow/tensorflow/+/refs/tags/v2.3.0:tensorflow/c/experimental/).
 We will consider moving the API out of the experimental directory once it is
@@ -103,16 +103,16 @@ more stable.
 
 ## Implementation Conventions
 
-* Struct prefix indicates whether struct fields should be filled by the plug-in or core implementation:
+* Struct prefix indicates whether struct fields should be filled by the plug-in or core TensorFlow implementation:
   * `SE_`: Set/filled by core, unless marked otherwise.
   * `SP_`: Set/filled by plug-in, unless marked otherwise.
   * This prefix rule only applies to structures. Enumerations and methods are all prefixed with `SE_`.
 * Structs begin with two fields:
   * `size_t struct_size`: Stores the unpadded size of the struct.
-  * `void* ext`: A free-form field that can be populated by a plugin in `SP_*` structs or potential future extension points in `SE_` structs.
-* We use `struct_size` for version checking.
-  * It is exempt from the `SE/SP` rule above and should be set both by core and plug-in.
-  * It can be checked to determine which struct fields are available for current version of TensorFlow.
+  * `void* ext`: A reserved field that may be populated by a plugin in `SP_*` structs or potential future extension points in `SE_` structs. Must be set to zero by default if it unused.
+* We use `struct_size` for version checking by both core and plug-in.
+  * It is exempt from the `SE/SP` rule above and must be set both by core and plug-in.
+  * It can be checked programmatically to determine which struct fields are available in the structure.
   * For example, `create_device` function receives `SP_Device*` as input with `struct_size` populated by core. The plug-in is responsible for setting `struct_size` as well, along with all other fields.
 * When a member is added to a struct, the struct size definition must be updated to use the new last member of the struct.
 
@@ -134,9 +134,9 @@ Core TensorFlow will register a new StreamExecutor platform as well as a new Ten
 2. Core TensorFlow populates `SE_PlatformRegistrationParams` and passes it in a call to `SE_InitPlugin`.
     * In `SE_InitPlugin`, plug-in populates `SE_PlatformRegistrationParams::SP_Platform` and `SE_PlatformRegistrationParams::SP_PlatformFns`.
 3. Core TensorFlow can now create a device, a stream executor, and a timer through functions in `SP_PlatformFns`.
-    * Core TensorFlow populates `SE_CreateDeviceParams` and pass it in a call to `SP_PlatformFns::create_device`. 
+    * Core TensorFlow populates `SE_CreateDeviceParams` and pass it as a parameter to  `SP_PlatformFns::create_device()`. 
         * Plug-in populates `SE_CreateDeviceParams::SP_Device`.
-    * Core TensorFlow populates `SE_CreateStreamExecutorParams` and pass it in a call to `SP_PlatformFns::create_stream_executor`.
+    * Core TensorFlow populates `SE_CreateStreamExecutorParams` and pass it to `SP_PlatformFns::create_stream_executor()`.
         * Plug-in populates `SE_CreateStreamExecutorParams::SP_StreamExecutor`.
     * Core TensorFlow sets `struct_size` in `SP_Timer` and pass it in a call to `SP_PlatformFns::create_timer_fns`.
         * Plug-in populates `SP_TimerFns`.
@@ -264,14 +264,14 @@ typedef struct SP_StreamExecutor {
   /*** ALLOCATION CALLBACKS ***/
   // Synchronously allocates `size` bytes on the underlying platform and returns
   // `SP_DeviceMemoryBase` representing that allocation. In the case of failure,
-  // nullptr is returned.
+  // NULL is returned.
   // `memory_space` is reserved for a potential future usage and should be set
   // to 0.
   void (*allocate)(const SP_Device* device, uint64_t size, int64_t memory_space,
                    SP_DeviceMemoryBase* mem);
 
   // Deallocate the device memory previously allocated via this interface.
-  // Deallocation of a nullptr-representative value is permitted.
+  // Deallocation of a NULL representative value is permitted.
   void (*deallocate)(const SP_Device* device, SP_DeviceMemoryBase* memory);
 
   // Allocates a region of host memory and registers it with the platform API.
