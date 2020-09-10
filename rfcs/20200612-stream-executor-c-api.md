@@ -231,7 +231,7 @@ typedef struct SP_DeviceMemoryBase {
 } SP_DeviceMemoryBase;
 
 #define SP_DEVICE_MEMORY_BASE_STRUCT_SIZE \
-  TF_OFFSET_OF_END(SP_DeviceMemoryBase, size)
+  TF_OFFSET_OF_END(SP_DeviceMemoryBase, payload)
 
 typedef struct SP_Device {
   size_t struct_size;
@@ -285,7 +285,7 @@ typedef struct SP_StreamExecutor {
   // Allocates unified memory space of the given size, if supported. Unified
   // memory support should be added by setting `supports_unified_memory` field
   // in `SP_Platform`.
-  void* (*unified_memory_allocate)(const SP_Device* device, uint64_t bytes);
+  void* (*unified_memory_allocate)(const SP_Device* device, uint64_t size);
 
   // Deallocates unified memory space previously allocated with
   // `unified_memory_allocate`. Unified
@@ -419,7 +419,7 @@ typedef struct SP_StreamExecutor {
   void (*synchronize_all_activity)(const SP_Device* device, TF_Status* status);
 
   // Enqueues on a stream a user-specified function to be run on the host.
-  // `callback_arg` should be passed as the first argument to `callback_fn`.
+  // `callback_arg` shall be passed as the first argument to `callback_fn`.
   TF_Bool (*host_callback)(SP_Device* device, SP_Stream stream,
                            SE_StatusCallbackFn callback_fn, void* callback_arg);
 } SP_StreamExecutor;
@@ -448,7 +448,7 @@ typedef struct SP_Platform {
   // Device type name, for example GPU. Must be null-terminated.
   const char* type;
 
-  // Number of visible devices
+  // Number of visible devices.
   size_t visible_device_count;
 
   // Whether this platform supports unified memory.
@@ -535,6 +535,7 @@ registration outlined in the [Usage Overview](#Usage overview) section.
 typedef void (*SEInitPluginFn)(SE_PlatformRegistrationParams*, TF_Status*);
 ...
 
+// On Windows, use `GetProcAddress` instead of `dlsym`.
 void* initialize_sym = dlsym(plugin_dso_handle, "SE_InitPlugin");
 if (!initialize_sym) {
   // Output error and skip this plug-in.
@@ -542,7 +543,9 @@ if (!initialize_sym) {
 SEInitPluginFn initialize_fn = reinterpret_cast<SEInitPluginFn>(initialize_sym);
 
 SE_PlatformRegistrationParams params;
-TF_Status* status = TF_NewStatus();
+TF_Status status;
+
+initialize_fn(&params, &status);
 
 initialize_fn(&params, status);
    
@@ -603,6 +606,8 @@ void SE_InitPlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
   std::string name = "MyDevice";
   std::string type = "GPU";
 
+  // Sets struct_size to a valid value, and zero initializes other attributes.
+  *params = { SE_PLATFORM_REGISTRATION_PARAMS_STRUCT_SIZE };
   params->platform->name = name.c_str();
   params->platform->type = type.c_str();
   params->platform->visible_device_count = visible_device_count;

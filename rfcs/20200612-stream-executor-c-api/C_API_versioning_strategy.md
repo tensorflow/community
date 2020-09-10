@@ -51,7 +51,7 @@ This section outlines when to update version numbers specific to SE C API
   * Such fields must be explicitly marked by comments, to ensure all plug-ins
     have consistent behavior (e.g., none of the plug-ins is using 0 or `NULL` as
     a special case). See `// 0 is no-op` and `// NULL is no-op` in the 
-    [By value inspection](#By-value-inspection) section for example.
+    [By value inspection](#by-value-inspection) section for example.
 
 
 ## Detecting Incompatibility
@@ -116,13 +116,13 @@ manner by leaving the attribute zero initialized.
 For example,
 
 ```c++
-struct example {
-  int cannot_be_zero;  // 0 is no-op.
-  void* cannot_be_null;  // NULL is no-op.
-  int can_be_zero;
+struct Example {
+  int32_t cannot_be_zero;         // 0 is no-op.
+  void* cannot_be_null;           // NULL is no-op.
+  int32_t can_be_zero;
   void* can_be_null;
-  int optional_zero_default;  // Optional. 0 by default.
-  void* optional_null_default;  // Optional. NULL by default.
+  int32_t optional_zero_default;  // Optional. 0 by default.
+  void* optional_null_default;    // Optional. NULL by default.
 };
 ```
 * `cannot_be_zero` and `cannot_be_null` here can be deprecated by
