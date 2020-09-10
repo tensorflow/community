@@ -572,7 +572,7 @@ No new dependencies.
 *   Build / startup time / binary size will be impacted by additional code added
     to implement Kernel Fallback. At the same time one of the goals of Kernel
     Fallback is to provide a lower-binary-size way to run existing TensorFlow
-    kernels on mobile.
+    kernels on mobile platforms.
 *   Code will be maintained by TensorFlow DevInfra and TFRT teams.
 
 #### Current Status
