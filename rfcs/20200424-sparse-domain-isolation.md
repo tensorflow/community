@@ -2,9 +2,10 @@
 
 | Status        | Draft                                             |
 :-------------- |:---------------------------------------------------- |
-| **Author(s)** | Haidong Rong (hudsonrong@tencent.com) Yafei Zhang(kimmyzhang@tencent.com) Jiandong Wang(adnywang@tencent.com) |
-| **Sponsor**   | Yuefeng Zhou (yuefengz@google.com)                   |
-| **Updated**   | 2020-07-14                                           |
+| **Author(s)** | Haidong Rong (hudsonrong@tencent.com) Yafei Zhang(kimmyzhang@tencent.com) Jiandong Wang(adnywang@tencent.com) Chuan Cheng(chuancheng@tencent.com) |
+| **Reviewers(s)** | Alexandre Passos(alexandre.tp@gmail.com) Bairen Yi(yibairen.byron@bytedance.com) |
+| **Sponsor**   | Yuefeng Zhou (yuefengz@google.com) Zhenyu Tan (tanzheny@google.com)                   |
+| **Updated**   | 2020-09-16                                           |
 
 ## Background
 
