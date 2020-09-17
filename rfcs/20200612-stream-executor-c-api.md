@@ -437,6 +437,151 @@ typedef struct SE_CreateStreamExecutorParams {
 #define SE_CREATE_STREAM_EXECUTOR_PARAMS_STRUCT_SIZE \
   TF_OFFSET_OF_END(SE_CreateStreamExecutorParams, stream_executor)
 
+typedef struct SP_Allocator {
+  size_t struct_size;
+  void* ext;  // free-form field set by plugin.
+
+  // Whether this platform supports unified memory.
+  // Unified memory is a single memory address space accessible from any device.
+  TF_Bool supports_unified_memory;
+} SP_Allocator;
+
+#define SP_ALLOCATOR_STRUCT_SIZE \
+  TF_OFFSET_OF_END(SP_Allocator, supports_unified_memory)
+
+typedef struct SP_AllocatorFns {
+  size_t struct_size;
+  void* ext;  // reserved for future use.
+
+  // Synchronously allocates `size` bytes on the underlying platform and returns
+  // `SP_DeviceMemoryBase` representing that allocation. In the case of failure,
+  // nullptr is returned.
+  // `memory_space` is reserved for a potential future usage and should be set
+  // to 0.
+  void (*allocate)(const SP_Device* device, const SP_Allocator* allocator,
+                   uint64_t size, int64_t memory_space,
+                   SP_DeviceMemoryBase* mem);
+
+  // Deallocate the device memory previously allocated via this interface.
+  // Deallocation of a nullptr-representative value is permitted.
+  void (*deallocate)(const SP_Device* device, const SP_Allocator* allocator,
+                     SP_DeviceMemoryBase* memory);
+
+  // Allocates a region of host memory and registers it with the platform API.
+  // Memory allocated in this manner is required for use in asynchronous memcpy
+  // operations, such as `memcpy_dtoh`.
+  void* (*host_memory_allocate)(const SP_Device* device,
+                                const SP_Allocator* allocator, uint64_t size);
+
+  // Deallocates a region of host memory allocated by `host_memory_allocate`.
+  void (*host_memory_deallocate)(const SP_Device* device,
+                                 const SP_Allocator* allocator, void* mem);
+
+  // Allocates unified memory space of the given size, if supported. Unified
+
+  // memory support should be added by setting `supports_unified_memory` field
+  // in `SP_Platform`.
+  void* (*unified_memory_allocate)(const SP_Device* device,
+                                   const SP_Allocator* allocator,
+                                   uint64_t bytes);
+
+  // Deallocates unified memory space previously allocated with
+  // `unified_memory_allocate`. Unified
+  // memory support should be added by setting `supports_unified_memory` field
+  // in `SP_Platform`.
+  void (*unified_memory_deallocate)(const SP_Device* device,
+                                    const SP_Allocator* allocator,
+                                    void* location);
+
+  // Fills SP_AllocatorStats with allocator statistics, if it is available.
+  // If it is not available, return false.
+  TF_Bool (*get_allocator_stats)(const SP_Device* device,
+                                 const SP_Allocator* allocator,
+                                 SP_AllocatorStats* stats);
+
+  // Fills the underlying device memory usage information, if it is
+  // available. If it is not available (false is returned), free/total need not
+  // be initialized.
+  TF_Bool (*device_memory_usage)(const SP_Device* device,
+                                 const SP_Allocator* allocator, int64_t* free,
+                                 int64_t* total);
+} SP_AllocatorFns;
+
+#define SP_ALLOCATOR_FNS_STRUCT_SIZE \
+  TF_OFFSET_OF_END(SP_AllocatorFns, device_memory_usage)
+
+typedef struct SP_CustomAllocator {
+  size_t struct_size;
+  void* ext;  // free-form data set by plugin
+} SP_CustomAllocator;
+
+#define SP_CUSTOM_ALLOCATOR_STRUCT_SIZE \
+  TF_OFFSET_OF_END(SP_CustomAllocator, ext)
+
+typedef struct SP_CustomAllocatorFns {
+  size_t struct_size;
+  void* ext;  // reserved for future use
+
+  // Synchronously allocates `size` bytes on the underlying platform and returns
+  // a pointer to that allocation. In the case of failure,
+  // nullptr is returned.
+  void* (*allocate_raw)(const SP_Device* device,
+                        const SP_CustomAllocator* allocator, size_t size,
+                        size_t alignment);
+
+  // Deallocate the device memory previously allocated via `allocate_raw`.
+  // Deallocation of a nullptr-representative value is permitted.
+  void (*deallocate_raw)(const SP_Device* device,
+                         const SP_CustomAllocator* allocator, void* ptr);
+
+  // Allocates a region of host memory.
+  void* (*host_allocate_raw)(const SP_Device* device,
+                             const SP_CustomAllocator* allocator,
+                             uint64_t size);
+
+  // Deallocates a region of host memory allocated by `host_allocate_raw`.
+  void (*host_deallocate_raw)(const SP_Device* device,
+                              const SP_CustomAllocator* allocator, void* mem);
+
+  // Fills SP_AllocatorStats with allocator statistics, if it is available.
+  // If it is not available, return false.
+  TF_Bool (*get_allocator_stats)(const SP_Device* device,
+                                 const SP_CustomAllocator* allocator,
+                                 SP_AllocatorStats* stats);
+
+  // Fills the underlying device memory usage information, if it is
+  // available. If it is not available (false is returned), free/total need not
+  // be initialized.
+  TF_Bool (*device_memory_usage)(const SP_Device* device,
+                                 const SP_CustomAllocator* allocator,
+                                 int64_t* free, int64_t* total);
+} SP_CustomAllocatorFns;
+
+#define SP_CUSTOM_ALLOCATOR_FNS_STRUCT_SIZE \
+  TF_OFFSET_OF_END(SP_CustomAllocatorFns, device_memory_usage)
+
+typedef struct SE_CreateAllocatorParams {
+  size_t struct_size;
+  void* ext;  // reserved for future use
+
+  SP_Allocator* allocator;
+  SP_AllocatorFns* allocator_fns;
+} SE_CreateAllocatorParams;
+
+#define SE_CREATE_ALLOCATOR_PARAMS_STRUCT_SIZE \
+  TF_OFFSET_OF_END(SE_CreateAllocatorParams, allocator_fns)
+
+typedef struct SE_CreateCustomAllocatorParams {
+  size_t struct_size;
+  void* ext;  // reserved for future use
+
+  SP_CustomAllocator* custom_allocator;
+  SP_CustomAllocatorFns* custom_allocator_fns;
+} SE_CreateCustomAllocatorParams;
+
+#define SE_CREATE_CUSTOM_ALLOCATOR_PARAMS_STRUCT_SIZE \
+  TF_OFFSET_OF_END(SE_CreateCustomAllocatorParams, custom_allocator_fns)
+
 typedef struct SP_Platform {
   size_t struct_size;
 
@@ -450,15 +595,10 @@ typedef struct SP_Platform {
 
   // Number of visible devices.
   size_t visible_device_count;
-
-  // Whether this platform supports unified memory.
-  // Unified memory is a single memory address space that virtualizes device and 
-  // host memory addresses. It is accessible to both the device and host.
-  TF_Bool supports_unified_memory;
 } SP_Platform;
 
 #define SP_PLATFORM_STRUCT_SIZE \
-  TF_OFFSET_OF_END(SP_Platform, supports_unified_memory)
+  TF_OFFSET_OF_END(SP_Platform, visible_device_count)
 
 typedef struct SP_PlatformFns {
   size_t struct_size;
@@ -488,10 +628,37 @@ typedef struct SP_PlatformFns {
 
   void (*destroy_timer_fns)(const SP_Platform* platform,
                             SP_TimerFns* timer_fns);
+  
+  // Set only one of `create_allocator` or `create_custom_allocator` functions
+  // below.
+
+  // Callback for creating an allocator that uses default TensorFlow allocation
+  // strategy (BFC: best-fit with coalescing). For more details, see
+  // https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/common_runtime/bfc_allocator.h.
+  // If `create_allocator` is set, then `create_custom_allocator` should *not*
+  // be set.
+  void (*create_allocator)(const SP_Platform* platform,
+                           SE_CreateAllocatorParams* params, TF_Status* status);
+  void (*destroy_allocator)(const SP_Platform* platform,
+                            SP_Allocator* allocator,
+                            SP_AllocatorFns* allocator_fns);
+
+  // Callback for creating a custom allocator. Allows using a custom allocation
+  // strategy.
+  // If `create_custom_allocator` is set, then `create_allocator` should *not*
+  // be set.
+  // Note: deallocator functions must be set in params.
+  void (*create_custom_allocator)(const SP_Platform* platform,
+                                  SE_CreateCustomAllocatorParams* params,
+                                  TF_Status* status);
+  void (*destroy_custom_allocator)(const SP_Platform* platform,
+                                   SP_CustomAllocator* allocator,
+                                   SP_CustomAllocatorFns* allocator_fns);
 } SP_PlatformFns;
 
 #define SP_PLATFORM_FNS_STRUCT_SIZE \
   TF_OFFSET_OF_END(SP_PlatformFns, destroy_timer_fns)
+
 
 typedef struct SE_PlatformRegistrationParams {
   size_t struct_size;
@@ -584,6 +751,10 @@ void create_timer_fns(const SP_Platform* platform, SP_TimerFns* timer_fns,
   timer_fns->nanoseconds = nanoseconds;
   ...
 }
+void create_allocator(const SP_Platform* platform, SP_CreateAllocatorParams* params,
+                      TF_Status* status) {
+  ...
+}
 void destroy_device(const SP_Platform* platform, SP_Device* device) {
   // Destroy device handle here.
 }
@@ -593,6 +764,9 @@ void destroy_stream_executor(const SP_Platform* platform,
 }
 void destroy_timer_fns(const SP_Platform* platform, SP_TimerFns* timer_fns) {
   // Destroy timer functions here.
+}
+void destroy_allocator(const SP_Platform* platform, SP_Allocator* allocator, SP_AllocatorFns* allocator_fns) {
+  // Clean up allocator here.
 }
 ```
 
@@ -616,6 +790,8 @@ void SE_InitPlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
   params->platform_fns->destroy_stream_executor = destroy_stream_executor;
   params->platform_fns->create_timer_fns = create_timer_fns;
   params->platform_fns->destroy_timer_fns = destroy_timer_fns;
+  params->platform_fns->create_allocator = create_allocator;
+  params->platform_fns->destroy_allocator = destroy_allocator;
 }
 ```
 
