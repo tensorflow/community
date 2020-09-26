@@ -403,96 +403,15 @@ Folded form: sharded variable is represented as a ShardedVariable instance.
 Expanded form: sharded variable is expanded to a list of variables.
 
 
-<table>
-  <tr>
-   <td>Where
-   </td>
-   <td>When
-   </td>
-   <td>Form
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2" >tf.Module
-   </td>
-   <td>as attribute (auto-tracked)
-   </td>
-   <td>Folded Form
-   </td>
-  </tr>
-  <tr>
-   <td>variables
-<p>
-trainable_variables
-   </td>
-   <td>Expanded form
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="2" >keras.layers.Layer
-   </td>
-   <td>as attribute (auto-tracked)
-   </td>
-   <td>Folded Form
-   </td>
-  </tr>
-  <tr>
-   <td>variables
-<p>
-trainable_variables
-<p>
-weights
-<p>
-trainable_weights
-<p>
-non_trainable_weights
-   </td>
-   <td>Expanded form
-   </td>
-  </tr>
-  <tr>
-   <td rowspan="3" >keras.optimizers.Optimizer
-   </td>
-   <td>Slot variables (training)
-   </td>
-   <td>Expanded form
-   </td>
-  </tr>
-  <tr>
-   <td>Slot variables (saving)
-   </td>
-   <td>Folded Form
-   </td>
-  </tr>
-  <tr>
-   <td>Hyperparameters
-   </td>
-   <td>Folded Form
-   </td>
-  </tr>
-  <tr>
-   <td>Checkpoint
-   </td>
-   <td>save
-   </td>
-   <td>Folded Form
-   </td>
-  </tr>
-  <tr>
-   <td>
-   </td>
-   <td>load
-   </td>
-   <td>Folded Form
-   </td>
-  </tr>
-  <tr>
-   <td>
-   </td>
-   <td>load to slot variable
-   </td>
-   <td>Expanded form
-   </td>
-  </tr>
-</table>
-
+| Where                      | When                          | Form          |
+|----------------------------|-------------------------------|---------------|
+| tf.Module                  | as attribute (auto-tracked)   | Folded Form   |
+| tf.Module                  | variables trainable_variables | Expanded Form |
+| keras.layers.Layer         | as attribute (auto-tracked)   | Folded Form   |
+| keras.layers.Layer         | variables trainable_variables | Expanded form |
+| keras.optimizers.Optimizer | Slot variables (training)     | Expanded form |
+| keras.optimizers.Optimizer | Slot variables (saving)       | Folded Form   |
+| keras.optimizers.Optimizer | Hyperparameters               | Folded Form   |
+| Checkpoint                 | save                          | Folded Form   |
+| Checkpoint                 | load                          | Folded Form   |
+| Checkpoint                 | load to slot variable         | Expanded form |
