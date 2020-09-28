@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Chenkai Kuang (chenkai@google.com)                   |
 | **Sponsor**   | Priya Gupta (priyag@google.com)                      |
-| **Updated**   | 2020-09-25                                           |
+| **Updated**   | 2020-09-28                                           |
 
 
 # Motivation
