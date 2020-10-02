@@ -2,7 +2,7 @@
 
 | Status        |  Proposed                                            |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [295](https://github.com/tensorflow/community/pull/295)|
 | **Author(s)** | Mingjie Zhou (benjamin_chou@outlook.com), |
 | **Sponsor**   | François Chollet (francois.chollet@gmail.com)                 |
 | **Updated**   | 2020-10-02                                           |
