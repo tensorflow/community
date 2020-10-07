@@ -69,10 +69,9 @@ We want to carry over the same design idea for sharded variable. Variables creat
 4. `ShardedVariable` will support checkpoint saving and loading, possibly from and to different numbers of shards.
 5. `ShardedVariable` can be saved to a SavedModel and served in both TF 1.x serving and TF 2.x serving APIs.
 
-With above, users' model code doesn't need to change w.r.t whether the variable is sharded or not. By conforming to the variable interface, we could also easily swap the implementation to other infrastructure that supports more general variable partitioning and model parallelism . Having that in mind, to avoid API churn, we'd like to refrain from exposing `ShardedVariable` as a public symbol. This, however, makes some advanced cases harder, e.g, creating a custom Keras layer that behaves differently for sharded and non-sharded variables. `ShardedVariable` symbol will be visible to Keras, since Keras libraries inevitably need to do instance checking of `ShardedVariable`.
+With above, users' model code doesn't need to change w.r.t whether the variable is sharded or not. By conforming to the variable interface, we could also easily swap the implementation to other infrastructure like DTensor. We plan to expose a public symbol `ShardedVariable` which is just an interface with attributes like `variables`. TF stacks including Keras are expected to use this interface to do instance checks. Users are allowed to use this interface, but not allowed to create ShardedVariable instances w/o strategy (as stated in the non-goals).
 
-One concern of #2 is that auto-concatenation is not always preferable in terms of performance. For example, to do `matmul(sharded_a, b)`, alternatively one can broadcast "b" to the parameter servers, do sharded multiplication on each parameter server, send the results back and finally concat the results. This is a flavor of model parallelism beyond the current implementations , and as stated in the non goals, we don't yet plan to address it in sharded variable.
-
+One concern of #2 is that auto-concatenation is not always preferable in terms of performance. For example, to do `matmul(sharded_a, b)`, alternatively one can broadcast "b" to the parameter servers, do sharded multiplication on each parameter server, send the results back and finally concat the results. This is a flavor of model parallelism beyond the current implementations , and we don't yet plan to support it as the first class citizen. Users can write custom code to achieve this if desirable.
 
 ### APIs Overview
 
