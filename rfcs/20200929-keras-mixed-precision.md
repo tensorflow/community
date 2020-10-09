@@ -12,14 +12,41 @@
 Make mixed precision easy to use in Keras.
 
 # Table of contents
-* [Objective](#objective)
+
+<!-- TOC -->
+
 * [Motivation](#motivation)
 * [User Benefit](#user-benefit)
 * [Design Proposal: Dtype policies](#design-proposal-dtype-policies)
+  * [Dtype policies overview](#dtype-policies-overview)
+  * [The global policy](#the-global-policy)
+  * [Layers](#layers)
+  * [A layer’s compute dtype](#a-layers-compute-dtype)
+  * [Layer variables](#layer-variables)
+  * [A policy’s loss scale](#a-policys-loss-scale)
+  * [Nesting layers](#nesting-layers)
+  * [Loss dtype](#loss-dtype)
+  * [Softmax and cross entropy](#softmax-and-cross-entropy)
+  * [All-reduce dtype](#all-reduce-dtype)
+  * [The _infer policy](#the-_infer-policy)
 * [Design Proposal: Loss scaling](#design-proposal-loss-scaling)
+  * [The currently existing LossScale class](#the-currently-existing-lossscale-class)
+  * [The new LossScale class](#the-new-lossscale-class)
+  * [LossScaleOptimizer Overview](#lossscaleoptimizer-overview)
+  * [LossScaleOptimizer API](#lossscaleoptimizer-api)
+  * [LossScaleOptimizer \_\_getattribute__ and \_\_setattr__ delegation](#lossscaleoptimizer-__getattribute__-and-__setattr__-delegation)
+  * [OptimizerWrapper](#optimizerwrapper)
+  * [All-reducing in float16](#all-reducing-in-float16)
 * [Differences between the proposal and the API in TF 2.3](#differences-between-the-proposal-and-the-api-in-tf-23)
+  * [Breaking changes](#breaking-changes)
+  * [Non-breaking changes](#non-breaking-changes)
 * [Alternatives Considered](#alternatives-considered)
+  * [Op-based autocasting API](#op-based-autocasting-api)
+  * [LossScaleGradientTape](#lossscalegradienttape)
+  * [Dynamically creating a loss scale optimizer class](#dynamically-creating-a-loss-scale-optimizer-class)
 * [Appendix](#appendix)
+  * [Difficulty in casting all Keras layer inputs](#difficulty-in-casting-all-keras-layer-inputs)
+  * [The deprecated graph rewrite API](#the-deprecated-graph-rewrite-api)
 
 # Motivation
 
@@ -49,7 +76,7 @@ Throughout this proposal, the phrase "float16" will sometimes be used to refer t
 
 ## Dtype policies overview
 
-Every layer will have a special object called a "dtype policy", determining the dtype of the layer’s computations and variables. A dtype policy additionally holds a LossScale object, which is described in the [Loss Scaling section](#design-proposal-loss-scaling) of this RFC. The dtype policy class will be exposed as `tf.keras.mixed_precision.Policy`, and is currently exposed in TensorFlow 2.3 as [`tf.keras.mixed_precision.experimental.Policy`](https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/experimental/Policy). 
+Every layer will have a special object called a "dtype policy", determining the dtype of the layer’s computations and variables. A dtype policy additionally holds a LossScale object, which is described in the [Loss Scaling section](#design-proposal-loss-scaling) of this RFC. The dtype policy class will be exposed as `tf.keras.mixed_precision.Policy`, and is currently exposed in TensorFlow 2.3 as [`tf.keras.mixed_precision.experimental.Policy`](https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/experimental/Policy).
 
 Each policy has a `compute_dtype` field and a `variable_dtype` field. The compute dtype specifies the dtype of a layer’s operations. A layer’s output is typically in the compute dtype. The variable dtype is the default dtype of the layer’s variables, although in a few rare cases a layer may create variables of a different dtype.
 
@@ -66,9 +93,9 @@ class Policy:
 
 The `name` argument determines the compute dtype and the variable dtype. It also determines the loss scale of the policy if the user does not pass in a loss scale to the constructor. The possible values for `name` are:
 
-*   Any dtype: The compute and variable dtype is `name`. By default, there is no loss scale. `name` can be a DType, or any value convertible to a DType (including strings).
-*   `"mixed_float16"`: The compute dtype is float16. The variable dtype is float32. The default loss scale is "dynamic".
-*   `"mixed_bfloat16"`: The compute dtype is bfloat16. The variable dtype is float32. There is no default loss scale, as loss scaling is only useful when float16 is used.
+* Any dtype: The compute and variable dtype is `name`. By default, there is no loss scale. `name` can be a DType, or any value convertible to a DType (including strings).
+* `"mixed_float16"`: The compute dtype is float16. The variable dtype is float32. The default loss scale is "dynamic".
+* `"mixed_bfloat16"`: The compute dtype is bfloat16. The variable dtype is float32. There is no default loss scale, as loss scaling is only useful when float16 is used.
 
 Unlike most TensorFlow functions with a `name` argument, the Policy `name` argument has a semantic impact on the TensorFlow program, and is not just used to uniquely identify an op or layer. The word "name" is chosen for lack of a better word to call the argument.
 
@@ -112,11 +139,11 @@ class Policy:
 
 In addition to this simplified Policy class, the actual Policy class will
 
-*   Expose `get_config` and `from_config` methods
-*   Have `name`, `compute_dtype` and `variable_dtype` be read-only
-*   Raise ValueErrors instead of raising assertions
-*   Give a warning if "mixed_float16" or "mixed_bfloat16" is used but not run on supported hardware
-*   Allow instances of `tf.dtypes.DType` or anything convertible to a dtype with `tf.dtypes.as_dtype` to be passed to the constructor instead of a string. The `name` property will still be a string. Note for "mixed_float16" and "mixed_bfloat16", a string must be passed as there is no equivalent dtype.
+* Expose `get_config` and `from_config` methods
+* Have `name`, `compute_dtype` and `variable_dtype` be read-only
+* Raise ValueErrors instead of raising assertions
+* Give a warning if "mixed_float16" or "mixed_bfloat16" is used but not run on supported hardware
+* Allow instances of `tf.dtypes.DType` or anything convertible to a dtype with `tf.dtypes.as_dtype` to be passed to the constructor instead of a string. The `name` property will still be a string. Note for "mixed_float16" and "mixed_bfloat16", a string must be passed as there is no equivalent dtype.
 
 ## The global policy
 
@@ -269,10 +296,10 @@ For the most part, layers are numerically stable in mixed precision so they do n
 
 The base layer exposes the following dtype-related properties, all which are read-only:
 
-*   `Layer.dtype_policy`: The layer’s dtype policy.
-*   `Layer.compute_dtype`: Short for `Layer.dtype_policy.compute_dtype`.
-*   `Layer.variable_dtype`: Short for `Layer.dtype_policy.variable_dtype`.
-*   `Layer.dtype`: Short for `Layer.variable_dtype`. Note this is not necessarily the same as what is passed to the `dtype` constructor argument. The constructor argument takes a dtype policy or string convertible to a policy, while `Layer.dtype` is the policy’s variable dtype.
+* `Layer.dtype_policy`: The layer’s dtype policy.
+* `Layer.compute_dtype`: Short for `Layer.dtype_policy.compute_dtype`.
+* `Layer.variable_dtype`: Short for `Layer.dtype_policy.variable_dtype`.
+* `Layer.dtype`: Short for `Layer.variable_dtype`. Note this is not necessarily the same as what is passed to the `dtype` constructor argument. The constructor argument takes a dtype policy or string convertible to a policy, while `Layer.dtype` is the policy’s variable dtype.
 
 In older versions of Keras, `Layer.dtype` referred to both the layer’s compute and variable dtypes, which were the same. This is still true when a non-mixed precision policy is used. With mixed precision, `Layer.dtype` refers to the variable dtype, not the compute dtype. The reason is that many layers call `self.add_weight(..., dtype=self.dtype)`. For example, a dense layer may define its build method to be:
 
@@ -303,7 +330,6 @@ Only inputs of type `Tensor`, `SparseTensor`, and `RaggedTensor` are casted, alt
 ### Currently, only inputs in the first argument are casted
 
 Currently in Keras, only tensors in the first argument to the layer's call method are casted. For example:
-
 
 ```python
 class MyLayer(tf.keras.layers.Layer):
@@ -404,20 +430,20 @@ The AutoCastVariable class will not be exposed as a public API, so it will not b
 
 An AutoCastVariable wraps a normal variable and emulates its interface. An AutoCastVariable behaves almost exactly as the wrapped variable does outside `Layer.call`. However, there are a few differences between the AutoCastVariable API and the `tf.Variable` API:
 
-*   AutoCastVariable casts itself to a layer’s compute dtype inside `Layer.call`. The exact rules for this behavior are described below.
-*   `AutoCastVariable.dtype` refers to the layer’s compute dtype inside `Layer.call`, the type the AutoCastVariable will be casted to, instead of the actual variable dtype. This is because the AutoCastVariable effectively acts like a tensor with the layer’s compute dtype, not the layer’s variable dtype. A lot of code implicitly assumes that `tensor.dtype` is the dtype that will be used when passing `tensor` to operations like `tf.add`, and having `AutoCastVariable.dtype` refer to the variable dtype would break that assumption.
-*   `AutoCastVariable.true_dtype` is a new attribute referring to the actual variable dtype. This is useful for debugging purposes. Since normal variables do not have the `true_dtype` attribute, the actual dtype of an arbitrary variable must be obtained through code such as `getattr(layer.kernel, 'true_dtype', layer.kernel.dtype)`.
+* AutoCastVariable casts itself to a layer’s compute dtype inside `Layer.call`. The exact rules for this behavior are described below.
+* `AutoCastVariable.dtype` refers to the layer’s compute dtype inside `Layer.call`, the type the AutoCastVariable will be casted to, instead of the actual variable dtype. This is because the AutoCastVariable effectively acts like a tensor with the layer’s compute dtype, not the layer’s variable dtype. A lot of code implicitly assumes that `tensor.dtype` is the dtype that will be used when passing `tensor` to operations like `tf.add`, and having `AutoCastVariable.dtype` refer to the variable dtype would break that assumption.
+* `AutoCastVariable.true_dtype` is a new attribute referring to the actual variable dtype. This is useful for debugging purposes. Since normal variables do not have the `true_dtype` attribute, the actual dtype of an arbitrary variable must be obtained through code such as `getattr(layer.kernel, 'true_dtype', layer.kernel.dtype)`.
 
 AutoCastVariable casts itself to `AutoCastVariabe.dtype` when used if `AutoCastVariable.dtype` is not the same as `AutoCastVariable.true_dtype`. As a result, AutoCastVariable acts like a tensor with dtype `AutoCastVariable.dtype`. AutoCastVariable will cast itself in the following functions:
 
-*   `AutoCastVariable.value`
-*   `AutoCastVariable.read_value`
-*   `AutoCastVariable.sparse_read`
-*   `AutoCastVariable.gather_nd`
-*   `tf.convert_to_tensor`
-*   Any function which calls one of the above functions. Ops, such as `tf.add`, call such functions so AutoCastVariable is casted when passed to ops.
+* `AutoCastVariable.value`
+* `AutoCastVariable.read_value`
+* `AutoCastVariable.sparse_read`
+* `AutoCastVariable.gather_nd`
+* `tf.convert_to_tensor`
+* Any function which calls one of the above functions. Ops, such as `tf.add`, call such functions so AutoCastVariable is casted when passed to ops.
 
-The rules for determining the value of `AutoCastVariable.dtype` is as follows. There is a thread-local non-public `_autocast_variable_dtype` variable initialized to None. In `Layer.__call__` before calling `Layer.call`, `_autocast_variable_dtype` will be set to `Layer.compute_dtype`. After `Layer.call`, it will be set back to its old value. `AutoCastVariable.dtype` will be `AutoCastVariable.true_dtype` if `_autocast_variable_dtype` is None, otherwise it will be `_autocast_variable_dtype`. 
+The rules for determining the value of `AutoCastVariable.dtype` is as follows. There is a thread-local non-public `_autocast_variable_dtype` variable initialized to None. In `Layer.__call__` before calling `Layer.call`, `_autocast_variable_dtype` will be set to `Layer.compute_dtype`. After `Layer.call`, it will be set back to its old value. `AutoCastVariable.dtype` will be `AutoCastVariable.true_dtype` if `_autocast_variable_dtype` is None, otherwise it will be `_autocast_variable_dtype`.
 
 The pseudocode for these rules are:
 
@@ -600,9 +626,9 @@ We explain the new LossScale class and its subclasses in the next section. For t
 
 Like the original class, the updated LossScale is an abstract base class with two subclasses: FixedLossScale and DynamicLossScale. LossScale’s only method is `__call__`, which returns the loss scale as a scalar float32 tensor. The three loss scale classes are will be exposed as
 
-*   `tf.keras.mixed_precision.LossScale`
-*   `tf.keras.mixed_precision.FixedLossScale`
-*   `tf.keras.mixed_precision.DynamicLossScale`
+* `tf.keras.mixed_precision.LossScale`
+* `tf.keras.mixed_precision.FixedLossScale`
+* `tf.keras.mixed_precision.DynamicLossScale`
 
 For any function in Keras which takes in a loss scale as an argument, the string "dynamic" can also be passed with is equivalent to passing `DynamicLossScale()`. An int or float can also be passed, which is equivalent to passing a FixedLossScale with that value.
 
@@ -626,7 +652,7 @@ class DynamicLossScale(LossScale):
     self.initial_loss_scale = initial_loss_scale
     self.increment_period = increment_period
     self.multiplier = multiplier
-    
+
     # Variables. These fields will be read-only but the variables can be assigned
     self.loss_scale = tf.Variable(initial_loss_scale, dtype=tf.float32)
     self.num_good_steps = tf.Variable(0, dtype=tf.int64)
@@ -653,9 +679,9 @@ LossScaleOptimizer wraps an existing optimizer and implements loss scaling. It w
 
 The LossScaleOptimizer constructor takes in three arguments:
 
-*   `optimizer`: The optimizer to wrap.
-*   `loss_scale`, the LossScale to use, defaulting to `DynamicLossScale()`. Like any function taking in a loss scale, a Python int or float can be passed, which is equivalent to passing the corresponding FixedLossScale. The string "dynamic" can also be passed, which is equivalent to passing `DynamicLossScale()`.
-*   `aggregate_in_float16` (optional): Boolean defaulting to True. If True, `apply_gradients` will all-reduce in float16 instead of the original dtype of the gradients. This will likely be initially set to False in TensorFlow 2.4 and switched to True in a future release. See the [All-reducing in float16](#all-reducing-in-float16)" section for details.
+* `optimizer`: The optimizer to wrap.
+* `loss_scale`, the LossScale to use, defaulting to `DynamicLossScale()`. Like any function taking in a loss scale, a Python int or float can be passed, which is equivalent to passing the corresponding FixedLossScale. The string "dynamic" can also be passed, which is equivalent to passing `DynamicLossScale()`.
+* `aggregate_in_float16` (optional): Boolean defaulting to True. If True, `apply_gradients` will all-reduce in float16 instead of the original dtype of the gradients. This will likely be initially set to False in TensorFlow 2.4 and switched to True in a future release. See the [All-reducing in float16](#all-reducing-in-float16)" section for details.
 
 LossScaleOptimizer subclasses `tf.keras.optimizers.Optimizer`. For the most part, LossScaleOptimizer simply overrides the base Optimizer methods to delegate to the wrapped optimizer, but adds loss scaling to certain methods.
 
@@ -702,8 +728,8 @@ Note the ability to pass a tape to `Optimizer.minimize` was introduced recently 
 
 If `LossScaleOptimizer.minimize` is not called, and instead gradients are computed with `tf.GradientTape.gradient` and applied with `LossScaleOptimizer.apply_gradients`, the loss/gradients are not automatically scaled. LossScaleOptimizer provides two methods to scale the loss and unscale the gradients manually:
 
-*   `get_scaled_loss(loss)`: Returns the loss multiplied by the loss scale
-*   `get_unscaled_gradients(gradients)`: `gradients` should be a list of tensors. Returns a new list where each tensor in `gradients` is divided by the loss scale. Values that are None in the input list are returned as None.
+* `get_scaled_loss(loss)`: Returns the loss multiplied by the loss scale
+* `get_unscaled_gradients(gradients)`: `gradients` should be a list of tensors. Returns a new list where each tensor in `gradients` is divided by the loss scale. Values that are None in the input list are returned as None.
 
 The following is an example of how to apply loss scaling when computing gradients with a `tf.GradientTape`.
 
@@ -757,12 +783,12 @@ class LossScaleOptimizer(tf.keras.optimizers.Optimizer):
 
 Except for the methods in the list below, all public Optimizer methods will simply delegate to the inner optimizer, as shown in the `get_weights` implementation above. The following methods will do additional work other than simply delegating to the inner optimizer.
 
-*   `minimize`: Applies loss scaling, updates the loss scale, and potentially all-reduces in float16
-*   `apply_gradients`: Updates the loss scale and potentially all-reduce in float16
-*   `get_gradients`: Applies loss scaling
-*   `get_updates`: Applies loss scaling
-*   `get_config`: Serializes the loss scale
-*   `from_config`: Deserializes the loss scale
+* `minimize`: Applies loss scaling, updates the loss scale, and potentially all-reduces in float16
+* `apply_gradients`: Updates the loss scale and potentially all-reduce in float16
+* `get_gradients`: Applies loss scaling
+* `get_updates`: Applies loss scaling
+* `get_config`: Serializes the loss scale
+* `from_config`: Deserializes the loss scale
 
 Additionally, LossScaleOptimizer will delegate hyperparameter accesses in `__getattribute__`, `__dir__`, and `__setattr__`. This allows the inner optimizer’s hyperparameters to be accessed on the LossScaleOptimizer. See [the next section](#lossscaleoptimizer-__getattribute__-and-__setattr__-delegation) for details.
 
@@ -772,11 +798,11 @@ If new public methods are added to the base Optimizer, they also must be added t
 
 LossScaleOptimizer exposes the following properties and methods that are not present in the base optimizer:
 
-*   `loss_scale` (property): The LossScale. Read-only.
-*   `inner_optimizer` (property): The inner optimizer. Read-only. This is can be useful for debugging. Can also be used for `isinstance` checks, e.g. to check if an Adam optimizer is used, or to access attributes of the inner optimizer, e.g. to access the `SGD.nesterov` property.
-*   `aggregate_in_float16` (property): Boolean indicating whether to all-reduce in float16. Can be set. See "All-reducing in float16"  section for details.
-*   `get_scaled_loss(loss)`: Multiples the loss by the loss scale.
-*   `get_unscaled_gradients(gradients)`: Divides the gradients by the loss scale
+* `loss_scale` (property): The LossScale. Read-only.
+* `inner_optimizer` (property): The inner optimizer. Read-only. This is can be useful for debugging. Can also be used for `isinstance` checks, e.g. to check if an Adam optimizer is used, or to access attributes of the inner optimizer, e.g. to access the `SGD.nesterov` property.
+* `aggregate_in_float16` (property): Boolean indicating whether to all-reduce in float16. Can be set. See "All-reducing in float16"  section for details.
+* `get_scaled_loss(loss)`: Multiples the loss by the loss scale.
+* `get_unscaled_gradients(gradients)`: Divides the gradients by the loss scale
 
 To get the loss scale as a float32 tensor, a user calls `optimizer.loss_scale()`. Despite looking like a method, `loss_scale` is actually an attribute: `optimizer.loss_scale` refers to the LossScale object, which is callable to obtain the loss scale tensor.
 
@@ -857,7 +883,7 @@ opt.apply_gradients_zero_min(...)  # Bug! Does not call LossScaleOptimizer versi
                                    # of apply_gradients.
 ```
 
-In this example, `MyCustomOptimizer` defines a `apply_gradients_zero_min` method which calls the `apply_gradients` method. If LossScaleOptimizer delegates `__getattribute__` for all attribute access, `apply_gradients_zero_min` can be called on LossScaleOptimizer. However, calling `LossScaleOptimizer.apply_gradients_zero_min` will silently skip updating the loss scale, as the method call is delegating to `MyCustomOptimizer.apply_gradients_zero_min`. This will likely cause either the model to train to a worse quality or the variables to be NaN. 
+In this example, `MyCustomOptimizer` defines a `apply_gradients_zero_min` method which calls the `apply_gradients` method. If LossScaleOptimizer delegates `__getattribute__` for all attribute access, `apply_gradients_zero_min` can be called on LossScaleOptimizer. However, calling `LossScaleOptimizer.apply_gradients_zero_min` will silently skip updating the loss scale, as the method call is delegating to `MyCustomOptimizer.apply_gradients_zero_min`. This will likely cause either the model to train to a worse quality or the variables to be NaN.
 
 By only delegating `__getattribute__` to hyperparameters and not all attributes, calling `LossScaleOptimizer.apply_gradients_zero_min` will result in an AttributeError instead of silently not updating the loss scale. There is an error in both cases, but explicit errors are far easier to debug than the model training to worse quality. To perform custom gradient transformations such as `apply_gradients_zero_min` when a LossScaleOptimizer is used, the `gradient_aggregator` argument of Optimizer should be used when constructing the inner optimizer.
 
@@ -904,38 +930,38 @@ This section summarizes the differences between the API proposed in this RFC, wh
 
 ## Breaking changes
 
-*   All mixed precision API symbols have the word "mixed_precision" removed from them, and some symbols are also renamed. The old symbols will be deprecated in TF 2.4 and removed in TF 2.5 or 2.6. The symbols being renamed are:
-    *   `tf.keras.mixed_precision.experimental.Policy`
-    *   `tf.keras.mixed_precision.experimental.global_policy`
-    *   `tf.keras.mixed_precision.experimental.set_policy`
-    *   `tf.keras.mixed_precision.experimental.LossScaleOptimizer`
-    *   `tf.mixed_precision.experimental.LossScale`
-    *   `tf.mixed_precision.experimental.FixedLossScale`
-    *   `tf.mixed_precision.experimental.DynamicLossScale`
-*   The global policy can no longer be set to non-floating point policies. [Link](#the-global-policy).
-*   The `Embedding` layer outputs a float16 tensor instead of a float32 tensor when its policy is "mixed_float16". [Link](#a-layers-compute-dtype).
-*   The `experimental_autocast` argument of `add_weight` is renamed to `autocast`. [Link](#layer-variables).
-*   The thread-local variable which determines what dtype to cast AutoCastVariables to, called `_autocast_variable_dtype` in this proposal, will no longer be a property on the graph but instead will be a top-level thread-local variable. This means switching graphs does not switch `_autocast_variable_dtype`, and the value of `_autocast_variable_dtype` is not copied to MirroredStrategy threads when they are run. [Link](#autocastvariable-api).
-*   When `Model.compile` creates a LossScaleOptimizer, it copies the model’s policy’s loss scale instead of directly using it as the LossScaleOptimizer’s loss scale. [Link](#a-policys-loss-scale).
-*   Losses now cast inputs to float32 by default. Float64 users may wish to pass `dtype="float64"` to loss constructors to keep their loss in float64. [Link](#loss-dtype).
-*   The LossScale class is forked, moved from TensorFlow to Keras, and has a different API. In particular, it no longer has an `update` method and it exposes its weights. The old LossScale class will remain in TensorFlow but will be made V1 only. [Link](#the-new-lossscale-class).
-*   `LossScaleOptimizer` all-reduces in float16 instead of float32. This will add some redundant casts and operations that grappler will remove in graph mode. This will probably not be implemented by TF 2.4. [Link](#all-reducing-in-float16).
-*   The function `tf.keras.mixed_precision.experimental.get_layer_policy` is being removed. The layer policy instead is accessible with the property `Layer.dtype_policy`
+* All mixed precision API symbols have the word "mixed_precision" removed from them, and some symbols are also renamed. The old symbols will be deprecated in TF 2.4 and removed in TF 2.5 or 2.6. The symbols being renamed are:
+  * `tf.keras.mixed_precision.experimental.Policy`
+  * `tf.keras.mixed_precision.experimental.global_policy`
+  * `tf.keras.mixed_precision.experimental.set_policy`
+  * `tf.keras.mixed_precision.experimental.LossScaleOptimizer`
+  * `tf.mixed_precision.experimental.LossScale`
+  * `tf.mixed_precision.experimental.FixedLossScale`
+  * `tf.mixed_precision.experimental.DynamicLossScale`
+* The global policy can no longer be set to non-floating point policies. [Link](#the-global-policy).
+* The `Embedding` layer outputs a float16 tensor instead of a float32 tensor when its policy is "mixed_float16". [Link](#a-layers-compute-dtype).
+* The `experimental_autocast` argument of `add_weight` is renamed to `autocast`. [Link](#layer-variables).
+* The thread-local variable which determines what dtype to cast AutoCastVariables to, called `_autocast_variable_dtype` in this proposal, will no longer be a property on the graph but instead will be a top-level thread-local variable. This means switching graphs does not switch `_autocast_variable_dtype`, and the value of `_autocast_variable_dtype` is not copied to MirroredStrategy threads when they are run. [Link](#autocastvariable-api).
+* When `Model.compile` creates a LossScaleOptimizer, it copies the model’s policy’s loss scale instead of directly using it as the LossScaleOptimizer’s loss scale. [Link](#a-policys-loss-scale).
+* Losses now cast inputs to float32 by default. Float64 users may wish to pass `dtype="float64"` to loss constructors to keep their loss in float64. [Link](#loss-dtype).
+* The LossScale class is forked, moved from TensorFlow to Keras, and has a different API. In particular, it no longer has an `update` method and it exposes its weights. The old LossScale class will remain in TensorFlow but will be made V1 only. [Link](#the-new-lossscale-class).
+* `LossScaleOptimizer` all-reduces in float16 instead of float32. This will add some redundant casts and operations that grappler will remove in graph mode. This will probably not be implemented by TF 2.4. [Link](#all-reducing-in-float16).
+* The function `tf.keras.mixed_precision.experimental.get_layer_policy` is being removed. The layer policy instead is accessible with the property `Layer.dtype_policy`
 
 ## Non-breaking changes
 
-*   The policy constructor argument `loss_scale` defaults to the string "auto" instead of a private object. The default value still does the same thing: use a dynamic loss scale for the "mixed_float16" policy and no loss scale for other policies. [Link](#dtype-policies-overview).
-*   A warning is issued when the "mixed_bfloat16" policy is used on hardware that does not support it. This will likely not be implemented by TF 2.4. [Link](#the-global-policy).
-*   The string "mixed_float16" or "mixed_bfloat16" can be passed to the `dtype` parameter of a layer constructor. [Link](#layers).
-*   Layers now have properties `dtype_policy`, `compute_dtype`, and `variable_dtype`. [Link](#layers).
-*   A warning is issued if a `tf.Variable` is assigned as an attribute of a mixed precision layer, as doing so will not wrap the variable with an AutoCastVaraible. [Link](#layer-variables).
-*   Cross entropy will be fused with softmax in more cases. [Link](#softmax-and-cross-entropy).
-*   A warning is issued if cross entropy gets a float16 input and does not fuse with a preceding softmax. [Link](#softmax-and-cross-entropy).
-*   LossScaleOptimizer’s `loss_scale` argument defaults to "dynamic". [Link](#lossscaleoptimizer-overview).
-*   `LossScaleOptimizer` exposes the `inner_optimizer` attribute. [Link](#lossscaleoptimizer-api).
-*   `LossScaleOptimizer` delegates `__getattribute__` to the wrapped optimizer if the attribute is a hyperparameter. [Link](#lossscaleoptimizer-__getattribute__-and-__setattr__-delegation).
-*   `LossScaleOptimizer` delegates `_setattr__` to the wrapped optimizer if the attribute is a hyperparameter. [Link](#lossscaleoptimizer-__getattribute__-and-__setattr__-delegation).
-*   [RFC #234](https://github.com/tensorflow/community/pull/234), titled "Easily Customizable Optimizer.minimize", is implemented. This is not part of the mixed precision API but has some features that make loss scaling easier to use. In particular, it allows a tensor instead of a function to be passed to `Optimizer.minimize`, making `minimize` easier to use. `LossScaleOptimizer.minimize` is recommended over `LossScaleOptimizer.apply_gradients`, as the former automatically scales the loss and gradients while the latter requires the user to manually scale the loss and gradients.
+* The policy constructor argument `loss_scale` defaults to the string "auto" instead of a private object. The default value still does the same thing: use a dynamic loss scale for the "mixed_float16" policy and no loss scale for other policies. [Link](#dtype-policies-overview).
+* A warning is issued when the "mixed_bfloat16" policy is used on hardware that does not support it. This will likely not be implemented by TF 2.4. [Link](#the-global-policy).
+* The string "mixed_float16" or "mixed_bfloat16" can be passed to the `dtype` parameter of a layer constructor. [Link](#layers).
+* Layers now have properties `dtype_policy`, `compute_dtype`, and `variable_dtype`. [Link](#layers).
+* A warning is issued if a `tf.Variable` is assigned as an attribute of a mixed precision layer, as doing so will not wrap the variable with an AutoCastVaraible. [Link](#layer-variables).
+* Cross entropy will be fused with softmax in more cases. [Link](#softmax-and-cross-entropy).
+* A warning is issued if cross entropy gets a float16 input and does not fuse with a preceding softmax. [Link](#softmax-and-cross-entropy).
+* LossScaleOptimizer’s `loss_scale` argument defaults to "dynamic". [Link](#lossscaleoptimizer-overview).
+* `LossScaleOptimizer` exposes the `inner_optimizer` attribute. [Link](#lossscaleoptimizer-api).
+* `LossScaleOptimizer` delegates `__getattribute__` to the wrapped optimizer if the attribute is a hyperparameter. [Link](#lossscaleoptimizer-__getattribute__-and-__setattr__-delegation).
+* `LossScaleOptimizer` delegates `_setattr__` to the wrapped optimizer if the attribute is a hyperparameter. [Link](#lossscaleoptimizer-__getattribute__-and-__setattr__-delegation).
+* [RFC #234](https://github.com/tensorflow/community/pull/234), titled "Easily Customizable Optimizer.minimize", is implemented. This is not part of the mixed precision API but has some features that make loss scaling easier to use. In particular, it allows a tensor instead of a function to be passed to `Optimizer.minimize`, making `minimize` easier to use. `LossScaleOptimizer.minimize` is recommended over `LossScaleOptimizer.apply_gradients`, as the former automatically scales the loss and gradients while the latter requires the user to manually scale the loss and gradients.
 
 # Alternatives Considered
 
@@ -1056,19 +1082,19 @@ The reason this fails is that SGD serializes the `CustomLearningRateSchedule` cl
 
 Advantages of `loss_scale_optimizer` over `LossScaleOptimizer`:
 
-*   Attributes of the original optimizer’s class can be directly retrieved and set on the loss scale optimizer. For example, the `nesterov` attribute of an SGD optimizer can be retrieved and set on the loss scale optimizer. Setting `nesterov` on the LossScaleOptimizer will not raise an error but will have no effect as the attribute will not be set on the inner optimizer.
-*   Passes `isinstance` checks on the original optimizer’s type
-*   Implementation of `loss_scale_optimizer` is shorter (and arguably simpler) than `LossScaleOptimizer`. The former does not have to manually override every Optimizer method to delegate to the inner optimizer (and if a new method is added to Optimizer, the author does not have to remember to add it to `LossScaleOptimizer`). Additionally, `LossScaleOptimizer` requires complicated logic to ensure the checkpoint format of a `LossScaleOptimizer` is the same as the inner optimizer. This logic is not needed for `loss_scale_optimizer`.
-*   No `__getattribute__` or `__setattr__` overrides, and these methods can cause complexity and confusion
+* Attributes of the original optimizer’s class can be directly retrieved and set on the loss scale optimizer. For example, the `nesterov` attribute of an SGD optimizer can be retrieved and set on the loss scale optimizer. Setting `nesterov` on the LossScaleOptimizer will not raise an error but will have no effect as the attribute will not be set on the inner optimizer.
+* Passes `isinstance` checks on the original optimizer’s type
+* Implementation of `loss_scale_optimizer` is shorter (and arguably simpler) than `LossScaleOptimizer`. The former does not have to manually override every Optimizer method to delegate to the inner optimizer (and if a new method is added to Optimizer, the author does not have to remember to add it to `LossScaleOptimizer`). Additionally, `LossScaleOptimizer` requires complicated logic to ensure the checkpoint format of a `LossScaleOptimizer` is the same as the inner optimizer. This logic is not needed for `loss_scale_optimizer`.
+* No `__getattribute__` or `__setattr__` overrides, and these methods can cause complexity and confusion
 
 Disadvantages of `loss_scale_optimizer` over `LossScaleOptimizer`:
 
-*   Modifying the loss scale optimizer does not modify the original optimizer, and vice versa. This is especially problematic when `Model.compile` is used, as it will automatically wrap the optimizer with a loss scale optimizer with the mixed_float16 policy. Users will be surprised if mutating the optimizer passed to `Model.compile` does not mutate `Model.optimizer`, and vice versa.
-*   Unlike `LossScaleOptimizer`, `loss_scale_optimizer` requires the original optimizer is serializable with `get_config` and deserializable with `from_config`. This is not the case for optimizers which have custom objects in `get_config`, which is fairly common (the official TensorFlow ResNet model [uses a custom LearningRateSchedule](https://github.com/tensorflow/models/blob/2986bcafb9eaa8fed4d78f17a04c4c5afc8f6691/official/vision/image_classification/resnet/common.py#L38) and does not register it, so it is currently incompatible with this proposed `loss_scale_optimizer`)
-*   Dynamically creating a class is complicated and can cause confusion.
-*   The `is_loss_scale_optimizer` method must be used to check if an optimizer is a loss scale optimizer instead of the more obvious `isinstance(opt, LossScaleOptimizer)` check.
-*   Since the loss scale optimizer is no longer a (non-dynamic) class, its methods will no longer be automatically [documented on tensorflow.org](https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/experimental/LossScaleOptimizer?version=nightly). Instead the `loss_scale_optimizer` function must manually document each method, but the formatting will be less clear.
-*   `loss_scale_optimizer` cannot be subclassed.
+* Modifying the loss scale optimizer does not modify the original optimizer, and vice versa. This is especially problematic when `Model.compile` is used, as it will automatically wrap the optimizer with a loss scale optimizer with the mixed_float16 policy. Users will be surprised if mutating the optimizer passed to `Model.compile` does not mutate `Model.optimizer`, and vice versa.
+* Unlike `LossScaleOptimizer`, `loss_scale_optimizer` requires the original optimizer is serializable with `get_config` and deserializable with `from_config`. This is not the case for optimizers which have custom objects in `get_config`, which is fairly common (the official TensorFlow ResNet model [uses a custom LearningRateSchedule](https://github.com/tensorflow/models/blob/2986bcafb9eaa8fed4d78f17a04c4c5afc8f6691/official/vision/image_classification/resnet/common.py#L38) and does not register it, so it is currently incompatible with this proposed `loss_scale_optimizer`)
+* Dynamically creating a class is complicated and can cause confusion.
+* The `is_loss_scale_optimizer` method must be used to check if an optimizer is a loss scale optimizer instead of the more obvious `isinstance(opt, LossScaleOptimizer)` check.
+* Since the loss scale optimizer is no longer a (non-dynamic) class, its methods will no longer be automatically [documented on tensorflow.org](https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/experimental/LossScaleOptimizer?version=nightly). Instead the `loss_scale_optimizer` function must manually document each method, but the formatting will be less clear.
+* `loss_scale_optimizer` cannot be subclassed.
 
 A variant of this alternative is to monkey-patch the `__class__` attribute of the original optimizer to the new loss scale optimizer type, instead of copying the original optimizer into a new loss scale optimizer. This elimates the first two disadvantages listed above. However modifying `__class__` may be very surprising to users, as most users do not expect the type of an object to change.
 
