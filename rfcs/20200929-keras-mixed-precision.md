@@ -164,7 +164,7 @@ print(layer2.dtype_policy.name)  # mixed_float16
 print(layer.dtype_policy.name)  # float32. A layer dtype policy never changes.
 ```
 
-The global policy is only used by Keras to determine the default layer policy, and has no other purpose. The next section describes in detail how a layer users dtype policies.
+The global policy is only used by Keras to determine the default layer policy, and has no other purpose. The next section describes in detail how a layer uses dtype policies.
 
 To use mixed precision in a model, the global policy must be set to "mixed_float16" or "mixed_bfloat16" before the model is constructed. For many models, this is all that is required to use mixed precision.
 
@@ -249,7 +249,7 @@ if __name__ == "__main__":
   app.run(main)
 ```
 
-Alternatively, the global policy can be set in `create_model`. This will work in cases where multiple models are not built in parallel using threads, and where every time a model is created, the global policy is set to an appropriate value.
+Alternatively, the global policy can be set in `create_model`. This is not recommended as it will cause `create_model` to modify global state, but in practice, this typically does not cause issues. If the global policy is set in `create_model`, all other functions that create models (say, a `create_resnet_model` function) should also set the global policy. This way, `create_model` and `create_resnet_model` can be called in any order without affecting the dtype of the models.
 
 ## Layers
 
