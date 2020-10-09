@@ -1,14 +1,14 @@
-# Change the CTC-related APIs to ensure the consistency of usage
+# Improve documentation and change the CTC-related APIs to ensure the consistency of usage
 
 | Status        |  Proposed                                            |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [295](https://github.com/tensorflow/community/pull/295)|
 | **Author(s)** | Mingjie Zhou (benjamin_chou@outlook.com), |
 | **Sponsor**   | François Chollet (francois.chollet@gmail.com)                 |
-| **Updated**   | 2020-10-02                                           |
+| **Updated**   | 2020-10-09                                           |
 
 ## Objective
-Change the APIs of connectionist temporal classification (CTC) decoders (beam search decoder and greedy decoder) to ensure the consistency with the usage of CTC loss. 
+Improve documentation and change the APIs of connectionist temporal classification (CTC) decoders (beam search decoder and greedy decoder) to ensure the consistency with the usage of CTC loss. 
 Preserve the same arguments of API as far as possible.
 
 
@@ -18,21 +18,53 @@ However, the training behavior is not the same as that of testing.
 During training, one needs to apply the CTC loss as a part of the objective function.
 During testing, the beam search decoder or greedy decoder will be used to get the labels with the maximum probability. 
 
-The CTC introduces a **blank** label, which one needs to specify the index of it in their model, to separate the different characters. The current APIs of CTC loss and its decoders don't use the same blank index by default and the API documentation doesn't point it out, which may make developers and reseachers confused and lead to an invisible mistake.
+The CTC introduces a **blank** label, which one needs to specify the index of it in their model, to separate the different characters. The current APIs of CTC loss and its decoders don't use the same blank index by default and the API documentation doesn't point it out, which may make developers and researchers confused and lead to an invisible mistake.
+Besides, the `tf.nn.ctc_loss` doesn't use the same blank index by the internal implementation, which isn't pointed out in the documentation.
 
 
 ## User Benefit
 This, apparently, allows developers and researchers to use CTC API easily without making a mistake.
 
 ## Design Proposal
-The expectation is to change the original APIs to the proposed APIs.
 
+### Improve the documentation or improve the internal implementation
 [ctc_loss](https://www.tensorflow.org/api_docs/python/tf/nn/ctc_loss):
 <pre><code>tf.nn.ctc_loss(
     labels, logits, label_length, logit_length, logits_time_major=True,unique=None, 
     blank_index=None, name=None
 )</code></pre>
 According to API docs, default blank label is 0 rather num_classes - 1, unless overridden by blank_index.
+Besides, there is some memory/performance overhead to switching from the default of 0 as an additional shifted copy of the logits may be created.
+However, this is not precise description due to the inconsistent internal behavior.
+
+Looking at the original CTCLoss workflow:
+1. For sparse tensor, it will use `_ctc_loss_op_standard`(CPU) or `_ctc_loss_op_cudnn`(GPU). The `_ctc_loss_op_standard` by default uses the `num_classes - 1` as the blank index, while the `_ctc_loss_op_cudnn` uses `0` as the blank index. Both implementations have shifted the blank index to the corresponding position before passing arguments to `_ctc_loss_impl`. 
+
+> <pre><code>def _ctc_loss_op_standard(labels, logits, logit_length, logits_time_major,
+>                          blank_index):
+>part_before = logits[:, :, :blank_index]
+>part_after = logits[:, :, blank_index + 1:]
+>part_blank = logits[:, :, blank_index:blank_index + 1]
+>logits = array_ops.concat([part_before, part_after, part_blank], axis=2)
+>...
+></code></pre>
+
+><pre><code>def _ctc_loss_op_cudnn(labels, logits, logit_length, logits_time_major,
+>                       blank_index):
+>  part_before = logits[:, :, :blank_index]
+>  part_after = logits[:, :, blank_index + 1:]
+>  part_blank = logits[:, :, blank_index:blank_index + 1]
+>  logits = array_ops.concat([part_blank, part_before, part_after], axis=2)
+>...
+></code></pre>
+
+2. For dense tensor, the [dense version](https://github.com/tensorflow/tensorflow/blob/3e63843a2b55c428ab2833b4054c5acfc9827184/tensorflow/python/ops/ctc_ops.py#L939) is implemented by python code with custom gradients.  This dense implementation performs with `blank_index=0` by default. For `blank_index!=0` cases, it would be shifted at the beginning [here](https://github.com/tensorflow/tensorflow/blob/3e63843a2b55c428ab2833b4054c5acfc9827184/tensorflow/python/ops/ctc_ops.py#L1014). 
+
+Here are possible suggestions:
+- Improve the `tf.nn.ctc_loss` documentation to make it clear that what kind of situation will use which blank index by the internal behavior. Also, provide some examples.
+- Change the internal behavior of `tf.nn.ctc_loss` to make 0 as the blank index of `_ctc_loss_op_standard`(CPU).
+
+### Change the original APIs to the proposed APIs.
 
 **Original APIs**:
 Both beam search decoder and greedy decoder perform with `blank index = num_classes - 1` and `logits_time_major=True` by default behavior without an option in the arguments. 
