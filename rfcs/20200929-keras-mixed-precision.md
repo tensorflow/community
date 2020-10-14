@@ -224,6 +224,8 @@ print(tf.keras.mixed_precision.global_policy())  # float32
 
 These rules for tracking floatx are relatively unimportant and exist primarily for backwards compatibility. For the most part, users do not have to be aware of floatx and can simply assume the global policy defaults to float32.
 
+Users must know which device their model runs on so they can choose between setting the global policy to "mixed_float16" or "mixed_bfloat16". Alternatively, Keras could choose for the user by allowing the global policy to be set to a special value, say "mixed_auto", which would select between "mixed_float16" and "mixed_bfloat16" depending on the hardware available. The reason the API does not have "mixed_auto" is that users should be aware of which policy they are using, as it affects the checkpoint/SavedModel format as well as whether loss scaling is required (Users must explicitly use a LossScaleOptimizer in a custom training loop).
+
 `set_global_policy` requires the policy to be floating-point. That is, the policy’s name must be one of "float16", "bfloat16", "float32", "float64", "mixed_float16", or "mixed_bfloat16". The reason is that most layers do not support non-floating-point policies.
 
 A warning will be issued if the global policy is set to "float16" or "bfloat16", as these policies typically result in substantially worse training results. Also, such policies are typically not useful for inference, as a model with float16 variables cannot load training checkpoints with float32 variables.
@@ -807,6 +809,8 @@ LossScaleOptimizer exposes the following properties and methods that are not pre
 To get the loss scale as a float32 tensor, a user calls `optimizer.loss_scale()`. Despite looking like a method, `loss_scale` is actually an attribute: `optimizer.loss_scale` refers to the LossScale object, which is callable to obtain the loss scale tensor.
 
 Like all other optimizers, `LossScaleOptimizer.apply_gradients` expects gradients to have the same dtype as the variables. During mixed precision training, variables are float32 (although they are casted to float16), so `LossScaleOptimizer.apply_gradients` expects float32 gradients and will raise an error otherwise. `tf.GradientTape.gradient` will return float32 gradients when passed float32 AutoCastVariables, so no problems will typically occur due to this requirement.
+
+Instead of skipping steps when there are NaNs in the gradients, LossScaleOptimizer could alternatively lower the loss scale and recompute gradients in a loop until they were all finite. However, this can only be done in `minimize`, not `apply_gradients`, as the latter does not compute gradients but only applies them. In the future, an option may be added to LossScaleOptimizer to compute gradients in a loop when `minimize` is used.
 
 ## LossScaleOptimizer `__getattribute__` and `__setattr__` delegation
 
