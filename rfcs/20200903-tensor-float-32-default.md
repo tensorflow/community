@@ -1,6 +1,6 @@
 # Enabling TensorFloat-32 by default
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [287](https://github.com/tensorflow/community/pull/287) |
 | **Author(s)** | Reed Wanderman-Milne (reedwm@google.com)             |
