@@ -5,6 +5,7 @@ SIG Addons release process consists of the folowing steps:
 2. Create and merge a new PR into the release branch
 	* Set the correct version and suffix in [version.py](https://github.com/tensorflow/addons/blob/master/tensorflow_addons/version.py)
 	* Ensure the proper minimum and maximum tested versions of TF are set in [version.py](https://github.com/tensorflow/addons/blob/master/tensorflow_addons/version.py)
+	* Ensure the proper minimum and maximum ABI compatibility versions are set in [resource_loader.py](https://github.com/tensorflow/addons/blob/master/tensorflow_addons/utils/resource_loader.py)
 3. Publish and tag a [release on Github](https://github.com/tensorflow/addons/releases)
     * Add updates for new features, enhancements, bug fixes
     * Add contributors using `git shortlog <last-version>..HEAD -s`
