@@ -1,6 +1,6 @@
 # Keras Mixed Precision API
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [293](https://github.com/tensorflow/community/pull/293) |
 | **Author(s)** | Reed Wanderman-Milne (reedwm@google.com              |
