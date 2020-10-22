@@ -2,11 +2,9 @@
 
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
-:               : (update when you have community PR #)                   :
+| **RFC #**     | [308](https://github.com/tensorflow/community/pull/308) |
 | **Author(s)** | Varshaa Naganathan (varshaan@google.com)                |
-| **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com), Jiri     |
-:               : Simsa (jsimsa@google.com), Zohar Yahav (zoy@google.com) :
+| **Sponsor**   | Konstantinos Katsiapis (katsiapis@google.com), Jiri Simsa (jsimsa@google.com), Zohar Yahav (zoy@google.com)    |
 | **Updated**   | 2020-10-12                                              |
 
 ## Objective
