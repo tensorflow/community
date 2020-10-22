@@ -1,6 +1,6 @@
 # Support for Pickle, Python's serialization protocol
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [286](https://github.com/tensorflow/community/pull/286) |
 | **Author(s)** | Adrian Garcia Badaracco ({firstname}at{firstname}gb.com), Scott Sievert (tf-rfc@stsievert.com)  |
