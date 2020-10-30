@@ -2,10 +2,10 @@
 
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     |                                                      |
+| **RFC #**     | 314                                                  |
 | **Author(s)** | Jaeyoun Kim (jaeyounkim@google.com), Jing Li (jingli@google.com), Mike Liang (mliang@google.com), Shuangfeng Li (shuangfeng@google.com) |
 | **Sponsor**   | Thea Lamkin (thealamkin@google.com)                  |
-| **Updated**   | 2020-10-23                                           |
+| **Updated**   | 2020-10-30                                           |
 
 ## What is this group for?
 
@@ -23,8 +23,8 @@ each group to coordinate the contributions, run community events like contests,
 and maintain the code quality through the review process. Each group has the
 flexibility to operate differently.
 
-SIG is also a place for community discussions and sharing best practices of
-using TensorFlow 2 for state-of-the-art research. Furthermore, SIG provides
+SIG Models is also a place for community discussions and sharing best practices of
+using TensorFlow 2 for state-of-the-art research. Furthermore, SIG Models provides
 product feedback to help TensorFlow to be improved.
 
 ## Who will be part of it?
@@ -70,7 +70,7 @@ We plan to have a mailing list
 ([models@tensorflow.org](https://groups.google.com/a/tensorflow.org/forum/#!forum/models)),
 arrange a regular (e.g., monthly) video conference call rotated by the SIG
 leads. We will also use a Gitter chat channel
-(https://gitter.im/tensorflow/models) for discussions.
+(https://gitter.im/tensorflow/sig-models) for discussions.
 
 As we have multiple SIG subgroups, each subgroup may run meetings and events
 using different modes of communication.
