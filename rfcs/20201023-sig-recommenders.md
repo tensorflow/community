@@ -60,7 +60,7 @@ We start with training with scale. We already have RFCs that got widely interest
 - New TensorFlow github maintained by SIG Recommenders
 (github.com/tensorflow/recommenders-addons, to be created)
 - SIG monthly meeting agenda and [notes](https://docs.google.com/document/d/1-jLPffS_MhOd50WScfjFpVNC1DGaIwWxMQPSl5YIJYo/edit#)
-- SIG Gitter chat channel (https://gitter.im/tensorflow/recommenders, to be created)
+- SIG Gitter chat channel (https://gitter.im/tensorflow/sig-recommenders, to be created)
 
 ## Code of Conduct
 
