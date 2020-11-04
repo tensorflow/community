@@ -39,6 +39,7 @@ new members to request to be SIG leads.
 * Co-leads and sponsors from Google
    * Yuefeng Zhou, TensorFlow
    * Zhenyu Tan, TensorFlow
+   * Wei Wei, TensorFlow
    * Derek Cheng, Google Brain
 
 For administrative questions, contact Joana Carrasqueira‎ (joanafilipa@google.com), or Thea Lamkin (thealamkin@google.com), or tf-community@tensorflow.org.
