@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [318](https://github.com/tensorflow/community/pull/318)|
 | **Author(s)** | Yang Sheng (yang.sheng@intel.com), Zhoulong Jiang (zhoulong.jiang@intel.com), Yiqiang Li (yiqiang.li@intel.com),  Eric Lin (eric.lin@intel.com), Jianhui Li (jian.hui.li@intel.com) |
-| **Sponsor**   | Rasmus Larsen (rmlarsen@google.com)                  |
+| **Sponsor**   | Eugene Zhulenev (ezhulenev@google.com)                  |
 | **Updated**   | 2020-10-27                                           |
 
 ## **Objective**
