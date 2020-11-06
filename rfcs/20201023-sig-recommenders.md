@@ -17,13 +17,14 @@ It might touch various aspects of the TensorFlow ecosystem, including:
 - Serving with efficiency: Given recommendation models are usually pretty large, how to serve super large models easily, and how to serve efficiently?
 - Modeling with SoTA techniques: online learning, multi-target learning, deal with quality inconsistent among online and offline, model understandability, GNN etc.
 - End-to-end pipeline: how to train continuously, e.g. integrate with platforms like TFX.
+- Vendor specific extensions and platform integrations: for example, runtime specific frameworks (e.g. NVIDIA Merlin, …), and integrations with Cloud services (e.g. GCP, AWS, Azure…)
 
 Notice that TensorFlow has open-sourced [TensorFlow Recommenders](https://blog.tensorflow.org/2020/09/introducing-tensorflow-recommenders.html), an open-source TensorFlow package that makes building, evaluating, and serving sophisticated recommender models easy. Github: 
 [github.com/tensorflow/recommenders](http://github.com/tensorflow/recommenders)
 
 Further, we plan to create a tensorflow repo dedicated for community contributions and maintained by SIG as well, under: 
 **github.com/tensorflow/recommenders-addons** (to be created).
-SIG Recommenders can contributes more addons as complementary to TensorFlow Recommenders, or any helpful libraries related to recommendation systems using TensorFlow. We hope this can make community contributions much easier.
+SIG Recommenders can contributes more addons as complementary to TensorFlow Recommenders, or any helpful libraries related to recommendation systems using TensorFlow. The contribution areas can be broad and don't limit to the topic listed above. We hope this can make community contributions much easier.
 
 ## Who will be part of it?
 
