@@ -1,6 +1,6 @@
 # Supporting tf.function in tf.transform
 
-| Status        | Proposed                                                |
+| Status        | Accepted                                               |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [308](https://github.com/tensorflow/community/pull/308) |
 | **Author(s)** | Varshaa Naganathan (varshaan@google.com)                |
