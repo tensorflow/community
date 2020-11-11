@@ -1,4 +1,4 @@
-# SIG TF.js                                         |
+# SIG TF.js                                         
 
 ## Objective
 
