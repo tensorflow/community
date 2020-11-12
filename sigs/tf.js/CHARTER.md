@@ -45,14 +45,17 @@ We encourage any developers working at the intersection of machine learning and 
 applications to join and participate in the activities of the SIG. Whether you are working on 
 advancing the platform, prototyping or building specific applications, or authoring new libraries, 
 we welcome your feedback on and contributions to Tensorflow.js and its tooling, and are eager to hear 
-about any downstream results, implementations, and extensions. 
+about any downstream results, implementations, and extensions. To participate, please request to join our SIG mailing list. 
 
 We have multiple channels for participation, and publicly archive discussions in our user group and 
 announcements mailing lists:
+- sig-tfjs@tensorflow.org -- our mailing list for TF.js SIG members, to discuss SIG updates & meeting agendas. ([archive group](https://groups.google.com/a/tensorflow.org/g/sig-tfjs))
 - tfjs@tensorflow.org -- our general mailing list that all are welcome to join ([archive group](https://groups.google.com/a/tensorflow.org/g/tfjs))
 - tfjs-announce@tensorflow.org -- Announcement only mailing list for TF.js community ([archive group](https://groups.google.com/a/tensorflow.org/g/tfjs-announce))
 
-We will create a new mailing list for TensorFlow.js SIG members. 
+### Monthly Meetings
+
+We meet on the first Tuesday of every month. If you are interested in joining the meeting, add the [calendar event](https://calendar.google.com/event?action=TEMPLATE&tmeid=MG90djk4czIxdDcyMzdoNnJpYTZ0bjh2OWtfMjAyMDEyMDJUMDEwMDAwWiB0ZW5zb3JmbG93Lm9yZ18xNHQ3NjluODlxaHNwczk0OWMzbDBuaGQ5Y0Bn&tmsrc=tensorflow.org_14t769n89qhsps949c3l0nhd9c%40group.calendar.google.com&scp=ALL) to your calendar or email tf-community-team at google dot com. 
 
 ### Other Resources 
 - Repository: https://github.com/tensorflow/tfjs
