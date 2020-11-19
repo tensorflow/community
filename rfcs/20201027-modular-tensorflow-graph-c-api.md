@@ -125,6 +125,12 @@ This section describes user scenarios for plugin graph optimizer.
     <img src="20201027-modular-tensorflow-graph-c-api/scenario1.png" height="100"/>
   </p> 
 
+* **Supported scenario**: Registering graph optimizer without pluggable device.
+
+  <p align="center">
+    <img src="20201027-modular-tensorflow-graph-c-api/scenario3.png" height="100"/>
+  </p>
+
 * **Unsupported scenario**: Plugin can not register multiple graph optimizers.
 
   To simplify multiple optimizers coordination and avoid optimization conflict, multiple optimizers cannot register to the same device type. If more than one optimizer is registered to the same device type, these optimizers's initialization would fail due to registration conflict. Users need to manually select which optimizer they want to use by unloading the conflicting plugin.
@@ -132,15 +138,9 @@ This section describes user scenarios for plugin graph optimizer.
     <img src="20201027-modular-tensorflow-graph-c-api/scenario2.png" height="150"/>
   </p>
 
-* **Undefined scenario**: Registering graph optimizer without pluggable device.
-
-  <p align="center">
-    <img src="20201027-modular-tensorflow-graph-c-api/scenario3.png" height="100"/>
-  </p>
-
 ### Front-end python use case
 
-Flag `use_plugin_optimizers` is provided for front-end python users to control the behaviour of plugin graph optimizers.
+Flag `use_plugin_optimizers` is provided for front-end python users to control the plugin graph optimizers.
 ```python
 ## TF-1.x
 >> from tensorflow.core.protobuf import rewriter_config_pb2
@@ -273,41 +273,41 @@ This API can be used to:
   TF_GrapplerItem* TF_GetGrapplerItem(TF_Buffer* buffer);
 
   // Get a set of node names that must be preserved. This includes feed and
-  // fetch nodes, keep_ops, init_ops. Fills in `max_values` and `storage_size`,
+  // fetch nodes, keep_ops, init_ops. Fills in `num_values` and `storage_size`,
   // they will be used in `TF_GetNodesToPreserveList`
-  void TF_GetNodesToPreserveSize(TF_GrapplerItem* item, int* max_values,
+  void TF_GetNodesToPreserveSize(TF_GrapplerItem* item, int* num_values,
                                  int* storage_size);
 
   // Get a set of node names that must be preserved. This includes feed and
   // fetch nodes, keep_ops, init_ops. Fills in
   // `values` and `lengths`, each of which must point to an array of length at
-  // least `max_values`.
+  // least `num_values`.
   //
   // The elements of values will point to addresses in `storage` which must be at
-  // least `storage_size` bytes in length.  `max_values` and `storage` can be
+  // least `storage_size` bytes in length.  `num_values` and `storage` can be
   // obtained from TF_GetNodesToPreserveSize
   //
   // Fails if storage_size is too small to hold the requested number of strings.
   void TF_GetNodesToPreserveList(TF_GrapplerItem* item, void** values,
-                                 size_t* lengths, int max_values, void* storage,
+                                 size_t* lengths, int num_values, void* storage,
                                  size_t storage_size, TF_Status* status);
 
   // Get a set of node names for fetch nodes. Fills in `values` and `lengths`,
   // they will be used in `TF_GetFetchNodesList`
-  void TF_GetFetchNodesSize(TF_GrapplerItem* item, int* max_values, int* storage_size);
+  void TF_GetFetchNodesSize(TF_GrapplerItem* item, int* num_values, int* storage_size);
 
 
   // Get a set of node names for fetch nodes. Fills in
   // `values` and `lengths`, each of which must point to an array of length at
-  // least `max_values`.
+  // least `num_values`.
   //
   // The elements of values will point to addresses in `storage` which must be at
-  // least `storage_size` bytes in length.  `max_values` and `storage` can be
+  // least `storage_size` bytes in length.  `num_values` and `storage` can be
   // obtained from TF_GetFetchNodesSize
   //
   // Fails if storage_size is too small to hold the requested number of strings.
   void TF_GetFetchNodesList(TF_GrapplerItem* item, void** values, size_t* lengths,
-                            int max_values, void* storage, size_t storage_size,
+                            int num_values, void* storage, size_t storage_size,
                             TF_Status* status);
 
   // Infer OpInfo::TensorProperties for graph nodes inputs/outputs.
