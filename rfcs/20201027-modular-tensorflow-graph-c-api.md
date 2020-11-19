@@ -116,7 +116,27 @@ When initializing, TensorFlow loads the plugin and registers a new graph optimiz
 ### Supported User Scenarios
 
 This section describes user scenarios for plugin graph optimizer.
-Plugin graph optimizer is targeting backend device specific optimization, and only one optimizer is allowed to be registered per device type, so device type will be used as key to decide whether TensorFlow proper needs to run this optimizer by checking graph device type and registered device type. To simplify multiple optimizers coordination and avoid optimization conflict, multiple optimizers cannot register to the same device type. If more than one optimizer is registered to the same device type, these optimizers's initialization would fail due to registration conflict. Users need to manually select which optimizer they want to use by unloading the conflicting plugin.
+
+* **Supported scenario**: Each plugin can register its own graph optimizer.
+
+  Plugin graph optimizer is targeting backend device specific optimization. Proper should fully control the behaviour of plugin, plugin can register its own graph optimizer, and optimizers with other device types are not allowed. TensorFlow proper would run plugin optimizer if graph device type and registered device type are matched.
+
+  <p align="center">
+    <img src="20201027-modular-tensorflow-graph-c-api/scenario1.png" height="100"/>
+  </p> 
+
+* **Unsupported scenario**: Plugin can not register multiple graph optimizers.
+
+  To simplify multiple optimizers coordination and avoid optimization conflict, multiple optimizers cannot register to the same device type. If more than one optimizer is registered to the same device type, these optimizers's initialization would fail due to registration conflict. Users need to manually select which optimizer they want to use by unloading the conflicting plugin.
+  <p align="center">
+    <img src="20201027-modular-tensorflow-graph-c-api/scenario2.png" height="150"/>
+  </p>
+
+* **Undefined scenario**: Registering graph optimizer without pluggable device.
+
+  <p align="center">
+    <img src="20201027-modular-tensorflow-graph-c-api/scenario3.png" height="100"/>
+  </p>
 
 ### Front-end python use case
 
@@ -131,9 +151,9 @@ Flag `use_plugin_optimizers` is provided for front-end python users to control t
 ```
 
 This API can be used to:
-1. Turn on/off all registered plugin graph optimizers. By default, the registered optimizers are turned on, users can turn off them. If the registered optimizers are turned on and the graph device type is matched with registered device type, they would be runnning.
-2. Use recommended configuration of existing optimizers.
-If pluggable graph optimizer is registered to a device type, e.g., GPU, it is optional for plugin authors to provide a recommended configuration indicate whether some of existing optimizers in proper can be turned on/off, by populating flags in `TP_OptimizerRegistrationParams`.
+* Turn on/off all registered plugin graph optimizers. By default, the registered optimizers are turned on, users can turn off them. If the registered optimizers are turned on and the graph device type is matched with registered device type, they would be runnning.
+* Use recommended configuration of existing optimizers.
+  If pluggable graph optimizer is registered to a device type, e.g., GPU, it is optional for plugin authors to provide a recommended configuration indicate whether some of existing optimizers in proper can be turned on/off, by populating flags in `TP_OptimizerRegistrationParams`.
 
   ```cpp
   TF_Bool get_remapping() { return false; }
@@ -208,11 +228,11 @@ If pluggable graph optimizer is registered to a device type, e.g., GPU, it is op
     void* ext;  // reserved for future use
     void* (*create_func)();
     void (*optimize_func)(void*, TF_Buffer*, TF_Buffer*);
-    void (*delete_func)(void*);
+    void (*destory_func)(void*);
   } TP_Optimizer;
 
   #define TP_OPTIMIZER_STRUCT_SIZE \
-    TF_OFFSET_OF_END(TP_Optimizer, delete_func)
+    TF_OFFSET_OF_END(TP_Optimizer, destory_func)
 
   typedef struct TP_OptimizerRegistrationParams {
     size_t struct_size;
@@ -239,6 +259,7 @@ If pluggable graph optimizer is registered to a device type, e.g., GPU, it is op
   ```
 
 * **Plugin util C API**
+
   ```cpp
   #ifdef __cplusplus
   extern "C" {
@@ -330,12 +351,12 @@ If pluggable graph optimizer is registered to a device type, e.g., GPU, it is op
 
   // Get a list of input OpInfo::TensorProperties given node name.
   // OpInfo::TensorProperties is represented as TF_Buffer*.
-  void TF_GetInputProperties(TF_GraphProperties* g_prop, const char* name,
+  void TF_GetInputPropertiesList(TF_GraphProperties* g_prop, const char* name,
                              TF_Buffer** prop, int max_size);
 
   // Get a list of output OpInfo::TensorProperties given node name.
   // OpInfo::TensorProperties is represented as TF_Buffer*.
-  void TF_GetOutputProperties(TF_GraphProperties* g_prop, const char* name,
+  void TF_GetOutputPropertiesList(TF_GraphProperties* g_prop, const char* name,
                               TF_Buffer** prop, int max_size);
 
   // Helper to maintain a map between function names in a given
@@ -395,7 +416,7 @@ If pluggable graph optimizer is registered to a device type, e.g., GPU, it is op
     for (int i = 0; i < max_size; i++) {
       in_prop_buf[i] = TF_NewBuffer();
     }
-    TF_GetInputProperties(g_prop, "node1", in_prop_buf.data(), &max_size);
+    TF_GetInputPropertiesList(g_prop, "node1", in_prop_buf.data(), &max_size);
     plugin::OpInfo::TensorProperties in_prop;
     plugin::BufferToMessage(in_prop_buf, in_prop);
     for (int i = 0; i < max_size; i++)
@@ -436,7 +457,7 @@ If pluggable graph optimizer is registered to a device type, e.g., GPU, it is op
     // Set functions to create a new optimizer.
     params->optimizer->create_func = P_Create;
     params->optimizer->optimize_func = P_Optimize;
-    params->optimizer->delete_func = P_Delete;
+    params->optimizer->destory_func = P_Destory;
   }
   ```
 
