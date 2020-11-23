@@ -157,8 +157,6 @@ To support the existing `model.fit` API contract where a `dataset` is taken, it 
 
 In parameter server training with a `dataset_fn`, recent work recommends that resources and variables used in the input pipeline are created outside the `dataset_fn`, but within `strategy.scope`, to have variable placement on PS, and resources on the coordinator. This recommendation applies to Keras preprocessing layers (KPL), where read-only resources and variables are created at layer creation. For the `dataset` path, the variables and resources are eagerly created by the user, and they end up having the same placement as `dataset_fn` user path. However, `tf.data` `replicate` API does not support the resources referenced in the dataset graph to be accessed once serialized and deserialized, as opposed to `dataset_fn` case where resources can still be accessed, in the remotely executed `dataset_fn`. This imposes limitations on `dataset` path to use cases where resources are not used.
 
-TODO(yuefengz/tanzheny): Can you add a reference to the latest recommendation once available?
-
 
 ###### Implication on resource creation
 
@@ -172,7 +170,7 @@ In both paths, resources created outside of dataset scope will be placed on the 
 
 ###### Proposed design for `dataset` path
 
-This is to be completed. TODO(tanzheny/rchao/yuefengz)
+This is to be completed.
 
 
 #### The setup of `ClusterCoordinator`
