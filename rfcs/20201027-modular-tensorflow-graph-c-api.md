@@ -44,7 +44,7 @@ When initializing, TensorFlow loads the plugin and registers a new graph optimiz
 
 ### Struct/Function/Object Overview
 - Struct
-  - Struct that should be filled by the plugin: `TP_OptimizerConfigFns`, `TP_Optimizer`, `TP_OptimizerRegistrationParams`
+  - Struct that should be filled by the plugin: `TP_OptimizerConfigs`, `TP_Optimizer`, `TP_OptimizerRegistrationParams`
   - Struct that should be filled by the proper: `TF_GrapplerItem`, `TF_GraphProperties`, `TF_FunctionLibraryDefinition`
 - Function
   - Function that should be implemented by plugin:
@@ -66,7 +66,7 @@ When initializing, TensorFlow loads the plugin and registers a new graph optimiz
 
 * **Registration**
   1. Core TensorFlow links to plugin's dynamic library and loads the function `TF_InitGraphPlugin`.
-  2. In `TF_InitGraphPlugin`, plugin populates `TP_OptimizerRegistrationParams`, including `TP_OptimizerConfigFns` and `TP_Optimizer`.
+  2. In `TF_InitGraphPlugin`, plugin populates `TP_OptimizerRegistrationParams`, including `TP_OptimizerConfigs` and `TP_Optimizer`.
 
 * **TF_Buffer and protobuf class**
 
@@ -140,7 +140,7 @@ This section describes user scenarios for plugin graph optimizer.
 
 ### Front-end python use case
 
-Flag `use_plugin_optimizers` is provided for front-end python users to control the plugin graph optimizers.
+Flag `use_plugin_optimizers` is provided for front-end python users to turn on/off the plugin graph optimizers.
 ```python
 ## TF-1.x
 >> from tensorflow.core.protobuf import rewriter_config_pb2
@@ -151,26 +151,28 @@ Flag `use_plugin_optimizers` is provided for front-end python users to control t
 ```
 
 This API can be used to:
-* Turn on/off all registered plugin graph optimizers. By default, the registered optimizers are turned on, users can turn off them. If the registered optimizers are turned on and the graph device type is matched with registered device type, they would be runnning.
+* Turn on/off all registered plugin graph optimizers. By default, the registered optimizers are turned on if they are successfully registered, users can turn off them. If the registered optimizers are turned on and the graph device type is matched with registered device type, they would be runnning.
 * Use recommended configuration of existing optimizers.
-  If pluggable graph optimizer is registered to a device type, e.g., GPU, it is optional for plugin authors to provide a recommended configuration indicate whether some of existing optimizers in proper can be turned on/off, by populating flags in `TP_OptimizerRegistrationParams`.
+  If pluggable graph optimizer is registered to a device type, e.g., GPU, plugin authors can provide a recommended configuration indicate whether some of existing optimizers in proper can be turned on/off, by populating flags in `TP_OptimizerConfigs`. If user turns on the optimizer, the recommended configuration is automatically applied. Otherwise user-set configuration is used.
 
   ```cpp
-  TF_Bool get_remapping() { return false; }
-  TF_Bool get_auto_mixed_precision() { return true; }
-
   void TF_InitGraphPlugin(TP_OptimizerRegistrationParams* params, TF_Status* status) {
     // Plugin authors can turn on/off some optimizers.
-    params->config_fns->get_remapping = get_remapping;
-    params->config_fns->get_auto_mixed_precision = get_auto_mixed_precision;
+    params->configs->remapping = TF_TriState_Off;
+    params->configs->auto_mixed_precision = TF_TriState_On;
     // ...
   }
   ```
 
-  If user turns on the optimizer, the recommended configuration is automatically applied. If optimizers are turned off, default configuration is used.
+  When multiple plugins are successfully registered and running for a graph, their recommended configurations may differ with each other. If any of the config has turned off the optimizer, the optimizer will be disabled. The following table lists all possible scenarios. In the table, plugin's config is represented by tristates, `ON` means turn on optimizer, `OFF` means turn off optimzier, and `DEFAULT` means uses proper's config.
 
-  When multiple plugins are registered and running for a graph, an error would be raised if their recommended configurations are different. Users should unload one of the plugins or disable plugin optimizers to resolve the conflict.
-
+  | Proper's config | Plugin1's config | Plugin2's config  | Final config | Notes|
+  |:-------------- |:-------------- |:-------------- |:-------------- |:-------------- |
+  | ON    | ON/DEFAULT | ON/DEFAULT | **ON**| The optimizer is enabled. |
+  | ON    | OFF | OFF | **OFF**| The optimizer is disabled, unless users manually unload the plugin. Grappler prints warnings to remind users that config has been changed based on plugin's config.|
+  | ON    | ON/DEFAULT | OFF | **OFF**| The optimizer is disabled if at least one plugin turns off it. Grappler prints warnings to remind users that config has been changed based on plugin's config, and potention performance regression may happen due to the conflict configs.|
+  | ON    | OFF | ON/DEFAULT | **OFF**| Same as previous scenario.|
+  | OFF   | ON/DEFAULT/OFF | ON/DEFAULT/OFF | **OFF**| The optimizer is always disabled when user turns off it. |
 
 ### Versioning Strategy and Stability
 
@@ -191,35 +193,42 @@ This API can be used to:
   extern "C" {
   #endif
 
+  // TF_TriState is the C API typedef for tri-state.
+  typedef enum TF_TriState {
+    TF_TriState_Default = 0,
+    TF_TriState_Off,
+    TF_TriState_On,
+  } TF_TriState;
+
   // Flags indicating whether existing optimizers should be turned on/off.
   // It's optional for plugin to set functions to return true/false. If not
-  // set, proper uses default configuration.
-  typedef struct TP_OptimizerConfigFns {
+  // set, proper uses configuration set by user.
+  typedef struct TP_OptimizerConfigs {
     size_t struct_size;
     void* ext;  // reserved for future use
-    TF_Bool (*get_disable_model_pruning)();
-    TF_Bool (*get_implementation_selector)();
-    TF_Bool (*get_function_optimization)();
-    TF_Bool (*get_common_subgraph_elimination)();
-    TF_Bool (*get_arithmetic_optimization)();
-    TF_Bool (*get_debug_stripper)();
-    TF_Bool (*get_constant_folding)();
-    TF_Bool (*get_shape_optimization)();
-    TF_Bool (*get_auto_mixed_precision)();
-    TF_Bool (*get_auto_mixed_precision_mkl)();
-    TF_Bool (*get_pin_to_host_optimization)();
-    TF_Bool (*get_arithmetic_optimization)();
-    TF_Bool (*get_layout_optimizer)();
-    TF_Bool (*get_remapping)();
-    TF_Bool (*get_loop_optimization)();
-    TF_Bool (*get_dependency_optimization)();
-    TF_Bool (*get_memory_optimization)();
-    TF_Bool (*get_auto_parallel)();
-    TF_Bool (*get_scoped_allocator_optimization)();
-  } TP_OptimizerConfigFns;
+    TF_TriState disable_model_pruning;
+    TF_TriState implementation_selector;
+    TF_TriState function_optimization;
+    TF_TriState common_subgraph_elimination;
+    TF_TriState arithmetic_optimization;
+    TF_TriState debug_stripper;
+    TF_TriState constant_folding;
+    TF_TriState shape_optimization;
+    TF_TriState auto_mixed_precision;
+    TF_TriState auto_mixed_precision_mkl;
+    TF_TriState pin_to_host_optimization;
+    TF_TriState arithmetic_optimization;
+    TF_TriState layout_optimizer;
+    TF_TriState remapping;
+    TF_TriState loop_optimization;
+    TF_TriState dependency_optimization;
+    TF_TriState memory_optimization;
+    TF_TriState auto_parallel;
+    TF_TriState scoped_allocator_optimization;
+  } TP_OptimizerConfigs;
 
-  #define TP_OPTIMIZER_CONFIG_FNS_STRUCT_SIZE \
-    TF_OFFSET_OF_END(TP_OptimizerConfigFns, get_scoped_allocator_optimization)
+  #define TP_OPTIMIZER_CONFIGS_STRUCT_SIZE \
+    TF_OFFSET_OF_END(TP_OptimizerConfigs, scoped_allocator_optimization)
 
   // Struct for Optimizer. Plugin authors must provide an optimize function.
   // Creation and deletion functions are optional.
@@ -244,7 +253,7 @@ This API can be used to:
 
     // device_type optimizer is registered.
     const char* device_type;
-    TP_OptimizerConfigFns* config_fns;
+    TP_OptimizerConfigs* configs;
     TP_Optimizer* optimizer;
   } TP_OptimizerRegistrationParams;
 
@@ -272,16 +281,17 @@ This API can be used to:
   // Get TF_GrapplerItem from TF_Buffer.
   TF_GrapplerItem* TF_GetGrapplerItem(TF_Buffer* buffer);
 
-  // Get a set of node names that must be preserved. This includes feed and
-  // fetch nodes, keep_ops, init_ops. Fills in `num_values` and `storage_size`,
-  // they will be used in `TF_GetNodesToPreserveList`
+  // Get a set of node names that must be preserved. They can not be transformed
+  // or removed during the graph transformation. This includes feed and fetch
+  // nodes, keep_ops, init_ops. Fills in `num_values` and `storage_size`, they
+  // will be used in `TF_GetNodesToPreserveList`.
   void TF_GetNodesToPreserveSize(TF_GrapplerItem* item, int* num_values,
                                  int* storage_size);
 
-  // Get a set of node names that must be preserved. This includes feed and
-  // fetch nodes, keep_ops, init_ops. Fills in
-  // `values` and `lengths`, each of which must point to an array of length at
-  // least `num_values`.
+  // Get a set of node names that must be preserved. They can not be transformed
+  // or removed during the graph transformation. This includes feed and fetch
+  // nodes, keep_ops, init_ops. Fills in `values` and `lengths`, each of which
+  // must point to an array of length at least `num_values`.
   //
   // The elements of values will point to addresses in `storage` which must be at
   // least `storage_size` bytes in length.  `num_values` and `storage` can be
@@ -297,9 +307,8 @@ This API can be used to:
   void TF_GetFetchNodesSize(TF_GrapplerItem* item, int* num_values, int* storage_size);
 
 
-  // Get a set of node names for fetch nodes. Fills in
-  // `values` and `lengths`, each of which must point to an array of length at
-  // least `num_values`.
+  // Get a set of node names for fetch nodes. Fills in `values` and `lengths`,
+  // each of which must point to an array of length at least `num_values`.
   //
   // The elements of values will point to addresses in `storage` which must be at
   // least `storage_size` bytes in length.  `num_values` and `storage` can be
@@ -321,7 +330,7 @@ This API can be used to:
   // Create GraphProperties. The item must outlive the properties.
   TF_GraphProperties* TF_NewGraphProperties(TF_GrapplerItem* item);
 
-  // Destroy GraphProperties.
+  // Delete GraphProperties.
   void TF_DeleteGraphProperties(TF_GraphProperties* p);
 
   // Infer tensor shapes through abstract interpretation.
@@ -343,21 +352,21 @@ This API can be used to:
 
   // Get the size of input OpInfo::TensorProperties given node name.
   void TF_GetInputPropertiesSize(TF_GraphProperties* g_prop, const char* name,
-                                 int* max_size);
+                                 int* size);
 
   // Get the size of output OpInfo::TensorProperties given node name.
   void TF_GetOutputPropertiesSize(TF_GraphProperties* g_prop, const char* name,
-                                  int* max_size);
+                                  int* size);
 
   // Get a list of input OpInfo::TensorProperties given node name.
   // OpInfo::TensorProperties is represented as TF_Buffer*.
   void TF_GetInputPropertiesList(TF_GraphProperties* g_prop, const char* name,
-                             TF_Buffer** prop, int max_size);
+                             TF_Buffer** prop, int size);
 
   // Get a list of output OpInfo::TensorProperties given node name.
   // OpInfo::TensorProperties is represented as TF_Buffer*.
   void TF_GetOutputPropertiesList(TF_GraphProperties* g_prop, const char* name,
-                              TF_Buffer** prop, int max_size);
+                              TF_Buffer** prop, int size);
 
   // Helper to maintain a map between function names in a given
   // FunctionDefLibrary and function definitions.
@@ -394,7 +403,7 @@ This API can be used to:
     auto* optimizer = new PluginOptimizer;
     return (void*)optimizer;
   }
-  static void P_Delete(void* optimizer) {
+  static void P_Destory(void* optimizer) {
     delete static_cast<PluginOptimizer*>(optimizer);
   }
   static void P_Optimize(
@@ -402,26 +411,26 @@ This API can be used to:
       TF_Buffer* optimized_graph_buf, TF_Status* s) {
     // 1. Get TF_GrapplerItem from graph_buf(optional)
     TF_GrapplerItem* item = TF_GetGrapplerItem(graph_buf);
-   
+
     // 2. Deserialize graph_buf into plugin::GraphDef
     plugin::GraphDef graph_def;
     plugin::BufferToMessage(graph_buf, graph_def);
-   
+
     // 3. Infer shapes(optional)
     TF_GraphProperties g_prop = TF_NewGraphProperties(item);
     TF_InferStatically(g_prop, 0, 0, 0, 0);
-    int max_size;
-    TF_GetInputPropertiesSize(g_prop, "node1", &max_size);
-    std::vector<TF_Buffer*> in_prop_buf(max_size);
-    for (int i = 0; i < max_size; i++) {
+    int size;
+    TF_GetInputPropertiesSize(g_prop, "node1", &size);
+    std::vector<TF_Buffer*> in_prop_buf(size);
+    for (int i = 0; i < size; i++) {
       in_prop_buf[i] = TF_NewBuffer();
     }
-    TF_GetInputPropertiesList(g_prop, "node1", in_prop_buf.data(), &max_size);
+    TF_GetInputPropertiesList(g_prop, "node1", in_prop_buf.data(), &size);
     plugin::OpInfo::TensorProperties in_prop;
     plugin::BufferToMessage(in_prop_buf, in_prop);
-    for (int i = 0; i < max_size; i++)
+    for (int i = 0; i < size; i++)
       TF_DeleteBuffer(in_prop_buf[i]);
-   
+
     // 4. Get OpDef(optional)
     TF_FunctionLibraryDefinition* f_lib = TF_NewFunctionLibraryDefinition(graph_buf);
     plugin::OpDef op_def;
@@ -431,9 +440,9 @@ This API can be used to:
     plugin::BufferToMessage(op_buf, op_def);
     TF_DeleteBuffer(op_buf);
     plugin::DataType dt = op_def.input_arg(0).type();
-   
+
     // 5. Transform graph(optional)
-   
+
     // 6. Serialize output plugin::GraphDef into optimized_graph_buf.
     plugin::MessageToBuffer(graph_def, optimized_graph_buf);
     TF_DeleteGraphProperties(g_prop);
@@ -444,14 +453,11 @@ This API can be used to:
   Define `TF_InitGraphPlugin` that TensorFlow will call when registering the plugin:
 
   ```cpp
-  TF_Bool get_remapping() { return false; }
-  TF_Bool get_auto_mixed_precision() { return true; }
-
   void TF_InitGraphPlugin(TP_OptimizerRegistrationParams* params, TF_Status* status) {
     params->device_type = "GPU";
     // Define some flags indicating whether existing optimizers should be turned on/off
-    params->config_fns->get_remapping = get_remapping;
-    params->config_fns->get_auto_mixed_precision = get_auto_mixed_precision;
+    params->configs->remapping = TF_TriState_Off;
+    params->configs->auto_mixed_precision = TF_TriState_On;
     // ...
    
     // Set functions to create a new optimizer.
@@ -475,9 +481,9 @@ This API can be used to:
     auto init_plugin_fn = reinterpret_cast<TF_InitGraphPlugin>(dso_symbol);
    
     TP_OptimizerRegistrationParams params{TP_OPTIMIZER_REGISTRARION_PARAMS_STRUCT_SIZE};
-    TP_OptimizerConfigFns config_fns{TP_OPTIMIZER_CONFIG_FNS_STRUCT_SIZE};
+    TP_OptimizerConfigs configs{TP_OPTIMIZER_CONFIGS_STRUCT_SIZE};
     TP_Optimizer optimizer{TP_OPTIMIZER_STRUCT_SIZE};
-    params->config_fns = &config_fns;
+    params->configs = &configs;
     params->optimizer = &optimizer;
 
     TF_Status* status = TF_NewStatus();
