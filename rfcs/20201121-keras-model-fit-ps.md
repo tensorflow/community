@@ -1,5 +1,5 @@
 
-# Distributed Keras training APIs with parameter servers
+# Distributed Keras training APIs with parameter servers in TF2
 
 | Status        | Accepted                                             |
 :---------------|:-----------------------------------------------------|
@@ -11,6 +11,30 @@
 ## Background
 
 With the recent release of TF2 parameter server training support ([API](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/distribute/parameter_server_strategy_v2.py)) ([tutorial](https://www.tensorflow.org/tutorials/distribute/parameter_server_training)), custom training loop (CTL) users have started using the `tf.distribute.experimental.ParameterServerStrategy` and `tf.distribute.experimental.coordinator.ClusterCoordinator` APIs for parameter server style distributed training. `ParameterServerStrategy` provides implementation of variable placement, and APIs for defining computation, and `ClusterCoordinator` provides APIs for dataset creation, asynchronous function scheduling and remote execution. The asynchronicity brought by `ClusterCoordinator` provides scalability and training fault tolerance, and at the same time implications such as the need for remote resource creation.
+
+Here is a peek of the CTL workflow for reader's context:
+
+```
+cluster_resolver = ...
+strategy = tf.distribute.experimental.ParameterServerStrategy(cluster_resolver)
+coordinator = tf.distribute.experimental.coordinator.ClusterCoordinator(strategy)
+with strategy.scope():  
+  model, optimizer, metrics = ...
+dataset = coordinator.create_per_worker_dataset(...)
+
+@tf.function
+def worker_fn(iterator):
+  def replica_fn(inputs):
+    # Compute loss, compute gradient, apply gradient, update metrics
+  return strategy.run(replica_fn, args=(next(iterator),))
+
+for epoch in range(train_epochs):
+  iterator = iter(dataset)
+  for step in range(steps_per_epoch):
+    result = coordinator.schedule(worker_fn, args=(next(iterator),))
+  coordinator.join()
+  print('metrics result: ', result.fetch())
+```
 
 TF2 parameter server training is based on one coordinator task, multiple workers, and multiple (usually fewer than workers) parameter servers (referred to as "ps"). Workers and parameter servers run TensorFlow servers, while the coordinator creates resources on workers and parameter servers, dispatches functions, coordinates the training amd writes checkpoints etc.
 
