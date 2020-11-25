@@ -77,9 +77,11 @@ strategy = tf.distribute.experimental.ParameterServerStrategy(cluster_resolver)
 with strategy.scope():
   preproc_stage = ... # Some Keras preproc layers
   model = ... # Building a Keras model
-model.compile(optimizer=..., loss=...)  # `ClusterCoordinator` is created
+model.compile(optimizer=..., loss=...)
 def dataset_fn(): 
   return tf.data.Dataset.X... # Make use of `preproc_stage` for transformation
+
+# `ClusterCoordinator` is created at `fit`  
 history = model.fit(dataset_fn, epochs=..., steps_per_epoch=...,  callbacks=[...])
 logging.info("result: %r", history)
 ```
@@ -96,7 +98,8 @@ with strategy.scope():
   model = ... # Building a Keras model
 model.compile(optimizer=..., loss=...)  # `ClusterCoordinator` is created
 dataset = tf.data.Dataset.X... # Make use of `preproc_stage` for transformation
-# model.fit serializes and deserializes dataset onto workers
+
+# `model.fit` serializes and deserializes dataset onto workers
 history = model.fit(dataset, epochs=..., steps_per_epoch=...,  callbacks=[...]) 
 logging.info("result: %r", history)
 ```
@@ -116,9 +119,9 @@ This section discusses the changes needed to be made in `model.fit` API and assu
 
 #### `dataset` vs `dataset_fn` argument in `model.fit` API
 
-Current `model.fit` API takes a dataset from which an iterator is created, and the train function is built with this iterator. However, `ClusterCoordinator` only supports taking a no-argument function that returns a `Dataset`. We propose to have both options supported, with an initial focus on `dataset_fn` path due to its lighter implications on `model.fit` implementation.
+Current `model.fit` API takes a dataset from which an iterator is created, and the train function is built with this iterator. However, `ClusterCoordinator` only supports taking a no-argument* function that returns a `Dataset`.
 
-Previous discussion indicates that although an API modification is needed, the simplicity and less overhead may well justify such callable support, with a goal to support both.
+* The idea behind a no-argument function is that the workers are deemed the same, and thus the datasets should be the same on every worker. At this time, we do not recommend sharding.
 
 
 ##### `dataset_fn` path
@@ -161,7 +164,7 @@ With an additionally defined class `DatasetFactory`:
 
 
 ```
-class DataFactory(object):
+class DatasetFactory(object):
 
   def __init__(self, x):
     if not callable(x):
@@ -190,7 +193,7 @@ The following discussion is tentatively based on option 1, where a simple callab
 
 ###### Implication on no strategy/other strategies
 
-If `model.fit` is allowed to take a `dataset_fn`, use cases for synchronous strategies, and no strategy, can be readily applied. That is, when a dataset is needed, the `callable` is invoked eagerly to obtain a `dataset`, and the remaining workflow will apply.
+If `model.fit` is allowed to take a `dataset_fn`, use cases for synchronous strategies, and no strategy, can be readily applied. That is, when a dataset is needed, the `callable` is provided to `distribute_datasets_from_function` to obtain a distributed `dataset`, and the remaining workflow will apply.
 
 
 ###### Signature of `dataset_fn`
@@ -206,19 +209,18 @@ The signature (input argument and return value) of `dataset_fn` taken by `model.
 To support the existing `model.fit` API contract where a `dataset` is taken, it should be preferred that `ClusterCoordinator` provides native `dataset` support, which `model.fit` can readily use, rather than `model.fit` implementing replication logic to accommodate that. Similar to `experimental_distribute_dataset` API, `ClusterCoordinator` can use `tf.data`’s `replicate` API to serialize the dataset graph, and unserialize onto workers. 
 
 
-###### Variable and resource placement
+###### Resource placement
 
-In parameter server training with a `dataset_fn`, recent work recommends that resources and variables used in the input pipeline are created outside the `dataset_fn`, but within `strategy.scope`, to have variable placement on PS, and resources on the coordinator. This recommendation applies to Keras preprocessing layers (KPL), where read-only resources and variables are created at layer creation. For the `dataset` path, the variables and resources are eagerly created by the user, and they end up having the same placement as `dataset_fn` user path. However, `tf.data` `replicate` API does not support the resources referenced in the dataset graph to be accessed once serialized and deserialized, as opposed to `dataset_fn` case where resources can still be accessed, in the remotely executed `dataset_fn`. This imposes limitations on `dataset` path to use cases where resources are not used.
-
-
-###### Initial focus on `dataset_fn` path
-
-`dataset` path is concurrently explored to provide compatibility with other strategies, although `dataset_fn` path would be the initial focus to make sure we get to the bottom and user experience can be delivered end-to-end. All following sections are based on the aforementioned `dataset_fn` path, and will be updated when the `dataset` path is more understood.
+When using Keras preprocessing layers (KPL), read-only resources are created at layer creation, which ends up being placed at the coordinator. However, tf.data replicate API does not support the resources referenced in the dataset graph to be accessed once serialized and deserialized, as opposed to dataset_fn case where resources can still be accessed, in the remotely executed dataset_fn. This imposes limitations on dataset path to use cases where resources are not used, and KPL usage is thus excluded. 
 
 
-###### Proposed design for `dataset` path
+###### Conclusion: Initial focus on `dataset_fn` path
 
-This is to be completed.
+Although `dataset` path is concurrently explored to provide compatibility with other strategies, `dataset_fn` path would be the initial focus due to the `dataset` path’s complication brought by the need of replicating dataset to workers. This is also to make sure we get to the bottom and user experience can be delivered end-to-end. 
+
+Previous discussion indicates that although an API modification is needed, the simplicity and less overhead may well justify such callable support. Moreover, with dataset replication, in the past we have observed more memory consumption, less flexibility for user’s dataset transformation, and suboptimal performance. Plus, as discussed above, there are certain limitations of the `dataset` path on what can be supported.
+
+All following sections are based on the aforementioned `dataset_fn` path, and will be updated when the `dataset` path is more understood.
 
 
 #### The setup of `ClusterCoordinator`
