@@ -225,14 +225,14 @@ All following sections are based on the aforementioned `dataset_fn` path, and wi
 
 #### The setup of `ClusterCoordinator`
 
-To take advantage of TF2 support of parameter server training, a `ClusterCoordinator` should be created for handling asynchronous function scheduling and joining. The preferred route should be that such an object is abstracted away from the user with `model.fit` training API as an implementation detail.
+To take advantage of TF2 support of parameter server training, a `ClusterCoordinator` should be created for handling asynchronous function scheduling and joining. The preferred route should be that such an object is abstracted away from the user with `model.fit` training API as an implementation detail, since we do not expect users to `schedule` functions themselves, or synchronize the cluster.
 
-In terms of who keeps track of the `ClusterCoordinator`, and when it starts allocating threads, there are a few options. Here, we assume that the distribution `Strategy` object can provide whether or not it is supposed to be used with a `ClusterCoordinator`. See below “Changes in tf.distribute” section for more information.
+In terms of who keeps track of the `ClusterCoordinator`, and when it starts allocating threads, there are a few options. Here, we assume that the distribution `Strategy` object can determine whether or not it is supposed to be used with a `ClusterCoordinator`. See below “Changes in tf.distribute” section for more information.
 
 
 ##### Option 1: Attach the `ClusterCoordinator`’s lifecycle to `model.fit`
 
-With this option, an attribute is proposed for the `Model` that keeps track of the `ClusterCoordinator`, and it is instantiated at the beginning of `model.fit` time. 
+With this option, an attribute is added to the `Model` that keeps track of the `ClusterCoordinator`, and it is instantiated when `model.fit` is called. 
 
 
 ```
@@ -242,7 +242,7 @@ class Model(...):
     ...
 
   def fit(self, ...):
-    if hasattr(self.distribute_strategy, 'should_use_with_coordinator'):
+    if self.distribute_strategy.should_use_with_coordinator():
       self._cluster_coordinator = cluster_coordinator.ClusterCoordinator(
           self.distribute_strategy)
     ... # the rest of `fit`
@@ -258,23 +258,25 @@ class ClusterCoodinator(object):
 
 ##### Option 2: Have an attribute in `ParameterServerStrategy` that holds the `ClusterCoordinator`
 
-With this option, an attribute is proposed for the `ParameterServerStrategy` to keep track of the `ClusterCoordinator`. We start the `ClusterCoordinator` as soon as the `model.fit` is called for the first time, and do not attempt to shut it down after `fit` completes. It will then be reused for the next `fit`.
+With this option, an attribute is added to the `ParameterServerStrategy` to keep track of the `ClusterCoordinator`. We start the `ClusterCoordinator` as soon as the `model.fit` is called for the first time, and do not attempt to shut it down after `fit` completes. It will then be reused for the next `fit`, or on a different model.
 
 
 ```
 class Model(...):
 
   def fit(self, ...):
-    if (hasattr(self.distribute_strategy, 'should_use_with_coordinator') and 
-        not hasattr(self.distribute_strategy, '_cluster_coordinator'):
+    if (self.distribute_strategy.should_use_with_coordinator() and 
+        not self.distribute_strategy._cluster_coordinator):
       self.distribute_strategy._cluster_coordinator = \
           cluster_coordinator.ClusterCoordinator(self.distribute_strategy)
     ... # the rest of fit
 
 ```
+To avoid the circular referencing between `ParameterServerStrategy` and `ClusterCoordinator` and the resulting leak, the `coordinator`’s reference to `strategy` should be a `weakref`.
 
+This option is with the assumption that there is always only one `ParameterServerStrategy` used [^1], and that we are not supporting the use case where the user creates an additional `ClusterCoordinator`.
 
-This option is with the assumption that there is always only one `ParameterServerStrategy` used.
+[^1] This is because there's currently not yet a clean way to shut down ClusterCoordinator, so we can't support more than one ClusterCoordinator, and thus no more than one ParameterServerStrategy.
 
 
 #### Keras `Model` changes
