@@ -39,7 +39,7 @@ In this design, we will discuss the changes in `model.fit` API that we expect to
 
 ## Proposed options and solutions
 
-Let’s first take a look at the proposed user flow (on the coordinator). It is expected to be largely the same with other strategies (except for the strategy swap). Unless mentioned otherwise, the discussion here applies to the python program intended to be run on the coordinator.
+Let’s first take a look at the proposed user flow (on the coordinator). It is expected to be largely the same with other strategies, but notable differences are highlighted in "Notable differences" section below. Unless mentioned otherwise, the discussion here applies to the python program intended to be run on the coordinator.
 
 
 ### User Journey
@@ -76,6 +76,12 @@ dataset = tf.data.Dataset.X... # Make use of `preproc_stage` for transformation
 history = model.fit(dataset, epochs=..., steps_per_epoch=...,  callbacks=[...]) 
 logging.info("result: %r", history)
 ```
+
+#### Notable differences of user code between PS and other strategies
+
+There are a couple of points worth noting in the above user code:
+* The `dataset` argument of `model.fit` can no longer be a dataset instance. In fact, in the short term, it most likely will be some form of dataset factory, due to the challenges discussed below.
+* `steps_per_epoch` argument will be required for PS training, at least in the short term. This is because `OutOfRangeError` is raised from `ClusterCoordinator` APIs as soon as one worker exhausts its worker dataset, at which point other workers may have datasets remaining to be processed, and this `OutOfRangeError` indicates neither every dataset is visited roughly once, nor every dataset is visited roughly number of workers times. We thus require an explicit steps per epoch, and recommend users to always repeat and shuffle the input dataset.
 
 
 
