@@ -121,7 +121,7 @@ This section discusses the changes needed to be made in `model.fit` API and assu
 
 Current `model.fit` API takes a dataset from which an iterator is created, and the train function is built with this iterator. However, `ClusterCoordinator` only supports taking a no-argument* function that returns a `Dataset`.
 
-\*The idea behind a no-argument function is that the workers are deemed the same, and thus the datasets should be the same on every worker. At this time, we do not recommend sharding.
+*The idea behind a no-argument function is that the workers are deemed the same, and thus the datasets should be the same on every worker. At this time, we do not recommend sharding.
 
 
 ##### `dataset_fn` path
