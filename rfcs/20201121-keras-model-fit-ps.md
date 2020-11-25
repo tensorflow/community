@@ -375,6 +375,9 @@ class DataFactoryAdapter(DataAdapter):
     return False
 ```
 
+#### Multiple steps within a train function
+
+Keras training API has a mechanism to run multiple steps within one `tf.function`’ed train function, which is aimed at less time spent on RPCs between the coordinator and the workers, and thus better training performance. This is specified as the `steps_per_execution` argument in the `model.compile` call. Parameter server training can naturally benefit from this mechanism, without the need of code changes, but it is worth noting that all steps run within a `tf.function` will be executed on the same worker. The major implication of this is possible limitations on callbacks, as explained in the “Callbacks” section below.
 
 
 #### Callbacks
@@ -454,7 +457,9 @@ Asynchronous `Callback`s might be worth exploring in a future extension to the f
 
 #### Metrics variables
 
-In Keras training APIs, users can specify custom metrics or strings for metrics at `model.compile`, and there is also built-in loss. The variables that are involved, are either created at `compile` time, which is under `strategy.scope`, or the first time they are being updated (at `fit` time, which is also under `strategy.scope`. Therefore the variables should be placed correctly in parameter servers.
+In Keras training APIs, users can specify custom metrics or strings for metrics in `model.compile`, and there is also built-in loss. The variables that are involved, are either created at `compile` time, which is under `strategy.scope`, or the first time they are being updated (at `fit` time, which is also under `strategy.scope`. Therefore the variables should be placed correctly in parameter servers.
+
+There is also an option to place the metrics variables on workers, and aggregating the metrics result to parameter servers periodically. In theory, this results in fewer round trips between workers and parameter servers and hence better performance, but would require an additional `ClusterCoordinator` API to have explicit placement of variables on workers.
 
 
 #### Optimizer variables
