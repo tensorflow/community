@@ -276,7 +276,7 @@ To avoid the circular referencing between `ParameterServerStrategy` and `Cluster
 
 This option is with the assumption that there is always only one `ParameterServerStrategy` used [^1], and that we are not supporting the use case where the user creates an additional `ClusterCoordinator`.
 
-[^1] This is because there's currently not yet a clean way to shut down ClusterCoordinator, so we can't support more than one ClusterCoordinator, and thus no more than one ParameterServerStrategy.
+[^1]: This is because there's currently not yet a clean way to shut down ClusterCoordinator, so we can't support more than one ClusterCoordinator, and thus no more than one ParameterServerStrategy.
 
 
 #### Keras `Model` changes
