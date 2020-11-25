@@ -274,14 +274,14 @@ class Model(...):
 ```
 To avoid the circular referencing between `ParameterServerStrategy` and `ClusterCoordinator` and the resulting leak, the `coordinator`’s reference to `strategy` should be a `weakref`.
 
-This option is with the assumption that there is always only one `ParameterServerStrategy` used [^1], and that we are not supporting the use case where the user creates an additional `ClusterCoordinator`.
+This option is with the assumption that there is always only one `ParameterServerStrategy` used*, and that we are not supporting the use case where the user creates an additional `ClusterCoordinator`.
 
-[^1]: This is because there's currently not yet a clean way to shut down ClusterCoordinator, so we can't support more than one ClusterCoordinator, and thus no more than one ParameterServerStrategy.
+*This is because there's currently not yet a clean way to shut down `ClusterCoordinator`, so we can't support more than one `ClusterCoordinator`, and thus no more than one `ParameterServerStrategy`.
 
 
 #### Keras `Model` changes
 
-The train function in `Model.make_train_function` can be swapped with a wrapper that takes an iterator (which, when invoked, would be the worker-specific iterator), and returns the resulting `RemoteValue`.
+The train function in `Model.make_train_function` can be swapped with a wrapper that takes an iterator (which, when executed on remote workers, would be the worker-specific iterator inside the function being executed), and returns the resulting `RemoteValue`.
 
 
 ```
@@ -351,7 +351,7 @@ class DataHandler(object):
     """Catches errors when an iterator runs out of data."""
     try:
       yield
-      self.sync()
+      self.sync()  # This indicates that the workers will be synced every epoch
     except (StopIteration, errors.OutOfRangeError):
       # stop the iteration
 
@@ -360,7 +360,7 @@ class DataHandler(object):
 ```
 
 
-A new `DataAdapter` is also needed to make sure the training API knows a dataset factory is a supported path:
+A new `DataAdapter` is also needed to make sure the training API knows a `callable`, or a dataset factory is a supported path:
 
 
 ```
