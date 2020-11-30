@@ -36,7 +36,7 @@ for epoch in range(train_epochs):
   print('metrics result: ', result.fetch())
 ```
 
-TF2 parameter server training is based on one coordinator task, multiple workers, and multiple (usually fewer than workers) parameter servers (referred to as "ps"). Workers and parameter servers run TensorFlow servers, while the coordinator creates resources on workers and parameter servers, dispatches functions, coordinates the training amd writes checkpoints etc.
+TF2 parameter server training is based on one coordinator task, multiple workers, and multiple (usually fewer than workers) parameter servers (referred to as "ps"). Workers and parameter servers run TensorFlow servers, while the coordinator creates resources on workers and parameter servers, dispatches functions, coordinates the training and writes checkpoints etc.
 
 While CTL user flow has been supported since the release of TF 2.4, Keras `model.fit` training API is not yet. It has been a common ask (as shown in a survey conducted earlier this year) for availability, given its simplicity and support for a variety of machine learning models, metrics, optimizers, etc. 
 
@@ -63,7 +63,7 @@ In this design, we will discuss the changes in `model.fit` API that we expect to
 
 ## Proposed options and solutions
 
-Let’s first take a look at the proposed user flow (on the coordinator). It is expected to be largely the same with other strategies, but notable differences are highlighted in "Notable differences" section below. Unless mentioned otherwise, the discussion here applies to the python program intended to be run on the coordinator.
+Let’s first take a look at the proposed user flow (on the coordinator). It is expected to be largely the same with other strategies, but notable differences are highlighted in the "Notable differences" section below. Unless mentioned otherwise, the discussion here applies to the python program intended to be run on the coordinator.
 
 
 ### User Journey
@@ -108,7 +108,7 @@ logging.info("result: %r", history)
 
 There are a couple of points worth noting in the above user code:
 * The `dataset` argument of `model.fit` can no longer be a dataset instance. In fact, in the short term, it most likely will be some form of dataset factory, due to the challenges discussed below.
-* `steps_per_epoch` argument will be required for PS training, at least in the short term. This is because `OutOfRangeError` is raised from `ClusterCoordinator` APIs as soon as one worker exhausts its worker dataset, at which point other workers may have datasets remaining to be processed, and this `OutOfRangeError` indicates neither every dataset is visited roughly once, nor every dataset is visited roughly number of workers times. We thus require an explicit steps per epoch, and recommend users to always repeat and shuffle the input dataset.
+* `steps_per_epoch` argument will be required for PS training, at least in the short term. This is because `OutOfRangeError` is raised from `ClusterCoordinator` APIs as soon as one worker exhausts its worker dataset, at which point other workers may have datasets remaining to be processed, and this `OutOfRangeError` indicates neither every dataset is visited roughly once, nor every dataset is visited roughly number of workers times. We thus require explicit steps per epoch, and recommend users to always repeat and shuffle the input dataset.
 
 
 
@@ -146,7 +146,7 @@ Pros:
 * `callable` does not require users to use additional APIs and may be less overhead.
 
 Cons:
-* Less future proof as there could be different intepretation of callable passed as `dataset` to `model.fit` in the future.
+* Less future proof as there could be different interpretation of callable passed as `dataset` to `model.fit` in the future.
 
 
 ###### Option 2: dataset factory
@@ -182,7 +182,7 @@ class DatasetFactory(object):
 ```
 
 Pros:
-* If `dataset` has a different intepretation, for example it takes an argument instead of none, we get a adapting layer with a `DatasetFactory`.
+* If `dataset` has a different intepretation, for example it takes an argument instead of none, we get an adapting layer with a `DatasetFactory`.
 
 Cons:
 * This requires users to use an additional symbol.
