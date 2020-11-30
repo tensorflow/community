@@ -1,7 +1,7 @@
 
 # Distributed Keras training APIs with parameter servers in TF2
 
-| Status        | Accepted                                             |
+| Status        | Under review                                             |
 :---------------|:-----------------------------------------------------|
 | **Author(s)** | Rick Chao, Tom O'Malley, Zhenyu Tan, Yuefeng Zhou (Google)                                  |
 | **Sponsor**   | Francois Chollet, Priya Gupta (Google)                                |
