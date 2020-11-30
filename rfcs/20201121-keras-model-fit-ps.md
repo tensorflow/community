@@ -539,7 +539,7 @@ SidecarEvaluator(
 ```
 
 
-`SidecarEvaluator` periodically loads the checkpoint files saved by the training counterpart, as long as the checkpoint captures the `model` and `optimizer` objects. As part of full integration with `model.fit` workflow, we propose to extend `SidecarEvaluator` to 
+`SidecarEvaluator` periodically loads the checkpoint files saved by the training counterpart, as long as the checkpoint captures the `model` (and optionally, `optimizer` objects if summary is written). As part of full integration with `model.fit` workflow, we propose to extend `SidecarEvaluator` to 
 
 
 
@@ -548,7 +548,7 @@ SidecarEvaluator(
 
 ##### An evaluation thread on coordinator
 
-A potentially more seamless sidecar evaluation, where the user is not required to allocate an evaluator task or run separate code, can be done with an evaluation thread on the coordinator. This thread would `schedule` an evaluation function to be executed on a worker, and wait for its result. One the result is returned, it can write a summary, adjust learning rate, or signal to end the training, re-`schedule` an evaluation function, and so on.
+A potentially more seamless and encapsulated sidecar evaluation, where the user is not required to allocate an evaluator task or run separate code, can be done with an evaluation thread on the coordinator. This thread would `schedule` an evaluation function to be executed on a worker, and wait for its result. One the result is returned, it can write a summary, adjust learning rate, or signal to end the training, re-`schedule` an evaluation function, and so on.
 
 In addition to more changes to `model.fit` API, this solution presents a challenge when workers can easily become unavailable, in which case a fault tolerance solution will be needed for evaluation. Moreover, evaluating on moving variables (as they are concurrently being updated by workers) can yield unreproducible evaluations, as opposed to an evaluator task case, where evaluation is always based on a checkpoint file.
 
@@ -562,21 +562,34 @@ There are two goals of fault tolerance in multi-worker training:
 *   Task preemption or unavailability is handled by the program or cluster, without being reported as failure
 *   The training progress can withstand task preemption and subsequent recovery 
 
-The first goal is fulfilled by the failure handling mechanism provided by the `ClusterCoordinator` library, where worker unavailability is handled within the program, and PS/coordinator unavailability is handled by the cluster’s auto-restart mechanism (by exiting with an exit code that the cluster management recognizes). From the user's perspective, they can leverage proposed `handle_restarable_error` context manager:
+#### Handling unavailability
+
+The first goal can further be discussed in three categories: worker unavailability, ps unavailability, and coordinator unavailability.
+
+In the case of worker unavailability, fault tolerance is already fulfilled by the [failure handling mechanism](https://www.tensorflow.org/tutorials/distribute/parameter_server_training#handling_task_failure) provided by the `ClusterCoordinator`: when a worker becomes unavailable, the library handles that without the user's treatment by continuing the progress on other available workers. 
+
+However, in the case of PS unavailability, the program requires the cluster's auto-restart mechanism to restart the coordinator program. In some cluster management systems, the system requires the program to exit with an exit code that it recognizes:
+
 
 
 ```
-with handle_restartable_error():
+try:
   with strategy.scope():
     model = ... 
   model.compile(optimizer=..., loss=...) 
   model.fit(dataset_fn, epochs=..., steps_per_epoch=...,  callbacks=[...])
+except UnavailableError:
+  sys.exit(AN_EXIT_CODE_TO_RESTART)
 ```
 
 
-In the long term, we propose an in-process restart mechanism. This will apply to both custom training loop and `model.fit` cases.
+In the long term, we propose an in-process restart mechanism. This will apply to both custom training loop and `model.fit` cases, and will be discussed in a future separate RFC.
 
-The second goal is fulfilled by Keras `BackupAndRestore` callback, which automatically saves checkpoints at the end of epochs (by default), and restores at the beginning of `model.fit`, including the epoch number it should start at initially:
+In the case of coordinator unavailability, the training is halted until the coordinator is restarted by the cluster, or by the user manually.
+
+#### Continued training progress
+
+The second goal, with `model.fit`, is fulfilled by Keras `BackupAndRestore` callback, which automatically saves checkpoints at the end of epochs, and restores at the beginning of `model.fit`, including the epoch number it should start at initially. This is useful for the case where the coordinator program needs to restart, due to PS or coordinator unavailability:
 
 
 ```
@@ -585,21 +598,24 @@ model.fit(...,
 ```
 
 
-See [class doc](https://github.com/tensorflow/tensorflow/blob/2d263ad1caf91fcc2eb83efa3c63939608e24901/tensorflow/python/keras/callbacks.py#L1546) for more information.
+This API is currently available already, but we will need to add tests to make sure it works as expected, as well as exploring finer checkpointing frequency than epochs. See [class doc](https://github.com/tensorflow/tensorflow/blob/2d263ad1caf91fcc2eb83efa3c63939608e24901/tensorflow/python/keras/callbacks.py#L1546) for more information.
+
+Also see the [handling task failure](https://www.tensorflow.org/tutorials/distribute/parameter_server_training#handling_task_failure) section of the tutorial for general information on failure handling with parameter server training.
 
 
 ### Testing
 
-If the assumption that model.fit user code remains the same across strategies (for the most basic flow where batch-level callback is not used) stays true, we can utilize strategy combination tests, where we add `ParameterServerStrategy` to the list of strategy combinations, and use that in the existing tests. With lack of resources currently, we may reprioritize this in Q1, and in the immediate term we aim to cover basic flow such as mnist, resnet, etc.
+If the assumption that model.fit user code remains the same across strategies (for the most basic flow where batch-level callback is not used) stays true, we can utilize strategy combination tests, where we add `ParameterServerStrategy` to the list of strategy combinations, and use that in the existing tests. The combination framework needs changes to provide the cluster needed for testing, similar to [what we have done](https://github.com/tensorflow/tensorflow/blob/fcc4b966f1265f466e82617020af93670141b009/tensorflow/python/distribute/combinations.py#L345-L399) for `MultiWorkerMirroredStrategy`. With lack of resources currently, we may reprioritize this in Q1, and in the immediate term we aim to cover basic flow such as mnist, resnet, etc.
 
 
 ## Timeline
 
 
 
-*   Current phase: exploring and protytyping
+*   Current phase: exploring and prototyping
 *   Design doc (ETA: mid/late-Nov)
 *   Schedule design review (ETA: Early Dec)
+*   Code check-in with explicit opt-in. (ETA: Early-Mid Dec)
 *   User model testing (ETA: Dec)
 *   Aligned design with approvals on this doc (ETA: End of Dec)
-*   Demonstrable working prototype (ETA: End of Dec)
+*   Demonstrable working prototype with checked in test or model (ETA: End of Dec)
