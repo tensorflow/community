@@ -407,53 +407,78 @@ Since the workers will sync every epoch anyway, fetching the remote values incur
 
 ##### What constitutes a `step` in `Model.fit` with `ParameterServerStrategy`?
 
-There are two mental models users might have of what constitutes a single `step` when running `Model.fit` with `ParameterServerStrategy`. Which mental model we choose has implications for how users specify `steps_per_epoch` and how we handle batch-level `Callback`s.
+There are two mental models users might have of what constitutes a single `step` when running `Model.fit` with `ParameterServerStrategy`. The mental models are clarified below, as each has implications for how users specify `steps_per_epoch` and how we handle batch-level `Callback`s.
 
-**Option 1: A `step` is one batch on one worker**
+**Mental Model 1: A `step` is one batch on one worker**
 
 This is the mental model used in custom training loops with `ParameterServerStrategy`. With this mental model, every time `Model.train_function` is called, it schedules a single batch on a single worker. If there are `W` workers, then setting `steps_per_epoch=100` means each worker will run (approximately) `100/W` batches.
 
-**Pros:**
-
--  Users can treat the workers like a "worker pool". E.g., they do not have to be aware of how many workers are in their cluster. They do not have to change the `steps_per_epoch` parameter when they change the number of workers. `steps_per_epoch=1000` runs 1000 training batches regardless of the number of workers allocated to the cluster.
-
-**Cons:**
-
-- There is no reasonably performant way to support batch-level `Callback`s. This is because to support batch-level `Callback`s, we would need to sync after every step. When a step is defined as a single batch on a single worker, this means that only one worker will ever be non-idle when batch-level `Callback`s are passed. We cannot even rely on the `steps_per_execution` parameter, because this parameter only controls how many batches are run within one `tf.function`, but the `tf.function` is still only run on one worker. Meaning even with a high `steps_per_execution`, batch-level `Callback`s would cause all but one worker to be idle at any given time. Because of this, if we go with this mental model, we should error out when a user attempts to pass batch-level `Callback`s to `Model.fit`
-- If a user passes a `Dataset` with `D` batches to each worker, they might expect that setting `steps_per_epoch=D` will visit every batch of the `Dataset`. However, only the first `D/W` batches will be visited with this mental model.
-
-**Option 2: A `step` is one batch on every worker**
+**Mental Model 2: A `step` is one batch on every worker**
 
 With this mental model, every time `Model.train_function` is called, it schedules one batch to execute on each worker. This means that if there are `W` workers, passing `steps_per_epoch=100` will actually run `100 * W` batches of training, with each worker seeing `100` batches.
 
-**Pros:**
+In this proposal, we are proposing Mental Model 1. That is, one `step` of `Model.fit` corresponds to one batch on one worker. This mental model is chosen primarily because:
 
-- Batch-level `Callback`s can be supported with this approach. We can sync every step, and we can rely on the `steps_per_execution` parameter to ensure that the step time is large enough so that this syncing is not prohibitively expensive.
+1) Unlike `MultiWorkerMirroredStrategy`, we do not shard each global batch across workers. Each worker runs one full batch.
+2) The number of workers in a worker pool can change over time.
 
-**Cons:**
+For a more detailed discussion on this, see the Alternatives Considered section.
 
-- Users need to be aware of how many workers are in their cluster when setting `steps_per_epoch`. Setting `steps_per_epoch=100` will actually run `100 * W` training batches, which could be confusing to users. Halving the number of workers, without changing any code, would also halve the amount of training performed.
+With Mental Model 1, we cannot sync every batch. If we did so, only one worker would ever be working at a time. Because of this, we will not currently support user-written batch-level Callbacks. Instead, we will expect the user to set `epochs` and `steps_per_epoch` so that all work that requires syncing is performed at the end of each epoch. For instance, if the user desires to train for 50,000 steps and to checkpoint every 5,000 steps, the user should specify `Model.fit(..., steps_per_epoch=5000, epochs=10)`.
 
-If we go with Option (1), we should disallow batch-level `Callback`s, since in this case `ParameterServerStrategy` with batch-level `Callback`s will always be slower than training on a single machine.
+For now, we will throw an error if a user provides a `Callback` that overrides `Callback.on_train_batch_begin` or `Callback.on_train_batch_end`, warning that batch-level Callbacks are not supported at this time. However, this design does not preclude supporting batch-level Callbacks in the future, as long as we give the user control of when to perform a sync. See the section Future Work on Batch-Level Callbacks below for a detailed discussion of this possibility.
 
-If we go with Option (2) we should support batch-level `Callback`s, but we will use existing logic in `CallbackList` to detect when batch-level `Callback`s are passed, and only incur the performance penalty of syncing workers each batch when the user has passed batch-level `Callback`s (for context, none of Keras's built-in `Callbacks` other than the `ProgressBar` will incur this penalty). This logic was originally put in place to ensure that TPU async mode was only blocked when needed, and applies equally well to `ParameterServerStrategy` without significant modifications. We will also re-use existing logic to log a warning to the user when their batch-level `Callback`s are causing a significant slowdown in training time. This logic also resides in the `CallbackList` object.
+##### Timing-Based Callbacks
 
-**Asynchronous Callbacks**
+User who wish to create `Callbacks` that execute on a timing interval rather than a step interval can do so via launching a thread in `Callback.on_train_begin`. An example is shown below:
 
-If we wanted to support batch-level `Callback`s with the `step` mental model Option 1 above, we could alternatively introduce a new concept to `Model.fit` of "asynchronous callbacks". An asynchronous `Callback` wouldn't block until its results were ready, instead we would schedule all batches upfront, and then send the results of the batches to the asynchronous `Callback` when the `Coordinator` determines that the batch has finished executing.
+```
+class MyTimingCallback(tf.keras.callbacks.Callback):
 
-**Pros:**
+  def __init__(self, save_dir, interval):
+    super(MyTimingCallback, self).__init__()
+    self.save_dir = save_dir
+    self.interval = interval
+    self.stop_training = False
+  
+  def on_train_begin(self, _):
+    self.checkpoint_thread = threading.Thread(target=self.save)
+    self.checkpoint_thread.start()
+    
+  def on_train_end(self, _):
+    self.stop_training = True
+    self.checkpoint_thread.join()
+    
+  def save(self):
+    while not self.stop_training:
+      time.sleep(self.interval)
+      self.model.save(self.save_dir)
+```
 
-- This allows for a form of batch-level `Callback`s that doesn't need to block. It would work with either mental model of `steps` outlined above. It would work well for certain tasks such as `Checkpointing`.
+##### Future Work on Batch-level Callbacks
 
-**Cons:**
+Although we will not support batch-level Callbacks with the current proposal, it is worth noting that this design does not preclude us from supporting some form of batch-level Callbacks in the future.
 
-- Asynchronous `Callback`s would be limited in what they could do. Any changes that an asynchronous object makes to a `tf.Variable` (such as the `learning_rate`) would not take effect until the next epoch, since all of the batches were already scheduled before the `Callback` executes.
-- This would require a separate code path in `Model.fit`, since the order in which functions are scheduled and `Callback`s are executed would be different in this approach.
-- It's not clear how we should handle it when a user passes a mix of synchronous and asynchronous `Callback`s (for instance, if the user passes in one of our existing built-in `Callback`s in addition to an asynchronous `Callback`).
+For example, Callbacks only require syncing because they fetch the results of `Model.train_function` and return these values as `NumPy` arrays. We could expose a setting on the `Callback` class that allows users to manually sync only when necessary. When this setting is turned on, the `logs` passed to the `Callback` will contain `RemoteValue`s.
 
-Asynchronous `Callback`s might be worth exploring in a future extension to the functionality of `Model.fit` + `ParameterServerStrategy` integration, but should likely be out-of-scope for the initial design.
+An example checkpointing `Callback` that uses this mechanism is shown below. This `Callback` would be reasonably performant, as it would only trigger a sync every 5,0000 batches:
 
+```
+class MyCheckpointCallback(tf.keras.callbacks.Callback):
+  
+  def __init__(self, save_dir):
+    super(MyCheckpointCallback, self).__init__()
+    self.save_dir = save_dir
+    # Controls whether the CallbackList container automatically syncs
+    # before sending logs to this Callback.
+    self.manually_sync = True
+    
+  def on_train_batch_end(self, batch, logs):
+    if batch % 5000 == 0:
+      # Built-in method to sync and convert logs from RemoteValues to NumPy.
+      self.fetch_logs(logs)
+      self.model.save(self.save_dir)
+```
 
 #### Metrics variables
 
@@ -619,3 +644,39 @@ If the assumption that model.fit user code remains the same across strategies (f
 *   User model testing (ETA: Dec)
 *   Aligned design with approvals on this doc (ETA: End of Dec)
 *   Demonstrable working prototype with checked in test or model (ETA: End of Dec)
+
+## Alternatives Considered
+
+### Batch-level Callbacks
+
+**Support batch-level Callbacks by making it so that one `step` is one batch on every worker**
+
+With this mental model, every time `Model.train_function` is called, it schedules one batch to execute on each worker. This means that if there are `W` workers, passing `steps_per_epoch=100` will actually run `100 * W` batches of training, with each worker seeing `100` batches.
+
+**Pros:**
+
+- Batch-level `Callback`s can be supported with this approach. We can sync every step, and we can rely on the `steps_per_execution` parameter to ensure that the step time is large enough so that this syncing is not prohibitively expensive.
+
+**Cons:**
+
+- Users need to be aware of how many workers are in their cluster when setting `steps_per_epoch`. Setting `steps_per_epoch=100` will actually run `100 * W` training batches, which could be confusing to users. Halving the number of workers, without changing any code, would also halve the amount of training performed.
+
+If we go with Option (1), we should disallow batch-level `Callback`s, since in this case `ParameterServerStrategy` with batch-level `Callback`s will always be slower than training on a single machine.
+
+If we go with Option (2) we should support batch-level `Callback`s, but we will use existing logic in `CallbackList` to detect when batch-level `Callback`s are passed, and only incur the performance penalty of syncing workers each batch when the user has passed batch-level `Callback`s (for context, none of Keras's built-in `Callbacks` other than the `ProgressBar` will incur this penalty). This logic was originally put in place to ensure that TPU async mode was only blocked when needed, and applies equally well to `ParameterServerStrategy` without significant modifications. We will also re-use existing logic to log a warning to the user when their batch-level `Callback`s are causing a significant slowdown in training time. This logic also resides in the `CallbackList` object.
+
+**Asynchronous Callbacks**
+
+If we wanted to support batch-level `Callback`s with the `step` mental model Option 1 above, we could alternatively introduce a new concept to `Model.fit` of "asynchronous callbacks". An asynchronous `Callback` wouldn't block until its results were ready, instead we would schedule all batches upfront, and then send the results of the batches to the asynchronous `Callback` when the `Coordinator` determines that the batch has finished executing.
+
+**Pros:**
+
+- This allows for a form of batch-level `Callback`s that doesn't need to block. It would work with either mental model of `steps` outlined above. It would work well for certain tasks such as `Checkpointing`.
+
+**Cons:**
+
+- Asynchronous `Callback`s would be limited in what they could do. Any changes that an asynchronous object makes to a `tf.Variable` (such as the `learning_rate`) would not take effect until the next epoch, since all of the batches were already scheduled before the `Callback` executes.
+- This would require a separate code path in `Model.fit`, since the order in which functions are scheduled and `Callback`s are executed would be different in this approach.
+- It's not clear how we should handle it when a user passes a mix of synchronous and asynchronous `Callback`s (for instance, if the user passes in one of our existing built-in `Callback`s in addition to an asynchronous `Callback`).
+
+Asynchronous `Callback`s might be worth exploring in a future extension to the functionality of `Model.fit` + `ParameterServerStrategy` integration, but should likely be out-of-scope for the initial design.
