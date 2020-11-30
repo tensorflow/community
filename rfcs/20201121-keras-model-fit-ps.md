@@ -112,9 +112,9 @@ There are a couple of points worth noting in the above user code:
 
 
 
-### Changes in `model.fit`
+### Changes in `Keras` `model` APIs and implementations
 
-This section discusses the changes needed to be made in `model.fit` API and assumes the reader has basic familiarity with Keras training APIs.
+This section discusses the changes needed to be made in `model` API and assumes the reader has basic familiarity with Keras training APIs.
 
 
 #### `dataset` vs `dataset_fn` argument in `model.fit` API
@@ -464,21 +464,21 @@ There is also an option to place the metrics variables on workers, and aggregati
 
 #### Optimizer variables
 
-Similarly, the hyper and slot variables an `optimizer` object uses, would be created at gradient application, at which point `model.fit` has entered `strategy.scope` for correct placement. For the variables that need to be colocated with other variables, they should work because `ParameterServerStrategy` has entered colocation device scope when these variables are being created.
+Similarly, the hyper and slot variables an `optimizer` object uses, would be created at gradient application, at which point Keras `optimizer` has [entered](https://github.com/tensorflow/tensorflow/blob/4d1142b04b708372203e15abc4934f7289fd2255/tensorflow/python/keras/optimizer_v2/optimizer_v2.py#L956) `strategy.scope` for correct placement. For the variables that need to be colocated with other variables, such as slot variables, they should continue to work because Keras has made sure [`colocate_vars_with` variable creator scope is used](https://github.com/tensorflow/tensorflow/blob/4d1142b04b708372203e15abc4934f7289fd2255/tensorflow/python/keras/optimizer_v2/optimizer_v2.py#L904-L909), which gets recognized by `ParameterServerStrategy` when these variables are being created, and the variables end up getting placed accordingly.
 
 
 #### model.evaluate and model.predict
 
-Initially, we aim to have `evaluate` and `predict` to only be carried out on the coordinator. That is, it does not involve distribution via a `ClusterCoordinator`.
+Initially, we aim to have `model.evaluate` and `model.predict` to only be carried out on the coordinator. That is, it does not involve distribution via a `ClusterCoordinator`, and thus the evaluate function is executed eagerly on the coordinator.
 
 In the longer term, we seek distributed support for `model.evaluate`, where the evaluate function is scheduled onto the workers to execute. Visitation guarantee cannot be supported currently with the parameter server training API, so we can implement distributed evaluation without it, or wait until that is supported, and integrate it. 
 
 
 ### Changes in tf.distribute
 
-The proposal of coordinator-based distributed training provides a way for a `Strategy` to distribute in addition to typical `run`-based synchronous training, but there needs to be a way in the strategy to specify if it is intended to be used with a `ClusterCoordinator`. We should consider having this specified by the user, possibly at `__init__`, so that the Keras training library knows whether or not it is intended for a `ClusterCoordinator`-based single-client training, or traditional multi-client training.
+Coordinator-based distributed training was made available with the introduction of a `ClusterCoordinator` API, where a `Strategy` should be used in conjunction with it. In contrast, classic `strategy.run`-based distributed training only requires a `Strategy` object to be used. The code written for two schemes, with custom training loops, is easily distinguishable by the presence or absence of a `ClusterCoordinator` object. However, with `model.fit`, users are not expected to create a `ClusterCoordinator` object, and thus there needs to be a way for the user to specify whether the training should be performed with a `ClusterCoordinator` object. This can possibly be done at `__init__`, so that `model.fit` knows whether or not it is intended for a coordinator-based single-client training, or a traditional multi-client training.
 
-For now, it seems feasible that `ParameterServerStrategy` has a field `should_use_with_coordinator`, which is always True until usage without a `ClusterCoordinator` is supported.
+For now, it seems feasible that `ParameterServerStrategy` has a field `should_use_with_coordinator`, which is always True until usage without a `ClusterCoordinator` is supported, at which point it can be an argument of `__init__`.
 
 
 ```
@@ -508,9 +508,19 @@ server.join()
 
 ### Evaluation
 
-If `validation_data` is provided, and certain conditions are satisfied, `model.fit` also runs evaluation via `model.evaluate` API every epoch, in an train-evaluate alternating manner. As described above, at this time, only coordinator is used for `model.evaluate` evaluation, and we plan to extend this to worker-distributed evaluation when visitation guarantee is supported.
+In addition to the existing train-evaluate solution provided by `model.fit`, we also support a dedicated evaluator task to be used, aka sidecar evaluator. Users will then have two evaluation schemes to choose from: alternating evaluation, or sidecar evaluation, or both, depending on their needs.
 
-In addition to the built-in evaluation `model.fit` provides, sidecar evaluation is also supported with the `SidecarEvaluator` [API](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/keras/distribute/sidecar_evaluator.py). User is expected to kick start an additional task `evaluator`, in which the python program runs a `SidecarEvaluator` as follows:
+#### Built-in, alternating evaluation in `model.fit`
+
+If `validation_data` argument is provided, and certain conditions are satisfied, `model.fit` also runs evaluation via `model.evaluate` API every epoch, in an train-evaluate alternating manner. As described above, at this time, only the coordinator is used for `model.evaluate` evaluation, and we plan to extend this to worker-distributed evaluation when visitation guarantee is supported.
+
+#### Sidecar evaluation
+
+In addition to the built-in evaluation `model.fit` provides, sidecar evaluation is also supported with a [recommended user flow](https://www.tensorflow.org/tutorials/distribute/parameter_server_training#side-car_evaluation).
+
+##### SidecarEvaluator API
+
+We plan to propose a `SidecarEvaluator` API in a separate RFC for user’s convenience: with this, user is expected to kick start an additional task `evaluator`, in which the python program runs a `SidecarEvaluator` as follows:
 
 
 ```
@@ -536,7 +546,11 @@ SidecarEvaluator(
 *   also accept the checkpoint files saved by `ModelCheckpoint` callback for periodic evaluation.
 *   accept arbitrary callbacks to be used in its internal `model.evaluate` call
 
-Users will then have two evaluation schemes to choose from: alternating evaluation, or sidecar evaluation, or both, depending on their needs.
+##### An evaluation thread on coordinator
+
+A potentially more seamless sidecar evaluation, where the user is not required to allocate an evaluator task or run separate code, can be done with an evaluation thread on the coordinator. This thread would `schedule` an evaluation function to be executed on a worker, and wait for its result. One the result is returned, it can write a summary, adjust learning rate, or signal to end the training, re-`schedule` an evaluation function, and so on.
+
+In addition to more changes to `model.fit` API, this solution presents a challenge when workers can easily become unavailable, in which case a fault tolerance solution will be needed for evaluation. Moreover, evaluating on moving variables (as they are concurrently being updated by workers) can yield unreproducible evaluations, as opposed to an evaluator task case, where evaluation is always based on a checkpoint file.
 
 
 ### Fault tolerance
