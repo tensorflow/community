@@ -19,7 +19,7 @@ We propose performing gradient computation entirely in C++. This aligns with Ten
 
 **Support C++ training**: Lack of autodiff support in C/C++ could be detrimental to high performance training pipelines at Google scale. This has often come up in discussions internally.
 
-**Autodiff in non-python TF: **Relying on python gradient functions means we cannot support eager-mode autodiff from other language front-ends such as Java.
+**Autodiff in non-python TF**: Relying on python gradient functions means we cannot support eager-mode autodiff from other language front-ends such as Java.
 
 In addition, we try to address some shortcomings of the current GradientTape design:
 
@@ -40,7 +40,7 @@ The gradients infrastructure will be built on top of the abstract interfaces for
 ### APIs
 
 
-#### GradientFunction {#gradientfunction}
+#### GradientFunction
 
 An op’s gradient is defined by subclassing GradientFunction
 
@@ -266,7 +266,7 @@ If manual management of ref-counts becomes too cumbersome we could consider addi
 ### Use-cases
 
 
-#### tf.custom\_gradient {#tf-custom_gradient}
+#### tf.custom\_gradient
 
 A custom GradientFunction for a set of inputs/outputs can be registered using Tape::RecordOperation similar to a gradient function looked up from the gradient registry.
 
@@ -314,12 +314,12 @@ Status ExpWithCustomGrad(AbstractContext* ctx,
 tf.recompute\_grad is an application of tf.custom\_gradient where we do not record the forward pass on the tape so that we are not holding on to forward pass tensors in memory. (In tf.custom\_gradient we allow recording the forward pass on the tape in order for higher-order derivatives to work for cases where the custom gradient function uses intermediate tensors from the forward pass.) This is implemented by executing the forward pass outside the tape (managed by a higher layer) and registering a gradient function that re-runs the forward pass and computes gradients. The same behavior can be achieved using this tape.
 
 
-#### Nested tapes and higher-order derivatives {#nested-tapes-and-higher-order-derivatives}
+#### Nested tapes and higher-order derivatives
 
 Higher order derivatives are computed by either using a persistent tape or by tracing computations on nested tapes. The nesting is managed by a higher layer. This can be implemented using this tape.
 
 
-#### Skipping gradients for certain op inputs (skip\_input\_indices) {#skipping-gradients-for-certain-op-inputs-skip_input_indices}
+#### Skipping gradients for certain op inputs (skip\_input\_indices)
 
 A [small set](https://cs.opensource.google/search?q=f:py$%20skip_input_indices&sq=&ss=tensorflow%2Ftensorflow) of python gradient functions have been optimized to not return gradients for inputs which are not tracked under the tape. This is beneficial in eager mode where unneeded gradients cannot be pruned during execution. In the C++ tape, we support this by providing a skip\_input\_indices field on the ForwardOperation which stores the list of input indices which are either not watched or have an untrainable dtype. 
 
