@@ -329,7 +329,7 @@ A [small set](https://cs.opensource.google/search?q=f:py$%20skip_input_indices&s
 In python, if a variable is accessed inside a tf.GradientTape’s scope it is automatically tracked, i.e. Tape::Watch is called for the DT\_RESOURCE tensor backing the variable on behalf of the user. For now we will leave this out as a higher layer feature and require that variable handles are explicitly tracked by a higher layer. We can revisit this later if needed.
 
 
-#### tf.function and functional control flow gradients [out of scope for now] {#tf-function-and-functional-control-flow-gradients-[out-of-scope-for-now]}
+#### tf.function and functional control flow gradients [out of scope for now]
 
 Eventually we plan to implement tf.function and functional control flow gradients in C++ but for now we will leave them in python and directly call the python gradient function.
 
