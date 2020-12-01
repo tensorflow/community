@@ -31,7 +31,7 @@ In addition, we try to address some shortcomings of the current GradientTape des
 
 ## Design Overview
 
-The gradients infrastructure will be built on top of the abstract interfaces for op execution which provide a backend agnostic way of tracing and executing ops. We provide APIs for authoring `GradientFunction`s and registering them into a `GradientRegistry` for name based lookup. We provide a gradient `Tape` API that is close to python’s tf.GradientTape and shares most of the implementation with the existing tape.
+The gradients infrastructure will be built on top of the [abstract interfaces](https://cs.opensource.google/search?q=f:abstract_(context%7Coperation%7Ctensor_handle).h&sq=&ss=tensorflow%2Ftensorflow:tensorflow%2F) for op execution which provide a backend agnostic way of tracing and executing ops. We provide APIs for authoring `GradientFunction`s and registering them into a `GradientRegistry` for name based lookup. We provide a gradient `Tape` API that is close to python’s tf.GradientTape and shares most of the implementation with the existing tape.
 
 
 ## Detailed Design
