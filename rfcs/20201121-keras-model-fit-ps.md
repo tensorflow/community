@@ -40,7 +40,7 @@ TF2 parameter server training is based on one coordinator task, multiple workers
 
 While CTL user flow has been supported since the release of TF 2.4, Keras `model.fit` training API is not yet. It has been a common ask (as shown in a survey conducted earlier this year) for availability, given its simplicity and support for a variety of machine learning models, metrics, optimizers, etc. 
 
-In this design, we will discuss the changes in `model.fit` API that we expect to make to accommodate asynchronous, coordinator-based parameter server training flow, and challenges the integration may have given the historical focus of synchronous distributed training with `model.fit`.
+In this design, we will discuss the changes in `model.fit` API, and its integration with `tf.distribute` that we expect to make to accommodate asynchronous, coordinator-based parameter server training flow, and challenges the integration may have given the historical focus of synchronous distributed training with `model.fit`.
 
 
 ## Goals
@@ -118,16 +118,25 @@ There are a couple of points worth noting in the above user code:
 This section discusses the changes needed to be made in `model` API and assumes the reader has basic familiarity with Keras training APIs.
 
 
-#### `dataset` vs `dataset_fn` argument in `model.fit` API
+#### Dataset function or factory in `model.fit`
 
-Current `model.fit` API takes a dataset from which an iterator is created, and the train function is built with this iterator. However, `ClusterCoordinator` only supports taking a no-argument* function that returns a `Dataset`.
+In this design, we propose `model.fit` to take a dataset function or factory, instead of a dataset instance (which is [what is currently supported](https://github.com/tensorflow/tensorflow/blob/6b9e35f1c0410607bf956c0f27e5d3e1456b4899/tensorflow/python/keras/engine/training.py#L887-L889)), for the following reasons:
+
+* With `dataset` instance, there is complication brought by the need of replicating `dataset`s to workers.
+
+* Previous discussion indicates that although an API modification is needed, the simplicity and less overhead may well justify such callable support. 
+
+* With dataset replication, in the past we have observed more memory consumption, less flexibility for user’s dataset transformation, and suboptimal performance. 
+
+* When using Keras preprocessing layers (KPL), read-only resources are created at layer creation, which ends up being placed at the coordinator. However, `tf.data replicate` API does not support the resources referenced in the dataset graph to be accessed once serialized and deserialized, in the remotely worker. This prevents the `dataset` instance path from supporting resources, and thus KPLs.
+
+##### Implementation
+
+Current `model.fit` API takes a dataset from which an iterator is created, and the train function is built with this iterator. However, `ClusterCoordinator` only supports taking a no-argument* function** that returns a `Dataset`. This is done by the `create_per_worker_dataset` API, which creates datasets on remote workers. By leveraging such data factory support, `model.fit` with `dataset_fn` can be implemented by subclassing the existing Keras `DataHandler` (a Keras internal private API) to provide a worker-distributed dataset for Keras to use (i.e. call `iter` on). Please see the `DataHandler` section below for proposed changes.
 
 *The idea behind a no-argument function is that the workers are deemed the same, and thus the datasets should be the same on every worker. At this time, we do not recommend sharding.
 
-
-##### `dataset_fn` path
-
-In TF2 parameter server training, `ClusterCoordinator` naturally supports a dataset function to be passed in to `create_per_worker_dataset` API, which creates datasets on remote workers. By leveraging such data factory support, `model.fit` with `dataset_fn` can be implemented by subclassing the existing Keras `DataHandler` (a Keras internal private API) to provide a worker-distributed dataset for Keras to use (i.e. call `iter` on). Please see `DataHandler` section below for proposed changes.
+**The rationale behind using a `dataset_fn` as opposed to `dataset` was a historical choice as we could not get sharding to work well with fault tolerance. 
 
 In terms of how users pass a dataset factory into `model.fit`, there are a couple of options:
 
@@ -189,39 +198,17 @@ Cons:
 * This requires users to use an additional symbol.
 
 
-The following discussion is tentatively based on option 1, where a simple callable is taken.
+The following discussion is based on option 1, where a simple callable is taken.
 
 
-###### Implication on no strategy/other strategies
+##### Implication on no strategy/other strategies
 
-If `model.fit` is allowed to take a `dataset_fn`, use cases for synchronous strategies, and no strategy, can be readily applied. That is, when a dataset is needed, the `callable` is provided to `distribute_datasets_from_function` to obtain a distributed `dataset`, and the remaining workflow will apply.
+If `model.fit` is allowed to take a `dataset_fn`, use cases for synchronous strategies, and no strategy, can be readily applied. That is, when a dataset is needed, the `callable` is inspected: 1) if the `callable` expects an argument (which is supposed to be the input context), we directly provide it to `distribute_datasets_from_function`, or 2) if the `callable` does not expect an argument, we wrap it in a function which is then provided to `distribute_datasets_from_function`. In either case, we end up obtaining a distributed `dataset`, and the remaining workflow will apply.
 
 
-###### Signature of `dataset_fn`
+##### Signature of `dataset_fn`
 
 The signature (input argument and return value) of `dataset_fn` taken by `model.fit` should basically follow the signature `ClusterCoordinator.create_per_worker_dataset` takes. There has been discussion around whether that should take an `InputContext` for effective sharding. Current decision is that it does not, since we do not expect users to shard the dataset considering workers can get preempted. 
-
-
-##### `dataset` path
-
-
-###### General support of `dataset` in `ClusterCoordinator`
-
-To support the existing `model.fit` API contract where a `dataset` is taken, it should be preferred that `ClusterCoordinator` provides native `dataset` support, which `model.fit` can readily use, rather than `model.fit` implementing replication logic to accommodate that. Similar to `experimental_distribute_dataset` API, `ClusterCoordinator` can use `tf.data`’s `replicate` API to serialize the dataset graph, and unserialize onto workers. 
-
-
-###### Resource placement
-
-When using Keras preprocessing layers (KPL), read-only resources are created at layer creation, which ends up being placed at the coordinator. However, tf.data replicate API does not support the resources referenced in the dataset graph to be accessed once serialized and deserialized, as opposed to dataset_fn case where resources can still be accessed, in the remotely executed dataset_fn. This imposes limitations on dataset path to use cases where resources are not used, and KPL usage is thus excluded. 
-
-
-###### Conclusion: Initial focus on `dataset_fn` path
-
-Although `dataset` path is concurrently explored to provide compatibility with other strategies, `dataset_fn` path would be the initial focus due to the `dataset` path’s complication brought by the need of replicating dataset to workers. This is also to make sure we get to the bottom and user experience can be delivered end-to-end. 
-
-Previous discussion indicates that although an API modification is needed, the simplicity and less overhead may well justify such callable support. Moreover, with dataset replication, in the past we have observed more memory consumption, less flexibility for user’s dataset transformation, and suboptimal performance. Plus, as discussed above, there are certain limitations of the `dataset` path on what can be supported.
-
-All following sections are based on the aforementioned `dataset_fn` path, and will be updated when the `dataset` path is more understood.
 
 
 #### The setup of `ClusterCoordinator`
@@ -681,3 +668,7 @@ If we wanted to support batch-level `Callback`s with the `step` mental model Opt
 - It's not clear how we should handle it when a user passes a mix of synchronous and asynchronous `Callback`s (for instance, if the user passes in one of our existing built-in `Callback`s in addition to an asynchronous `Callback`).
 
 Asynchronous `Callback`s might be worth exploring in a future extension to the functionality of `Model.fit` + `ParameterServerStrategy` integration, but should likely be out-of-scope for the initial design.
+
+### Support of `dataset` in `ClusterCoordinator`
+
+Previously, we have considered the possibility to support `dataset` instance in `model.fit` to keep the existing API contract. In this case, it should be preferred that `ClusterCoordinator` provides native `dataset` support, which `model.fit` can readily use, rather than `model.fit` implementing replication logic to accommodate that. Similar to `experimental_distribute_dataset` API, `ClusterCoordinator` can use `tf.data`’s `replicate` API to serialize the dataset graph, and unserialize onto workers. 
