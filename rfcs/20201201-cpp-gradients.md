@@ -408,4 +408,4 @@ We plan to rollout C++ gradient functions incrementally. We will port the existi
 
 ## Acknowledgements
 
-alextp@ motivated the design and provided an initial prototype for this project. amturati@ implemented various gradient functions to get a MLP training on MNIST. vnvo2409@ has been working on making framework improvements and further implementing C++ gradient functions.
+@alextp motivated the design and provided an initial prototype for this project. @amturati implemented various gradient functions to get a MLP training on MNIST. @vnvo2409 has been working on making framework improvements and further implementing C++ gradient functions.
