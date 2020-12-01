@@ -237,7 +237,7 @@ Status ExpGradModel(AbstractContext* ctx,
   ForwardOperation forward_op;
   forward_op.op_name = “Exp”;
   forward_op.inputs.push_back(inputs[0]);
-  forward_op.outputs.push_back(outputs[0]);
+  forward_op.outputs.push_back(exp_outputs[0]);
   TF_RETURN_IF_ERROR(registry.Lookup(forward_op, &gradient_function));
   tape.RecordOperation(inputs, exp_outputs, gradient_function.release());
   TF_RETURN_IF_ERROR(tape.ComputeGradient(ctx,
