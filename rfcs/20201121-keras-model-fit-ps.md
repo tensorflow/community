@@ -124,9 +124,7 @@ In this design, we propose `model.fit` to take a dataset function or factory, in
 
 * With `dataset` instance, there is complication brought by the need of replicating `dataset`s to workers.
 
-* Previous discussion indicates that although an API modification is needed, the simplicity and less overhead may well justify such callable support. 
-
-* With dataset replication, in the past we have observed more memory consumption, less flexibility for user’s dataset transformation, and suboptimal performance. 
+* With `dataset` replication, in the past we have observed more memory consumption, less flexibility for user’s dataset transformation, and suboptimal performance. 
 
 * When using Keras preprocessing layers (KPL), read-only resources are created at layer creation, which ends up being placed at the coordinator. However, `tf.data replicate` API does not support the resources referenced in the dataset graph to be accessed once serialized and deserialized, in the remotely worker. This prevents the `dataset` instance path from supporting resources, and thus KPLs.
 
@@ -213,7 +211,9 @@ The signature (input argument and return value) of `dataset_fn` taken by `model.
 
 #### The setup of `ClusterCoordinator`
 
-To take advantage of TF2 support of parameter server training, a `ClusterCoordinator` should be created for handling asynchronous function scheduling and joining. The preferred route should be that such an object is abstracted away from the user with `model.fit` training API as an implementation detail, since we do not expect users to `schedule` functions themselves, or synchronize the cluster.
+To take advantage of TF2 support of parameter server training, a `ClusterCoordinator` should be created for handling asynchronous function scheduling and joining. The preferred route should be that such an object is abstracted away from the user with `model.fit` training API as an implementation detail, since we do not expect users to `schedule` functions themselves, or synchronize the cluster in the basic workflow. 
+
+For power users who would like to `schedule` functions in addition to `model.fit` usage, we need to restrict them to use the `ClusterCoordinator` the library creates, because `ClusterCoordinator` does not have a graceful cleanup mechanism yet. We should error out if `ClusterCoordinator` is instantiated more than once, until we have support for that.
 
 In terms of who keeps track of the `ClusterCoordinator`, and when it starts allocating threads, there are a few options. Here, we assume that the distribution `Strategy` object can determine whether or not it is supposed to be used with a `ClusterCoordinator`. See below “Changes in tf.distribute” section for more information.
 
@@ -230,7 +230,8 @@ class Model(...):
     ...
 
   def fit(self, ...):
-    if self.distribute_strategy.should_use_with_coordinator():
+    if (self.distribute_strategy.should_use_with_coordinator() and
+        not self._cluster_coordinator):
       self._cluster_coordinator = cluster_coordinator.ClusterCoordinator(
           self.distribute_strategy)
     ... # the rest of `fit`
