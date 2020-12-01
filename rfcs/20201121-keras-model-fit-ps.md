@@ -109,6 +109,7 @@ logging.info("result: %r", history)
 There are a couple of points worth noting in the above user code:
 * The `dataset` argument of `model.fit` can no longer be a dataset instance. In fact, in the short term, it most likely will be some form of dataset factory, due to the challenges discussed below.
 * `steps_per_epoch` argument will be required for PS training, at least in the short term. This is because `OutOfRangeError` is raised from `ClusterCoordinator` APIs as soon as one worker exhausts its worker dataset, at which point other workers may have datasets remaining to be processed, and this `OutOfRangeError` indicates neither every dataset is visited roughly once, nor every dataset is visited roughly number of workers times. We thus require explicit steps per epoch, and recommend users to always repeat and shuffle the input dataset.
+* Batch level callback will be disabled when `ParameterServerStrategy` is used; that is, if users override `on_batch_begin` and `on_batch_end`,  an error will be raised.
 
 
 
@@ -182,7 +183,7 @@ class DatasetFactory(object):
 ```
 
 Pros:
-* If `dataset` has a different intepretation, for example it takes an argument instead of none, we get an adapting layer with a `DatasetFactory`.
+* If `dataset` has a different interpretation, for example it takes an argument instead of none, we get an adapting layer with a `DatasetFactory`.
 
 Cons:
 * This requires users to use an additional symbol.
@@ -424,7 +425,7 @@ In this proposal, we are proposing Mental Model 1. That is, one `step` of `Model
 
 For a more detailed discussion on this, see the Alternatives Considered section.
 
-With Mental Model 1, we cannot sync every batch. If we did so, only one worker would ever be working at a time. Because of this, we will not currently support user-written batch-level Callbacks. Instead, we will expect the user to set `epochs` and `steps_per_epoch` so that all work that requires syncing is performed at the end of each epoch. For instance, if the user desires to train for 50,000 steps and to checkpoint every 5,000 steps, the user should specify `Model.fit(..., steps_per_epoch=5000, epochs=10)`.
+With Mental Model 1, we cannot sync every batch. If we did so, only one worker would ever be working at a time. Because of this, we will not currently support user-written batch-level Callbacks. Instead, we will expect the user to set `epochs` and `steps_per_epoch` so that all work that requires syncing is performed at the end of each epoch. For instance, if the user desires to train for 50,000 steps and to checkpoint every 5,000 steps, the user should specify `Model.fit(..., steps_per_epoch=5000, epochs=10)`. Note that the dataset iterator will not be reset before the start of every epoch; it proceeds with the next example after the last one during the last epoch.
 
 For now, we will throw an error if a user provides a `Callback` that overrides `Callback.on_train_batch_begin` or `Callback.on_train_batch_end`, warning that batch-level Callbacks are not supported at this time. However, this design does not preclude supporting batch-level Callbacks in the future, as long as we give the user control of when to perform a sync. See the section Future Work on Batch-Level Callbacks below for a detailed discussion of this possibility.
 
@@ -461,7 +462,7 @@ Although we will not support batch-level Callbacks with the current proposal, it
 
 For example, Callbacks only require syncing because they fetch the results of `Model.train_function` and return these values as `NumPy` arrays. We could expose a setting on the `Callback` class that allows users to manually sync only when necessary. When this setting is turned on, the `logs` passed to the `Callback` will contain `RemoteValue`s.
 
-An example checkpointing `Callback` that uses this mechanism is shown below. This `Callback` would be reasonably performant, as it would only trigger a sync every 5,0000 batches:
+An example checkpointing `Callback` that uses this mechanism is shown below. This `Callback` would be reasonably performant, as it would only trigger a sync every 5,000 batches:
 
 ```
 class MyCheckpointCallback(tf.keras.callbacks.Callback):
