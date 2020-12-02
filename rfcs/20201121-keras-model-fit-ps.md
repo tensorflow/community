@@ -381,6 +381,8 @@ class DataFactoryAdapter(DataAdapter):
     return False
 ```
 
+In addition, this `DataAdapter` needs to verify that the `dataset` passed in is infinite.
+
 #### Multiple steps within a train function
 
 Keras training API has a mechanism to run multiple steps within one `tf.function`’ed train function, which is intended for less time spent on RPCs between the coordinator and the workers, and thus better training performance. This is specified as the `steps_per_execution` argument in the `model.compile` call. Parameter server training can naturally benefit from this mechanism, without the need of code changes, but it is worth noting that all steps run within a `tf.function` will be executed on the same worker. The major implication of this is possible limitations on callbacks, as explained in the “Callbacks” section below.
