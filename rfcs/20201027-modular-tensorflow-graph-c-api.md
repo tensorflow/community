@@ -164,15 +164,17 @@ This API can be used to:
   }
   ```
 
-  When multiple plugins are successfully registered and running for a graph, their recommended configurations may differ with each other. If any of the config has turned off the optimizer, the optimizer will be disabled. The following table lists all possible scenarios. In the table, plugin's config is represented by tristates, `ON` means turn on optimizer, `OFF` means turn off optimzier, and `DEFAULT` means uses proper's config.
+  When multiple plugins are successfully registered and running for a graph, their recommended configurations may differ with each other. If any of the config has turned off the optimizer, the optimizer will be disabled. The following table lists all possible scenarios. In the table, plugin's config is represented by tristates, `ON` means turn on optimizer, `OFF` means turn off optimizer, and `DEFAULT` means uses proper's config.
 
   | Proper's config | Plugin1's config | Plugin2's config  | Final config | Notes|
   |:-------------- |:-------------- |:-------------- |:-------------- |:-------------- |
   | ON    | ON/DEFAULT | ON/DEFAULT | **ON**| The optimizer is enabled. |
   | ON    | OFF | OFF | **OFF**| The optimizer is disabled, unless users manually unload the plugin. Grappler prints warnings to remind users that config has been changed based on plugin's config.|
-  | ON    | ON/DEFAULT | OFF | **OFF**| The optimizer is disabled if at least one plugin turns off it. Grappler prints warnings to remind users that config has been changed based on plugin's config, and potention performance regression may happen due to the conflict configs.|
+  | ON    | ON/DEFAULT | OFF | **OFF**| The optimizer is disabled if at least one plugin turns it off. Grappler prints warnings to remind users that config has been changed based on plugin's config, and potention performance regression may happen due to the conflict configs.|
   | ON    | OFF | ON/DEFAULT | **OFF**| Same as previous scenario.|
-  | OFF   | ON/DEFAULT/OFF | ON/DEFAULT/OFF | **OFF**| The optimizer is always disabled when user turns off it. |
+  | OFF   | ON/DEFAULT/OFF | ON/DEFAULT/OFF | **OFF**| The optimizer is always disabled when user turns it off. |
+
+  Plugins should also run a set of performance benchmarks to ensure that turning off some existing optimizers doesn't cause nontrivial performance degradations.
 
 ### Versioning Strategy and Stability
 
@@ -237,11 +239,11 @@ This API can be used to:
     void* ext;  // reserved for future use
     void* (*create_func)();
     void (*optimize_func)(void*, TF_Buffer*, TF_Buffer*);
-    void (*destory_func)(void*);
+    void (*destroy_func)(void*);
   } TP_Optimizer;
 
   #define TP_OPTIMIZER_STRUCT_SIZE \
-    TF_OFFSET_OF_END(TP_Optimizer, destory_func)
+    TF_OFFSET_OF_END(TP_Optimizer, destroy_func)
 
   typedef struct TP_OptimizerRegistrationParams {
     size_t struct_size;
@@ -403,7 +405,7 @@ This API can be used to:
     auto* optimizer = new PluginOptimizer;
     return (void*)optimizer;
   }
-  static void P_Destory(void* optimizer) {
+  static void P_Destroy(void* optimizer) {
     delete static_cast<PluginOptimizer*>(optimizer);
   }
   static void P_Optimize(
@@ -463,7 +465,7 @@ This API can be used to:
     // Set functions to create a new optimizer.
     params->optimizer->create_func = P_Create;
     params->optimizer->optimize_func = P_Optimize;
-    params->optimizer->destory_func = P_Destory;
+    params->optimizer->destroy_func = P_Destroy;
   }
   ```
 
