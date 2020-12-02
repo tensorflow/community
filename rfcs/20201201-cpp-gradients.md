@@ -305,7 +305,7 @@ Status TapeOperation::Execute(absl::Span<AbstractTensorHandle*> retvals,
 }
 ```
 
-This way the same C++ gen_ops code can be used to execute ops with/without a tape.
+This way the same C++ gen\_ops code can be used to execute ops with/without a tape by simply wrapping the current execution context in a `TapeContext`.
 
 
 Note: This interface is subject to change.
