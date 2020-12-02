@@ -325,7 +325,7 @@ Higher order derivatives are computed by either using a persistent tape or by tr
 
 #### Skipping gradients for certain op inputs (skip\_input\_indices)
 
-A [small set](https://cs.opensource.google/search?q=f:py$%20skip_input_indices&sq=&ss=tensorflow%2Ftensorflow) of python gradient functions have been optimized to not return gradients for inputs which are not tracked under the tape. This is beneficial in eager mode where unneeded gradients cannot be pruned during execution. In the C++ tape, we support this by providing a `skip_input_indices` field on the `ForwardOperation` which stores the list of input indices which are either not watched or have an untrainable dtype. 
+A [small set](https://cs.opensource.google/search?q=f:py$%20skip_input_indices&sq=&ss=tensorflow%2Ftensorflow) of python gradient functions have been optimized to not return gradients for inputs which are not tracked under the tape. This is beneficial in eager mode where unneeded gradients cannot be pruned during execution. In the C++ tape, we support this by providing a `skip_input_indices` field on the `ForwardOperation` which stores the list of input indices which are not watched. 
 
 
 #### Automatic variable tracking
