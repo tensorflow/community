@@ -68,15 +68,15 @@ Examples:
 class AddGradientFunction : public GradientFunction {
  public:
   Status Compute(AbstractContext* ctx,
-                 absl::Span<AbstractTensorHandle* const> grad_inputs,
-                 absl::Span<AbstractTensorHandle*> grad_outputs) override {
+                 absl::Span<AbstractTensorHandle* const> grad_outputs,
+                 absl::Span<AbstractTensorHandle*> grad_inputs) override {
     // Tape never calls a gradient function if there are no incoming grads.
-    DCHECK(grad_inputs[0]);
-    grad_outputs[0] = grad_inputs[0];
-    grad_outputs[1] = grad_inputs[0];
+    DCHECK(grad_outputs[0]);
+    grad_inputs[0] = grad_outputs[0];
+    grad_inputs[1] = grad_outputs[0];
 
-    grad_outputs[0]->Ref();
-    grad_outputs[1]->Ref();
+    grad_inputs[0]->Ref();
+    grad_inputs[1]->Ref();
     return Status::OK();
   }
   ~AddGradientFunction() override {}
@@ -88,15 +88,15 @@ class ExpGradientFunction : public GradientFunction {
     exp->Ref();
   }
   Status ExpGradientFunction::Compute(
-      AbstractContext* ctx, absl::Span<AbstractTensorHandle* const> grad_inputs,
-      absl::Span<AbstractTensorHandle*> grad_outputs) {
+      AbstractContext* ctx, absl::Span<AbstractTensorHandle* const> grad_outputs,
+      absl::Span<AbstractTensorHandle*> grad_inputs) {
     vector<AbstractTensorHandle*> conj_outputs(1);
     TF_RETURN_IF_ERROR(
         Conj(ctx, {exp_.get()}, absl::MakeSpan(conj_outputs), "Conj_Exp_Grad"));
     AbstractTensorHandlePtr conj_output_releaser(conj_outputs[0]);
 
     TF_RETURN_IF_ERROR(
-        Mul(ctx, {conj_outputs[0], grad_inputs[0]}, grad_outputs, "Mul_Exp_Grad"));
+        Mul(ctx, {conj_outputs[0], grad_outputs[0]}, grad_inputs, "Mul_Exp_Grad"));
     return Status::OK();
   }
 
@@ -281,9 +281,9 @@ Example:
 class CustomGradientFunction: public GradientFunction {
  public:
   Status ExpGradientFunction::Compute(
-      AbstractContext* ctx, absl::Span<AbstractTensorHandle* const> grad_inputs,
-      absl::Span<AbstractTensorHandle*> grad_outputs) {
-    // Populate grad_outputs.
+      AbstractContext* ctx, absl::Span<AbstractTensorHandle* const> grad_outputs,
+      absl::Span<AbstractTensorHandle*> grad_inputs) {
+    // Populate grad_inputs.
     return Status::OK();
   }
 
