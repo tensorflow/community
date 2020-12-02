@@ -109,7 +109,9 @@ logging.info("result: %r", history)
 There are a couple of points worth noting in the above user code:
 * The `dataset` argument of `model.fit` can no longer be a dataset instance. In fact, in the short term, it most likely will be some form of dataset factory, due to the challenges discussed below.
 * `steps_per_epoch` argument will be required for PS training, at least in the short term. This is because `OutOfRangeError` is raised from `ClusterCoordinator` APIs as soon as one worker exhausts its worker dataset, at which point other workers may have datasets remaining to be processed, and this `OutOfRangeError` indicates neither every dataset is visited roughly once, nor every dataset is visited roughly number of workers times. We thus require explicit steps per epoch, and recommend users to always repeat and shuffle the input dataset.
-* Batch level callback will be disabled when `ParameterServerStrategy` is used; that is, if users override `on_batch_begin` and `on_batch_end`,  an error will be raised.
+* Batch level callback will be disabled when `ParameterServerStrategy` is used; that is, if users override `on_batch_begin` and `on_batch_end`,  an error will be raised. This is necessary for reasonable performance as described below. 
+* The cluster is synced at the end of every epoch. This is an implementation detail users do not necessarily need to be aware of, however is important for the correctness of epoch-level callbacks.
+* `run_eagerly=True` case is not supported. This is because `ClusterCoordinator.schedule` requires a `tf.function` to be `schedule`d, and regular python function cannot.
 
 
 
@@ -270,7 +272,7 @@ This option is with the assumption that there is always only one `ParameterServe
 
 #### Keras `Model` changes
 
-The train function in `Model.make_train_function` can be swapped with a wrapper that takes an iterator (which, when executed on remote workers, would be the worker-specific iterator inside the function being executed), and returns the resulting `RemoteValue`.
+The train function in `Model.make_train_function` can be swapped with a wrapper that takes a `distribute_iterator` (when the scheduled function is executed on remote workers, the function will receive the actual worker-specific iterator inside the function being executed), and returns the resulting `RemoteValue`.
 
 
 ```
@@ -287,8 +289,9 @@ class Model(...):
     self.train_function = ...
 
     if self._cluster_coordinator:
-      self.train_function = lambda iterator: self._cluster_coordinator.schedule(  # pylint: disable=g-long-lambda
-          train_function, args=(iterator,))
+      # Note that `train_function` has to be a `tf.function`.
+      self.train_function = lambda distribute_iterator: self._cluster_coordinator.schedule(  # pylint: disable=g-long-lambda
+          train_function, args=(distribute_iterator,))
 
     return self.train_function
 ```
@@ -348,6 +351,20 @@ class DataHandler(object):
     return logs
 ```
 
+The `DataHandler` `model.fit` uses depends on whether or not it is using a `ClusterCoordinator`:
+
+```
+def get_data_handler(*args, **kwargs):
+  if model._cluster_coordinator:
+    return ClusterCoordinatorDataHandler(*args, **kwargs)
+  return DataHandler(*args, **kwargs)
+```
+
+and `get_data_handler` will replace where we have `DataHandler` instantiation currently:
+
+```
+data_handler = data_adapter.DataHandler(...)
+``` 
 
 A new `DataAdapter` is also needed to make sure the training API knows a `callable`, or a dataset factory is a supported path:
 
@@ -366,7 +383,7 @@ class DataFactoryAdapter(DataAdapter):
 
 #### Multiple steps within a train function
 
-Keras training API has a mechanism to run multiple steps within one `tf.function`’ed train function, which is aimed at less time spent on RPCs between the coordinator and the workers, and thus better training performance. This is specified as the `steps_per_execution` argument in the `model.compile` call. Parameter server training can naturally benefit from this mechanism, without the need of code changes, but it is worth noting that all steps run within a `tf.function` will be executed on the same worker. The major implication of this is possible limitations on callbacks, as explained in the “Callbacks” section below.
+Keras training API has a mechanism to run multiple steps within one `tf.function`’ed train function, which is intended for less time spent on RPCs between the coordinator and the workers, and thus better training performance. This is specified as the `steps_per_execution` argument in the `model.compile` call. Parameter server training can naturally benefit from this mechanism, without the need of code changes, but it is worth noting that all steps run within a `tf.function` will be executed on the same worker. The major implication of this is possible limitations on callbacks, as explained in the “Callbacks” section below.
 
 
 #### Callbacks
@@ -562,7 +579,7 @@ SidecarEvaluator(
 
 ##### An evaluation thread on coordinator
 
-A potentially more seamless and encapsulated sidecar evaluation, where the user is not required to allocate an evaluator task or run separate code, can be done with an evaluation thread on the coordinator. This thread would `schedule` an evaluation function to be executed on a worker, and wait for its result. One the result is returned, it can write a summary, adjust learning rate, or signal to end the training, re-`schedule` an evaluation function, and so on.
+A potentially more seamless and encapsulated sidecar evaluation, where the user is not required to allocate an evaluator task or run separate code, can be done with an evaluation thread on the coordinator. This thread would `schedule` an evaluation function to be executed on a worker, and wait for its result. One the result is returned, it can write a summary, adjust learning rate, or signal to end the training. Then, it re-`schedule`s an evaluation function, and so on.
 
 In addition to more changes to `model.fit` API, this solution presents a challenge when workers can easily become unavailable, in which case a fault tolerance solution will be needed for evaluation. Moreover, evaluating on moving variables (as they are concurrently being updated by workers) can yield unreproducible evaluations, as opposed to an evaluator task case, where evaluation is always based on a checkpoint file.
 
@@ -619,7 +636,30 @@ Also see the [handling task failure](https://www.tensorflow.org/tutorials/distri
 
 ### Testing
 
-If the assumption that model.fit user code remains the same across strategies (for the most basic flow where batch-level callback is not used) stays true, we can utilize strategy combination tests, where we add `ParameterServerStrategy` to the list of strategy combinations, and use that in the existing tests. The combination framework needs changes to provide the cluster needed for testing, similar to [what we have done](https://github.com/tensorflow/tensorflow/blob/fcc4b966f1265f466e82617020af93670141b009/tensorflow/python/distribute/combinations.py#L345-L399) for `MultiWorkerMirroredStrategy`. With lack of resources currently, we may reprioritize this in Q1, and in the immediate term we aim to cover basic flow such as mnist, resnet, etc.
+#### Unit tests
+
+Verification of the basic functionality will be done by unit tests where `model.fit` is used with a `ParameterServerStrategy`:
+
+* A simple Keras `Sequential` model is built under `ParameterServerStrategy`'s scope'
+* A metric such as `SGD` is chosen
+* Synthetic dataset is used
+* `model.compile`, and `model.fit` can succeed
+
+For this, we will set up an in-process cluster, where in-process servers are created to represent PS and workers. See [existing unit tests](https://github.com/tensorflow/tensorflow/blob/2ba6502de549c20c7498f133792cf3223eabc274/tensorflow/python/distribute/coordinator/cluster_coordinator_test.py#L453-L463) of `ClusterCoordinator` for examples.
+
+#### Strategy combination tests
+
+Keras is a powerful and rich library; testing of the numerous combinations of components such as metrics, loss, callbacks, and more, with parameter server training can be achieved by leveraging the existing strategy combination framework.
+
+With the assumption that model.fit user code remains the same across strategies (for the most basic flow where batch-level callback is not used), we can utilize strategy combination tests, where we add `ParameterServerStrategy` to the list of [strategy combinations](https://github.com/tensorflow/tensorflow/blob/2ba6502de549c20c7498f133792cf3223eabc274/tensorflow/python/distribute/strategy_combinations.py#L208-L311), and use that in the existing tests. The combination framework needs changes to provide the cluster needed for testing, similar to [what we have done](https://github.com/tensorflow/tensorflow/blob/fcc4b966f1265f466e82617020af93670141b009/tensorflow/python/distribute/combinations.py#L345-L399) for `MultiWorkerMirroredStrategy`.
+
+#### Integration tests
+
+Integration tests will involve basic models to verify the metrics and number of iterations are reasonable. See [`integration_test`](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/python/keras/integration_test) directory for existing Keras integration tests.
+
+#### Fault tolerance tests
+
+Tests to verify that training with `model.fit` can withstand worker or PS unavailability will be added. They are referred to as fault tolerance tests. It will utilize [`MultiProcessRunner`](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/distribute/multi_process_runner.py) tool to terminate and restart process-simulated PS/worker tasks.
 
 
 ## Timeline
