@@ -251,6 +251,64 @@ Status ExpGradModel(AbstractContext* ctx,
   return Status::OK();
 }
 ```
+**TapeContext**
+
+In the final C++ API, we don’t expect users to have to directly call `RecordOperation` for each op. We would provide an `AbstractContext` implementation for the tape which would trace ops on the tape and delegate execution to a backing context. A prototype for this is available [here](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/c/experimental/gradients/tape/).
+
+
+```
+class TapeContext : public AbstractContext {
+ public:
+  explicit TapeContext(AbstractContext* parent_ctx, Tape*, const GradientRegistry&);
+  // Skipping overridden methods.
+ private:
+  AbstractContext* parent_ctx_;
+  Tape* tape_;
+  const GradientRegistry& registry_;
+};
+
+class TapeOperation : public AbstractOperation {
+ public:
+  explicit TapeOperation(AbstractOperation* parent_op, Tape*, const GradientRegistry&);
+  // Skipping overridden methods.
+ private:
+  AbstractOperation* parent_op_;
+  ForwardOperation forward_op_;
+  Tape* tape_;
+  const GradientRegistry& registry_;
+};
+```
+
+
+`TapeOperation` would populate the `ForwardOperation` object and record the operation on the tape in the call to `AbstractOperation::Execute`:
+
+
+```
+Status TapeOperation::AddInput(AbstractTensorHandle* input) {
+  TF_RETURN_IF_ERROR(parent_op_->AddInput(input));
+  forward_op_.inputs.push_back(input);
+  return Status::OK();
+}
+
+Status TapeOperation::Execute(absl::Span<AbstractTensorHandle*> retvals,
+                              int* num_retvals) {
+  TF_RETURN_IF_ERROR(parent_op_->Execute(retvals, num_retvals));
+  for (int i = 0; i < *num_retvals; i++) {
+    forward_op_.outputs.push_back(retvals[i]);
+  }
+  // Populate forward_op_.skip_input_indices here.
+  std::unique_ptr<GradientFunction> backward_fn;
+  TF_RETURN_IF_ERROR(registry_.Lookup(forward_op_, &backward_fn));
+  tape_->RecordOperation(forward_op_.inputs, forward_op_.outputs,
+                         backward_fn.release(), parent_op_->Name());
+  return Status::OK();
+}
+```
+
+This way the same C++ gen_ops code can be used to execute ops with/without a tape.
+
+
+Note: This interface is subject to change.
 
 
 **Some details on memory management**
