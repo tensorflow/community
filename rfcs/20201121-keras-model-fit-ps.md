@@ -87,23 +87,6 @@ logging.info("result: %r", history)
 ```
 
 
-with a dataset instance:
-
-
-```
-cluster_resolver = ...
-strategy = tf.distribute.experimental.ParameterServerStrategy(cluster_resolver)
-with strategy.scope():
-  preproc_stage = ... # Some Keras preproc layers
-  model = ... # Building a Keras model
-model.compile(optimizer=..., loss=...)  # `ClusterCoordinator` is created
-dataset = tf.data.Dataset.X... # Make use of `preproc_stage` for transformation
-
-# `model.fit` serializes and deserializes dataset onto workers
-history = model.fit(dataset, epochs=..., steps_per_epoch=...,  callbacks=[...]) 
-logging.info("result: %r", history)
-```
-
 #### Notable differences of user code between PS and other strategies
 
 There are a couple of points worth noting in the above user code:
@@ -715,3 +698,20 @@ Asynchronous `Callback`s might be worth exploring in a future extension to the f
 ### Support of `dataset` in `ClusterCoordinator`
 
 Previously, we have considered the possibility to support `dataset` instance in `model.fit` to keep the existing API contract. In this case, it should be preferred that `ClusterCoordinator` provides native `dataset` support, which `model.fit` can readily use, rather than `model.fit` implementing replication logic to accommodate that. Similar to `experimental_distribute_dataset` API, `ClusterCoordinator` can use `tf.data`’s `replicate` API to serialize the dataset graph, and unserialize onto workers. 
+
+User flow with a dataset instance:
+
+
+```
+cluster_resolver = ...
+strategy = tf.distribute.experimental.ParameterServerStrategy(cluster_resolver)
+with strategy.scope():
+  preproc_stage = ... # Some Keras preproc layers
+  model = ... # Building a Keras model
+model.compile(optimizer=..., loss=...)  # `ClusterCoordinator` is created
+dataset = tf.data.Dataset.X... # Make use of `preproc_stage` for transformation
+
+# `model.fit` serializes and deserializes dataset onto workers
+history = model.fit(dataset, epochs=..., steps_per_epoch=...,  callbacks=[...]) 
+logging.info("result: %r", history)
+```
