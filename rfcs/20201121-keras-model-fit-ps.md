@@ -96,7 +96,7 @@ There are a couple of points worth noting in the above user code:
 * The cluster is synced at the end of every epoch. This is an implementation detail users do not necessarily need to be aware of, however is important for the correctness of epoch-level callbacks.
 * `run_eagerly=True` case is not supported. This is because `ClusterCoordinator.schedule` requires a `tf.function` to be `schedule`d*, and regular python function cannot.
 
-*There are a couple of reasons why we chose to only support `tf.function` to be scheduled. Primarily, we in general have better control over the behavior of tf.functions, including variable and resource creation. Furthermore, this forces the content of the function to be executed on remote workers, as opposed to possible execution of python code on the coordinator. 
+*There are a couple of reasons why we chose to only support `tf.function` to be scheduled. Primarily, we in general have better control over the behavior of `tf.functions`, including variable and resource creation. Furthermore, this forces the content of the function to be executed on remote workers, as opposed to possible execution of python code on the coordinator. 
 
 
 
@@ -188,7 +188,7 @@ The following discussion is based on option 1, where a simple callable is taken.
 
 ##### Implication on no strategy/other strategies
 
-If `model.fit` is allowed to take a `dataset_fn`, use cases for synchronous strategies, and no strategy, can be readily applied. That is, when a dataset is needed, the `callable` is inspected: 1) if the `callable` expects an argument (which is supposed to be the input context), we directly provide it to `distribute_datasets_from_function`, or 2) if the `callable` does not expect an argument, we wrap it in a function which is then provided to `distribute_datasets_from_function`. In either case, we end up obtaining a distributed `dataset`, and the remaining workflow will apply.
+If `model.fit` is allowed to take a `dataset_fn`, use cases for synchronous strategies, and no strategy, can be readily applied. That is, when a dataset is needed, the `callable` is inspected: 1) if the `callable` expects an argument (which is supposed to be the input context), we directly provide it to `distribute_datasets_from_function`, or 2) if the `callable` does not expect an argument, we wrap it in a function (whose sole argument is the discarded `input_context`),  which is then provided to `distribute_datasets_from_function`. In either case, we end up obtaining a distributed `dataset`, and the remaining workflow will apply.
 
 
 ##### Signature of `dataset_fn`
@@ -423,7 +423,7 @@ For now, we will throw an error if a user provides a `Callback` that overrides `
 
 ##### Timing-Based Callbacks
 
-User who wish to create `Callbacks` that execute on a timing interval rather than a step interval can do so via launching a thread in `Callback.on_train_begin`. An example is shown below:
+Users who wish to create `Callbacks` that execute on a timing interval rather than a step interval can do so via launching a thread in `Callback.on_train_begin`. An example is shown below:
 
 ```
 class MyTimingCallback(tf.keras.callbacks.Callback):
@@ -491,6 +491,7 @@ Initially, we aim to have `model.evaluate` and `model.predict` to only be carrie
 
 In the longer term, we seek distributed support for `model.evaluate`, where the evaluate function is scheduled onto the workers to execute. Visitation guarantee cannot be supported currently with the parameter server training API, so we can implement distributed evaluation without it, or wait until that is supported, and integrate it. 
 
+Also, see below “Evaluation” section for other proposed evaluation solutions accompanying `model.fit` usage.
 
 ### Changes in tf.distribute
 
