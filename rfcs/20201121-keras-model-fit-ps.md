@@ -94,7 +94,9 @@ There are a couple of points worth noting in the above user code:
 * `steps_per_epoch` argument will be required for PS training, at least in the short term. This is because `OutOfRangeError` is raised from `ClusterCoordinator` APIs as soon as one worker exhausts its worker dataset, at which point other workers may have datasets remaining to be processed, and this `OutOfRangeError` indicates neither every dataset is visited roughly once, nor every dataset is visited roughly number of workers times. We thus require explicit steps per epoch, and recommend users to always repeat and shuffle the input dataset.
 * Batch level callback will be disabled when `ParameterServerStrategy` is used; that is, if users override `on_batch_begin` and `on_batch_end`,  an error will be raised. This is necessary for reasonable performance as described below. 
 * The cluster is synced at the end of every epoch. This is an implementation detail users do not necessarily need to be aware of, however is important for the correctness of epoch-level callbacks.
-* `run_eagerly=True` case is not supported. This is because `ClusterCoordinator.schedule` requires a `tf.function` to be `schedule`d, and regular python function cannot.
+* `run_eagerly=True` case is not supported. This is because `ClusterCoordinator.schedule` requires a `tf.function` to be `schedule`d*, and regular python function cannot.
+
+*There are a couple of reasons why we chose to only support `tf.function` to be scheduled. Primarily, we in general have better control over the behavior of tf.functions, including variable and resource creation. Furthermore, this forces the content of the function to be executed on remote workers, as opposed to possible execution of python code on the coordinator. 
 
 
 
