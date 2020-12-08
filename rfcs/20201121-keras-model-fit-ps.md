@@ -197,9 +197,13 @@ For compatibility with other strategies, we propose that `dataset_fn` takes a si
 
 *This is also in preparation for a multi-replica support in the future. See [tutorial](https://www.tensorflow.org/tutorials/distribute/parameter_server_training?hl=uk#dispatch_training_steps_to_remote_workers) for more information.
 
-#### The setup of `ClusterCoordinator`
+#### The setup of `ClusterCoordinator` with `model.fit` usage
+
+##### Basic use case: `ClusterCoordinator` being internal
 
 To take advantage of TF2 support of parameter server training, a `ClusterCoordinator` should be created for handling asynchronous function scheduling and joining. The preferred route should be that such an object is abstracted away from the user with `model.fit` training API as an implementation detail, since we do not expect users to `schedule` functions themselves, or synchronize the cluster in the basic workflow. 
+
+##### Advanced use case: `ClusterCoordinator` as a singleton
 
 Since `ClusterCoordinator` instance spins off worker and failure handling threads, there should only be one `ClusterCoordinator` at any given time, and making it a singleton ensures that those threads are only created once:
 
@@ -212,41 +216,13 @@ class ClusterCoordinator(object):
     return ClusterCoordinator.instance
 ```
 
-Being a singleton is important considering there are power users who would like to `schedule` functions themselves in addition to `model.fit` usage. That is, they can instantiate one before `model.fit` does, or use one after `model.fit` has instantiate one. In either case, they should access the same `ClusterCoordinator` instance.
+Being a singleton is important considering there are power users who would like to `schedule` functions themselves in addition to `model.fit` usage. That is, they can instantiate one before `model.fit` does, or use one after `model.fit` has instantiated one. In either case, they should access the same `ClusterCoordinator` instance.
 
-In terms of who keeps track of the `ClusterCoordinator` for `model.fit`, and when it starts allocating threads, there are a few options. Here, we assume that the distribution `Strategy` object can determine whether or not it is supposed to be used with a `ClusterCoordinator`. See below “Changes in tf.distribute” section for more information.
+##### Have an attribute in `ParameterServerStrategy` that holds the `ClusterCoordinator`
 
-
-##### Option 1: Attach the `ClusterCoordinator`’s lifecycle to `model.fit`
-
-With this option, an attribute is added to the `Model` that keeps track of the `ClusterCoordinator`, and it is instantiated when `model.fit` is called. 
-
+We propose that an attribute is added to the `ParameterServerStrategy` to keep track of the `ClusterCoordinator`. We instantiate `ClusterCoordinator` as soon as `ParameterServerStrategy` is instantiated:
 
 ```
-class Model(...):
-  def __init__(self):
-    self._cluster_coordinator = None
-    ...
-
-  def fit(self, ...):
-    if (self.distribute_strategy.should_use_with_coordinator() and
-        not self._cluster_coordinator):
-      self._cluster_coordinator = cluster_coordinator.ClusterCoordinator(
-          self.distribute_strategy)
-    ... # the rest of `fit`
-    self._cluster_coordinator.shut_down() # Shut down at the end of `fit`
-    self._cluster_coordinator = None
-
-class ClusterCoodinator(object):
-  def shut_down(self):
-    # Join the threads and terminate resources. We don't have this implemented yet.
-```
-
-
-
-##### Option 2: Have an attribute in `ParameterServerStrategy` that holds the `ClusterCoordinator`
-
-With this option, an attribute is added to the `ParameterServerStrategy` to keep track of the `ClusterCoordinator`. We start the `ClusterCoordinator` as soon as the `model.fit` is called for the first time, and do not attempt to shut it down after `fit` completes. It will then be reused for the next `fit`, or on a different model.
 
 
 ```
@@ -591,7 +567,7 @@ SidecarEvaluator(
 *   also accept the checkpoint files saved by `ModelCheckpoint` callback for periodic evaluation.
 *   accept arbitrary callbacks to be used in its internal `model.evaluate` call
 
-##### An sidecar evaluation thread on coordinator
+##### A sidecar evaluation thread on coordinator
 
 A potentially more seamless and encapsulated sidecar evaluation, where the user is not required to allocate an evaluator task or run separate code, can be done with an evaluation thread on the coordinator. This thread would remotely execute an evaluation function on a worker, and wait for its result synchronously. Once the result is returned, it can write a summary, adjust learning rate, or signal to end the training. Then, it re-`schedule`s an evaluation function, and so on:
 
@@ -785,3 +761,31 @@ dataset = tf.data.Dataset.X... # Make use of `preproc_stage` for transformation
 history = model.fit(dataset, epochs=..., steps_per_epoch=...,  callbacks=[...]) 
 logging.info("result: %r", history)
 ```
+
+
+### Attach the `ClusterCoordinator`’s lifecycle to `model.fit`
+
+With this option, an attribute is added to the `Model` that keeps track of the `ClusterCoordinator`, and it is instantiated when `model.fit` is called. 
+
+
+```
+class Model(...):
+  def __init__(self):
+    self._cluster_coordinator = None
+    ...
+
+  def fit(self, ...):
+    if (self.distribute_strategy.should_use_with_coordinator() and
+        not self._cluster_coordinator):
+      self._cluster_coordinator = cluster_coordinator.ClusterCoordinator(
+          self.distribute_strategy)
+    ... # the rest of `fit`
+    self._cluster_coordinator.shut_down() # Shut down at the end of `fit`
+    self._cluster_coordinator = None
+
+class ClusterCoodinator(object):
+  def shut_down(self):
+    # Join the threads and terminate resources. We don't have this implemented yet.
+```
+
+At this time, we're proposing to have an attribute in `ParameterServerStrategy` that holds the `ClusterCoordinator` instead.
