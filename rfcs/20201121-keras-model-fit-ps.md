@@ -75,11 +75,11 @@ With a dataset factory:
 cluster_resolver = ...
 strategy = tf.distribute.experimental.ParameterServerStrategy(cluster_resolver)
 with strategy.scope():
-  preproc_stage = ... # Some Keras preproc layers
   model = ... # Building a Keras model
 model.compile(optimizer=..., loss=...)
-def dataset_fn(): 
-  return tf.data.Dataset.X... # Make use of `preproc_stage` for transformation
+def dataset_fn(input_context): 
+  # User can shard with `input_context` for strategy-compatibility
+  return tf.data.Dataset.from_tensors(...).repeat(...).batch(...)
 
 # `ClusterCoordinator` is created at `fit`  
 history = model.fit(dataset_fn, epochs=..., steps_per_epoch=...,  callbacks=[...])
@@ -110,7 +110,7 @@ This section discusses the changes needed to be made in `model` API and assumes 
 
 In this design, we propose `model.fit` to take a dataset function or factory, instead of a dataset instance (which is [what is currently supported](https://github.com/tensorflow/tensorflow/blob/6b9e35f1c0410607bf956c0f27e5d3e1456b4899/tensorflow/python/keras/engine/training.py#L887-L889)), for the following reasons:
 
-* With `dataset` instance, there is complication brought by the need of replicating `dataset`s to workers.
+* With `dataset` instances, there is complication brought by the need of replicating `dataset`s to workers.
 
 * With `dataset` replication, in the past we have observed more memory consumption, less flexibility for user’s dataset transformation, and suboptimal performance. 
 
@@ -133,7 +133,7 @@ In the simplest case, we can allow any kind of `callable` to be passed in:
 
 
 ```
-def dataset_fn(): 
+def dataset_fn(input_context): 
   return tf.data.Dataset.from_tensor_slices(...)
 history = model.fit(dataset_fn, epochs=..., steps_per_epoch=...,  callbacks=[...])
 ```
@@ -160,7 +160,7 @@ With an additionally defined class `DatasetFactory`:
 
 
 ```
-class DatasetFactory(Factory):
+class tf.keras.experimental.DatasetFactory(Factory):
 
   def __init__(self, x):
     if not callable(x):
@@ -168,13 +168,11 @@ class DatasetFactory(Factory):
     self.x = x
 
   def __call__(self, *args, **kwargs):
-    # We gain the flexibility of modifying args/kwargs for future-compatibility.
-    # For example, if we allow different argument signature of user-provided
-    # `dataset_fn`, this works as an abstraction layer. 
-    # If we now only allow zero-arg, but later extend it to one-arg (e.g. input
-    # context), we omit the the arg when we observe that the function doesn't
-    # take any arg.
-    return self.x(*args, **kwargs)
+    dataset = self.x(*args, **kwargs)
+    if not isinstance(dataset, Dataset):
+      raise TypeError('The `callable` provided to `DatasetFactory` must return '
+                      'a `Dataset`.')
+    return dataset
 ```
 
 Pros:
@@ -190,13 +188,14 @@ The following discussion is based on option 1, where a simple callable is taken.
 
 ##### Implication on no strategy/other strategies
 
-If `model.fit` is allowed to take a `dataset_fn`, use cases for synchronous strategies, and no strategy, can be readily applied. That is, when a dataset is needed, the `callable` is inspected: 1) if the `callable` expects an argument (which is supposed to be the input context), we directly provide it to `distribute_datasets_from_function`, or 2) if the `callable` does not expect an argument, we wrap it in a function (whose sole argument is the discarded `input_context`),  which is then provided to `distribute_datasets_from_function`. In either case, we end up obtaining a distributed `dataset`, and the remaining workflow will apply.
+If `model.fit` is allowed to take a `dataset_fn`, use cases for synchronous strategies, and no strategy, can be readily applied. That is, we provide the `dataset_fn` to `distribute_datasets_from_function`, which correctly places `dataset`s on devices in synchronous training.
 
 
 ##### Signature of `dataset_fn`
 
-The signature (input argument and return value) of `dataset_fn` taken by `model.fit` should basically follow the signature `ClusterCoordinator.create_per_worker_dataset` takes. There has been discussion around whether that should take an `InputContext` for effective sharding. Current decision is that it does not, since we do not expect users to shard the dataset considering workers can get preempted. 
+For compatibility with other strategies, we propose that `dataset_fn` takes a single argument `input_context`, and returns a `tf.data.Dataset`. This `dataset_fn` will be used in `strategy.distribute_datasets_from_function`, wrapped by a `per_worker_dataset_fn`*, passed to `create_per_worker_dataset`. See below "DataAdapter and DataHandler changes" section for how this can be implemented in `model.fit`. Though sharding is not necessary in PS training, it is fine that users shard with `Dataset.shard` using the `input_context` (which has sensible default attributes) in `dataset_fn`, if they need to use it across multiple strategies.
 
+*This is also in preparation for a multi-replica support in the future. See [tutorial](https://www.tensorflow.org/tutorials/distribute/parameter_server_training?hl=uk#dispatch_training_steps_to_remote_workers) for more information.
 
 #### The setup of `ClusterCoordinator`
 
@@ -288,7 +287,7 @@ class Model(...):
 
     if self._cluster_coordinator:
       # Note that `train_function` has to be a `tf.function`.
-      self.train_function = lambda distributed_iterator: self._cluster_coordinator.schedule(  # pylint: disable=g-long-lambda
+      self.train_function = lambda distributed_iterator: self._cluster_coordinator.schedule(
           train_function, args=(distributed_iterator,))
 
     return self.train_function
@@ -309,7 +308,14 @@ class ClusterCoordinatorDataHandler(DataHandler):
 
   def _configure_dataset_and_inferred_steps(self, strategy, x, steps_per_epoch,
                                             class_weight):
-    self._dataset = self._model._cluster_coordinator.create_per_worker_dataset(x)
+    if not callable(x):
+      raise TypeError("When using `ClusterCoordinator`, `x` must be a "
+                      "`callable`")
+    def per_worker_dataset_fn():
+      return strategy.distribute_datasets_from_function(x)
+      
+    self._dataset = self._model._cluster_coordinator.create_per_worker_dataset(
+        per_worker_dataset_fn)
     if steps_per_epoch is None:
       raise RuntimeError(
           "Steps per epoch must be specified with `ParameterServerStrategy`.")
@@ -488,34 +494,41 @@ class MyCheckpointCallback(tf.keras.callbacks.Callback):
 
 #### Metrics variables
 
-In Keras training APIs, users can specify custom metrics or strings for metrics in `model.compile`, and there is also built-in loss. The variables that are involved, are either created at `compile` time, which is under `strategy.scope`, or the first time they are being updated (at `fit` time, which is also under `strategy.scope`. Therefore the variables should be placed correctly in parameter servers.
+In Keras training APIs, users can specify custom metrics or strings for metrics in `model.compile`, and there is also built-in loss. The variables that are involved, are either created at `compile` time, which is under `strategy.scope`, or the first time they are being updated (at `fit` time, which is also under `strategy.scope`. Therefore the variables will be placed correctly in parameter servers.
 
 There is also an option to place the metrics variables on workers, and aggregating the metrics result to parameter servers periodically. In theory, this results in fewer round trips between workers and parameter servers and hence better performance, but would require an additional `ClusterCoordinator` API to have explicit placement of variables on workers.
 
 
 #### Optimizer variables
 
-Similarly, the hyper and slot variables an `optimizer` object uses, would be created at gradient application, at which point Keras `optimizer` has [entered](https://github.com/tensorflow/tensorflow/blob/4d1142b04b708372203e15abc4934f7289fd2255/tensorflow/python/keras/optimizer_v2/optimizer_v2.py#L956) `strategy.scope` for correct placement. For the variables that need to be colocated with other variables, such as slot variables, they should continue to work because Keras has made sure [`colocate_vars_with` variable creator scope is used](https://github.com/tensorflow/tensorflow/blob/4d1142b04b708372203e15abc4934f7289fd2255/tensorflow/python/keras/optimizer_v2/optimizer_v2.py#L904-L909), which gets recognized by `ParameterServerStrategy` when these variables are being created, and the variables end up getting placed accordingly.
+Similarly, the hyper and slot variables an `optimizer` object uses, would be created at gradient application, at which point Keras `optimizer` has [entered](https://github.com/tensorflow/tensorflow/blob/4d1142b04b708372203e15abc4934f7289fd2255/tensorflow/python/keras/optimizer_v2/optimizer_v2.py#L956) `strategy.scope` for correct placement. For the variables that need to be colocated with other variables, such as slot variables, they should continue to work because `tf.keras.optimizers.Optimizer` has made sure [`colocate_vars_with` variable creator scope is used](https://github.com/tensorflow/tensorflow/blob/4d1142b04b708372203e15abc4934f7289fd2255/tensorflow/python/keras/optimizer_v2/optimizer_v2.py#L904-L909), which gets recognized by `ParameterServerStrategy` when these variables are being created, and the variables end up getting placed accordingly.
 
 
 #### model.evaluate and model.predict
 
-Initially, we aim to have `model.evaluate` and `model.predict` to only be carried out on the coordinator. That is, it does not involve distribution via a `ClusterCoordinator`, and thus the evaluate function is executed eagerly on the coordinator.
+Initially, we aim to have `model.evaluate` and `model.predict` to only be carried out on the coordinator. That is, it does not involve distribution via a `ClusterCoordinator`, and thus the evaluate function is executed on the coordinator.
 
-In the longer term, we seek distributed support for `model.evaluate`, where the evaluate function is scheduled onto the workers to execute. Visitation guarantee cannot be supported currently with the parameter server training API, so we can implement distributed evaluation without it, or wait until that is supported, and integrate it. 
+In the longer term, we seek distributed support for `model.evaluate`, where the evaluate function is scheduled onto the workers to execute. Visitation guarantee cannot be supported currently with the parameter server training API, so we can implement distributed evaluation without it, or wait until that is supported, and integrate it. Things possibly involved with distributed `model.evaluate` include:
 
-Also, see below “Evaluation” section for other proposed evaluation solutions accompanying `model.fit` usage.
+* support for local variables
+* support for local resources
+* efficient skipping of dataset batches or `dataset.shard` can be tf.function'ed
+
+With those, we do not expect an API change at `model.fit` level, but if we do encounter something that results in a change, it is reasonable to add an argument `model.fit(distribute_eval=...)`.
+
+See below “Evaluation” section for other proposed evaluation solutions accompanying `model.fit` usage.
 
 ### Changes in tf.distribute
 
-Coordinator-based distributed training was made available with the introduction of a `ClusterCoordinator` API, where a `Strategy` should be used in conjunction with it. In contrast, classic `strategy.run`-based distributed training only requires a `Strategy` object to be used. The code written for two schemes, with custom training loops, is easily distinguishable by the presence or absence of a `ClusterCoordinator` object. However, with `model.fit`, users are not expected to create a `ClusterCoordinator` object, and thus there needs to be a way for the user to specify whether the training should be performed with a `ClusterCoordinator` object. This can possibly be done at `__init__`, so that `model.fit` knows whether or not it is intended for a coordinator-based single-client training, or a traditional multi-client training.
+Coordinator-based distributed training was made available with the introduction of a `ClusterCoordinator` API, where a `Strategy` should be used in conjunction with it. In contrast, classic `strategy.run`-based distributed training only requires a `Strategy` object to be used. The code written for two schemes, with custom training loops, is easily distinguishable by the presence or absence of a `ClusterCoordinator` object. However, with `model.fit`, users are not expected to create a `ClusterCoordinator` object, and thus there needs to be a way for the user to specify whether the training should be performed with a `ClusterCoordinator` object. This can possibly be done at `Strategy.__init__`, so that `model.fit` knows whether or not it is intended for a coordinator-based single-client training, or a traditional multi-client training.
 
 For now, it seems feasible that `ParameterServerStrategy` has a field `should_use_with_coordinator`, which is always True until usage without a `ClusterCoordinator` is supported, at which point it can be an argument of `__init__`.
 
 
 ```
   class ParameterServerStrategy(Strategy):
-    self.should_use_with_coordinator = True
+    def __init__(self):
+      self.should_use_with_coordinator = True
 ```
 
 
@@ -578,12 +591,53 @@ SidecarEvaluator(
 *   also accept the checkpoint files saved by `ModelCheckpoint` callback for periodic evaluation.
 *   accept arbitrary callbacks to be used in its internal `model.evaluate` call
 
-##### An evaluation thread on coordinator
+##### An sidecar evaluation thread on coordinator
 
-A potentially more seamless and encapsulated sidecar evaluation, where the user is not required to allocate an evaluator task or run separate code, can be done with an evaluation thread on the coordinator. This thread would `schedule` an evaluation function to be executed on a worker, and wait for its result. One the result is returned, it can write a summary, adjust learning rate, or signal to end the training. Then, it re-`schedule`s an evaluation function, and so on.
+A potentially more seamless and encapsulated sidecar evaluation, where the user is not required to allocate an evaluator task or run separate code, can be done with an evaluation thread on the coordinator. This thread would remotely execute an evaluation function on a worker, and wait for its result synchronously. Once the result is returned, it can write a summary, adjust learning rate, or signal to end the training. Then, it re-`schedule`s an evaluation function, and so on:
 
-In addition to more changes to `model.fit` API, this solution presents a challenge when workers can easily become unavailable, in which case a fault tolerance solution will be needed for evaluation. Moreover, evaluating on moving variables (as they are concurrently being updated by workers) can yield unreproducible evaluations, as opposed to an evaluator task case, where evaluation is always based on a checkpoint file.
+```
+class Model(...):
+  def _continuously_evaluate(
+      self, strategy, train_model, eval_dataset, eval_worker):
 
+    # The following attempts to clone the model
+    train_model.save(model_path)
+    with strategy.scope():
+      eval_model = tf.keras.models.load_model(model_path)
+
+    # The following are mostly existing `model.evaluate` logic
+    data_handler = ...
+    self.test_function = self.make_test_function()
+    while self.should_eval:  # This stops when `fit` ends
+      # Each iteration loads the latest saved by training
+      eval_model.load_weights(weights_path)
+      for _, iterator in data_handler.enumerate_epochs():
+        ... # Callbacks, tracing, etc.
+        with tf.device(eval_worker):
+          tmp_logs = self.test_function(iterator)
+        ... # Callbacks, etc.
+
+  def fit(self, ...):
+    # At some point, we start a thread for sidecar eval
+    t = threading.Thread(target=self._continuously_evaluate)
+    t.start()
+    ...
+    self.should_eval = False
+    t.join()
+```
+
+If we compare the sidecar evaluator thread solution vs sidecar evaluator task (process):
+
+Pros:
+* This does not require a task to be set aside as evaluator
+* There is easier communication between the sidecar evaluator (thread) and the coordinator main thread, which is important for many callbacks
+
+Cons:
+* This solution presents a challenge when workers can easily become unavailable, in which case it is not straightforward to immediately find another available worker to take over*
+* This solution is blocked on `tf.keras.models.load_model` being available on PS (if we have another cloning solution, that works too)
+* Users who can afford to allocate a high priority on an evaluator task cannot do so with workers; workers would simply have the same, usually lower, priority (and thus more frequent function-takeovers)
+
+*Fault tolerance, the first con, may further be addressed with possibly another `ClusterCoordinator`, if it shares the threads with the other `ClusterCoordinator`, and the library allows multiple function queues to be accessed by the threads. More details may be discussed in a separate RFC.
 
 ### Fault tolerance
 
