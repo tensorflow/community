@@ -151,7 +151,8 @@ For future-compatibility of `model.fit` API where a `dataset_fn` may have a sign
 
 
 ```
-def dataset_fn(input_context): return tf.data.Dataset.from_tensor_slices(...)
+def dataset_fn(input_context): 
+  return tf.data.Dataset.from_tensor_slices(...)
 history = model.fit(DatasetFactory(dataset_fn), epochs=..., steps_per_epoch=...,  callbacks=[...])
 ```
 
@@ -209,11 +210,10 @@ Since `ClusterCoordinator` instance spins off worker and failure handling thread
 
 ```
 class ClusterCoordinator(object): 
-  instance = None
-  def __new__(cls): 
-    if not ClusterCoordinator.instance:
-      ClusterCoordinator.instance = super(ClusterCoordinator, cls).__new__(cls)
-    return ClusterCoordinator.instance
+  def __new__(cls, strategy): 
+    if not strategy.cluster_coordinator:  # TODO: Needs a lock for thread-safety
+      strategy.cluster_coordinator = super(ClusterCoordinator, cls).__new__(cls)
+    return strategy.cluster_coordinator
 ```
 
 Being a singleton is important considering there are power users who would like to `schedule` functions themselves in addition to `model.fit` usage. That is, they can instantiate one before `model.fit` does, or use one after `model.fit` has instantiated one. In either case, they should access the same `ClusterCoordinator` instance.
@@ -236,9 +236,8 @@ class Model(...):
 
   def fit(self, ...):
     if (self.distribute_strategy.should_use_with_coordinator() and 
-        not self.distribute_strategy._cluster_coordinator):
-      self.distribute_strategy._cluster_coordinator = \
-          cluster_coordinator.ClusterCoordinator(self.distribute_strategy)
+        not self.distribute_strategy.cluster_coordinator):
+      cluster_coordinator.ClusterCoordinator(self.distribute_strategy)
     ... # the rest of fit
 
 ```
@@ -263,9 +262,9 @@ class Model(...):
 
     self.train_function = ...
 
-    if self._cluster_coordinator:
+    if self.distribute_strategy.cluster_coordinator:
       # Note that `train_function` has to be a `tf.function`.
-      self.train_function = lambda distributed_iterator: self._cluster_coordinator.schedule(
+      self.train_function = lambda distributed_iterator: self.distribute_strategy.cluster_coordinator.schedule(
           train_function, args=(distributed_iterator,))
 
     return self.train_function
@@ -292,22 +291,23 @@ class ClusterCoordinatorDataHandler(DataHandler):
     def per_worker_dataset_fn():
       return strategy.distribute_datasets_from_function(x)
       
-    self._dataset = self._model._cluster_coordinator.create_per_worker_dataset(
-        per_worker_dataset_fn)
+    coordinator = self._model.distribute_strategy.cluster_coordinator
+    self._dataset = coordinator.create_per_worker_dataset(per_worker_dataset_fn)
+
     if steps_per_epoch is None:
       raise RuntimeError(
           "Steps per epoch must be specified with `ParameterServerStrategy`.")
     self._inferred_steps = steps_per_epoch
 
   def sync(self):
-    self._model._cluster_coordinator.join()
+    self._model.distribute_strategy.cluster_coordinator.join()
 
   def resolve_logs(self, logs):
     return logs.fetch()
 ```
 
 
-And, in the existing `DataHandler`,
+And, in the existing `DataHandler` (note that `_configure_dataset_and_inferred_steps` and `resolve_logs` are newly created methods):
 
 
 ```
@@ -337,7 +337,7 @@ The `DataHandler` `model.fit` uses depends on whether or not it is using a `Clus
 
 ```
 def get_data_handler(*args, **kwargs):
-  if model._cluster_coordinator:
+  if model.distribute_strategy.cluster_coordinator:
     return ClusterCoordinatorDataHandler(*args, **kwargs)
   return DataHandler(*args, **kwargs)
 ```
@@ -486,13 +486,12 @@ Similarly, the hyper and slot variables an `optimizer` object uses, would be cre
 
 Initially, we aim to have `model.evaluate` and `model.predict` to only be carried out on the coordinator. That is, it does not involve distribution via a `ClusterCoordinator`, and thus the evaluate function is executed on the coordinator.
 
-In the longer term, we seek distributed support for `model.evaluate`, where the evaluate function is scheduled onto the workers to execute. Visitation guarantee cannot be supported currently with the parameter server training API, so we can implement distributed evaluation without it, or wait until that is supported, and integrate it. Things possibly involved with distributed `model.evaluate` include:
+In the longer term, we seek distributed support for `model.evaluate`, where the evaluate function is scheduled onto the workers to execute. The current `ClusterCoordinator` API has a limitation where distributed evaluation does not have visitation guarantee, when workers can become unavailable. Thus, we have a couple of options:
 
-* support for local variables
-* support for local resources
-* efficient skipping of dataset batches or `dataset.shard` can be tf.function'ed
+1. Implement distributed `model.evaluate` without visitation guarantee, but require user's opt-in because of the behavior change (by `model.evaluate(..., distributed_eval=True)`)
+2. Support distributed `model.evaluate` only after `ClusterCoordinator` provides visitation guarantee mechanism
 
-With those, we do not expect an API change at `model.fit` level, but if we do encounter something that results in a change, it is reasonable to add an argument `model.fit(distribute_eval=...)`.
+Note that similar to the dataset factory change for `model.fit`, validation dataset will also need to be a function. That is, `model.fit` will take a `validation_data_fn` instead of a `validation_data`, and `model.evaluate` will take a `dataset_fn` as opposed to a `dataset` instance.
 
 See below “Evaluation” section for other proposed evaluation solutions accompanying `model.fit` usage.
 
@@ -535,15 +534,15 @@ In addition to the existing train-evaluate solution provided by `model.fit`, we 
 
 #### Built-in, alternating evaluation in `model.fit`
 
-If `validation_data` argument is provided, and certain conditions are satisfied, `model.fit` also runs evaluation via `model.evaluate` API every epoch, in an train-evaluate alternating manner. As described above, at this time, only the coordinator is used for `model.evaluate` evaluation, and we plan to extend this to worker-distributed evaluation when visitation guarantee is supported.
+If `validation_data` argument is provided, and certain conditions are satisfied, `model.fit` also runs evaluation via `model.evaluate` API every epoch, in an train-evaluate alternating manner. As described above, at this time, only the coordinator is used for `model.evaluate` evaluation, and we plan to extend this to worker-distributed evaluation when visitation guarantee is supported. See above "model.evaluate" section for more information.
 
 #### Sidecar evaluation
 
-In addition to the built-in evaluation `model.fit` provides, sidecar evaluation is also supported with a [recommended user flow](https://www.tensorflow.org/tutorials/distribute/parameter_server_training#side-car_evaluation).
+In addition to the built-in evaluation `model.fit` provides, sidecar evaluation is also supported. Currently, we have a [recommended user flow](https://www.tensorflow.org/tutorials/distribute/parameter_server_training#side-car_evaluation) using a sidecar evaluator task for CTL users. The section discusses the proposed changes in sidecar evaluator accompanying `model.fit` usage with parameter server training.
 
-##### SidecarEvaluator API
+##### A sidecar evaluator task
 
-We plan to propose a `SidecarEvaluator` API in a separate RFC for user’s convenience: with this, user is expected to kick start an additional task `evaluator`, in which the python program runs a `SidecarEvaluator` as follows:
+In the short term, a task that is allocated for evaluation (aka sidecar evaluator) continues to be the recommended evaluation solution for PS training. We plan to propose a `SidecarEvaluator` API in a separate RFC for user’s convenience: with this, user is expected to kick start an additional task `evaluator`, in which the python program runs a `SidecarEvaluator` as follows:
 
 
 ```
@@ -571,7 +570,9 @@ SidecarEvaluator(
 
 ##### A sidecar evaluation thread on coordinator
 
-A potentially more seamless and encapsulated sidecar evaluation, where the user is not required to allocate an evaluator task or run separate code, can be done with an evaluation thread on the coordinator. This thread would remotely execute an evaluation function on a worker, and wait for its result synchronously. Once the result is returned, it can write a summary, adjust learning rate, or signal to end the training. Then, it re-`schedule`s an evaluation function, and so on:
+A potentially more seamless and encapsulated sidecar evaluation, where the user is not required to allocate an evaluator task or run separate code (for evaluation), can be done with an evaluation thread on the coordinator. With this approach, the user does not allocate a task with type 'evaluator', because one 'worker' task (that runs a `tf.distribute.Server`) from the cluster can be used for evaluation. It can be any of the workers, but for convenience, let’s say the Nth worker is used for evaluation. 
+
+The thread would be started by `model.fit`, if the user expresses to opt in via an argument such as `fit(..., run_sidecar_eval_thread=True)`. The thread would remotely execute an evaluation function on this worker #N, and wait for its result synchronously. Once the result is returned, it can write a summary, adjust learning rate, or signal to end the training. After that, it re-`schedule`s an evaluation function, and so on:
 
 ```
 class Model(...):
@@ -595,22 +596,26 @@ class Model(...):
           tmp_logs = self.test_function(iterator)
         ... # Callbacks, etc.
 
-  def fit(self, ...):
-    # At some point, we start a thread for sidecar eval
-    t = threading.Thread(target=self._continuously_evaluate)
-    t.start()
-    ...
-    self.should_eval = False
-    t.join()
+  def fit(self, ..., run_sidecar_eval_thread=False):
+    if run_sidecar_eval_thread:
+      # At some point, we start a thread for sidecar eval
+      t = threading.Thread(target=self._continuously_evaluate)
+      t.start()
+      ...
+    if run_sidecar_eval_thread:
+      self.should_eval = False
+      t.join()
 ```
+
+Note that with this approach, the training cluster will be limited to the first N-1 workers it has remaining, so the training cluster and evaluation do not block each other.
 
 If we compare the sidecar evaluator thread solution vs sidecar evaluator task (process):
 
-Pros:
-* This does not require a task to be set aside as evaluator
+Pros (advantages of evaluator thread approach):
+* This does not require a task to be set aside as evaluator, so 1) less work on the user, and 2) there is one fewer version of python binary
 * There is easier communication between the sidecar evaluator (thread) and the coordinator main thread, which is important for many callbacks
 
-Cons:
+Cons (disadvantages of evaluator thread approach):
 * This solution presents a challenge when workers can easily become unavailable, in which case it is not straightforward to immediately find another available worker to take over*
 * This solution is blocked on `tf.keras.models.load_model` being available on PS, if `variable_partitioner` is used. Here, model saving and loading are for cloning the model, so if there is an alternative to clone, this solution is not blocked.
 * Users who can afford to allocate a high priority on an evaluator task cannot do so with workers; workers would simply have the same, usually lower, priority (and thus more frequent function-takeovers)
