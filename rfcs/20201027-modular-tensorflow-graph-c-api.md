@@ -184,7 +184,7 @@ This API can be used to:
 
 * **GraphDef**
 
-  The compatibility of `GraphDef` between plugin and proper is guaranteed by protobuf library.
+  The compatibility of `GraphDef` between plugin and proper follows the same compatibility [rules](https://developers.google.com/protocol-buffers/docs/cpptutorial?hl=en#extending-a-protocol-buffer) and [guarantees](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#updating) as protobuf library.
 
 ### Detailed C APIs
 
