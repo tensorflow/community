@@ -147,11 +147,11 @@ Cons:
 
 ###### Option 2: dataset factory
 
-For future-compatibility of `model.fit` API where a `dataset_fn` may have a signature change, a `DatasetFactory` can come handy which determines how the function is supposed to be used. In the case where a `ClusterCoordinator` is used, it is supposed to be invoked with no arguments. With this, user flow will become:
+For future-compatibility of `model.fit` API where a `dataset_fn` may have a signature change, a `DatasetFactory` can come handy which determines how the function is supposed to be used. 
 
 
 ```
-def dataset_fn(): return tf.data.Dataset.from_tensor_slices(...)
+def dataset_fn(input_context): return tf.data.Dataset.from_tensor_slices(...)
 history = model.fit(DatasetFactory(dataset_fn), epochs=..., steps_per_epoch=...,  callbacks=[...])
 ```
 
@@ -220,10 +220,16 @@ Being a singleton is important considering there are power users who would like 
 
 ##### Have an attribute in `ParameterServerStrategy` that holds the `ClusterCoordinator`
 
-We propose that an attribute is added to the `ParameterServerStrategy` to keep track of the `ClusterCoordinator`. We instantiate `ClusterCoordinator` as soon as `ParameterServerStrategy` is instantiated:
+We propose that an attribute is added to `ParameterServerStrategy` to keep track of the `ClusterCoordinator`. When a `ClusterCooridinator` is instantiated, such attribute will be set. Here, we assume that the distribution `Strategy` object can determine whether or not it is supposed to be used with a `ClusterCoordinator`. See below “Changes in tf.distribute” section for more information.
 
 ```
+class ClusterCoordinator(...):
+  def __init__(self, strategy):
+      self.strategy = weakref.ref(strategy)
+      strategy.cluster_coordinator = self
+```
 
+And, we instantiate the `ClusterCoordinator` as soon as `model.fit` is called for the first time. It will then be reused for the next `fit`, or on a different model.
 
 ```
 class Model(...):
@@ -236,11 +242,7 @@ class Model(...):
     ... # the rest of fit
 
 ```
-To avoid the circular referencing between `ParameterServerStrategy` and `ClusterCoordinator` and the resulting leak, the `coordinator`’s reference to `strategy` should be a `weakref`.
-
-This option is with the assumption that there is always only one `ParameterServerStrategy` used*, and that we are not supporting the use case where the user creates an additional `ClusterCoordinator`.
-
-*This is because there's currently not yet a clean way to shut down `ClusterCoordinator`, so we can't support more than one `ClusterCoordinator`, and thus no more than one `ParameterServerStrategy`.
+To avoid the leak resulting from the circular referencing between `ParameterServerStrategy` and `ClusterCoordinator`, the `coordinator`’s reference to `strategy` should be a `weakref`.
 
 
 #### Keras `Model` changes
@@ -610,7 +612,7 @@ Pros:
 
 Cons:
 * This solution presents a challenge when workers can easily become unavailable, in which case it is not straightforward to immediately find another available worker to take over*
-* This solution is blocked on `tf.keras.models.load_model` being available on PS (if we have another cloning solution, that works too)
+* This solution is blocked on `tf.keras.models.load_model` being available on PS, if `variable_partitioner` is used. Here, model saving and loading are for cloning the model, so if there is an alternative to clone, this solution is not blocked.
 * Users who can afford to allocate a high priority on an evaluator task cannot do so with workers; workers would simply have the same, usually lower, priority (and thus more frequent function-takeovers)
 
 *Fault tolerance, the first con, may further be addressed with possibly another `ClusterCoordinator`, if it shares the threads with the other `ClusterCoordinator`, and the library allows multiple function queues to be accessed by the threads. More details may be discussed in a separate RFC.
