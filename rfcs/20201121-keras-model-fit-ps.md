@@ -198,53 +198,30 @@ For compatibility with other strategies, we propose that `dataset_fn` takes a si
 
 *This is also in preparation for a multi-replica support in the future. See [tutorial](https://www.tensorflow.org/tutorials/distribute/parameter_server_training?hl=uk#dispatch_training_steps_to_remote_workers) for more information.
 
-#### The setup of `ClusterCoordinator` with `model.fit` usage
 
-##### Basic use case: `ClusterCoordinator` being internal
 
-To take advantage of TF2 support of parameter server training, a `ClusterCoordinator` should be created for handling asynchronous function scheduling and joining. The preferred route should be that such an object is abstracted away from the user with `model.fit` training API as an implementation detail, since we do not expect users to `schedule` functions themselves, or synchronize the cluster in the basic workflow. 
+#### Keras `Model` changes
 
-##### Advanced use case: `ClusterCoordinator` as a singleton
+##### `Model` abstracting the concept of `ClusterCoordinator` for `model.fit`
 
-Now, let's consider a more advanced use case where the `ClusterCoordinator` instance is needed by users. Since `ClusterCoordinator` instance spins off worker and failure handling threads, there should only be one `ClusterCoordinator` at any given time, and making it a singleton ensures that those threads are only created once:
+To take advantage of TF2 support of parameter server training, a `ClusterCoordinator` should be created for handling asynchronous function scheduling and joining. The preferred route should be that such an object is abstracted away from the user by `model.fit` training API as an implementation detail. For the power users who would need a `ClusterCoordinator` instance for their custom `schedule`s and `join`s, the `ClusterCoordinator` instance is available as a singleton through a constructor call. See below "`ClusterCoordinator` as a singleton" section for more information.
 
-```
-class ClusterCoordinator(object): 
-  def __new__(cls, strategy): 
-    if not strategy.cluster_coordinator:  # TODO: Needs a lock for thread-safety
-      strategy.cluster_coordinator = super(ClusterCoordinator, cls).__new__(cls)
-    return strategy.cluster_coordinator
-```
+`ClusterCoordinator` instance can be created at any point prior to `Model`'s use of it, but `model.fit` seems a natural place since that indicates the user's intention for using the compile-fit API as opposed to a CTL, where we expect users to create one. 
 
-Being a singleton is important considering there are power users who would like to `schedule` functions themselves in addition to `model.fit` usage. That is, they can instantiate one before `model.fit` does, or use one after `model.fit` has instantiated one. In either case, they should access the same `ClusterCoordinator` instance, as the one `model.fit` uses.
-
-##### Have an attribute in `ParameterServerStrategy` that holds the `ClusterCoordinator`
-
-We propose that an attribute is added to `ParameterServerStrategy` to keep track of the `ClusterCoordinator`. When a `ClusterCoordinator` is instantiated, such attribute will be set. Here, we assume that the distribution `Strategy` object can determine whether or not it is supposed to be used with a `ClusterCoordinator`. See below “Changes in tf.distribute” section for more information.
-
-```
-class ClusterCoordinator(...):
-  def __init__(self, strategy):
-      self.strategy = weakref.ref(strategy)
-      strategy.cluster_coordinator = self
-```
-
-And, we instantiate the `ClusterCoordinator` as soon as `model.fit` is called for the first time. Note that if users have instantiated it prior to `model.fit` calls, the same instance is returned from the `ClusterCoordinator` constructor. It will then be reused for the next `fit`, or on a different model.
+`model.fit` obtains such `ClusterCoordinator` instance, and links the `strategy._cluster_coordinator` connection, as soon as `model.fit` is called for the first time. Note that if users have used the `ClusterCoordinator` instance prior to `model.fit` calls, that same instance is returned from the `ClusterCoordinator` constructor. This `ClusterCoordinator` instance will then be used for later `schedule`s and `join`s, as shown in sections below.
 
 ```
 class Model(...):
 
   def fit(self, ...):
-    if (self.distribute_strategy.should_use_with_coordinator() and 
-        not self.distribute_strategy.cluster_coordinator):
+    if (self.distribute_strategy.should_use_with_coordinator and 
+        not self.distribute_strategy._cluster_coordinator):
       cluster_coordinator.ClusterCoordinator(self.distribute_strategy)
     ... # the rest of fit
 
 ```
-To avoid the leak resulting from the circular referencing between `ParameterServerStrategy` and `ClusterCoordinator`, the `coordinator`’s reference to `strategy` should be a `weakref`.
 
-
-#### Keras `Model` changes
+##### `make_train_function` changes
 
 The train function in `Model.make_train_function` can be swapped with a wrapper that takes a `distributed_iterator` (when the scheduled function is executed on remote workers, the function will receive the actual worker-specific iterator inside the function being executed), and returns the resulting `RemoteValue`.
 
@@ -262,14 +239,13 @@ class Model(...):
 
     self.train_function = ...
 
-    if self.distribute_strategy.cluster_coordinator:
+    if self.distribute_strategy._cluster_coordinator:
       # Note that `train_function` has to be a `tf.function`.
-      self.train_function = lambda distributed_iterator: self.distribute_strategy.cluster_coordinator.schedule(
+      self.train_function = lambda distributed_iterator: self.distribute_strategy._cluster_coordinator.schedule(
           train_function, args=(distributed_iterator,))
 
     return self.train_function
 ```
-
 
 
 #### DataAdapter and DataHandler changes
@@ -291,7 +267,7 @@ class ClusterCoordinatorDataHandler(DataHandler):
     def per_worker_dataset_fn():
       return strategy.distribute_datasets_from_function(x)
       
-    coordinator = self._model.distribute_strategy.cluster_coordinator
+    coordinator = self._model.distribute_strategy._cluster_coordinator
     self._dataset = coordinator.create_per_worker_dataset(per_worker_dataset_fn)
 
     if steps_per_epoch is None:
@@ -300,7 +276,7 @@ class ClusterCoordinatorDataHandler(DataHandler):
     self._inferred_steps = steps_per_epoch
 
   def sync(self):
-    self._model.distribute_strategy.cluster_coordinator.join()
+    self._model.distribute_strategy._cluster_coordinator.join()
 
   def resolve_logs(self, logs):
     return logs.fetch()
@@ -337,7 +313,7 @@ The `DataHandler` `model.fit` uses depends on whether or not it is using a `Clus
 
 ```
 def get_data_handler(*args, **kwargs):
-  if model.distribute_strategy.cluster_coordinator:
+  if model.distribute_strategy._cluster_coordinator:
     return ClusterCoordinatorDataHandler(*args, **kwargs)
   return DataHandler(*args, **kwargs)
 ```
@@ -378,7 +354,7 @@ With `ParameterServerStrategy`, the return value of `Model.train_function` is a 
 ```
 def to_numpy_or_python_type(logs):
   if isinstance(logs, RemoteValue):
-    get_strategy().cluster_coordinator.join()  # Sync the workers.
+    get_strategy()._cluster_coordinator.join()  # Sync the workers.
     return logs.fetch()  # Return the NumPy results.
   else:
     ...  # Existing logic.
@@ -497,9 +473,13 @@ See below “Evaluation” section for other proposed evaluation solutions accom
 
 ### Changes in tf.distribute
 
-Coordinator-based distributed training was made available with the introduction of a `ClusterCoordinator` API, where a `Strategy` should be used in conjunction with it. In contrast, classic `strategy.run`-based distributed training only requires a `Strategy` object to be used. The code written for two schemes, with custom training loops, is easily distinguishable by the presence or absence of a `ClusterCoordinator` object. However, with `model.fit`, users are not expected to create a `ClusterCoordinator` object, and thus there needs to be a way for the user to specify whether the training should be performed with a `ClusterCoordinator` object. This can possibly be done at `Strategy.__init__`, so that `model.fit` knows whether or not it is intended for a coordinator-based single-client training, or a traditional multi-client training.
+#### `Strategy` indicating whether they should be used with `ClusterCoordinator`
 
-For now, it seems feasible that `ParameterServerStrategy` has a field `should_use_with_coordinator`, which is always True until usage without a `ClusterCoordinator` is supported, at which point it can be an argument of `__init__`.
+Coordinator-based distributed training was made available with the introduction of a `ClusterCoordinator` API, where a `Strategy` should be used in conjunction with it. In contrast, classic `strategy.run`-based distributed training only requires a `Strategy` object to be used. 
+
+The code written for two schemes, with custom training loops, is easily distinguishable by the presence or absence of a `ClusterCoordinator` object. However, with `model.fit`, users are not expected to create a `ClusterCoordinator` object, and thus there needs to be a way for the user to specify whether the training should be performed with a `ClusterCoordinator` object. This can possibly be done at `Strategy.__init__`, so that `model.fit` knows whether or not it is intended for a coordinator-based single-client training, or a traditional multi-client training.
+
+We propose that `ParameterServerStrategy` has an attribute `should_use_with_coordinator`, which is always `True` until usage without a `ClusterCoordinator` is supported, at which point it can be an argument of `__init__`.
 
 
 ```
@@ -508,6 +488,33 @@ For now, it seems feasible that `ParameterServerStrategy` has a field `should_us
       self.should_use_with_coordinator = True
 ```
 
+#### `ClusterCoordinator` as a singleton 
+
+Since a `ClusterCoordinator` instance spins off worker and failure handling threads, there should only be one `ClusterCoordinator` at any given time with a `strategy` instance, and making it a singleton ensures that those threads are only created once. The singleton is accessible through a constructor call:
+
+```
+class ClusterCoordinator(object): 
+  def __new__(cls, strategy): 
+    if not strategy._cluster_coordinator:  # TODO: Needs a lock for thread-safety
+      strategy._cluster_coordinator = super(ClusterCoordinator, cls).__new__(cls)
+    return strategy._cluster_coordinator
+```
+
+Here, we have created this attribute referencing `cluster_coordinator` from `strategy`. This is necessary because `Model` only keeps a reference of `strategy`, and this allows `Model` to have access to this `ClusterCoordinator` instance.
+
+Being a singleton is important considering there are power users who would like to `schedule` functions themselves in addition to `model.fit` usage. That is, they can instantiate one before `model.fit` does, or use one after `model.fit` has instantiated one. In either case, they should access the same `ClusterCoordinator` instance, as the one `model.fit` uses.
+
+Obtaining the singleton by calling the constructor of `ClusterCoordinator`, as opposed to an instance getter, provides the future-compatibility if we allow multiple `ClusterCoordinator`s in the future.
+
+#### `ClusterCoordinator`’s reference to `ParameterServerStrategy` as a `weakref`
+
+Note that since currently, `ClusterCoordinator` holds a reference to `ParameterServerStrategy`, in order to avoid the leak resulting from the circular referencing between `ParameterServerStrategy` and `ClusterCoordinator`, the `coordinator`’s reference to `strategy` should be a `weakref`:
+
+```
+class ClusterCoordinator(...):
+  def __init__(self, strategy):
+      self.strategy = weakref.ref(strategy)
+```
 
 
 ### Workers and parameter servers
