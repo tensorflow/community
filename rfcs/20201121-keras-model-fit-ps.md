@@ -206,7 +206,7 @@ To take advantage of TF2 support of parameter server training, a `ClusterCoordin
 
 ##### Advanced use case: `ClusterCoordinator` as a singleton
 
-Since `ClusterCoordinator` instance spins off worker and failure handling threads, there should only be one `ClusterCoordinator` at any given time, and making it a singleton ensures that those threads are only created once:
+Now, let's consider a more advanced use case where the `ClusterCoordinator` instance is needed by users. Since `ClusterCoordinator` instance spins off worker and failure handling threads, there should only be one `ClusterCoordinator` at any given time, and making it a singleton ensures that those threads are only created once:
 
 ```
 class ClusterCoordinator(object): 
@@ -216,11 +216,11 @@ class ClusterCoordinator(object):
     return strategy.cluster_coordinator
 ```
 
-Being a singleton is important considering there are power users who would like to `schedule` functions themselves in addition to `model.fit` usage. That is, they can instantiate one before `model.fit` does, or use one after `model.fit` has instantiated one. In either case, they should access the same `ClusterCoordinator` instance.
+Being a singleton is important considering there are power users who would like to `schedule` functions themselves in addition to `model.fit` usage. That is, they can instantiate one before `model.fit` does, or use one after `model.fit` has instantiated one. In either case, they should access the same `ClusterCoordinator` instance, as the one `model.fit` uses.
 
 ##### Have an attribute in `ParameterServerStrategy` that holds the `ClusterCoordinator`
 
-We propose that an attribute is added to `ParameterServerStrategy` to keep track of the `ClusterCoordinator`. When a `ClusterCooridinator` is instantiated, such attribute will be set. Here, we assume that the distribution `Strategy` object can determine whether or not it is supposed to be used with a `ClusterCoordinator`. See below “Changes in tf.distribute” section for more information.
+We propose that an attribute is added to `ParameterServerStrategy` to keep track of the `ClusterCoordinator`. When a `ClusterCoordinator` is instantiated, such attribute will be set. Here, we assume that the distribution `Strategy` object can determine whether or not it is supposed to be used with a `ClusterCoordinator`. See below “Changes in tf.distribute” section for more information.
 
 ```
 class ClusterCoordinator(...):
@@ -229,7 +229,7 @@ class ClusterCoordinator(...):
       strategy.cluster_coordinator = self
 ```
 
-And, we instantiate the `ClusterCoordinator` as soon as `model.fit` is called for the first time. It will then be reused for the next `fit`, or on a different model.
+And, we instantiate the `ClusterCoordinator` as soon as `model.fit` is called for the first time. Note that if users have instantiated it prior to `model.fit` calls, the same instance is returned from the `ClusterCoordinator` constructor. It will then be reused for the next `fit`, or on a different model.
 
 ```
 class Model(...):
