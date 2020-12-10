@@ -112,11 +112,11 @@ This section discusses the changes needed to be made in `model` API and assumes 
 
 In this design, we propose `model.fit` to take a new type, `tf.data.experimental.DatasetFactory`, instead of a dataset instance (which is [what is currently supported](https://github.com/tensorflow/tensorflow/blob/6b9e35f1c0410607bf956c0f27e5d3e1456b4899/tensorflow/python/keras/engine/training.py#L887-L889)), for the following reasons:
 
-* With `dataset` instances, there is complication brought by the need of replicating `dataset`s to workers.
+* With `dataset` instances, there is a need of replicating `dataset`s to remote workers. This is not a well-established path and thus not supported yet by `ClusterCoordinator`. 
 
-* With `dataset` replication, in the past we have observed more memory consumption, less flexibility for user’s dataset transformation, and suboptimal performance. 
+* Even if `dataset` replication is supported, in the past we have observed more memory consumption, less flexibility for user’s dataset transformation, and suboptimal performance. 
 
-* When using Keras preprocessing layers (KPL), read-only resources are created at layer creation, which ends up being placed at the coordinator. However, `tf.data replicate` API does not support the resources referenced in the dataset graph to be accessed once serialized and deserialized, in the remotely worker. This prevents the `dataset` instance path from supporting resources, and thus KPLs.
+* When using resources for datasets, the resources end up being placed at the coordinator. However, `tf.data replicate` API does not support the resources referenced in the dataset graph to be accessed once serialized and deserialized, in the remote worker. This prevents the `dataset` instance path from supporting resources, and thus Keras preprocessing layers.
 
 Please see below for the rationale of using a `DatasetFactory` type instead of a simple `callable`.
 
@@ -196,8 +196,7 @@ To take advantage of TF2 support of parameter server training, a `ClusterCoordin
 class Model(...):
 
   def fit(self, ...):
-    if (self.distribute_strategy.should_use_with_coordinator and 
-        not self.distribute_strategy._cluster_coordinator):
+    if self.distribute_strategy.should_use_with_coordinator:
       cluster_coordinator.ClusterCoordinator(self.distribute_strategy)
     ... # the rest of fit
 
@@ -483,9 +482,9 @@ We propose that `ParameterServerStrategy` has an attribute `should_use_with_coor
       self.should_use_with_coordinator = True
 ```
 
-#### `ClusterCoordinator` as a single instance to `Strategy` 
+#### `ClusterCoordinator` as a single instance to `Strategy` obtained at constructor call 
 
-Since a `ClusterCoordinator` instance spins off worker and failure handling threads, there should only be one `ClusterCoordinator` at any given time with a `strategy` instance, and making it a singleton ensures that those threads are only created once. The singleton is accessible through a constructor call:
+Since a `ClusterCoordinator` instance spins off worker and failure handling threads, there should only be one `ClusterCoordinator` at any given time with a `strategy` instance, and making it a single instance with a given `Strategy` ensures that those threads are only created once. We propose that the single instance is returned through a constructor call:
 
 ```
 class ClusterCoordinator(object): 
@@ -497,9 +496,9 @@ class ClusterCoordinator(object):
 
 Here, we have created this attribute referencing `cluster_coordinator` from `strategy`. This is necessary because `Model` only keeps a reference of `strategy`, and this allows `Model` to have access to this `ClusterCoordinator` instance.
 
-Being a singleton is important considering there are power users who would like to `schedule` functions themselves in addition to `model.fit` usage. That is, they can instantiate one before `model.fit` does, or use one after `model.fit` has instantiated one. In either case, they should access the same `ClusterCoordinator` instance, as the one `model.fit` uses.
+Obtaining the single instance at constructor call is useful considering there are power users who would like to `schedule` functions themselves in addition to `model.fit` usage, and naturally they would construct a `ClusterCoordinator`. They may do so before `model.fit` does, or after `model.fit` has instantiated one. In either case, they should access the same `ClusterCoordinator` instance, as the one `model.fit` uses.
 
-Obtaining the singleton by calling the constructor of `ClusterCoordinator`, as opposed to an instance getter, provides the future-compatibility if we allow multiple `ClusterCoordinator`s in the future.
+Another advantage of using the constructor of `ClusterCoordinator`, as opposed to an instance getter, is it provides the future-compatibility if we allow multiple `ClusterCoordinator`s in the future.
 
 #### `ClusterCoordinator`’s reference to `ParameterServerStrategy` as a `weakref`
 
