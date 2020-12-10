@@ -625,9 +625,11 @@ Pros (advantages of evaluator thread approach):
 Cons (disadvantages of evaluator thread approach):
 * This solution presents a challenge when workers can easily become unavailable, in which case it is not straightforward to immediately find another available worker to take over*
 * This solution is blocked on `tf.keras.models.load_model` being available on PS, if `variable_partitioner` is used. Here, model saving and loading are for cloning the model, so if there is an alternative to clone, this solution is not blocked.
-* Users who can afford to allocate a high priority on an evaluator task cannot do so with workers; workers would simply have the same, usually lower, priority (and thus more frequent function-takeovers)
+* Users who can afford to allocate a high priority on an evaluator task cannot do so with workers; workers would simply have the same, usually lower, priority (and thus more frequent function-takeovers)*
 
 *Fault tolerance, the first con, may further be addressed with possibly another `ClusterCoordinator`, if it shares the threads with the other `ClusterCoordinator`, and the library allows multiple function queues to be accessed by the threads. More details may be discussed in a separate RFC.
+
+*Regarding priority, the third con, we can address it by having a separate job (with only one task for now), say "eval_worker", for the worker that is solely used for evaluation. It'd be a little more work where TF_CONFIG, device filter, etc. need to be changed, but it is possible. It gives us the flexibility to assign a higher job priority.
 
 ### Fault tolerance
 
