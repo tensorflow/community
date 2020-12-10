@@ -186,7 +186,7 @@ For compatibility with other strategies, we propose that `dataset_fn` (which the
 
 ##### `Model` abstracting the concept of `ClusterCoordinator` for `model.fit`
 
-To take advantage of TF2 support of parameter server training, a `ClusterCoordinator` should be created for handling asynchronous function scheduling and joining. The preferred route should be that such an object is abstracted away from the user by `model.fit` training API as an implementation detail. For the power users who would need a `ClusterCoordinator` instance for their custom `schedule`s and `join`s, the `ClusterCoordinator` instance is available as a singleton through a constructor call. See below "`ClusterCoordinator` as a singleton" section for more information.
+To take advantage of TF2 support of parameter server training, a `ClusterCoordinator` should be created for handling asynchronous function scheduling and joining. The preferred route should be that such an object is abstracted away from the user by `model.fit` training API as an implementation detail. For the power users who would need a `ClusterCoordinator` instance for their custom `schedule`s and `join`s, the `ClusterCoordinator` instance is available through a constructor call. See below "`ClusterCoordinator` as a single instance to `Strategy`" section for more information.
 
 `ClusterCoordinator` instance can be created at any point prior to `Model`'s use of it, but `model.fit` seems a natural place since that indicates the user's intention for using the compile-fit API as opposed to a CTL, where we expect users to create one. 
 
@@ -483,7 +483,7 @@ We propose that `ParameterServerStrategy` has an attribute `should_use_with_coor
       self.should_use_with_coordinator = True
 ```
 
-#### `ClusterCoordinator` as a singleton 
+#### `ClusterCoordinator` as a single instance to `Strategy` 
 
 Since a `ClusterCoordinator` instance spins off worker and failure handling threads, there should only be one `ClusterCoordinator` at any given time with a `strategy` instance, and making it a singleton ensures that those threads are only created once. The singleton is accessible through a constructor call:
 
@@ -662,7 +662,7 @@ Tests to verify that training with `model.fit` can withstand worker or PS unavai
 *   Design doc (ETA: mid/late-Nov)
 *   Schedule design review (ETA: Early Dec)
 *   Code check-in with explicit opt-in. (ETA: Early-Mid Dec)
-*   User model testing (ETA: Dec)
+*   User model testing with opt-in (ETA: Dec)
 *   Aligned design with approvals on this doc (ETA: End of Dec)
 *   Demonstrable working prototype with checked in test or model (ETA: End of Dec)
 
