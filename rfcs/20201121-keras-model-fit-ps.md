@@ -3,7 +3,7 @@
 
 | Status        | Under review                                             |
 :---------------|:-----------------------------------------------------|
-| **Author(s)** | Rick Chao, Tom O'Malley, Zhenyu Tan, Yuefeng Zhou (Google)                                  |
+| **Author(s)** | Rick Chao (Google), Tom O'Malley (Google), Yuefeng Zhou (Google), Zhenyu Tan (Google), Tomer Kaftan (Google)                               |
 | **Sponsor**   | Francois Chollet, Priya Gupta (Google)                                |
 | **Updated**   | 2020-11-21                                        |
 
