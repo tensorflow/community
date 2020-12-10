@@ -63,12 +63,9 @@ In this design, we will discuss the changes in `model.fit` API, and its integrat
 
 ## Proposed options and solutions
 
-Let’s first take a look at the proposed user flow (on the coordinator). It is expected to be largely the same with other strategies, but notable differences are highlighted in the "Notable differences" section below. Unless mentioned otherwise, the discussion here applies to the python program intended to be run on the coordinator.
-
-
 ### User Journey
 
-With a dataset factory:
+Let’s first take a look at the proposed user flow (on the coordinator). It is expected to be largely the same with other strategies, but notable differences are highlighted in the "Notable differences" section below. Unless mentioned otherwise, the discussion here applies to the python program intended to be run on the coordinator.
 
 
 ```
@@ -82,7 +79,8 @@ def dataset_fn(input_context):
   return tf.data.Dataset.from_tensors(...).repeat(...).batch(...)
 
 # `ClusterCoordinator` is created at `fit`  
-history = model.fit(dataset_fn, epochs=..., steps_per_epoch=...,  callbacks=[...])
+dataset_factory = tf.data.experimental.DatasetFactory(dataset_fn)
+history = model.fit(dataset_factory, epochs=..., steps_per_epoch=...,  callbacks=[...])
 logging.info("result: %r", history)
 ```
 
@@ -90,8 +88,8 @@ logging.info("result: %r", history)
 #### Notable differences of user code between PS and other strategies
 
 There are a few points worth noting in the above user code, when using PS training:
-* A `dataset` callable or `dataset` factory will be added as another supported type of `x`, and is now the only type supported to be passed as `x` argument of `model.fit` (when used with PS training). This is due to the challenges discussed below.
-* `steps_per_epoch` argument will be required, at least in the short term. This is because `OutOfRangeError` is raised from `ClusterCoordinator` APIs as soon as one worker exhausts its worker dataset, at which point other workers may have datasets remaining to be processed, and this `OutOfRangeError` indicates neither every dataset is visited roughly once, nor every dataset is visited roughly number of workers times. We thus require explicit steps per epoch, and recommend users to always repeat and shuffle the input dataset.
+* A `tf.data.experimental.DatasetFactory` will be added as another supported type of `x`, and is now the only type supported to be passed as `x` argument of `model.fit` (when used with PS training). This is due to the challenges discussed below.
+* `steps_per_epoch` argument will be required, at least in the short term. This is because `OutOfRangeError` is raised from `ClusterCoordinator` APIs as soon as one worker exhausts its worker `dataset`, at which point other workers may have datasets remaining to be processed, and this `OutOfRangeError` indicates neither every dataset is visited roughly once, nor every dataset is visited roughly number of workers times. We thus require explicit steps per epoch, and recommend users to always repeat and shuffle the input dataset.
 * Concept-wise, a step is one batch processed on one worker, as opposed to one batch distributed across all replicas when using some other strategies such as `MultiWorkerMirroredStrategy`.
 * Batch level callback will be disabled; that is, if users override `on_batch_begin` and `on_batch_end`,  an error will be raised. This is necessary for reasonable performance as described below. 
 * The cluster is synced at the end of every epoch. This is an implementation detail users do not necessarily need to be aware of, however is important for the correctness of epoch-level callbacks.
@@ -106,9 +104,9 @@ There are a few points worth noting in the above user code, when using PS traini
 This section discusses the changes needed to be made in `model` API and assumes the reader has basic familiarity with Keras training APIs.
 
 
-#### Dataset function or factory in `model.fit`
+#### Acceptance of `DatasetFactory` in `model.fit`
 
-In this design, we propose `model.fit` to take a dataset function or factory, instead of a dataset instance (which is [what is currently supported](https://github.com/tensorflow/tensorflow/blob/6b9e35f1c0410607bf956c0f27e5d3e1456b4899/tensorflow/python/keras/engine/training.py#L887-L889)), for the following reasons:
+In this design, we propose `model.fit` to take a new type, `tf.data.experimental.DatasetFactory`, instead of a dataset instance (which is [what is currently supported](https://github.com/tensorflow/tensorflow/blob/6b9e35f1c0410607bf956c0f27e5d3e1456b4899/tensorflow/python/keras/engine/training.py#L887-L889)), for the following reasons:
 
 * With `dataset` instances, there is complication brought by the need of replicating `dataset`s to workers.
 
@@ -116,9 +114,11 @@ In this design, we propose `model.fit` to take a dataset function or factory, in
 
 * When using Keras preprocessing layers (KPL), read-only resources are created at layer creation, which ends up being placed at the coordinator. However, `tf.data replicate` API does not support the resources referenced in the dataset graph to be accessed once serialized and deserialized, in the remotely worker. This prevents the `dataset` instance path from supporting resources, and thus KPLs.
 
+Please see below for the rationale of using a `DatasetFactory` type instead of a simple `callable`.
+
 ##### Implementation
 
-Current `model.fit` API takes a dataset from which an iterator is created, and the train function is built with this iterator. However, `ClusterCoordinator` only supports taking a no-argument* function** that returns a `Dataset`. This is done by the `create_per_worker_dataset` API, which creates datasets on remote workers. By leveraging such data factory support, `model.fit` with `dataset_fn` can be implemented by subclassing the existing Keras `DataHandler` (a Keras internal private API) to provide a worker-distributed dataset for Keras to use (i.e. call `iter` on). Please see the `DataHandler` section below for proposed changes.
+Currently, `ClusterCoordinator` supports taking a no-argument* function** that returns a `Dataset`. This is done by the `create_per_worker_dataset` API, which creates datasets on remote workers. By leveraging such `Dataset` function support, `model.fit` with a `DatasetFactory` can be implemented by subclassing the existing Keras `DataHandler` (a Keras internal private API) to provide a worker-distributed dataset for Keras to use (i.e. call `iter` on). Please see the `DataHandler` section below for proposed changes.
 
 *The idea behind a no-argument function is that the workers are deemed the same, and thus the datasets should be the same on every worker. At this time, we do not recommend sharding.
 
@@ -127,27 +127,15 @@ Current `model.fit` API takes a dataset from which an iterator is created, and t
 In terms of how users pass a dataset factory into `model.fit`, there are a couple of options:
 
 
-###### Option 1: any `callable`
+###### `DatasetFactory` class
 
-In the simplest case, we can allow any kind of `callable` to be passed in:
+We propose to define a new class `DatasetFactory` that holds a reference to the `dataset_fn`, for the following reasons:
 
+* The input argument, `x`, of `model.fit`, is already heavily overloaded with different types. With `DatasetFactory`, we can potentially have a `DataFactory` superclass in the future, for other types of callable, e.g., a callable that returns a numpy array, and `DataFactory` will cover different callable types.
 
-```
-def dataset_fn(input_context): 
-  return tf.data.Dataset.from_tensor_slices(...)
-history = model.fit(dataset_fn, epochs=..., steps_per_epoch=...,  callbacks=[...])
-```
+* With `DatasetFactory`, we learn user's intention to provide a function that returns a `Dataset`. If needed, this allows us to perform logic that is only applicable to `Dataset` as the input, prior to invoking the `dataset_fn`.
 
-Pros: 
-* `callable` does not require users to use additional APIs and may be less overhead.
-
-Cons:
-* Less future proof as there could be different interpretation of callable passed as `dataset` to `model.fit` in the future.
-
-
-###### Option 2: dataset factory
-
-For future-compatibility of `model.fit` API where a `dataset_fn` may have a signature change, a `DatasetFactory` can come handy which determines how the function is supposed to be used. 
+* The library gets to verify the type of the return value, before it is used.
 
 
 ```
@@ -156,12 +144,10 @@ def dataset_fn(input_context):
 history = model.fit(DatasetFactory(dataset_fn), epochs=..., steps_per_epoch=...,  callbacks=[...])
 ```
 
-
-With an additionally defined class `DatasetFactory`:
-
+where
 
 ```
-class tf.keras.experimental.DatasetFactory(Factory):
+class tf.data.experimental.DatasetFactory(Factory):
 
   def __init__(self, x):
     if not callable(x):
@@ -176,25 +162,17 @@ class tf.keras.experimental.DatasetFactory(Factory):
     return dataset
 ```
 
-Pros:
-* If there are other types in the future to be supported in `model.fit`, we no longer need another type to be added to `x`; it will be another subclass of `Factory`.
-* If `dataset` has a different interpretation, for example it takes an argument instead of none, we get an adapting layer with a `DatasetFactory`.
-
-Cons:
-* This requires users to use an additional symbol.
-
-
-The following discussion is based on option 1, where a simple callable is taken.
+We believe the effort users will spend learning and using this API is marginal, and the benefit we gain from such class is worthwhile.
 
 
 ##### Implication on no strategy/other strategies
 
-If `model.fit` is allowed to take a `dataset_fn`, use cases for synchronous strategies, and no strategy, can be readily applied. That is, we provide the `dataset_fn` to `distribute_datasets_from_function`, which correctly places `dataset`s on devices in synchronous training.
+If `model.fit` is allowed to take a `DatasetFactory`, use cases for synchronous strategies, and no strategy, can be readily applied. That is, we provide the `dataset_fn` that is obtained by invoking `DatasetFactory`, to `distribute_datasets_from_function`, which correctly places `dataset`s on devices in synchronous training.
 
 
 ##### Signature of `dataset_fn`
 
-For compatibility with other strategies, we propose that `dataset_fn` takes a single argument `input_context`, and returns a `tf.data.Dataset`. This `dataset_fn` will be used in `strategy.distribute_datasets_from_function`, wrapped by a `per_worker_dataset_fn`*, passed to `create_per_worker_dataset`. See below "DataAdapter and DataHandler changes" section for how this can be implemented in `model.fit`. Though sharding is not necessary in PS training, it is fine that users shard with `Dataset.shard` using the `input_context` (which has sensible default attributes) in `dataset_fn`, if they need to use it across multiple strategies.
+For compatibility with other strategies, we propose that `dataset_fn` (which the `DatasetFactory` wraps) takes a single argument `input_context`, and returns a `tf.data.Dataset`. This `dataset_fn` will be used in `strategy.distribute_datasets_from_function`, wrapped by a `per_worker_dataset_fn`*, passed to `create_per_worker_dataset`. See below "DataAdapter and DataHandler changes" section for how this can be implemented in `model.fit`. Though sharding is not necessary in PS training, it is fine that users shard with `Dataset.shard` using the `input_context` (which has sensible default attributes) in `dataset_fn`, if they need to use it across multiple strategies.
 
 *This is also in preparation for a multi-replica support in the future. See [tutorial](https://www.tensorflow.org/tutorials/distribute/parameter_server_training?hl=uk#dispatch_training_steps_to_remote_workers) for more information.
 
@@ -371,7 +349,7 @@ Since the workers will sync every epoch anyway, fetching the remote values incur
 
 ##### Batch-level callbacks
 
-##### What constitutes a `step` in `Model.fit` with `ParameterServerStrategy`?
+###### What constitutes a `step` in `Model.fit` with `ParameterServerStrategy`?
 
 There are two mental models users might have of what constitutes a single `step` when running `Model.fit` with `ParameterServerStrategy`. The mental models are clarified below, as each has implications for how users specify `steps_per_epoch` and how we handle batch-level `Callback`s.
 
@@ -393,6 +371,20 @@ For a more detailed discussion on this, see the Alternatives Considered section.
 With Mental Model 1, we cannot sync every batch. If we did so, only one worker would ever be working at a time. Because of this, we will not currently support user-written batch-level Callbacks. Instead, we will expect the user to set `epochs` and `steps_per_epoch` so that all work that requires syncing is performed at the end of each epoch. For instance, if the user desires to train for 50,000 steps and to checkpoint every 5,000 steps, the user should specify `Model.fit(..., steps_per_epoch=5000, epochs=10)`. Note that the dataset iterator will not be reset before the start of every epoch; it proceeds with the next example after the last one during the last epoch.
 
 For now, we will throw an error if a user provides a `Callback` that overrides `Callback.on_train_batch_begin` or `Callback.on_train_batch_end`, warning that batch-level Callbacks are not supported at this time. However, this design does not preclude supporting batch-level Callbacks in the future, as long as we give the user control of when to perform a sync. See the section Future Work on Batch-Level Callbacks below for a detailed discussion of this possibility.
+
+###### Built-in callbacks that have batch-level calls
+
+What about the existing callbacks Keras provide that have batch-level calls? There are 1 built-in, and by default added `callback` where batch-level calls are involved:
+
+* `ProgbarLogger`: We'll make the default logging every epoch, and not batch. If user sets the verbose such that it'd log every batch, an error is raised.
+
+In addition, there are 3 built-in, but by default not added callbacks, which have batch-level calls:
+
+1. `ModelCheckpoint`: Default use case (checkpoint every epoch) is good. For users who do checkpointing every N examples (and thus batch level calls are involved), we will make it remote-aware, i.e., `ModelCheckpoint` knows that what it receives is `RemoteValue` and it needs to sync. With this, it's fine that it gets called at every batch, and only sync at N examples.
+
+2. `TensorBoard`: Batch-level calls do not need output from `train_function`, so can be called anyway (by making it remote-aware as well).
+
+3. `TerminateOnNan`: We should disable this in PS training.
 
 ##### Timing-Based Callbacks
 
@@ -420,6 +412,8 @@ class MyTimingCallback(tf.keras.callbacks.Callback):
       time.sleep(self.interval)
       self.model.save(self.save_dir)
 ```
+
+We plan to provide built-in timing-based callbacks, for common functionalities such as model checkpointing. The asynchronous nature of calls at intervals limits those usages to PS training only, for now. Detailed design of built-in timing-based callbacks will be separately discussed and not covered in this proposal.
 
 ##### Future Work on Batch-level Callbacks
 
@@ -467,7 +461,7 @@ In the longer term, we seek distributed support for `model.evaluate`, where the 
 1. Implement distributed `model.evaluate` without visitation guarantee, but require user's opt-in because of the behavior change (by `model.evaluate(..., distributed_eval=True)`)
 2. Support distributed `model.evaluate` only after `ClusterCoordinator` provides visitation guarantee mechanism
 
-Note that similar to the dataset factory change for `model.fit`, validation dataset will also need to be a function. That is, `model.fit` will take a `validation_data_fn` instead of a `validation_data`, and `model.evaluate` will take a `dataset_fn` as opposed to a `dataset` instance.
+Note that similar to the dataset factory change for `model.fit`, validation dataset will also need to be a dataset factory. That is, `model.fit` will take a `DatasetFactory` for `validation_data` argument, and `model.evaluate` will take a `DatasetFactory` for `x` as opposed to a `dataset` instance.
 
 See below “Evaluation” section for other proposed evaluation solutions accompanying `model.fit` usage.
 
@@ -777,6 +771,23 @@ dataset = tf.data.Dataset.X... # Make use of `preproc_stage` for transformation
 history = model.fit(dataset, epochs=..., steps_per_epoch=...,  callbacks=[...]) 
 logging.info("result: %r", history)
 ```
+
+### Using a simple `callable` rather than `DatasetFactory`
+
+In the simplest case, we can allow any kind of `callable` to be passed in:
+
+
+```
+def dataset_fn(input_context): 
+  return tf.data.Dataset.from_tensor_slices(...)
+history = model.fit(dataset_fn, epochs=..., steps_per_epoch=...,  callbacks=[...])
+```
+
+Pros: 
+* `callable` does not require users to use additional APIs and may be less overhead.
+
+Cons:
+* Less future proof as there could be different interpretation of callable passed as `dataset` to `model.fit` in the future.
 
 
 ### Attach the `ClusterCoordinator`’s lifecycle to `model.fit`
