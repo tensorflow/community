@@ -31,7 +31,7 @@ Everybody with an interest in using TensorFlow to build recommendation systems a
 
 ## Resources
 
-- SIG Recommenders mailing list, to be created.
+- SIG Recommenders [mailing list](https://groups.google.com/u/1/a/tensorflow.org/g/recommenders)
 - New TensorFlow github maintained by SIG Recommenders
 (github.com/tensorflow/recommenders-addons, to be created)
 - SIG monthly meeting agenda and [notes](https://docs.google.com/document/d/1-jLPffS_MhOd50WScfjFpVNC1DGaIwWxMQPSl5YIJYo/edit#)
