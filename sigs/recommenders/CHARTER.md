@@ -22,7 +22,7 @@ Notice that TensorFlow has open-sourced [TensorFlow Recommenders](https://blog.t
 [github.com/tensorflow/recommenders](http://github.com/tensorflow/recommenders)
 
 Further, we maintain a Tensorflow repo dedicated for community contributions and maintained by SIG as well, under: 
-**github.com/tensorflow/recommenders-addons** (to be created).
+**github.com/tensorflow/recommenders-addons**.
 SIG Recommenders can contributes more addons as complementary to TensorFlow Recommenders, or any helpful libraries related to recommendation systems using TensorFlow. The contribution areas can be broad and don't limit to the topic listed above. We hope this can make community contributions much easier.
 
 ## Membership
@@ -33,9 +33,8 @@ Everybody with an interest in using TensorFlow to build recommendation systems a
 
 - SIG Recommenders [mailing list](https://groups.google.com/u/1/a/tensorflow.org/g/recommenders)
 - New TensorFlow github maintained by SIG Recommenders
-(github.com/tensorflow/recommenders-addons, to be created)
+(github.com/tensorflow/recommenders-addons)
 - SIG monthly meeting agenda and [notes](https://docs.google.com/document/d/1-jLPffS_MhOd50WScfjFpVNC1DGaIwWxMQPSl5YIJYo/edit#)
-- SIG Gitter chat channel (https://gitter.im/tensorflow/sig-recommenders, to be created)
 
 ## Contacts
 
@@ -43,14 +42,17 @@ Initially SIG leads will be below and welcome
 new members to request to be SIG leads.
 
 * Community leads
-   * Bo Liu, Pinterest
-   * Haidong Rong, Tencent
-   * Yong Li, Alibaba
+   * Bo Liu, Pinterest, bol@pinterest.com
+   * Haidong Rong, Tencent, rhdong2017@gmal.com
+   * Yong Li, Alibaba, jiufeng.ly@alibaba-inc.com
 * Co-leads and sponsors from Google
-   * Yuefeng Zhou, TensorFlow
-   * Zhenyu Tan, TensorFlow
-   * Wei Wei, TensorFlow
-   * Derek Cheng, Google Brain
+   * Yuefeng Zhou, TensorFlow, yuefengz@google.com
+   * Zhenyu Tan, TensorFlow, tanzheny@google.com
+   * Wei Wei, TensorFlow, weiwe@google.com
+   * Derek Cheng, Google Brain, zcheng@google.com
+
+Welcome emails to SIG groups (recommenders@tensorflow.org), or
+just SIG leads (recommenders-leads@tensorflow.org)
 
 For administrative questions, contact tf-community-team@tensorflow.org.
 
