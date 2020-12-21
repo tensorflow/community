@@ -44,7 +44,19 @@ In this design, we'd like to reduce the common engineering cost for the compress
 ## Design Proposal
 TBD
 
-### API
+### Weight compression algorithm API
+
+<p align="center">
+ <img src=20201221-tfmot-compression-api/class_graph.png"/>
+</p>
+
+This is an API for a layer weight based compression algorithm.
+
+First, we start from a pre-trained model which the model developer has. And then convert the pre-trained model to training phase model for compression fine-tuning training. During the convert to training phase model, We call `init_training_weights_repr` for each tensor that we want to compress which is specified from the `get_compressible_weights` method.
+
+During the training phase, `projection_training_weights` method is called for each training step. After fine-tuning training for compression is finished, we convert the training phase model to a compressed model. We only call the `compress` function once for each compressible tensor for converting.
+
+Compressed model contains the `decompress_compressed_weights` function in the graph. It’s possible to call the `decompress_compressed_weights` for each inference step. To improve performance, we’ll cache the decompressed one depending on flags if we have enough space.
 
 ```python
 class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
@@ -72,7 +84,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     """
 
   @abc.abstractmethod
-  def training(self, *training_weights: tf.Tensor) -> tf.Tensor:
+  def projection_training_weights(self, *training_weights: tf.Tensor) -> tf.Tensor:
     """Define a piece of the forward pass during training, which operates on a single compressible weight.
     The default throws an error when training occurs.
 
@@ -85,6 +97,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
        tf.Tensor to set the compressible weight to.
     """
 
+  @abc.abstractmethod
   def compress(self, *training_weights: tf.Tensor) -> List[tf.Tensor]:
     """Define the operations to compress a single weight’s training form after training.
 
@@ -102,7 +115,8 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
       List of tf.Tensors to set to compressed or more compressible form.
     """
 
-  def decompress(self, *compressed_weights: tf.Tensor) -> tf.Tensor:
+  @abc.abstractmethod
+  def decompress_compressed_weights(self, *compressed_weights: tf.Tensor) -> tf.Tensor:
     """Define the operations to decompress a single weight’s compressed form during inference.
 
     The default is an identity.
@@ -115,6 +129,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
       A tf.Tensor representing the decompressed `compressed_weights`.
     """
 
+  @abc.abstractmethod
   def get_compressible_weights(
       self, original_layer: tf.keras.layers.Layer) -> List[str]:
     """Define compressible weights for each layer.
@@ -130,7 +145,6 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     """
 
 ```
-
 
 ### Alternatives Considered
 TBD
@@ -153,7 +167,88 @@ This is new standalone APIs that doesn’t change any current best practices for
 ### Tutorials and Examples
 We provide the tutorial for [SVD](https://en.wikipedia.org/wiki/Singular_value_decomposition) compression algorithm that shows how we implement the SVD algorithm using TFMOT compression API by colab. This tutorial includes:
 * How the algorithm developer implements the SVD algorithm and makes SVD API for model developer.
-* How the model developer use the SVD algorithm and deploys their compressed model to TF and TFLite model.
+    - Inherit the `WeightCompressionAlgorithm` class.
+```python
+class SVD(algorithm.WeightCompressionAlgorithm):
+  """SVD compression module config."""
+
+  def __init__(self, params):
+    self.params = params
+
+  def init_training_weights_repr(
+      self, pretrained_weight: tf.Tensor) -> List[algorithm.WeightRepr]:
+    """Init function from pre-trained model case."""
+    rank = self.params.rank
+
+    # Dense Layer
+    if len(pretrained_weight.shape) == 2:
+      u, sv = tf_svd_factorization_2d(pretrained_weight, rank)
+    else:
+      raise NotImplementedError('Only for dimension=2 is supported.')
+
+    return [
+        algorithm.WeightRepr(
+            name='u',
+            shape=u.shape,
+            dtype=u.dtype,
+            initializer=tf.keras.initializers.Constant(u)),
+        algorithm.WeightRepr(
+            name='sv',
+            shape=sv.shape,
+            dtype=sv.dtype,
+            initializer=tf.keras.initializers.Constant(sv))
+    ]
+
+  def projection_training_weights(self, u: tf.Tensor, sv: tf.Tensor) -> tf.Tensor:
+    return tf.matmul(u, sv)
+
+  def get_compressible_weights(
+      self, original_layer: tf.keras.layers.Layer) -> List[str]:
+    rank = self.params.rank
+    if isinstance(original_layer, tf.keras.layers.Dense):
+      input_dim = original_layer.kernel.shape[0]
+      output_dim = original_layer.kernel.shape[1]
+      if input_dim * output_dim > (input_dim + output_dim) * rank:
+        return ['kernel']
+    return []
+```
+
+    - Export model developer API for the SVD algorithm.
+```python
+class SVDParams(object):
+  """Define container for parameters for SVD algorithm."""
+
+  def __init__(self, rank):
+    self.rank = rank
+
+def optimize(to_optimize: tf.keras.Model, params: SVDParams) -> tf.keras.Model:
+  """Model developer API for optimizing a model."""
+
+  def _optimize_layer(layer):
+    # Require layer to be built so that the SVD-factorized weights
+    # can be initialized from the weights.
+    if not layer.built:
+      raise ValueError(
+          'Applying SVD currently requires passing in a built model')
+
+    return algorithm.create_layer_for_training(layer, algorithm=SVD(params))
+
+  return tf.keras.models.clone_model(
+      to_optimize, clone_function=_optimize_layer)
+```
+
+* How the model developer uses the SVD algorithm and deploys their compressed model to TF and TFLite model.
+
+```python
+params = SVDParams(rank=32)
+compressed_model = optimize(model, params)
+
+loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+compressed_model.compile(optimizer='adam', loss=loss_fn, metrics=['accuracy'])
+
+compressed_model.fit(x_train, y_train, epochs=2)
+compressed_model.evaluate(x_test, y_test, verbose=2)
+```
 
 We also want to provide an example of well-known compression algorithms. Here’s algorithm list at least we have to provide:
 * [Weight clustering](https://arxiv.org/abs/1510.00149) : Most famous compression algorithm that can be used widely.
@@ -174,5 +269,4 @@ TBD (optional)
 ## Questions and Discussion Topics
 
 TBD
-
 
