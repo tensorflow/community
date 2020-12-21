@@ -47,7 +47,7 @@ TBD
 ### Weight compression algorithm API
 
 <p align="center">
- <img src=20201221-tfmot-compression-api/class_graph.png"/>
+ <img src="20201221-tfmot-compression-api/class_graph.png"/>
 </p>
 
 This is an API for a layer weight based compression algorithm.
