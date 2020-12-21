@@ -166,8 +166,9 @@ This is new standalone APIs that doesn’t change any current best practices for
 
 ### Tutorials and Examples
 We provide the tutorial for [SVD](https://en.wikipedia.org/wiki/Singular_value_decomposition) compression algorithm that shows how we implement the SVD algorithm using TFMOT compression API by colab. This tutorial includes:
-* How the algorithm developer implements the SVD algorithm and makes SVD API for model developer.
-    - Inherit the `WeightCompressionAlgorithm` class.
+
+* How the algorithm developer implements the SVD algorithm uses the `WeightCompressionAlgorithm` class.
+
 ```python
 class SVD(algorithm.WeightCompressionAlgorithm):
   """SVD compression module config."""
@@ -213,7 +214,7 @@ class SVD(algorithm.WeightCompressionAlgorithm):
     return []
 ```
 
-    - Export model developer API for the SVD algorithm.
+* Export model developer API for the SVD algorithm.
 ```python
 class SVDParams(object):
   """Define container for parameters for SVD algorithm."""
