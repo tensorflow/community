@@ -375,9 +375,11 @@ Now we'll explain when each method is called and how many that method called for
     <p align="center">
       <img src=20201221-tfmot-compression-api/get_compressible_weights.png />
     </p>
+
     ```python
     training_model = optimize_training(model, params)
     ```
+
     `get_compressible_weights` is called when we want to get a list of variables that we will apply compression.
     When we try to compress the pre-trained model, we just call this method for each layer in the pre-trained model. The number of the method calling is (# of layers).
 
@@ -385,36 +387,44 @@ Now we'll explain when each method is called and how many that method called for
     <p align="center">
       <img src=20201221-tfmot-compression-api/init_training_weights_repr.png />
     </p>
+
     ```python
     training_model = optimize_training(model, params)
     ```
+
     `init_training_weights_repr` is called when we initialize the cloned training model from the pre-trained model. `optimize_training` method basically clones the model to create a training model for compression, wrapping compressible layers by the training wrapper to create training weights. The number of the method calling is (# of compressible weights).
 
 1. `fake_decompress`
     <p align="center">
       <img src=20201221-tfmot-compression-api/fake_decompress.png />
     </p>
+
     ```python
     training_model.fit(x_train, y_train, epochs=2)
     ```
+
     `fake_decompress` is called when the training model for the compression algorithm is training. Usually this method function is a part of the training model. It recovers the original weight from the training weights, and should be differentiable. This method enables you to use the original graph to compute the model output, but train the training weights of the training model. For each training step, this method is called for every compressible weight. The number of the method calling is (# of compressible weights) * (training steps).
 
 1. `compress`
     <p align="center">
       <img src=20201221-tfmot-compression-api/compress.png />
     </p>
+
     ```python
     compressed_model = optimize_inference(training_model, params)
     ```
+
     `compress` is called when we convert the training model to the compressed model. The number of the method calling is (# of compressible weights).
 
 1. `decompress`
     <p align="center">
       <img src=20201221-tfmot-compression-api/decompress.png />
     </p>
+
     ```python
     compressed_model.evaluate(x_test, y_test, verbose=2)
     ```
+
     `decompress` is called when we do inference on a compressed model. Usually this method function is a part of a compressed model. This method decompresses the weight that can be used on the original graph for each compressible weight. Basically the number of this method called is (# of compressible weights) * (# of inference). To improve performance, the output value of this method can be cached.
 
 ## Questions and Discussion Topics
