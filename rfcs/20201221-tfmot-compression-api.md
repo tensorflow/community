@@ -1,4 +1,4 @@
-# Tensorflow Model Optimization Training-time compression API
+# Tensorflow Model Optimization Compression API
 
 | Status        | Draft       |
 :-------------- |:---------------------------------------------------- |
@@ -40,23 +40,129 @@ In this design, we'd like to reduce the common engineering cost for the compress
 * Deployment compressed model. (TF serving, TFLite, and tf.js)
 * Support TF 2.0 Keras features compatibility. (e.g. distributed training.)
 
-
 ## Design Proposal
-TBD
+
+We propose the compression algorithm API which helps algorithm developers create model developer APIs for their own compression algorithm.
+Our API also provides guidelines for testing and benchmark. For now, we only have guidelines to apply a compression algorithm for simple MNIST vision cases. We'd like to provide an example for tensorflow [official models](https://github.com/tensorflow/models/tree/master/official) in the future.
+
+### Tutorials and Examples
+We provide the tutorial for [SVD](https://en.wikipedia.org/wiki/Singular_value_decomposition) compression algorithm that shows how we implement the SVD algorithm using TFMOT compression API by colab. This tutorial includes:
+
+* Algorithm developer side.
+    1. The algorithm developer implementing the SVD algorithm uses the `WeightCompressionAlgorithm` class.
+
+        ```python
+        class SVD(algorithm.WeightCompressionAlgorithm):
+          """SVD compression module config."""
+
+          def __init__(self, params):
+            self.params = params
+
+          def init_training_weights_repr(
+              self, pretrained_weight: tf.Tensor) -> List[algorithm.WeightRepr]:
+            """Init function from pre-trained model case."""
+            rank = self.params.rank
+
+            # Dense Layer
+            if len(pretrained_weight.shape) == 2:
+              u, sv = tf_svd_factorization_2d(pretrained_weight, rank)
+            else:
+              raise NotImplementedError('Only for dimension=2 is supported.')
+
+            return [
+                algorithm.WeightRepr(
+                    name='u',
+                    shape=u.shape,
+                    dtype=u.dtype,
+                    initializer=tf.keras.initializers.Constant(u)),
+                algorithm.WeightRepr(
+                    name='sv',
+                    shape=sv.shape,
+                    dtype=sv.dtype,
+                    initializer=tf.keras.initializers.Constant(sv))
+            ]
+
+          def fake_decompress(self, u: tf.Tensor, sv: tf.Tensor) -> tf.Tensor:
+            return tf.matmul(u, sv)
+
+          def get_compressible_weights(
+              self, original_layer: tf.keras.layers.Layer) -> List[str]:
+            rank = self.params.rank
+            if isinstance(original_layer, tf.keras.layers.Dense):
+              input_dim = original_layer.kernel.shape[0]
+              output_dim = original_layer.kernel.shape[1]
+              if input_dim * output_dim > (input_dim + output_dim) * rank:
+                return ['kernel']
+            return []
+        ```
+
+    1. Export the model developer API for the SVD algorithm.
+        ```python
+        class SVDParams(object):
+          """Define container for parameters for SVD algorithm."""
+
+          def __init__(self, rank):
+            self.rank = rank
+
+        def optimize(to_optimize: tf.keras.Model, params: SVDParams) -> tf.keras.Model:
+          """Model developer API for optimizing a model."""
+
+          def _optimize_layer(layer):
+            # Require layer to be built so that the SVD-factorized weights
+            # can be initialized from the weights.
+            if not layer.built:
+              raise ValueError(
+                  'Applying SVD currently requires passing in a built model')
+
+            return algorithm.create_layer_for_training(layer, algorithm=SVD(params))
+
+          return tf.keras.models.clone_model(
+              to_optimize, clone_function=_optimize_layer)
+        ```
+
+* Model developer side.
+    1. The model developer uses the SVD algorithm.
+        ```python
+        params = SVDParams(rank=32)
+        compressed_model = optimize(model, params)
+
+        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        compressed_model.compile(optimizer='adam', loss=loss_fn, metrics=['accuracy'])
+
+        compressed_model.fit(x_train, y_train, epochs=2)
+        compressed_model.evaluate(x_test, y_test, verbose=2)
+        ```
+    1. Deploys their compressed model to TFLite model
+        ```python
+        compressed_model.save('/tmp/model_svd_compressed')
+
+        def tflite_convert(saved_model_path, tflite_path):
+          converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_path)
+          converted = converter.convert()
+          open(tflite_path, 'wb').write(converted)
+
+        tflite_convert('/tmp/model_svd_compressed',
+                       '/tmp/tflite/model_svd_compressed.tflite')
+        ```
+
+We also want to provide an example of well-known compression algorithms. Here’s algorithm list at least we have to provide:
+* [Weight clustering](https://arxiv.org/abs/1510.00149) : Most famous compression algorithm that can be used widely.
+* [WEST](https://arxiv.org/abs/1811.08417) : Example for language model area.
+* [Pruning](https://www.tensorflow.org/model_optimization/guide/pruning/pruning_with_keras) : Example for scheduling feature.
 
 ### Weight compression algorithm API
 
 <p align="center">
- <img src="20201221-tfmot-compression-api/class_graph.png"/>
+ <img src=”20201221-tfmot-compression-api/class_graph.png"/>
 </p>
 
 This is an API for a layer weight based compression algorithm.
 
 First, we start from a pre-trained model which the model developer has. And then convert the pre-trained model to training phase model for compression fine-tuning training. During the convert to training phase model, We call `init_training_weights_repr` for each tensor that we want to compress which is specified from the `get_compressible_weights` method.
 
-During the training phase, `projection_training_weights` method is called for each training step. After fine-tuning training for compression is finished, we convert the training phase model to a compressed model. We only call the `compress` function once for each compressible tensor for converting.
+During the training phase, `fake_decompress` method is called for each training step. After fine-tuning training for compression is finished, we convert the training phase model to a compressed model. We only call the `compress` function once for each compressible tensor for converting.
 
-Compressed model contains the `decompress_compressed_weights` function in the graph. It’s possible to call the `decompress_compressed_weights` for each inference step. To improve performance, we’ll cache the decompressed one depending on flags if we have enough space.
+Compressed model contains the `decompress` function in the graph. It’s possible to call the `decompress` for each inference step. To improve performance, we’ll cache the decompressed one depending on flags if we have enough space.
 
 ```python
 class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
@@ -68,6 +174,21 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
 
      This interface is a purely functional one.
   """
+
+  @abc.abstractmethod
+  def get_compressible_weights(
+      self, original_layer: tf.keras.layers.Layer) -> List[str]:
+    """Define compressible weights for each layer.
+
+    Args:
+       original_layer: tf.keras.layers.Layer representing a layer from the
+       original model.
+
+    Returns:
+       List of attribute names as string representing list of compressible
+       weights for the given layer. (e.g. return value ['kernel'] means
+       layer.kernel is compressible.)
+    """
 
   @abc.abstractmethod
   def init_training_weights_repr(
@@ -84,7 +205,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     """
 
   @abc.abstractmethod
-  def projection_training_weights(self, *training_weights: tf.Tensor) -> tf.Tensor:
+  def fake_decompress(self, *training_weights: tf.Tensor) -> tf.Tensor:
     """Define a piece of the forward pass during training, which operates on a single compressible weight.
     The default throws an error when training occurs.
 
@@ -96,6 +217,17 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     Returns:
        tf.Tensor to set the compressible weight to.
     """
+
+  def update_training_weights(self, index, tensor: tf.Tensor):
+    """Update a training weight on an index to a given tensor value.
+
+    This method is for the case that training weight should update to specific
+    value not from the model optimizer. It'll throws an error if it can't
+    find the training weight.
+
+    Args:
+      index: integer indicate index of training weight to update.
+      tensor: tf.Tensor to update specific training weight.
 
   @abc.abstractmethod
   def compress(self, *training_weights: tf.Tensor) -> List[tf.Tensor]:
@@ -116,7 +248,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     """
 
   @abc.abstractmethod
-  def decompress_compressed_weights(self, *compressed_weights: tf.Tensor) -> tf.Tensor:
+  def decompress(self, *compressed_weights: tf.Tensor) -> tf.Tensor:
     """Define the operations to decompress a single weight’s compressed form during inference.
 
     The default is an identity.
@@ -128,26 +260,32 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     Returns:
       A tf.Tensor representing the decompressed `compressed_weights`.
     """
-
-  @abc.abstractmethod
-  def get_compressible_weights(
-      self, original_layer: tf.keras.layers.Layer) -> List[str]:
-    """Define compressible weights for each layer.
-
-    Args:
-       original_layer: tf.keras.layers.Layer representing a layer from the
-       original model.
-
-    Returns:
-       List of attribute names as string representing list of compressible
-       weights for the given layer. (e.g. return value ['kernel'] means
-       layer.kernel is compressible.)
-    """
-
 ```
 
 ### Alternatives Considered
-TBD
+
+#### Model compression algorithm API
+Some compression algorithms require training weights or compressed weights that share the weights across the layer. (e.g. lookup table for weight clustering.)
+We decided to support layer variable wise compression algorithm API first, because... :
+* Most use cases can be covered by the WeightCompressionAlgorithm API.
+* Hard to support a sequential model: That weight across the layer should be placed somewhere outside of the sequential model.
+
+### User Impact
+This is a new API for compression algorithm developers. That users can implement their own compression algorithm easier.
+
+#### UX study
+We had UX study with user candidates for initial prototype and small colab tutorial. We found what features we have to support, and what makes it hard to understand this API.
+
+Most confusing parts from the study were:
+* Method naming is hard to understand
+
+    Changed the method names but still need to discuss for better naming.
+
+* Hard to understand when the overridden methods are called and how many the methods calls
+
+    Added sequential step by step documentation and the diagram for each part of the execution step.
+
+Requested features are in the discussion topic below.
 
 ### Performance Implications
 We’ll provide examples of compression algorithms using the API in this design, and test/benchmark for the algorithm.
@@ -164,110 +302,133 @@ For initial release, we’ve targeted the TF 2.0 Keras model. After compressing 
 ### Best Practices
 This is new standalone APIs that doesn’t change any current best practices for Tensorflow. We’ll provide the new best practices for the API.
 
-### Tutorials and Examples
-We provide the tutorial for [SVD](https://en.wikipedia.org/wiki/Singular_value_decomposition) compression algorithm that shows how we implement the SVD algorithm using TFMOT compression API by colab. This tutorial includes:
+### Compatibility
+This API is compatible with the TF 2.0 Keras model. Because of technical limitations, we only support the Sequential/Functional API Keras model for initial release. (subclass model support API is not a part of the current design.)
+Compressed models can be converted to TF model, TFLite model, and tf.js format. Compressed model is also one of the TF 2.0 Keras models. But we need to do additional compatibility engineering work to keep that model compressed after converting. (e.g. prevent constant folding.)
 
-* How the algorithm developer implements the SVD algorithm uses the `WeightCompressionAlgorithm` class.
+## Detailed Design
+This is an API design doc. Engineering details will be determined in the future.
+For better explanation of this API, Here's the step-by-step usage documentation below:
+
+### Step-by-step usage documentation of the WeightCompressionAlgorithm class methods.
+
+The WeightCompressionAlgorithm class has 5 abstract methods. Following explanation shows when these methods are called and used.
+
+#### User facing API Template
+
+We have two steps for user facing API for general cases.
+(The SVD case training model is the same as the compressed model, so it only has one step.)
 
 ```python
-class SVD(algorithm.WeightCompressionAlgorithm):
-  """SVD compression module config."""
-
-  def __init__(self, params):
-    self.params = params
-
-  def init_training_weights_repr(
-      self, pretrained_weight: tf.Tensor) -> List[algorithm.WeightRepr]:
-    """Init function from pre-trained model case."""
-    rank = self.params.rank
-
-    # Dense Layer
-    if len(pretrained_weight.shape) == 2:
-      u, sv = tf_svd_factorization_2d(pretrained_weight, rank)
-    else:
-      raise NotImplementedError('Only for dimension=2 is supported.')
-
-    return [
-        algorithm.WeightRepr(
-            name='u',
-            shape=u.shape,
-            dtype=u.dtype,
-            initializer=tf.keras.initializers.Constant(u)),
-        algorithm.WeightRepr(
-            name='sv',
-            shape=sv.shape,
-            dtype=sv.dtype,
-            initializer=tf.keras.initializers.Constant(sv))
-    ]
-
-  def projection_training_weights(self, u: tf.Tensor, sv: tf.Tensor) -> tf.Tensor:
-    return tf.matmul(u, sv)
-
-  def get_compressible_weights(
-      self, original_layer: tf.keras.layers.Layer) -> List[str]:
-    rank = self.params.rank
-    if isinstance(original_layer, tf.keras.layers.Dense):
-      input_dim = original_layer.kernel.shape[0]
-      output_dim = original_layer.kernel.shape[1]
-      if input_dim * output_dim > (input_dim + output_dim) * rank:
-        return ['kernel']
-    return []
-```
-
-* Export model developer API for the SVD algorithm.
-```python
-class SVDParams(object):
-  """Define container for parameters for SVD algorithm."""
-
-  def __init__(self, rank):
-    self.rank = rank
-
-def optimize(to_optimize: tf.keras.Model, params: SVDParams) -> tf.keras.Model:
+def optimize_training(to_optimize: tf.keras.Model, params: CustomParams) -> tf.keras.Model:
   """Model developer API for optimizing a model."""
 
-  def _optimize_layer(layer):
-    # Require layer to be built so that the SVD-factorized weights
-    # can be initialized from the weights.
+  def _optimize_layer(layer: tf.keras.layers.Layer) -> tf.keras.layers.Layer:
     if not layer.built:
       raise ValueError(
-          'Applying SVD currently requires passing in a built model')
+          'Applying compression currently requires passing in a built model')
 
-    return algorithm.create_layer_for_training(layer, algorithm=SVD(params))
+    return algorithm.create_layer_for_training(
+        layer, algorithm=CustomAlgorithm(params))
+
+  return tf.keras.models.clone_model(
+      to_optimize, clone_function=_optimize_layer)
+
+
+def optimize_inference(to_optimize: tf.keras.Model, params: CustomParams) -> tf.keras.Model:
+  """Model developer API for optimizing a model."""
+
+  def _optimize_layer(layer: tf.keras.layers.Layer) -> tf.keras.layers.Layer:
+    if not layer.built:
+      raise ValueError(
+          'Applying compression currently requires passing in a built model')
+
+    return algorithm.create_layer_for_inference(
+        layer, algorithm=CustomAlgorithm(params))
 
   return tf.keras.models.clone_model(
       to_optimize, clone_function=_optimize_layer)
 ```
 
-* How the model developer uses the SVD algorithm and deploys their compressed model to TF and TFLite model.
+#### Model developer best practice.
+
+Here's the best practice for general compression algorithm model developer code.
 
 ```python
-params = SVDParams(rank=32)
-compressed_model = optimize(model, params)
+params = CustomParams()
+training_model = optimize_training(model, params)
 
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-compressed_model.compile(optimizer='adam', loss=loss_fn, metrics=['accuracy'])
+training_model.compile(optimizer='adam', loss=loss_fn, metrics=['accuracy'])
 
-compressed_model.fit(x_train, y_train, epochs=2)
+training_model.fit(x_train, y_train, epochs=2)
+
+compressed_model = optimize_inference(training_model, params)
 compressed_model.evaluate(x_test, y_test, verbose=2)
 ```
 
-We also want to provide an example of well-known compression algorithms. Here’s algorithm list at least we have to provide:
-* [Weight clustering](https://arxiv.org/abs/1510.00149) : Most famous compression algorithm that can be used widely.
-* [WEST](https://arxiv.org/abs/1811.08417) : Example for language model area.
-* [Pruning](https://www.tensorflow.org/model_optimization/guide/pruning/pruning_with_keras) : Example for scheduling feature.
+#### Weight compression algorithm API methods usage
 
-### Compatibility
-This API is compatible with the TF 2.0 Keras model. Because of technical limitations, we only support the Sequential/Functional API Keras model for initial release. (subclass model support API is not a part of the current design.)
-Compressed models can be converted to TF model, TFLite model, and tf.js format. Compressed model is also one of the TF 2.0 Keras models. But we need to do additional compatibility engineering work to keep that model compressed after converting. (e.g. prevent constant folding.)
+Now we'll explain when each method is called and how many that method called for the model developer code before.
 
-### User Impact
-This is a new API for compression algorithm developers. That users can implement their own compression algorithm easier.
+1. `get_compressible_weights`
+    <p align="center">
+      <img src=”20201221-tfmot-compression-api/get_compressible_weights.png"/>
+    </p>
+    ```python
+    training_model = optimize_training(model, params)
+    ```
+    `get_compressible_weights` is called when we want to get a list of variables that we will apply compression.
+    When we try to compress the pre-trained model, we just call this method for each layer in the pre-trained model. The number of the method calling is (# of layers).
 
-## Detailed Design
+1. `init_training_weights_repr`
+    <p align="center">
+      <img src=”20201221-tfmot-compression-api/init_training_weights_repr.png"/>
+    </p>
+    ```python
+    training_model = optimize_training(model, params)
+    ```
+    `init_training_weights_repr` is called when we initialize the cloned training model from the pre-trained model. `optimize_training` method basically clones the model to create a training model for compression, wrapping compressible layers by the training wrapper to create training weights. The number of the method calling is (# of compressible weights).
 
-TBD (optional)
+1. `fake_decompress`
+    <p align="center">
+      <img src=”20201221-tfmot-compression-api/fake_decompress.png"/>
+    </p>
+    ```python
+    training_model.fit(x_train, y_train, epochs=2)
+    ```
+    `fake_decompress` is called when the training model for the compression algorithm is training. Usually this method function is a part of the training model. It recovers the original weight from the training weights, and should be differentiable. This method enables you to use the original graph to compute the model output, but train the training weights of the training model. For each training step, this method is called for every compressible weight. The number of the method calling is (# of compressible weights) * (training steps).
+
+1. `compress`
+    <p align="center">
+      <img src=”20201221-tfmot-compression-api/compress.png"/>
+    </p>
+    ```python
+    compressed_model = optimize_inference(training_model, params)
+    ```
+    `compress` is called when we convert the training model to the compressed model. The number of the method calling is (# of compressible weights).
+
+1. `decompress`
+    <p align="center">
+      <img src=”20201221-tfmot-compression-api/decompress.png"/>
+    </p>
+    ```python
+    compressed_model.evaluate(x_test, y_test, verbose=2)
+    ```
+    `decompress` is called when we do inference on a compressed model. Usually this method function is a part of a compressed model. This method decompresses the weight that can be used on the original graph for each compressible weight. Basically the number of this method called is (# of compressible weights) * (# of inference). To improve performance, the output value of this method can be cached.
 
 ## Questions and Discussion Topics
 
-TBD
+### Support gradient based compression algorithm.
+
+Currently this apis compresses the weights only using the weight value. but some lossy compression algorithm like pruning requires gradient value to determine which weight will be pruned.
+
+### Custom additional custom loss for the compression model.
+
+Some compression algorithms require additional custom loss (e.g. entropy loss for the weights) which is not used in the original training script for pre-trained models. Algorithm developers can add their custom loss on user facing API functions. They can access the training weights of the model using a wrapper layer. To make. sure this code is working, we have to preserve weights order of get_weights method for the wrapper layer. They can call loss function using that training weights on the function. but still it's not possible to add loss that uses training weights and activation together.
+Note that every trainable variable that they want to train should be in training weights.
+
+### Error message & Debugging tools.
+
+It's not easy to find the bug there. Usually we get tensorflow bug messages with huge stack traces. We have to provide some bug messages for this API layer.
 
