@@ -153,7 +153,7 @@ We also want to provide an example of well-known compression algorithms. Here’
 ### Weight compression algorithm API
 
 <p align="center">
- <img src=”20201221-tfmot-compression-api/class_graph.png"/>
+ <img src=20201221-tfmot-compression-api/class_graph.png />
 </p>
 
 This is an API for a layer weight based compression algorithm.
@@ -373,7 +373,7 @@ Now we'll explain when each method is called and how many that method called for
 
 1. `get_compressible_weights`
     <p align="center">
-      <img src=”20201221-tfmot-compression-api/get_compressible_weights.png"/>
+      <img src=20201221-tfmot-compression-api/get_compressible_weights.png />
     </p>
     ```python
     training_model = optimize_training(model, params)
@@ -383,7 +383,7 @@ Now we'll explain when each method is called and how many that method called for
 
 1. `init_training_weights_repr`
     <p align="center">
-      <img src=”20201221-tfmot-compression-api/init_training_weights_repr.png"/>
+      <img src=20201221-tfmot-compression-api/init_training_weights_repr.png />
     </p>
     ```python
     training_model = optimize_training(model, params)
@@ -392,7 +392,7 @@ Now we'll explain when each method is called and how many that method called for
 
 1. `fake_decompress`
     <p align="center">
-      <img src=”20201221-tfmot-compression-api/fake_decompress.png"/>
+      <img src=20201221-tfmot-compression-api/fake_decompress.png />
     </p>
     ```python
     training_model.fit(x_train, y_train, epochs=2)
@@ -401,7 +401,7 @@ Now we'll explain when each method is called and how many that method called for
 
 1. `compress`
     <p align="center">
-      <img src=”20201221-tfmot-compression-api/compress.png"/>
+      <img src=20201221-tfmot-compression-api/compress.png />
     </p>
     ```python
     compressed_model = optimize_inference(training_model, params)
@@ -410,7 +410,7 @@ Now we'll explain when each method is called and how many that method called for
 
 1. `decompress`
     <p align="center">
-      <img src=”20201221-tfmot-compression-api/decompress.png"/>
+      <img src=20201221-tfmot-compression-api/decompress.png />
     </p>
     ```python
     compressed_model.evaluate(x_test, y_test, verbose=2)
