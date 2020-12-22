@@ -228,6 +228,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     Args:
       index: integer indicate index of training weight to update.
       tensor: tf.Tensor to update specific training weight.
+    """
 
   @abc.abstractmethod
   def compress(self, *training_weights: tf.Tensor) -> List[tf.Tensor]:
