@@ -82,7 +82,7 @@ We provide the tutorial for [SVD](https://en.wikipedia.org/wiki/Singular_value_d
                     initializer=tf.keras.initializers.Constant(sv))
             ]
 
-          def fake_decompress(self, u: tf.Tensor, sv: tf.Tensor) -> tf.Tensor:
+          def project_training_weights(self, u: tf.Tensor, sv: tf.Tensor) -> tf.Tensor:
             return tf.matmul(u, sv)
 
           def get_compressible_weights(
@@ -160,9 +160,9 @@ This is an API for a layer weight based compression algorithm.
 
 First, we start from a pre-trained model which the model developer has. And then convert the pre-trained model to training phase model for compression fine-tuning training. During the convert to training phase model, We call `init_training_weights_repr` for each tensor that we want to compress which is specified from the `get_compressible_weights` method.
 
-During the training phase, `fake_decompress` method is called for each training step. After fine-tuning training for compression is finished, we convert the training phase model to a compressed model. We only call the `compress` function once for each compressible tensor for converting.
+During the training phase, `project_training_weights` method is called for each training step. After fine-tuning training for compression is finished, we convert the training phase model to a compressed model. We only call the `compress_training_weights` function once for each compressible tensor for converting.
 
-Compressed model contains the `decompress` function in the graph. It’s possible to call the `decompress` for each inference step. To improve performance, we’ll cache the decompressed one depending on flags if we have enough space.
+Compressed model contains the `decompress_weights` function in the graph. It’s possible to call the `decompress_weights` for each inference step. To improve performance, we’ll cache the decompressed one depending on flags if we have enough space.
 
 ```python
 class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
@@ -205,7 +205,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     """
 
   @abc.abstractmethod
-  def fake_decompress(self, *training_weights: tf.Tensor) -> tf.Tensor:
+  def project_training_weights(self, *training_weights: tf.Tensor) -> tf.Tensor:
     """Define a piece of the forward pass during training, which operates on a single compressible weight.
     The default throws an error when training occurs.
 
@@ -218,7 +218,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
        tf.Tensor to set the compressible weight to.
     """
 
-  def update_training_weights(self, index, tensor: tf.Tensor):
+  def update_training_weight(self, index: integer, tensor: tf.Tensor):
     """Update a training weight on an index to a given tensor value.
 
     This method is for the case that training weight should update to specific
@@ -226,15 +226,15 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     find the training weight.
 
     Args:
-      index: integer indicate index of training weight to update.
+      index: integer indicates index of training weight to update.
       tensor: tf.Tensor to update specific training weight.
     """
 
   @abc.abstractmethod
-  def compress(self, *training_weights: tf.Tensor) -> List[tf.Tensor]:
+  def compress_training_weights(self, *training_weights: tf.Tensor) -> List[tf.Tensor]:
     """Define the operations to compress a single weight’s training form after training.
 
-    'Compress' can refer to making the weight more amenable to compression
+    'compress_training_weights' can refer to making the weight more amenable to compression
     or actually compress the weight.
 
     The default is an identity.
@@ -249,7 +249,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     """
 
   @abc.abstractmethod
-  def decompress(self, *compressed_weights: tf.Tensor) -> tf.Tensor:
+  def decompress_weights(self, *compressed_weights: tf.Tensor) -> tf.Tensor:
     """Define the operations to decompress a single weight’s compressed form during inference.
 
     The default is an identity.
@@ -395,38 +395,38 @@ Now we'll explain when each method is called and how many that method called for
 
     `init_training_weights_repr` is called when we initialize the cloned training model from the pre-trained model. `optimize_training` method basically clones the model to create a training model for compression, wrapping compressible layers by the training wrapper to create training weights. The number of the method calling is (# of compressible weights).
 
-1. `fake_decompress`
+1. `project_training_weights`
     <p align="center">
-      <img src=20201221-tfmot-compression-api/fake_decompress.png />
+      <img src=20201221-tfmot-compression-api/project_training_weights.png />
     </p>
 
     ```python
     training_model.fit(x_train, y_train, epochs=2)
     ```
 
-    `fake_decompress` is called when the training model for the compression algorithm is training. Usually this method function is a part of the training model. It recovers the original weight from the training weights, and should be differentiable. This method enables you to use the original graph to compute the model output, but train the training weights of the training model. For each training step, this method is called for every compressible weight. The number of the method calling is (# of compressible weights) * (training steps).
+    `project_training_weights` is called when the training model for the compression algorithm is training. Usually this method function is a part of the training model. It recovers the original weight from the training weights, and should be differentiable. This method enables you to use the original graph to compute the model output, but train the training weights of the training model. For each training step, this method is called for every compressible weight. The number of the method calling is (# of compressible weights) * (training steps).
 
-1. `compress`
+1. `compress_training_weights`
     <p align="center">
-      <img src=20201221-tfmot-compression-api/compress.png />
+      <img src=20201221-tfmot-compression-api/compress_training_weights.png />
     </p>
 
     ```python
     compressed_model = optimize_inference(training_model, params)
     ```
 
-    `compress` is called when we convert the training model to the compressed model. The number of the method calling is (# of compressible weights).
+    `compress_training_weights` is called when we convert the training model to the compressed model. The number of the method calling is (# of compressible weights).
 
-1. `decompress`
+1. `decompress_weights`
     <p align="center">
-      <img src=20201221-tfmot-compression-api/decompress.png />
+      <img src=20201221-tfmot-compression-api/decompress_weights.png />
     </p>
 
     ```python
     compressed_model.evaluate(x_test, y_test, verbose=2)
     ```
 
-    `decompress` is called when we do inference on a compressed model. Usually this method function is a part of a compressed model. This method decompresses the weight that can be used on the original graph for each compressible weight. Basically the number of this method called is (# of compressible weights) * (# of inference). To improve performance, the output value of this method can be cached.
+    `decompress_weights` is called when we do inference on a compressed model. Usually this method function is a part of a compressed model. This method decompresses the weight that can be used on the original graph for each compressible weight. Basically the number of this method called is (# of compressible weights) * (# of inference). To improve performance, the output value of this method can be cached.
 
 ## Questions and Discussion Topics
 
@@ -442,4 +442,5 @@ Note that every trainable variable that they want to train should be in training
 ### Error message & Debugging tools.
 
 It's not easy to find the bug there. Usually we get tensorflow bug messages with huge stack traces. We have to provide some bug messages for this API layer.
+
 
