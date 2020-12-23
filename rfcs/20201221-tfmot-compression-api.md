@@ -73,7 +73,7 @@ We provide the tutorial for [SVD](https://en.wikipedia.org/wiki/Singular_value_d
                 name='u',
                 shape=u.shape,
                 dtype=u.dtype,
-                initializer=tf.keras.initializers.Constant(u)),
+                initializer=tf.keras.initializers.Constant(u))
             self.add_training_weight(
                 name='sv',
                 shape=sv.shape,
