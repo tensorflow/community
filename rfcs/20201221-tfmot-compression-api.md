@@ -58,8 +58,8 @@ We provide the tutorial for [SVD](https://en.wikipedia.org/wiki/Singular_value_d
           def __init__(self, params):
             self.params = params
 
-          def init_training_weights_repr(
-              self, pretrained_weight: tf.Tensor) -> List[algorithm.WeightRepr]:
+          def init_training_weights(
+              self, pretrained_weight: tf.Tensor):
             """Init function from pre-trained model case."""
             rank = self.params.rank
 
@@ -69,18 +69,16 @@ We provide the tutorial for [SVD](https://en.wikipedia.org/wiki/Singular_value_d
             else:
               raise NotImplementedError('Only for dimension=2 is supported.')
 
-            return [
-                algorithm.WeightRepr(
-                    name='u',
-                    shape=u.shape,
-                    dtype=u.dtype,
-                    initializer=tf.keras.initializers.Constant(u)),
-                algorithm.WeightRepr(
-                    name='sv',
-                    shape=sv.shape,
-                    dtype=sv.dtype,
-                    initializer=tf.keras.initializers.Constant(sv))
-            ]
+            self.add_training_weight(
+                name='u',
+                shape=u.shape,
+                dtype=u.dtype,
+                initializer=tf.keras.initializers.Constant(u)),
+            self.add_training_weight(
+                name='sv',
+                shape=sv.shape,
+                dtype=sv.dtype,
+                initializer=tf.keras.initializers.Constant(sv))
 
           def project_training_weights(self, u: tf.Tensor, sv: tf.Tensor) -> tf.Tensor:
             return tf.matmul(u, sv)
@@ -158,7 +156,7 @@ We also want to provide an example of well-known compression algorithms. Here’
 
 This is an API for a layer weight based compression algorithm.
 
-First, we start from a pre-trained model which the model developer has. And then convert the pre-trained model to training phase model for compression fine-tuning training. During the convert to training phase model, We call `init_training_weights_repr` for each tensor that we want to compress which is specified from the `get_compressible_weights` method.
+First, we start from a pre-trained model which the model developer has. And then convert the pre-trained model to training phase model for compression fine-tuning training. During the convert to training phase model, We call `init_training_weights` for each tensor that we want to compress which is specified from the `get_compressible_weights` method.
 
 During the training phase, `project_training_weights` method is called for each training step. After fine-tuning training for compression is finished, we convert the training phase model to a compressed model. We only call the `compress_training_weights` function once for each compressible tensor for converting.
 
@@ -191,17 +189,21 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     """
 
   @abc.abstractmethod
-  def init_training_weights_repr(
-      self, pretrained_weight: tf.Tensor) -> List[WeightRepr]:
-    """Create training weight representations for initializing layer variables.
+  def init_training_weights(
+      self, pretrained_weight: tf.Tensor):
+    """Initialize training weights for the training model. It calls the `add_training_weight` method several times to add training weights.
 
     Args:
       pretrained_weight: tf.Tensor of a pretrained weight of a layer that will
         be compressed eventually.
+    """
 
-    Returns:
-      A list of `WeightRepr`, a container for arguments to
-      `tf.keras.layers.Layer.add_weight`for each tf.Variable to create.
+  def add_training_weight(
+      self, *args, **kwargs):
+    """Add training weight for the training model. This method is called from `init_training_weights`.
+
+    Args:
+      *args, **kwargs: args and kwargs for training_model.add_weight.
     """
 
   @abc.abstractmethod
@@ -212,7 +214,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     Args:
        *training_weights: tf.Tensors representing any variables used during
          training, for a single compressible weight, in the order returned in
-         `init_training_weights_repr`.
+         `init_training_weights`.
 
     Returns:
        tf.Tensor to set the compressible weight to.
@@ -242,7 +244,7 @@ class WeightCompressionAlgorithm(metaclass=abc.ABCMeta):
     Args:
       *training_weights: tf.Tensors representing all variables used during
         training, for a single compressible weight, in the order returned in
-        `init_training_weights_repr`.
+        `init_training_weights`.
 
     Returns:
       List of tf.Tensors to set to compressed or more compressible form.
@@ -384,16 +386,16 @@ Now we'll explain when each method is called and how many that method called for
     `get_compressible_weights` is called when we want to get a list of variables that we will apply compression.
     When we try to compress the pre-trained model, we just call this method for each layer in the pre-trained model. The number of the method calling is (# of layers).
 
-1. `init_training_weights_repr`
+1. `init_training_weights`
     <p align="center">
-      <img src=20201221-tfmot-compression-api/init_training_weights_repr.png />
+      <img src=20201221-tfmot-compression-api/init_training_weights.png />
     </p>
 
     ```python
     training_model = optimize_training(model, params)
     ```
 
-    `init_training_weights_repr` is called when we initialize the cloned training model from the pre-trained model. `optimize_training` method basically clones the model to create a training model for compression, wrapping compressible layers by the training wrapper to create training weights. The number of the method calling is (# of compressible weights).
+    `init_training_weights` is called when we initialize the cloned training model from the pre-trained model. `optimize_training` method basically clones the model to create a training model for compression, wrapping compressible layers by the training wrapper to create training weights. The number of the method calling is (# of compressible weights).
 
 1. `project_training_weights`
     <p align="center">
@@ -442,5 +444,4 @@ Note that every trainable variable that they want to train should be in training
 ### Error message & Debugging tools.
 
 It's not easy to find the bug there. Usually we get tensorflow bug messages with huge stack traces. We have to provide some bug messages for this API layer.
-
 
