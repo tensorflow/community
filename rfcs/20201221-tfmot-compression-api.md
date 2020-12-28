@@ -229,16 +229,16 @@ class WeightCompressor(metaclass=abc.ABCMeta):
        tf.Tensor to set the compressible weight to.
     """
 
-  def update_training_weight(self, index: integer, tensor: tf.Tensor):
-    """Update a training weight on an index to a given tensor value.
+  def update_training_weight(self, training_weight: tf.Tensor, tensor: tf.Tensor):
+    """Update a training weight to a given tensor value.
 
     This method is for the case that training weight should update to specific
     value not from the model optimizer. It'll throws an error if it can't
     find the training weight.
 
     Args:
-      index: integer indicates index of training weight to update.
-      tensor: tf.Tensor to update specific training weight.
+      training_weight: tf.Tensor representing a training weight.
+      tensor: tf.Tensor representing a value to be assigned to the training weight.
     """
 
   @abc.abstractmethod
