@@ -2,9 +2,9 @@
 
 | Status        | Draft       |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | TBD [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [342](https://github.com/tensorflow/community/pull/342) |
 | **Author(s)** | Jaehong Kim (kimjaehong@google.com), Alan Chiao (alanchiao@google.com), Jae Yoo (jaeyoo@google.com) |
-| **Sponsor**   | TBD (whomever@tensorflow.org)                 |
+| **Sponsor**   | Francois Chollet (fchollet@google.com)                 |
 | **Updated**   | 2020-12-21
 
 ## Objective
