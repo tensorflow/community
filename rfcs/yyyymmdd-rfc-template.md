@@ -25,30 +25,29 @@ Describe your solution to the problem. Provide examples and describe how they wo
 
 ## Detailed Design
 
-Describe the design of the solution in detail. If it's a new API, show the full API and its documentation comments detailing what it does. The detail in this section should be sufficient for someone who is not one of the authors to be able to reasonably implement the feature. 
+Describe the design of the solution in detail. The detail in this section should be sufficient for someone who is not one of the authors to be able to reasonably implement the feature. 
 
-* If design changes existing API or creates new ones, the design owner should create end-to-end examples (ideally, a tutorial) which reflects how new feature will be used. Some things to consider related to the tutorial:
-    - The minimum requirements for this are to consider how this would be used in a Keras-based workflow, as well as a non-Keras (low-level) workflow. If either isn’t applicable, explain why.
-    - It should show the usage of the new feature in an end to end example (from data reading to serving, if applicable). Many new features have unexpected effects in parts far away from the place of change that can be found by running through an end-to-end example. TFX [Examples](https://github.com/tensorflow/tfx/tree/master/tfx/examples) have historically been good in identifying such unexpected side-effects and are as such one recommended path for testing things end-to-end.
-    - This should be written as if it is documentation of the new feature, i.e., consumable by a user, not a TensorFlow developer. 
-    - The code does not need to work (since the feature is not implemented yet) but the expectation is that the code does work before the feature can be merged.
+If the design affects API (new, changed, removed, upgraded from experimental), please describe the changes in detail. Here is more [information](https://github.com/tensorflow/community/blob/master/governance/api-reviews.md) about what API owners are looking for. 
+
+For new changed API, show the full API and its documentation comments detailing what it does along with end-to-end examples (ideally, a tutorial) showing it's use. 
+* The minimum requirements for this are to consider how this would be used in a Keras-based workflow, as well as a non-Keras (low-level) workflow. If either isn’t applicable, explain why.
+* It should show the usage of the new feature in an end to end example (from data reading to serving, if applicable). Many new features have unexpected effects in parts far away from the place of change that can be found by running through an end-to-end example. TFX [Examples](https://github.com/tensorflow/tfx/tree/master/tfx/examples) have historically been good in identifying such unexpected side-effects and are as such one recommended path for testing things end-to-end.
+* This should be written as if it is documentation of the new feature, i.e., consumable by a user, not a TensorFlow developer. 
+* The code does not need to work (since the feature is not implemented yet) but the expectation is that the code does work before the feature can be merged.
 
 ## User Impact
 What are the user-facing changes? How will this feature be rolled out?
 
 ## Engineering Impact
-Please answer the following:
 * Do you expect changes to binary size / startup time / build time / test times?
 * Who will maintain this code? Is this code in its own buildable unit? Can this code be tested in its own? Is visibility suitably restricted to only a small API surface for others to use?
 
 ## Performance Implications
-Please answer the following:
 * Do you expect any changes to performance (speed / memory)? How will you confirm?
 * There should be microbenchmarks. Are there?
 * There should be end-to-end tests and benchmarks. If there are not (since this is still a design), how will you track that these will be created?
 
 ## Compatibility
-Please answer the following:
 * Does the design conform to the backwards & forwards compatibility [requirements](https://www.tensorflow.org/programmers_guide/version_compat)?
 * How will this proposal interact with other parts of the TensorFlow Ecosystem?
     - How will it work with TFLite?
@@ -61,7 +60,6 @@ Please answer the following:
 Does this proposal add any new dependencies to TensorFlow? Are there other areas of TensorFlow or things that use TensorFlow (TFX/pipelines, TensorBoard, etc.) that this affects? How have you identified these dependencies and are you sure they are complete? If there are dependencies, how are you managing those changes?
 
 ## Platforms and Environments
-Please answer the following:
 * Platforms: does this work on all platforms supported by TensorFlow? If not, why is that ok? Will it work on embedded/mobile? Does it impact automatic code generation or mobile stripping tooling? Will it work with transformation tools?
 * Execution environments (Cloud services, accelerator hardware): what impact do you expect and how will you confirm?
 
