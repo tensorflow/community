@@ -75,3 +75,6 @@ your chosen approach is superior. List pros/cons to each approach.
 
 ## Questions and Discussion Topics
 Seed this with open questions you require feedback on from the RFC process.
+
+## Design Review Notes
+Please post the notes from the Design Review here.
