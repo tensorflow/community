@@ -10,7 +10,7 @@
 
 ## Objective
 
-We propose performing gradient computation entirely in C++. This aligns with TensorFlow Core team’s vision of providing first-class C++ APIs for building ML models. We mainly focus on reverse-mode autodiff here and leave forward-mode AD as future work. A C API for this implementation is also left as future work but we imagine it to be a straightforward wrapper over the provided C++ APIs.
+We propose performing gradient computation entirely in C++. We mainly focus on reverse-mode autodiff here and leave forward-mode AD as future work. A C API for this implementation is also left as future work but we imagine it to be a straightforward wrapper over the provided C++ APIs. The APIs discussed here are experimental and hence do not have any backwards compatibility guarantees yet.
 
 
 ## Motivation
@@ -306,9 +306,6 @@ Status TapeOperation::Execute(absl::Span<AbstractTensorHandle*> retvals,
 ```
 
 This way the same C++ gen\_ops code can be used to execute ops with/without a tape by simply wrapping the current execution context in a `TapeContext`.
-
-
-Note: This interface is subject to change.
 
 
 **Some details on memory management**
