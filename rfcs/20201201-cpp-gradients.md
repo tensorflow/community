@@ -1,6 +1,6 @@
 # C++ Gradients 
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [335](https://github.com/tensorflow/community/pull/335) |
 | **Author(s)** | Saurabh Saxena (Google) |
