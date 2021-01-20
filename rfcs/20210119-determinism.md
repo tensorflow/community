@@ -1,6 +1,6 @@
 # RFC: Enabling Determinism in TensorFlow
   
-| Status        | Accepted                                             |
+| Status        | Proposed                                             |
 :---------------|:-----------------------------------------------------|
 | **Author(s)** | Pankaj Kanwar (Google), Reed Wanderman-Milne (Google)|
 | **Sponsor**   | Sanjoy Das (Google)                                |
