@@ -49,23 +49,21 @@ Our API also provides guidelines for testing and benchmark. For now, we only hav
 We provide the tutorial for [SVD](https://en.wikipedia.org/wiki/Singular_value_decomposition) compression algorithm that shows how we implement the SVD algorithm using TFMOT compression API by colab. This tutorial includes:
 
 #### Algorithm developer side
-1. The algorithm developer implementing the SVD algorithm uses the `WeightCompressor` class.
+The algorithm developer implementing the SVD algorithm uses the `WeightCompressor` class. It also includes a custom model developer API for the SVD algorithm.
 
 ```python
 class SVD(algorithm.WeightCompressor):
   """SVD compression module config."""
 
-  def __init__(self, params):
-    self.params = params
+  def __init__(self, rank):
+    self.rank = rank
 
   def init_training_weights(
       self, pretrained_weight: tf.Tensor):
     """Init function from pre-trained model case."""
-    rank = self.params.rank
-
     # Dense Layer
     if len(pretrained_weight.shape) == 2:
-      u, sv = tf_svd_factorization_2d(pretrained_weight, rank)
+      u, sv = tf_svd_factorization_2d(pretrained_weight, self.rank)
     else:
       raise NotImplementedError('Only for dimension=2 is supported.')
 
@@ -84,45 +82,34 @@ class SVD(algorithm.WeightCompressor):
     return tf.matmul(u, sv)
 
   def get_compressible_weights(
-      self, original_layer: tf.keras.layers.Layer) -> List[str]:
-    rank = self.params.rank
+      self, original_layer: tf.keras.layers.Layer) -> List[tf.Variable]:
     if isinstance(original_layer, tf.keras.layers.Dense):
       input_dim = original_layer.kernel.shape[0]
       output_dim = original_layer.kernel.shape[1]
-      if input_dim * output_dim > (input_dim + output_dim) * rank:
-        return ['kernel']
+      if input_dim * output_dim > (input_dim + output_dim) * self.rank:
+        return [original_layer.kernel]
     return []
-```
 
-2. Export the model developer API for the SVD algorithm.
-```python
-class SVDParams(object):
-  """Define container for parameters for SVD algorithm."""
+  def optimize(self, to_optimize: tf.keras.Model) -> tf.keras.Model:
+    """Model developer API for optimizing a model."""
 
-  def __init__(self, rank):
-    self.rank = rank
+    def _optimize_layer(layer):
+      # Require layer to be built so that the SVD-factorized weights
+      # can be initialized from the weights.
+      if not layer.built:
+        raise ValueError(
+            'Applying SVD currently requires passing in a built model')
 
-def optimize(to_optimize: tf.keras.Model, params: SVDParams) -> tf.keras.Model:
-  """Model developer API for optimizing a model."""
+      return algorithm.create_layer_for_training(layer, algorithm=self)
 
-  def _optimize_layer(layer):
-    # Require layer to be built so that the SVD-factorized weights
-    # can be initialized from the weights.
-    if not layer.built:
-      raise ValueError(
-          'Applying SVD currently requires passing in a built model')
-
-    return algorithm.create_layer_for_training(layer, algorithm=SVD(params))
-
-  return tf.keras.models.clone_model(
-      to_optimize, clone_function=_optimize_layer)
+    return tf.keras.models.clone_model(
+        to_optimize, clone_function=_optimize_layer)
 ```
 
 #### Model developer side
 1. The model developer uses the SVD algorithm.
 ```python
-params = SVDParams(rank=32)
-compressed_model = optimize(model, params)
+compressed_model = SVD(rank=32).optimize(model)
 
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 compressed_model.compile(optimizer='adam', loss=loss_fn, metrics=['accuracy'])
@@ -175,7 +162,7 @@ class WeightCompressor(metaclass=abc.ABCMeta):
 
   @abc.abstractmethod
   def get_compressible_weights(
-      self, original_layer: tf.keras.layers.Layer) -> List[str]:
+      self, original_layer: tf.keras.layers.Layer) -> List[tf.Variable]:
     """Define compressible weights for each layer.
 
     Args:
@@ -183,9 +170,7 @@ class WeightCompressor(metaclass=abc.ABCMeta):
        original model.
 
     Returns:
-       List of attribute names as string representing list of compressible
-       weights for the given layer. (e.g. return value ['kernel'] means
-       layer.kernel is compressible.)
+       List of compressible weights for the given layer.
     """
 
   @abc.abstractmethod
@@ -332,34 +317,35 @@ We have two steps for user facing API for general cases.
 (The SVD case training model is the same as the compressed model, so it only has one step.)
 
 ```python
-def optimize_training(to_optimize: tf.keras.Model, params: CustomParams) -> tf.keras.Model:
-  """Model developer API for optimizing a model."""
+class CustomWeightCompressor(WeightCompressor):
+  def optimize_training(self, to_optimize: tf.keras.Model) -> tf.keras.Model:
+    """Model developer API for optimizing a model."""
 
-  def _optimize_layer(layer: tf.keras.layers.Layer) -> tf.keras.layers.Layer:
-    if not layer.built:
-      raise ValueError(
-          'Applying compression currently requires passing in a built model')
+    def _optimize_layer(layer: tf.keras.layers.Layer) -> tf.keras.layers.Layer:
+      if not layer.built:
+        raise ValueError(
+            'Applying compression currently requires passing in a built model')
 
-    return algorithm.create_layer_for_training(
-        layer, algorithm=CustomWeightCompressor(params))
+      return algorithm.create_layer_for_training(
+          layer, algorithm=self)
 
-  return tf.keras.models.clone_model(
-      to_optimize, clone_function=_optimize_layer)
+    return tf.keras.models.clone_model(
+        to_optimize, clone_function=_optimize_layer)
 
 
-def optimize_inference(to_optimize: tf.keras.Model, params: CustomParams) -> tf.keras.Model:
-  """Model developer API for optimizing a model."""
+  def optimize_inference(self, to_optimize: tf.keras.Model) -> tf.keras.Model:
+    """Model developer API for optimizing a model."""
 
-  def _optimize_layer(layer: tf.keras.layers.Layer) -> tf.keras.layers.Layer:
-    if not layer.built:
-      raise ValueError(
-          'Applying compression currently requires passing in a built model')
+    def _optimize_layer(layer: tf.keras.layers.Layer) -> tf.keras.layers.Layer:
+      if not layer.built:
+        raise ValueError(
+            'Applying compression currently requires passing in a built model')
 
-    return algorithm.create_layer_for_inference(
-        layer, algorithm=CustomWeightCompressor(params))
+      return algorithm.create_layer_for_inference(
+          layer, algorithm=self)
 
-  return tf.keras.models.clone_model(
-      to_optimize, clone_function=_optimize_layer)
+    return tf.keras.models.clone_model(
+        to_optimize, clone_function=_optimize_layer)
 ```
 
 #### Model developer best practice.
@@ -367,15 +353,15 @@ def optimize_inference(to_optimize: tf.keras.Model, params: CustomParams) -> tf.
 Here's the best practice for general compression algorithm model developer code.
 
 ```python
-params = CustomParams()
-training_model = optimize_training(model, params)
+compressor = CustomWeightCompressor()
+training_model = compressor.optimize_training(model)
 
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 training_model.compile(optimizer='adam', loss=loss_fn, metrics=['accuracy'])
 
 training_model.fit(x_train, y_train, epochs=2)
 
-compressed_model = optimize_inference(training_model, params)
+compressed_model = compressor.optimize_inference(training_model)
 compressed_model.evaluate(x_test, y_test, verbose=2)
 ```
 
@@ -389,7 +375,7 @@ Now we'll explain when each method is called and how many that method called for
 </p>
 
 ```python
-training_model = optimize_training(model, params)
+training_model = compressor.optimize_training(model)
 ```
 
  `get_compressible_weights` is called when we want to get a list of variables that we will apply compression.
@@ -401,7 +387,7 @@ When we try to compress the pre-trained model, we just call this method for each
 </p>
 
 ```python
-training_model = optimize_training(model, params)
+training_model = compressor.optimize_training(model)
 ```
 
  `init_training_weights` is called when we initialize the cloned training model from the pre-trained model. `optimize_training` method basically clones the model to create a training model for compression, wrapping compressible layers by the training wrapper to create training weights. The number of the method calling is (# of compressible weights).
@@ -423,7 +409,7 @@ training_model.fit(x_train, y_train, epochs=2)
 </p>
 
 ```python
-compressed_model = optimize_inference(training_model, params)
+compressed_model = compressor.optimize_inference(training_model)
 ```
 
  `compress_training_weights` is called when we convert the training model to the compressed model. The number of the method calling is (# of compressible weights).
