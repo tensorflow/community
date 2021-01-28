@@ -2,7 +2,7 @@
 
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [350](https://github.com/tensorflow/community/pull/350)|
 | **Author(s)** | Daniel Situnayake (me@example.org)                   |
 | **Sponsor**   | Pete Warden (petewarden@google.com)                  |
 | **Updated**   | 2021-01-27                                           |
