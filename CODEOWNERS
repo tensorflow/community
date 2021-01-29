@@ -6,17 +6,17 @@
 # SIGS
 
 sigs/rust/ @adamcrume
-sigs/tensorboard/ @ewilderj @manivaradarajan @martinwicke
-sigs/build/ @martinwicke @ewilderj @angersson @perfinion
-sigs/addons/ @martinwicke @ewilderj @karmel @seanpmorgan @armando-fandango
-sigs/networking/ @martinwicke @ewilderj @byronyi @jbedorf @poxvoculi
-sigs/io/ @martinwicke @ewilderj @mrry @yongtang @dmitrievanthony
-sigs/jvm/ @martinwicke @ewilderj @sjamesr @karllessard @tzolov
-sigs/micro/ @martinwicke @ewilderj @petewarden
+sigs/tensorboard/ @ewilderj @manivaradarajan
+sigs/build/ @ewilderj @angersson @perfinion
+sigs/addons/ @ewilderj @karmel @seanpmorgan @armando-fandango
+sigs/networking/ @ewilderj @byronyi @jbedorf @poxvoculi
+sigs/io/ @ewilderj @mrry @yongtang @dmitrievanthony
+sigs/jvm/ @ewilderj @sjamesr @karllessard @tzolov
+sigs/micro/ @ewilderj @petewarden
 sigs/mlir/ @ewilderj @pkanwar23
 sigs/swift/ @ewilderj @saeta @ematejska
 sigs/testing/ @ewilderj @dynamicwebpaige
 
 # RFCs
 
-rfcs/ @ewilderj @martinwicke @theadactyl @ematejska
+rfcs/ @ewilderj @theadactyl @ematejska
