@@ -375,7 +375,7 @@ Now we'll explain when each method is called and how many that method called for
 </p>
 
 ```python
-training_model = compressor.optimize_training(model)
+training_model = compressor.optimize_model(model)
 ```
 
  `get_compressible_weights` is called when we want to get a list of variables that we will apply compression.
@@ -387,7 +387,7 @@ When we try to compress the pre-trained model, we just call this method for each
 </p>
 
 ```python
-training_model = compressor.optimize_training(model)
+training_model = compressor.optimize_model(model)
 ```
 
  `init_training_weights` is called when we initialize the cloned training model from the pre-trained model. `optimize_training` method basically clones the model to create a training model for compression, wrapping compressible layers by the training wrapper to create training weights. The number of the method calling is (# of compressible weights).
@@ -409,7 +409,7 @@ training_model.fit(x_train, y_train, epochs=2)
 </p>
 
 ```python
-compressed_model = compressor.optimize_inference(training_model)
+compressed_model = compressor.compress_model(training_model)
 ```
 
  `compress_training_weights` is called when we convert the training model to the compressed model. The number of the method calling is (# of compressible weights).
