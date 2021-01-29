@@ -9,7 +9,7 @@
 
 ## Objective
 
-Build a Keras-base API and set of guidelines that help compression algorithm developer to implement their own model compression algorithm (e.g. [Weight Clustering](https://arxiv.org/abs/1510.00149), [WEST](https://arxiv.org/abs/1811.08417)) and provide a standard way to testing/benchmark and create their own user API for model developers that includes compressed model deployment to TF serving, TFLite, and tf.js.
+Build a Keras-base API and set of guidelines that help compression algorithm developer to implement their own model compression algorithm (e.g. [Weight Clustering](https://arxiv.org/abs/1510.00149), [WEST](https://arxiv.org/abs/1811.08417)) and provide a standard way to testing/benchmark and create their own user API for model developers that includes compressed model deployment to TF serving, TFLite, tf.js, and TF-TRT.
 
 ### Goals
 * Enables algorithms that optimize the weights of a model but not the activations, which includes all [traditional lossless compression algorithms](https://en.wikipedia.org/wiki/Lossless_compression#:~:text=Lossless%20compression%20is%20a%20class,reconstructed%20from%20the%20compressed%20data.).
@@ -90,10 +90,10 @@ class SVD(algorithm.WeightCompressor):
         return [original_layer.kernel]
     return []
 
-  def optimize(self, to_optimize: tf.keras.Model) -> tf.keras.Model:
+  def compress_model(self, model: tf.keras.Model) -> tf.keras.Model:
     """Model developer API for optimizing a model."""
 
-    def _optimize_layer(layer):
+    def _compress_layer(layer):
       # Require layer to be built so that the SVD-factorized weights
       # can be initialized from the weights.
       if not layer.built:
@@ -103,13 +103,13 @@ class SVD(algorithm.WeightCompressor):
       return algorithm.create_layer_for_training(layer, algorithm=self)
 
     return tf.keras.models.clone_model(
-        to_optimize, clone_function=_optimize_layer)
+        model, clone_function=_compress_layer)
 ```
 
 #### Model developer side
 1. The model developer uses the SVD algorithm.
 ```python
-compressed_model = SVD(rank=32).optimize(model)
+compressed_model = SVD(rank=32).compress_model(model)
 
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 compressed_model.compile(optimizer='adam', loss=loss_fn, metrics=['accuracy'])
@@ -318,7 +318,7 @@ We have two steps for user facing API for general cases.
 
 ```python
 class CustomWeightCompressor(WeightCompressor):
-  def optimize_training(self, to_optimize: tf.keras.Model) -> tf.keras.Model:
+  def optimize_model(self, model: tf.keras.Model) -> tf.keras.Model:
     """Model developer API for optimizing a model."""
 
     def _optimize_layer(layer: tf.keras.layers.Layer) -> tf.keras.layers.Layer:
@@ -330,13 +330,13 @@ class CustomWeightCompressor(WeightCompressor):
           layer, algorithm=self)
 
     return tf.keras.models.clone_model(
-        to_optimize, clone_function=_optimize_layer)
+        model, clone_function=_optimize_layer)
 
 
-  def optimize_inference(self, to_optimize: tf.keras.Model) -> tf.keras.Model:
+  def compress_model(self, model: tf.keras.Model) -> tf.keras.Model:
     """Model developer API for optimizing a model."""
 
-    def _optimize_layer(layer: tf.keras.layers.Layer) -> tf.keras.layers.Layer:
+    def _compress_layer(layer: tf.keras.layers.Layer) -> tf.keras.layers.Layer:
       if not layer.built:
         raise ValueError(
             'Applying compression currently requires passing in a built model')
@@ -345,7 +345,7 @@ class CustomWeightCompressor(WeightCompressor):
           layer, algorithm=self)
 
     return tf.keras.models.clone_model(
-        to_optimize, clone_function=_optimize_layer)
+        model, clone_function=_compress_layer)
 ```
 
 #### Model developer best practice.
@@ -354,14 +354,14 @@ Here's the best practice for general compression algorithm model developer code.
 
 ```python
 compressor = CustomWeightCompressor()
-training_model = compressor.optimize_training(model)
+training_model = compressor.optimize_model(model)
 
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 training_model.compile(optimizer='adam', loss=loss_fn, metrics=['accuracy'])
 
 training_model.fit(x_train, y_train, epochs=2)
 
-compressed_model = compressor.optimize_inference(training_model)
+compressed_model = compressor.compress_model(training_model)
 compressed_model.evaluate(x_test, y_test, verbose=2)
 ```
 
