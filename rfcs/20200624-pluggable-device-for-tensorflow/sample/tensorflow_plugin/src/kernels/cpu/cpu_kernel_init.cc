@@ -3,4 +3,5 @@
 
 void RegisterDeviceKernels(const char* device_type) {
   RegisterDeviceRelu(device_type);
+  RegisterDeviceConv2D(device_type);
 }

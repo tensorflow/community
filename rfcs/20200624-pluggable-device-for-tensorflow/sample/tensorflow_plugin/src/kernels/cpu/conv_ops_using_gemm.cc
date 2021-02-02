@@ -388,15 +388,15 @@ class Im2ColConvFunctor {
 
 template <class T>
 struct Conv2DUsingGemmOp {
+  Conv2DUsingGemmOp() : data_format_("") {}
   std::vector<int32_t> strides_;
-  Padding padding;
+  Padding padding_;
   std::string data_format_;
 };
 
 template <class T>
-void* Conv2DUsingGemmOp_Create(Conv2DUsingGemmOp<T>* op,
-                               TF_OpKernelConstruction* ctx) {
-  auto kernel = static_cast<Conv2DUsingGemmOp<T>*>(op);
+void* Conv2DUsingGemmOp_Create(TF_OpKernelConstruction* ctx) {
+  auto kernel = new Conv2DUsingGemmOp<T>();
 
   StatusSafePtr status(TF_NewStatus());
   int32_t list_size = 0;
@@ -406,9 +406,9 @@ void* Conv2DUsingGemmOp_Create(Conv2DUsingGemmOp<T>* op,
   TF_OpKernelConstruction_GetAttrSize(ctx, "strides", &list_size, &total_size,
                                       status.get());
   CHECK_CONSTRUCT_STATUS(ctx, status.get());
-  kernel->strides_.reserve(list_size);
+  kernel->strides_.resize(list_size);
   TF_OpKernelConstruction_GetAttrInt32List(
-      ctx, "strides", kernel->strides_.data(), list_size, status);
+      ctx, "strides", kernel->strides_.data(), list_size, status.get());
   CHECK_CONSTRUCT_STATUS(ctx, status.get());
 
   // Get data_format
@@ -438,6 +438,7 @@ void* Conv2DUsingGemmOp_Create(Conv2DUsingGemmOp<T>* op,
     std::cerr << "Unsupported padding type: " << padding_str;
     return nullptr;
   }
+  return kernel;
 }
 
 template <typename T>
@@ -452,14 +453,14 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
   StatusSafePtr status(TF_NewStatus());
   // Input tensor is of the following dimensions:
   // [ batch, in_rows, in_cols, in_depth ]
-  const TF_Tensor* input = nullptr;
+  TF_Tensor* input = nullptr;
   TF_GetInput(ctx, 0, &input, status.get());
   CHECK_CTX_STATUS(ctx, status.get());
   TensorSafePtr input_safe_ptr(input);
 
   // Input filter is of the following dimensions:
   // [ filter_rows, filter_cols, in_depth, out_depth]
-  const TF_Tensor* filter = nullptr;
+  TF_Tensor* filter = nullptr;
   TF_GetInput(ctx, 1, &filter, status.get());
   CHECK_CTX_STATUS(ctx, status.get());
   TensorSafePtr filter_safe_ptr(filter);
@@ -525,24 +526,31 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
 
   // For now we take the stride from the second and third dimensions only (we
   // do not support striding on the batch or depth dimension).
-  const int stride_rows = GetTensorDim(
-      static_cast<Conv2DUsingGemmOp<T>*>(kernel)->strides_,
-      static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_, 'H');
-  const int stride_cols = GetTensorDim(
-      static_cast<Conv2DUsingGemmOp<T>*>(kernel)->strides_,
-      static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_, 'W');
+  int stride_rows = 0;
+  int stride_cols = 0;
+  if (static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_ == "NCHW") {
+    stride_rows = static_cast<Conv2DUsingGemmOp<T>*>(kernel)->strides_[2];
+    stride_cols = static_cast<Conv2DUsingGemmOp<T>*>(kernel)->strides_[3];
+  } else if (static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_ ==
+             "NHWC") {
+    stride_rows = static_cast<Conv2DUsingGemmOp<T>*>(kernel)->strides_[1];
+    stride_cols = static_cast<Conv2DUsingGemmOp<T>*>(kernel)->strides_[2];
+  } else {
+    std::cerr << "Unsupported data format" << std::endl;
+    return;
+  }
 
   int64_t out_rows = 0, out_cols = 0, pad_rows = 0, pad_cols = 0;
   if (!GetWindowedOutputSize(
-          input_rows, filter_rows, stride_rows,
+          input_rows, filter_rows, 1, stride_rows,
           static_cast<Conv2DUsingGemmOp<T>*>(kernel)->padding_, &out_rows,
           &pad_rows)) {
     std::cerr << "Invalid filter size" << std::endl;
     return;
   }
 
-  if (GetWindowedOutputSize(
-          input_cols, filter_cols, stride_cols,
+  if (!GetWindowedOutputSize(
+          input_cols, filter_cols, 1, stride_cols,
           static_cast<Conv2DUsingGemmOp<T>*>(kernel)->padding_, &out_cols,
           &pad_cols)) {
     std::cerr << "Invalid filter size" << std::endl;
@@ -566,25 +574,26 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
   }
 
   // Output tensor is of the following dimensions:
-  // [ in_batch, out_rows, out_cols, out_depth ]
-  TF_Tensor* output = nullptr;
+  // [ in_batch, out_rows, out_cols, out_depth ]``
   TensorSafePtr output_safe_ptr(TF_AllocateOutput(
-      ctx, 0, TypeToEnum<T>::v(), out_shape.data(), out_shape.size(),
-      sizeof(T) * output_size, status.get()));
+      ctx, 0, TF_ExpectedOutputDataType(ctx, 0), out_shape.data(),
+      out_shape.size(), sizeof(T) * output_size, status.get()));
 
   // If there is nothing to compute, return.
   if (output_size == 0) {
     return;
   }
   TConvFunctor conv_functor;
-  conv_functor(ctx, TF_TensorData(input_safe_ptr.get()), batch, input_rows,
-               input_cols, in_depth, TF_TensorData(filter_safe_ptr.get()),
+  conv_functor(static_cast<T*>(TF_TensorData(input_safe_ptr.get())), batch,
+               input_rows, input_cols, in_depth,
+               static_cast<T*>(TF_TensorData(filter_safe_ptr.get())),
                filter_rows, filter_cols, out_depth, stride_rows, stride_cols,
                static_cast<Conv2DUsingGemmOp<T>*>(kernel)->padding_,
-               TF_TensorData(output_safe_ptr.get()), out_rows, out_cols);
+               static_cast<T*>(TF_TensorData(output_safe_ptr.get())), out_rows,
+               out_cols);
 };
 template <typename T>
-void RegisterReluOpKernel(const char* device_type) {
+void RegisterConvOpKernel(const char* device_type) {
   StatusSafePtr status(TF_NewStatus());
   auto* builder = TF_NewKernelBuilder(
       "Conv2D", device_type, &Conv2DUsingGemmOp_Create<T>,
@@ -601,3 +610,7 @@ void RegisterReluOpKernel(const char* device_type) {
 }
 
 }  // namespace demo_plugin
+
+void RegisterDeviceConv2D(const char* device_type) {
+  demo_plugin::RegisterConvOpKernel<float>(device_type);
+}
