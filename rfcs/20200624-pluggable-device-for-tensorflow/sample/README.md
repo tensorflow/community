@@ -1,19 +1,19 @@
 # TensorFlow Plugin demo
 This sample is a simple demo shows how to implement, build, install and run a TensorFlow plugin.
 
-##Supported OS
+## Supported OS
 * Linux
 
-##Prerequisites
+## Prerequisites
 
 * Bazel (version 3.1 and above)
 * Git (version 1.8 and above)
 * Python (version 3.6 and above)
 
-##Build and Run
+## Build and Run
 (This dependes on ([PluggableDevice] PluggableDevice mechanism implementation)[https://github.com/tensorflow/tensorflow/pull/45784] PR merged)
 
-###Linux
+### Linux
 1. Run the following commands to install a tf-nightly.
 ```
 >>pip install tf-nightly
