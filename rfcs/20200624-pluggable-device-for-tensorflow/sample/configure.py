@@ -324,9 +324,9 @@ def get_var(environ_cp,
       Raise the error to avoid infinitely looping.
   """
   if not question:
-    question = 'Do you wish to build TensorFlow with %s support?' % query_item
+    question = 'Do you wish to build TensorFlow plug-in with %s support?' % query_item
   if not yes_reply:
-    yes_reply = '%s support will be enabled for TensorFlow.' % query_item
+    yes_reply = '%s support will be enabled for TensorFlow plug-in.' % query_item
   if not no_reply:
     no_reply = 'No %s' % yes_reply
 
