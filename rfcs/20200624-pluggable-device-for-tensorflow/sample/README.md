@@ -11,7 +11,7 @@ This sample is a simple demo shows how to implement, build, install and run a Te
 * Python (version 3.6 and above)
 
 ## Build and Run
-(This dependes on (PluggableDevice mechanism implementation)[https://github.com/tensorflow/tensorflow/pull/45784] PR merged)
+(This dependes on [PluggableDevice mechanism implementation](https://github.com/tensorflow/tensorflow/pull/45784) PR merged)
 
 ### Linux
 1. Run the following commands to install a tf-nightly.
