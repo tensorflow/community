@@ -16,6 +16,7 @@ To get deterministic behavior, users must do the following:
 * Use same hardware in every run.
 * Use the same software environment every run (OS, checkpoints, version of TF, environmental variables, etc).
 * Not use constructs outside TensorFlow that are nondeterministic, such as Python’s `random` module or using multiple threads/processes in ways that influence TensorFlow’s behavior.
+* Do not use nondeterministic custom ops.
 
 ## Motivation
 There are several mission critical applications in life sciences, finance and automation that require deterministic behavior. Determinism is required so that the behavior of these applications can be accurately predicted & demonstrated in a variety of scenarios.
