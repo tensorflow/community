@@ -47,7 +47,7 @@ $ bazel build  -c opt //tensorflow_plugin/tools/pip_package:build_pip_package --
 $ bazel-bin/tensorflow_plugin/tools/pip_package/build_pip_package .
 $ pip install tensorflow_plugins-0.0.1-cp36-cp36m-linux_x86_64.whl
 ```
-5. Now We can run the TensorFlow with plug-in device enabled.
+5. Now we can run the TensorFlow with plug-in device enabled.
 ```
 $ python
 >>> import tensorflow as tf
@@ -55,6 +55,10 @@ $ python
 [PhysicalDevice(name='/physical_device:CPU:0', device_type='CPU'), PhysicalDevice(name='/physical_device:MY_DEVICE:0', device_type='MY_DEVICE')]
 ```
 *  Relu case:
+```
 $ python relu.py
+```
 * Conv + Relu case:
+```
 $ python conv_relu.py
+```
