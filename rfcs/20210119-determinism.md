@@ -8,7 +8,7 @@
 
 
 ## Objective
-Allow users to enable determinism behavior in TensorFlow. This means if the user runs a TensorFlow program multiple times, the model outputs and weights will be the same each time. Determinism will be supported on CPUs and GPUs.
+Allow users to enable deterministic behavior in TensorFlow. This means if the user runs a TensorFlow program multiple times, the model outputs and weights will be the same each time. Determinism will be supported on CPUs and GPUs.
  
 To get deterministic behavior, users must do the following:
 
