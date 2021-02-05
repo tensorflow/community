@@ -2,7 +2,8 @@
   
 | Status        | Proposed                                             |
 :---------------|:-----------------------------------------------------|
-| **Author(s)** | Pankaj Kanwar (Google), Reed Wanderman-Milne (Google)|
+| **Author(s)** | Pankaj Kanwar (Google),Reed Wanderman-Milne (Google),|
+                | Duncan Riach  (NVIDIA)                               |
 | **Sponsor**   | Sanjoy Das (Google)                                  |
 | **Updated**   | 2021-01-31                                           |
 
