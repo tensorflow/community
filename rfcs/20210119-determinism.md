@@ -6,20 +6,19 @@
 | **Sponsor**   | Sanjoy Das (Google)                                                         |
 | **Updated**   | 2021-01-31                                                                  |
 
-
 ## Objective
 Allow users to enable deterministic behavior in TensorFlow. This means if the user runs a TensorFlow program multiple times, the model outputs and weights will be the same each time. Determinism will be supported on CPUs and GPUs.
- 
+
 To get deterministic behavior, users must do the following:
 
 * Enable determinism using the API proposed in this doc.
-* Use same hardware in every run.
-* Use the same software environment every run (OS, checkpoints, version of TF, environmental variables, etc).
-* Not use constructs outside TensorFlow that are nondeterministic, such as Python’s `random` module or using multiple threads/processes in ways that influence TensorFlow’s behavior.
-* Do not use nondeterministic custom ops.
+* Use same hardware configuration in every run.
+* Use the same software environment every run (OS, checkpoints, version of CUDA and TF, environmental variables, etc).
+* Not use constructs outside TensorFlow that are nondeterministic, such as Python’s `random` module (without a fixed seed) or using multiple threads/processes in ways that influence TensorFlow’s behavior.
+* Not use nondeterministic custom ops.
 
 ## Motivation
-There are several mission critical applications in life sciences, finance and automation that require deterministic behavior. Determinism is required so that the behavior of these applications can be accurately predicted & demonstrated in a variety of scenarios.
+There are several mission critical applications in medicine, finance and automation that require deterministic behavior. Determinism is required so that the behavior of these applications can be accurately predicted & demonstrated in a variety of scenarios.
 
 Lack of determinism prevents companies from launching products using models developed in TF. For a subset of these industries having deterministic behavior is a regulatory requirement. 
 
@@ -38,10 +37,24 @@ For ops which do not yet have a deterministic implementation, TensorFlow will ra
 Enabling deterministic execution does not automatically cause a user’s program to become deterministic. If users use nondeterministic constructs outside TensorFlow, such as threads/process, in ways that influence TensorFlow’s behavior, their program will not be deterministic. In order for a user to ensure their program is deterministic, users must both enable deterministic execution within TensorFlow and remove any sources of nondeterminism outside TensorFlow.
 
 ### Existing Flags
-Multiple environmental variables exist today that control determinism. As part of this change, we will deprecate then remove the following:
+There are currently two environment variables in TensorFlow to enable deterministic op functionality.
 
-* TF_DETERMINISTIC_OPS
-* TF_CUDNN_DETERMINISTIC
+The first environment variable is `TF_CUDNN_DETERMINISTIC`. When set to `'true'` or `'1'`, this,
+
+* makes the selection of cuDNN convolution algorithms deterministic,
+* selects deterministic gradient algorithms for `tf.nn.conv*d` and `tf.keras.layers.Conv*D`,
+* selects deterministic gradient algorithms for `tf.nn.max_pool*d` and `tf.keras.layers.MaxPool*D`, and
+* selects a deterministic gradient algorithm for `tf.nn.ctc_loss`.
+
+The second environment variable is `TF_DETERMINISTIC_OPS`. This supercedes and replaces `TF_CUDNN_DETERMINISTIC` by having the same functionality and also (when set to `'true'` or `'1'`),
+
+* selects deterministic gradient kernels for `tf.nn.bias_add` and the many Keras layers that apply a bias,
+* selects a deterministic algorithm for XLA reductions on GPU, and
+* selects a deterministic gradient algorithm for `tf.image.resize` with `method=ResizeMethod.BILINEAR` and `tf.keras.layers.UpSampling2D` with `interpolation='bilinear'`
+
+Calling `tf.config.enable_deterministic_execution(True)` will be equivalent to setting `TF_DETERMINISTIC_OPS` to `'true'` or `'1'` plus the additional functionality described in this RFC.
+
+The two environment variables will be first deprecated and then removed.
 
 tf.data also has flags for determinism. The system will throw an error message if flags are out of sync i.e. if deterministic_execution_enabled is enabled but if the tf.data option is set to ‘false’, we will throw an error. (`tf.data.Options.experimental_deterministic`). We’ll also add the necessary checks for Dataset.map and Dataset.interleave. See the [Random ops](#random-ops) section for how random Datasets, such as `tf.data.experimental.RandomDataset`, are handled.
 
@@ -49,7 +62,7 @@ tf.data also has flags for determinism. The system will throw an error message i
 Grappler graph optimizations may add nondeterministic behavior. In particular some optimizations will time out if they take too long to run. When determinism is enabled, these timeouts will be disabled.
 
 ### Random ops
-Legacy random ops, such as `tf.random.normal`, are not deterministic if no seed is set, and so such ops will raise an error when determinism is enabled. To fix, the user should set a global seed with `tf.random.set_seed`. Since most models use legacy random ops, in practice users must call `tf.random.set_seed` when enabling deterministic behavior. Alternatively, users can pass a seed to every individual random operation, but doing so is more inconvenient.
+Legacy random ops, such as `tf.random.normal`, are not deterministic if no seed is set, and so such ops will raise an error when determinism is enabled. To fix, the user should set a global seed with `tf.random.set_seed`. Since most models use legacy random ops (for variable initialization and various other uses), in practice users must call `tf.random.set_seed` when enabling deterministic behavior. Alternatively, users can pass a seed to every individual random operation, but doing so is more inconvenient.
 
 Certain random ops, such as `tf.image.sample_distorted_bounding_box` and `tf.nn.fractional_max_pool`, ignore the global seed if a seed is not explicitly passed. For such ops, setting the global seed is not enough to avoid the error, so users must pass a seed directly to the op.
 
@@ -65,21 +78,19 @@ No error will be raised if a random op or generator is run before determinism is
 Use of parameter servers adds nondeterministic behavior. In case a model constructs a ParameterServerStrategy, TensorFlow will throw an error. We’ll also document this in the documentation for the flag.
 
 ### Op Review and changes
-As part of the implementation, we will review all ops to make a determination of their behavior (deterministic vs nondeterministic). Some of the ops that are known to be nondeterministic, at least when running on a GPU, include:
+As part of the implementation, we will review all ops to make a determination of their behavior (deterministic vs nondeterministic). Ops that are known to operate nondeterministically, at least when running on a GPU, include the following:
 
 * `tf.nn.softmax_cross_entropy_with_logits`
 * `tf.nn.sparse_softmax_cross_entropy_with_logits`
 * `tf.image.resize` gradient with `method=ResizeMethod.NEAREST`
 * `tf.math.segment_sum`, `tf.math.unsorted_segment_sum` forward
 * `tf.image.crop_and_resize` gradient to both image and boxes 
-* `tf.sparse.sparse_dense_matmul` forward
 * `tf.math.unsorted_segment_mean`, `tf.math.unsorted_segment_prod` and `tf.math.unsorted_segment_sqrt`; all foward
 * `tf.sparse.sparse_dense_matmul`
 
+We have a list of other ops that use CUDA's `atomicAdd` and are therefore likely to be sources of nondeterminism. Once it has been confirmed that those ops function nondeterministically, they will be made to throw errors when determinism is enabled. In the long term, we can add a deterministic implementation to such ops.
 
-`tf.image.sample_distorted_bounding_box` has been observed to behave nondeterministically unless you set its seed parameter, even if you call tf.random.set_seed. We will review this Op as part the change. Another case that needs review is "pulling a random number from a PRNG before its state has been initialized".
-
-Given the large number of ops involved, there is a chance that we might omit raising an error for a nondeterministic Op.
+Given the large number of ops involved, there is a chance that we might omit raising an error for a nondeterministic Op. We will fix such cases as they arise.
 
 ## Discussion
 
@@ -101,5 +112,25 @@ We don’t want TensorFlow developers to have to worry about breaking determinis
 * Sessions are nondeterminism and making them determinism requires having the executor run ops in a consistent order. It is probably not worth making sessions deterministic.
 * If performant, we could potentially have determinism be enabled by default, but not raising an error for nondeterministic ops.
 
+## Apendix
 
+### Existing environmental variables
 
+There are currently two environment variables in TensorFlow to enable deterministic op functionality.
+
+The first environment variable is `TF_CUDNN_DETERMINISTIC`. When set to `'true'` or `'1'`, this,
+
+* makes the selection of cuDNN convolution algorithms deterministic,
+* selects deterministic gradient algorithms for `tf.nn.conv*d` and `tf.keras.layers.Conv*D`,
+* selects deterministic gradient algorithms for `tf.nn.max_pool*d` and `tf.keras.layers.MaxPool*D`, and
+* selects a deterministic gradient algorithm for `tf.nn.ctc_loss`.
+
+The second environment variable is `TF_DETERMINISTIC_OPS`. This supercedes and replaces `TF_CUDNN_DETERMINISTIC` by first implementing the same functionality, but then it also (when set to `'true'` or `'1'`),
+
+* selects deterministic gradient kernels for `tf.nn.bias_add` and the many Keras layers that apply a bias,
+* selects a deterministic algorithm for XLA reductions on GPU, and
+* selects a deterministic gradient algorithm for `tf.image.resize` with `method=ResizeMethod.BILINEAR` and `tf.keras.layers.UpSampling2D` with `interpolation='bilinear'`
+
+Calling `tf.config.enable_deterministic_execution(True)` will be equivalent to setting `TF_DETERMINISTIC_OPS` to `'true'` or `'1'` plus the additional functionality described in this RFC.
+
+The two environment variables will be first deprecated and then removed.
