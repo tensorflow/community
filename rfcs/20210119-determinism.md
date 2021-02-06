@@ -1,11 +1,10 @@
 # RFC: Enabling Determinism in TensorFlow
   
-| Status        | Proposed                                             |
-:---------------|:-----------------------------------------------------|
-| **Author(s)** | Pankaj Kanwar (Google),Reed Wanderman-Milne (Google),|
-                | Duncan Riach  (NVIDIA)                               |
-| **Sponsor**   | Sanjoy Das (Google)                                  |
-| **Updated**   | 2021-01-31                                           |
+| Status        | Proposed                                                                    |
+:---------------|:----------------------------------------------------------------------------|
+| **Author(s)** | Pankaj Kanwar (Google),Reed Wanderman-Milne (Google), Duncan Riach (NVIDIA) |
+| **Sponsor**   | Sanjoy Das (Google)                                                         |
+| **Updated**   | 2021-01-31                                                                  |
 
 
 ## Objective
@@ -81,3 +80,26 @@ As part of the implementation, we will review all ops to make a determination of
 `tf.image.sample_distorted_bounding_box` has been observed to behave nondeterministically unless you set its seed parameter, even if you call tf.random.set_seed. We will review this Op as part the change. Another case that needs review is "pulling a random number from a PRNG before its state has been initialized".
 
 Given the large number of ops involved, there is a chance that we might omit raising an error for a nondeterministic Op.
+
+## Discussion
+
+This section describes some topics that were discussed during the design review on February 4, 2021. The RFC was not yet approved due to the concerns described in the next section.
+
+### CPU Support
+
+If we implement determinism, we do not want to leave it half completed due to a lack of time to work on it. As CPU support may be time consuming, we could start by having the API only supported for GPU and TPU users. However, GPU models may still use some CPU ops. For example, all `tf.data` ops only support the CPU, and most int32 ops run on the CPU, [even for GPU kernels](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/kernels/identity_op.cc;l=94;drc=3cbb50768909c585d33e99ba10172d1c44c04d6f). To support GPU models, we must also support determinism in these CPU ops. To avoid having to modify most CPU ops to raise a determinism error, we can have an allowlist of allowed CPU ops which are deterministic.
+
+However, supporting a subset of CPU ops is problematic: what if a rewrite pass converts Op A (which supports determinism) to Op B (which does not). Similarly, Placer may be modified in the future to place some small ops on the CPU by default instead of the GPU, which can break determinism. In general, modifications to TensorFlow that affect ops can potentially break determinism, and therefore break backwards compatibility.
+
+We don’t want TensorFlow developers to have to worry about breaking determinism when modifying TensorFlow. We could potentially allow a model to start raising a determinism error in minor releases of TF, but this is a bad user experience. Alternatively, we could rely on unit tests to catch cases where developers break determinism. Another alternative is to fully support determinism on the CPU. I and others will try to think of other ways to avoid developers inadvertently breaking determinism when modifying TensorFlow.
+
+### Other points of discussion
+
+* Performance is important even when determinism is enabled. We should ensure determinism is fast in the long term, although not necessarily as fast as nondeterminism. In the short term, it’s acceptable for it to be slow.
+* The current semantics of tf.data’s `experimental_deterministic` option may be unacceptable slow, as it involves reading from input files in a serial order instead of in parallel. The semantics should be changed to allow files to be read in parallel, while still guaranteeing the order of items read from the files is deterministic
+* Perhaps `enable_deterministic_execution` should take no arguments, and instead a `disable_deterministic_execution` function should be added. Should be consistent with other functions which we can also change, such as `enable_tensor_float_32_execution`.
+* Sessions are nondeterminism and making them determinism requires having the executor run ops in a consistent order. It is probably not worth making sessions deterministic.
+* If performant, we could potentially have determinism be enabled by default, but not raising an error for nondeterministic ops.
+
+
+
