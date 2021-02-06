@@ -111,26 +111,3 @@ We don’t want TensorFlow developers to have to worry about breaking determinis
 * Perhaps `enable_deterministic_execution` should take no arguments, and instead a `disable_deterministic_execution` function should be added. Should be consistent with other functions which we can also change, such as `enable_tensor_float_32_execution`.
 * Sessions are nondeterminism and making them determinism requires having the executor run ops in a consistent order. It is probably not worth making sessions deterministic.
 * If performant, we could potentially have determinism be enabled by default, but not raising an error for nondeterministic ops.
-
-## Apendix
-
-### Existing environmental variables
-
-There are currently two environment variables in TensorFlow to enable deterministic op functionality.
-
-The first environment variable is `TF_CUDNN_DETERMINISTIC`. When set to `'true'` or `'1'`, this,
-
-* makes the selection of cuDNN convolution algorithms deterministic,
-* selects deterministic gradient algorithms for `tf.nn.conv*d` and `tf.keras.layers.Conv*D`,
-* selects deterministic gradient algorithms for `tf.nn.max_pool*d` and `tf.keras.layers.MaxPool*D`, and
-* selects a deterministic gradient algorithm for `tf.nn.ctc_loss`.
-
-The second environment variable is `TF_DETERMINISTIC_OPS`. This supercedes and replaces `TF_CUDNN_DETERMINISTIC` by first implementing the same functionality, but then it also (when set to `'true'` or `'1'`),
-
-* selects deterministic gradient kernels for `tf.nn.bias_add` and the many Keras layers that apply a bias,
-* selects a deterministic algorithm for XLA reductions on GPU, and
-* selects a deterministic gradient algorithm for `tf.image.resize` with `method=ResizeMethod.BILINEAR` and `tf.keras.layers.UpSampling2D` with `interpolation='bilinear'`
-
-Calling `tf.config.enable_deterministic_execution(True)` will be equivalent to setting `TF_DETERMINISTIC_OPS` to `'true'` or `'1'` plus the additional functionality described in this RFC.
-
-The two environment variables will be first deprecated and then removed.
