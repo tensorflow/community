@@ -7,7 +7,7 @@
 
 sigs/rust/ @adamcrume
 sigs/tensorboard/ @ewilderj @manivaradarajan
-sigs/build/ @ewilderj @angersson @perfinion
+sigs/build/ @ewilderj @angerson @perfinion
 sigs/addons/ @ewilderj @karmel @seanpmorgan @armando-fandango
 sigs/networking/ @ewilderj @byronyi @jbedorf @poxvoculi
 sigs/io/ @ewilderj @mrry @yongtang @dmitrievanthony
