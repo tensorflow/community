@@ -8,12 +8,12 @@
 
 ## Objective
 
-What are we doing and why? What problem will this solve? What are the goals and
+What are you doing and why? What problem will this solve? What are the goals and
 non-goals? This is your executive summary; keep it short, elaborate below.
 
 ## Motivation
 
-Why this is a valuable problem to solve? What background information is needed
+Why it this a valuable problem to solve? What background information is needed
 to show how this design addresses the problem?
 
 How will users (or other contributors) benefit from this work? What would be the
