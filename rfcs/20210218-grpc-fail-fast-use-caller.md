@@ -2,7 +2,7 @@
 
 | Status        | Proposed                                                |
 | :------------ | :------------------------------------------------------ |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
+| **RFC #**     | [355](https://github.com/tensorflow/community/pull/355) |
 | **Author(s)** | Haoyu Zhang (haoyuzhang@google.com)                     |
 | **Sponsor**   | Bramandia Ramadhana (bramandia@google.com)              |
 | **Updated**   | 2021-02-18                                              |
