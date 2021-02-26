@@ -37,6 +37,12 @@ produced by currently correct python code without a three weeks notice. This
 comes up most frequently when adding new ops, but also applies to non-obvious
 things such as the graph emitted by gradients or pfor.
 
+### TensorFlow 1.x and 2.x
+
+When adding new API end points, we use the `@tf_export` decorator. For *new* endpoints,
+expose them to the v2 API only: `@tf_export("some_name", v1=[])`. This prevents
+unnecessarily diverging the `compat.v1` namespace in future releases from what is
+published in TensorFlow 1.15.
 
 ### Docstrings 
 
