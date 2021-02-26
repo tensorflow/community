@@ -19,7 +19,20 @@ the comments to get an answer.
 
 ## High level points
 
+### Python Versions
+
+TensorFlow supports a range of Python versions and changes need to be
+compatible with all of them. This means that language features not available in
+any of [TensorFlow's supported versions](https://www.tensorflow.org/install) cannot be used.
+
+We regularly reconsider the range of supported versions based on the number of
+affected users (estimated via pip downloads by Python version), and the default
+installed version of Python on important platforms (Linux distributions, OSX,
+...), but these are large, breaking changes to the ecosystem which are not
+triggered by reviews of individual features.
+
 ### Backward and forward compatibility
+
 We avoid backwards-incompatible API changes. We also avoid
 backwards-incompatible behavior changes, such as restricting the set of valid
 inputs to a function or extending the set of valid outputs of a function. Adding
