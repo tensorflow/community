@@ -55,7 +55,7 @@ announcements mailing lists:
 
 ### Monthly Meetings
 
-We meet on the first Tuesday of every month. If you are interested in joining the meeting, add the [calendar event](https://calendar.google.com/event?action=TEMPLATE&tmeid=MG90djk4czIxdDcyMzdoNnJpYTZ0bjh2OWtfMjAyMDEyMDJUMDEwMDAwWiB0ZW5zb3JmbG93Lm9yZ18xNHQ3NjluODlxaHNwczk0OWMzbDBuaGQ5Y0Bn&tmsrc=tensorflow.org_14t769n89qhsps949c3l0nhd9c%40group.calendar.google.com&scp=ALL) to your calendar or email tf-community-team at google dot com. 
+We meet on the first Tuesday of every month. If you are interested in joining the meeting, add the [calendar event](https://calendar.google.com/event?action=TEMPLATE&tmeid=M2NpODFzOHBqcTRuM3M5Z3I4cDlrbTVwNTNfMjAyMTAzMDNUMDEwMDAwWiBqb2FuYWZpbGlwYUBnb29nbGUuY29t&tmsrc=joanafilipa%40google.com&scp=ALL) to your calendar or email tf-community-team at google dot com. 
 
 ### Other Resources 
 - Repository: https://github.com/tensorflow/tfjs
