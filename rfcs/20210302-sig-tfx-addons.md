@@ -2,7 +2,7 @@
 
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN)|
+| **RFC #**     | [363](https://github.com/tensorflow/community/pull/363)|
 | **Author(s)** | Robert Crowe (robertcrowe@google.com), Thea Lamkin (thealamkin@google.com) |
 | **Sponsor**   | Zhitao Li (zhitaoli@google.com), Mihai Maruseac (mihaimaruseac@google.com) |
 | **Updated**   | 2021-03-02                                           |
