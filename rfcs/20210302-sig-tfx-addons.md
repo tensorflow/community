@@ -66,7 +66,7 @@ SIG TFX-Addons is a community-led open source project. As such, the project depe
   - Hannes Hapke (Digits)
 - Core Team Members:
   - Paul Selden (OpenX)
-  - Gerard Casas Saez (Twitter) -- Pending resolution of my questions above ^
+  - Gerard Casas Saez (Twitter)
   - Newton Le (Twitter)
   - Marc Romeyn (Spotify)
   - Ryan Clough (Spotify)
