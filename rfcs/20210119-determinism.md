@@ -27,13 +27,13 @@ We will create a new flag with the default value of "False" which enables determ
 
 The first function takes in a boolean value, and allows the model developer to enable/disable deterministic ops. The second function returns a bool indicating whether deterministic ops is enabled.
 
-Once enabled, every built-in op will either be made deterministic or raise an error if determinism is not supported. For ops which we have not yet implemented a deterministic version, a `NotImplementedError` will be raised. For ops which are inherently nondeterministic such as `tf.random.normal` without a seed, a `FailedPreconditionError` will be raised (the precondition being that determinism must be disabled). Certain ops will only raise an error for certain input shapes or attributes. Depending on the op, in graph mode, the error will either be raised when the op is constructed or when the op is run.
+Once enabled, every built-in op will either be made deterministic or raise an error if determinism is not supported. For ops which we have not yet implemented a deterministic version, a `NotImplementedError` will be raised. In the long term, we plan on adding a deterministic version to all such ops. For ops which are inherently nondeterministic such as `tf.random.normal` without a seed, a `FailedPreconditionError` will be raised (the precondition being that determinism must be disabled). Certain ops will only raise an error for certain input shapes or attributes. Depending on the op, in graph mode, the error will either be raised when the op is constructed or when the op is run.
 
 By "deterministic", we mean that if an op is run multiple times with the same inputs and attributes, it produces the same outputs. The op must be run with the same hardware configuration on the same device each time. The software environment must be the same every run as well (OS, TF and CUDA version, environmental variables, etc). For stateful ops, the all relevant state must be identical each run (values of `tf.Variable`s, checkpoints, etc).
 
 In most cases, ops will be unconditionally deterministic, but a few will have a separate deterministic and nondeterministic codepath when the nondeterministic codepath is faster.
 
-This API only makes ops deterministic, not other parts of TensorFlow. For example, `ParameterServerStrategy` will not be made deterministic or raise an error when deterministic ops is enabled. The reason the API only affects ops is that TensorFlow is has a large number of components, and it is infeasible to find all sources of nondeterminism, fix them, and ensure no TensorFlow developer ever accidentally introduces nondeterminism again. Currently, the only known sources of nondeterminism outside ops in TensorFlow 2 is `ParameterServerStrategy` and Grappler. In TensorFlow 1, sessions are additionally nondeterministic. Separately from `enable_deterministic_ops`, we plan on making Grappler deterministic, which is described in the "Grappler changes" section.
+This API only makes ops deterministic, not other parts of TensorFlow. For example, `ParameterServerStrategy` will not be made deterministic or raise an error when deterministic ops is enabled. The reason the API only affects ops is that TensorFlow has a large number of components, and it is infeasible to find all sources of nondeterminism, fix them, and ensure no TensorFlow developer ever accidentally introduces nondeterminism again. Currently, the only known sources of nondeterminism outside ops in TensorFlow 2 is `ParameterServerStrategy` and Grappler. In TensorFlow 1, sessions are additionally nondeterministic. Separately from the `enable_deterministic_ops` API, we plan on making Grappler deterministic, which is described in the "Grappler changes" section.
 
 The API allows users to write deterministic models. To do so, users must:
 
@@ -61,15 +61,13 @@ The second environment variable is `TF_DETERMINISTIC_OPS`. This supercedes and r
 * selects a deterministic algorithm for XLA reductions on GPU, and
 * selects a deterministic gradient algorithm for `tf.image.resize` with `method=ResizeMethod.BILINEAR` and `tf.keras.layers.UpSampling2D` with `interpolation='bilinear'`
 
-Calling `tf.config.enable_deterministic_ops(True)` will be equivalent to setting `TF_DETERMINISTIC_OPS` to `'true'` or `'1'` plus additionally making all other ops deterministic. In the short term, we will continue making more ops deterministic with `TF_DETERMINISTIC_OPS`, so that we can implement and test determinism to ensure it works fully before introducing the `enable_deterministic_ops` API.
-
-Once the `enable_deterministic_ops` API is implemented, the two environment variables will be first deprecated and then removed.
+Calling `tf.config.enable_deterministic_ops(True)` will be equivalent to setting `TF_DETERMINISTIC_OPS` to `'true'` or `'1'` plus additionally making all other ops deterministic. In the short term, we will continue making more ops deterministic with `TF_DETERMINISTIC_OPS`, so that we can implement and test determinism to ensure it works fully before introducing the `enable_deterministic_ops` API. Once the `enable_deterministic_ops` API is implemented, the two environment variables will be first deprecated and then removed.
 
 tf.data also has flags for determinism. The system will throw an error message if flags are out of sync i.e. if deterministic_execution_enabled is enabled but if the tf.data option is set to ‘false’, we will throw an error. (`tf.data.Options.experimental_deterministic`). We’ll also add the necessary checks for Dataset.map and Dataset.interleave. See the [Random ops](#random-ops) section for how random Datasets, such as `tf.data.experimental.RandomDataset`, are handled.
 
 ### Grappler changes
 
-Grappler graph optimizations may add nondeterministic behavior. In particular some optimizations will time out if they take too long to run. Grappler is not affected by the `enable_deterministic_ops` API, as the API only affects ops. However, the purpose of the API is to allow users to write deterministic models, and this is impossible if Grappler is nondeterministic. Therefore, we will either make Grappler deterministic by default, or if that is infeasible, add a separate flag to make Grappler deterministic.
+Grappler graph optimizations may add nondeterministic behavior. In particular, some optimizations will time out if they take too long to run. Grappler will not be affected by the `enable_deterministic_ops` API, as the API only affects ops. However, the purpose of the API is to allow users to write deterministic models, and this is impossible if Grappler is nondeterministic. Therefore, we will either make Grappler deterministic by default, or if that is infeasible, add a separate flag to make Grappler deterministic.
 
 To make Grappler deterministic by default, all timeouts must be removed. Typically, a Grappler pass will check if the timeout is exceeded once or several times per iteration of a loop. These timeouts can be replaced with a limit in the number of iterations the loop can execute for. This approximates a timeout while being deterministic.
 
@@ -91,11 +89,11 @@ No error will be raised if a random op or generator is run before determinism is
 
 ### Testing plan
 
-We must ensure that every op will either run deterministically or raise an error when `enable_deterministic_ops` is called. In order to do this, we must test for determinism, both to check we don't accidentally miss any nondeterministic ops and to ensure any previously-deterministic ops are not accidentally made nondeterministic in the future. To accomplish this, we will have the following tests:
+We must ensure that every op will either run deterministically or raise an error if `enable_deterministic_ops` has been called. In order to do this, we must test for determinism, both to check we don't accidentally miss any nondeterministic ops and to ensure any previously-deterministic ops are not accidentally made nondeterministic in the future. To accomplish this, we will have the following tests:
 
 1. We will add tests to several of the [official models](https://github.com/tensorflow/models/tree/master/official) to ensure they run deterministically. In particular, each test will train a model for several steps, then retrain it from scratch several times. The final weights after training will be asserted to be the same each time. This tests not only the `enable_deterministic_ops` API but that the entire model is deterministic. This only tests ops that the official models use.
 
-2. We will add a special mode to TensorFlow where every time a non-stateful op is run, TensorFlow will rerun the op several times and assert the outputs are the same. We will then run the TensorFlow unit tests with this mode as part of the nightly tests. Doing so ensures that for each op that is run as part of a unit test, it will be tested for determinism.
+2. We will add a special mode to TensorFlow where every time a non-stateful op is run, TensorFlow will rerun the op several times and assert the outputs are the same each time. We will then run the TensorFlow unit tests with this mode as part of the nightly tests. Doing so ensures that for each op that is run as part of a unit test, it will be tested for determinism.
 
 3. When adding determinism to an op which previously was nondeterministic, an explicit unit test will be added that checks for determinism. This is slightly redundant with the special mode described above, but the explicit unit test can be part of the presubmit tests instead of the nightly tests, and can test on inputs that are very likely to demonstrate nondeterminism if it exists.
 
@@ -123,8 +121,6 @@ Given the large number of ops involved, there is a chance that we might omit rai
 
 This RFC proposes a function which makes each TensorFlow op deterministic. Alternatively, the function could make all of TensorFlow deterministic. The [original version of this RFC](https://github.com/tensorflow/community/blob/b3a8cd8a190daa56d20b0eecdb1efaa91b237eb8/rfcs/20210119-determinism.md) proposed this, but it was later changed to affect only ops.
 
-The advantage of making all of TensorFlow deterministic is that users want their entire models to be deterministic, not just ops. If, say, a tf.funct
-
 The reason the RFC was changed to only affect ops is that determining every TensorFlow component which is current nondeterministic is infeasible. There is no effective way to find every nondeterministic part of TensorFlow. Additionally, it is likely developers would accidentally introduce nondeterminism back into TensorFlow, especially those who are unaware of the determinism API. Limiting the scope of the API to ops means we only have to worry about a fraction of the TensorFlow codebase, and additionally makes determinism far easier to test. It is feasible to test almost every op for determinism, but doing so for the entirety of TensorFlow component is impossible.
 
-In the future, if we do decide to have an API which makes all of TensorFlow deterministic, we can add one.
+In the future, if we do decide to have an API which makes all of TensorFlow deterministic, we can add one. The advantage of making every part of TensorFlow either deterministic or raise an error is that users interested in determinism typically want their entire model to be deterministic. A model is nondeterministic if any part of it is nondeterministic, so we cannot guarentee determinism simply by making each op deterministic.
