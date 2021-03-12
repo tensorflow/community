@@ -4,7 +4,7 @@
 :---------------|:-----------------------------------------------------------------------------|
 | **Author(s)** | Pankaj Kanwar (Google), Duncan Riach (NVIDIA), Reed Wanderman-Milne (Google) |
 | **Sponsor**   | Sanjoy Das (Google)                                                          |
-| **Updated**   | 2021-03-10                                                                   |
+| **Updated**   | 2021-03-12                                                                   |
 
 ## Objective
 
@@ -16,7 +16,7 @@ There are several mission critical applications in medicine, finance and automat
 
 The lack of determinism in certain ops prevents companies from launching products using models developed in TF. For a subset of these industries having deterministic behavior is a regulatory requirement.
 
-In addition, deterministic ops increases model velocity development by reducing noise, while also simplifying the debugging workflow.
+In addition, deterministic functionality, enabled by deterministic ops, increases model velocity development by reducing noise, while also simplifying the debugging workflow.
 
 ## Design Proposal
 
@@ -27,7 +27,7 @@ We will create a new flag with the default value of "False" which enables determ
 
 The first function takes in a boolean value, and allows the model developer to enable/disable deterministic ops. The second function returns a bool indicating whether deterministic ops is enabled.
 
-Once enabled, every built-in op will either be made deterministic or raise an error if determinism is not supported. For ops which we have not yet implemented a deterministic version, a `NotImplementedError` will be raised. In the long term, we plan on adding a deterministic version to all such ops. For ops which are inherently nondeterministic such as `tf.random.normal` without a seed, a `FailedPreconditionError` will be raised (the precondition being that determinism must be disabled). Certain ops will only raise an error for certain input shapes or attributes. Depending on the op, in graph mode, the error will either be raised when the op is constructed or when the op is run.
+Once enabled, every built-in op will either be made deterministic or raise an error if determinism is not supported. A `tf.errors.UnimplementedError` will be raised by ops for which we have not yet implemented a deterministic version. In the long term, we plan on adding a deterministic version to all such ops. For ops which are inherently nondeterministic such as `tf.random.normal` without a seed, a `tf.errors.FailedPreconditionError` will be raised (the precondition being that determinism must be disabled). Some ops will only raise an error on a subset of input shapes, attributes, data types, or codepaths through the op. Depending on the op, in graph mode, the error will either be raised when the op is constructed or when the op is run.
 
 By "deterministic", we mean that if an op is run multiple times with the same inputs and attributes, it produces the same outputs. The op must be run with the same hardware configuration on the same device each time. The software environment must be the same every run as well (OS, TF and CUDA version, environmental variables, etc). For stateful ops, the all relevant state must be identical each run (values of `tf.Variable`s, checkpoints, etc).
 
@@ -38,8 +38,8 @@ This API only makes ops deterministic, not other parts of TensorFlow. For exampl
 The API allows users to write deterministic models. To do so, users must:
 
 * Enable deterministic ops with `tf.config.enable_deterministic_ops`.
-* Use same hardware configuration in every run.
-* Use the same software environment every run (OS, checkpoints, version of CUDA and TF, environmental variables, etc).
+* Use the same hardware configuration in every run.
+* Use the same software environment in every run (OS, checkpoints, version of CUDA and TF, environmental variables, etc).
 * Not use nondeterministic parts of TensorFlow (besides ops), such as `ParameterServerStrategy`.
 * Not use constructs outside TensorFlow that are nondeterministic, such as Python’s `random` module (without a fixed seed) or using multiple threads/processes in ways that influence TensorFlow’s behavior.
 * Not use nondeterministic custom ops.
@@ -77,7 +77,7 @@ It is also possible Grappler is nondeterministic due to nondeterministic iterati
 
 ### Random ops
 
-Legacy random ops, such as `tf.random.normal`, are not deterministic if no seed is set, and so such ops will raise a `FailedPreconditionError` when determinism is enabled. To fix, the user should set a global seed with `tf.random.set_seed`. Since most models use legacy random ops (for variable initialization and various other uses), in practice users must call `tf.random.set_seed` when enabling deterministic ops. Alternatively, users can pass a seed to every individual random operation, but doing so is more inconvenient.
+Legacy random ops, such as `tf.random.normal`, are not deterministic if no seed is set, and so such ops will raise a `tf.errors.FailedPreconditionError` when determinism is enabled. To fix, the user should set a global seed with `tf.random.set_seed`. Since most models use legacy random ops (for variable initialization and various other uses), in practice users must call `tf.random.set_seed` when enabling deterministic ops. Alternatively, users can pass a seed to every individual random operation, but doing so is more inconvenient.
 
 Certain random ops, such as `tf.image.sample_distorted_bounding_box` and `tf.nn.fractional_max_pool`, ignore the global seed if a seed is not explicitly passed. For such ops, setting the global seed is not enough to avoid the error, so users must pass a seed directly to the op.
 
@@ -95,7 +95,7 @@ We must ensure that every op will either run deterministically or raise an error
 
 2. We will add a special mode to TensorFlow where every time a non-stateful op is run, TensorFlow will rerun the op several times and assert the outputs are the same each time. We will then run the TensorFlow unit tests with this mode as part of the nightly tests. Doing so ensures that for each op that is run as part of a unit test, it will be tested for determinism.
 
-3. When adding determinism to an op which previously was nondeterministic, an explicit unit test will be added that checks for determinism. This is slightly redundant with the special mode described above, but the explicit unit test can be part of the presubmit tests instead of the nightly tests, and can test on inputs that are very likely to demonstrate nondeterminism if it exists.
+3. When adding determinism to an op which previously was nondeterministic, an explicit unit test will be added that checks for determinism. Unlike running unit tests with the special mode above, the explicit unit tests can be part of the presubmit tests instead of the nightly tests, and can test on inputs that are very likely to demonstrate nondeterminism if it exists.
 
 ### Op Review and changes
 
