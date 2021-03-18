@@ -6,16 +6,16 @@
 # SIGS
 
 sigs/rust/ @adamcrume
-sigs/tensorboard/ @ewilderj @manivaradarajan
-sigs/build/ @ewilderj @angerson @perfinion
-sigs/addons/ @ewilderj @seanpmorgan @armando-fandango
-sigs/networking/ @ewilderj @byronyi @jbedorf @poxvoculi
-sigs/io/ @ewilderj @mihaimaruseac @yongtang @dmitrievanthony
-sigs/jvm/ @ewilderj @karllessard @tzolov
-sigs/micro/ @ewilderj @petewarden
-sigs/mlir/ @ewilderj @pkanwar23
-sigs/swift/ @ewilderj @saeta @ematejska
-sigs/testing/ @ewilderj @dynamicwebpaige
+sigs/tensorboard/ @thealamkin @manivaradarajan
+sigs/build/ @thealamkin @angerson @perfinion
+sigs/addons/ @thealamkin @seanpmorgan @armando-fandango
+sigs/networking/ @thealamkin @byronyi @jbedorf @poxvoculi
+sigs/io/ @thealamkin @mihaimaruseac @yongtang @dmitrievanthony
+sigs/jvm/ @thealamkin @karllessard @tzolov
+sigs/micro/ @thealamkin @petewarden
+sigs/mlir/ @thealamkin @pkanwar23
+sigs/swift/ @thealamkin @saeta @ematejska
+sigs/testing/ @thealamkin @dynamicwebpaige
 
 # RFCs
 
