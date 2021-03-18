@@ -25,6 +25,7 @@ We plan to have a one hour weekly meeting with a public Google Video Conference 
 ## Contacts
 * Program manager: Ewa Matejska - ematejska at google
 * Project lead: Brennan Saeta - saeta at google
+* Product manager: Paige Bailey - webpaige at google
 * For administrative questions, contact Edd Wilder-James [@ewilderj](https://github.com/ewilderj) - ewj at google
 
 ## Code of Conduct
