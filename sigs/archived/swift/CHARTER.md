@@ -1,4 +1,4 @@
-# SIG Swift
+# SIG Swift (This SIG is now archived and no longer active)
 
 ## Objective
 
