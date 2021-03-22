@@ -1,6 +1,6 @@
 # GRPC Fail Fast By Default
 
-| Status        | Approved                                                |
+| Status        | Accepted                                               |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [355](https://github.com/tensorflow/community/pull/355) |
 | **Author(s)** | Haoyu Zhang (haoyuzhang@google.com)                     |
