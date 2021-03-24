@@ -13,20 +13,11 @@
 ## Objective {#objective}
 
 Defining requirements and processes for TFX::OSS and related libraries (see list
-below) to achieve necessary API & Artifact compatibility, in order to satisfy
-the following efforts (which drives the requirements and scope of this doc).
-
-### 1.0 Release of OSS {#1-0-release-of-oss}
-
-It has been long sought for TFX and the related projects to reach a stable 1.0
-release, possibly subject to [Semantic Versioning](https://semver.org/) (aka
-SemVer). Most important requirement is that **all minor versions within the same
-major version must be backward compatible**, which applies to both public API
-and Artifacts.
+below) to achieve necessary API & Artifact compatibility.
 
 ### Goals {#goals}
 
-*   Clearly define a stable API surface of TFX::OSS, or at least lay out a
+*   Clearly define a stable API surface of TFX::OSS, and lay out a
     structure to determine what falls into the stable public APIs.
 *   API stability: TFX::OSS (as pipeline) and all APIs from the
     [Key Dependency Libs](#key-dependency-libraries-in-scope) exposed through
