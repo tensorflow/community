@@ -1,5 +1,5 @@
 
-# :framed_picture [SIG Logo](https://github.com/tensorflow/community/tree/master/sigs/logos)
+# :framed_picture: [SIG Logo](https://github.com/tensorflow/community/tree/master/sigs/logos)
 
 ## SIG presentation
 A general short description of the Repository/SIG.
