@@ -12,7 +12,7 @@ urgent, please ping the PR to notify us of any urgency.
 
 Please note that also if the TF API team is public Github public teams are 
 [only visible](https://docs.github.com/en/github/setting-up-and-managing-organizations-and-teams/about-teams#team-visibility) 
-and mentionable by other teams members.
+and mentionable by TF organization members.
 
 ## Process
 
