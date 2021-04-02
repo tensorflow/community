@@ -4,7 +4,7 @@
 
 This is an attempt to gather commonly discussed topics when doing API
 reviews. It’ll hopefully be a useful resource to both API owners and people
-proposing API changes.  [TF API Owners](https://github.com/orgs/tensorflow/teams/api-owners) 
+proposing API changes.  TF API Owners team (@tensorflow/api-owners) 
 meet twice weekly to discuss changes. We try to get to PRs on the next meeting, 
 but we don’t always make it all the way through. If your change is particularly 
 urgent, please ping the PR to notify us of any urgency.
