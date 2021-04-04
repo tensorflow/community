@@ -149,8 +149,8 @@ is only guaranteed to work with one version of TensorFlow.
 Meanwhile, there are users who need to use a different version of TensorFlow in
 their training code, therefore we anticipate a need to mix TFX components which
 link with different TensorFlow versions in the same pipeline. This is possible
-in a containerized deployment, because each component could be configured with
-different container images. In order to process Artifacts produced from
+in a containerized deployment, because we will support configuring each component
+with different container images. In order to process Artifacts produced from
 different TensorFlow versions, we will rely on the guarantees provided by
 TensorFlow on SavedModel
 ([source](https://www.tensorflow.org/guide/versions#compatibility_of_savedmodels_graphs_and_checkpoints)),
@@ -233,7 +233,8 @@ compatibility guarantee is the following:
     version of a component, we do not guarantee this will work. A warning will
     be generated in this case.
 *   Resolvers and importers would only resolve Artifacts produced with same or
-    older versions of the library, by default.
+    older versions of the library, by default. A warning will be issued for
+    any artifacts skipped due to newer versions.
 
 #### SDK (aka DSL), Official Components {#sdk-aka-dsl-official-components}
 
