@@ -260,7 +260,7 @@ that `Trainer` needs to read examples and transform graph that satisfy:
 
 -   If the transform graph produced by a `Transform` execution E<sub>1</sub> is
     used by a `Trainer` execution E<sub>2</sub>, then E<sub>1</sub> and
-    E<sub>1</sub> should use the same examples.
+    E<sub>2</sub> should use the same examples.
 
 This is a typical data synchronization problem inside an asynchronous execution
 pipeline. For simple cases like the one above, it is still possible (although
