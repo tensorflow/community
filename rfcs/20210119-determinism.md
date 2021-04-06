@@ -101,15 +101,22 @@ We must ensure that every op will either run deterministically or raise an error
 
 As part of the implementation, we will review all ops to make a determination of their behavior (deterministic vs nondeterministic). Ops that are known to operate nondeterministically, at least when running on a GPU, include the following:
 
-* `tf.nn.softmax_cross_entropy_with_logits`
-* `tf.nn.sparse_softmax_cross_entropy_with_logits`
-* `tf.image.resize` gradient with `method=ResizeMethod.NEAREST`
-* `tf.math.segment_sum`, `tf.math.unsorted_segment_sum` forward
-* `tf.image.crop_and_resize` gradient to both image and boxes 
-* `tf.math.unsorted_segment_mean`, `tf.math.unsorted_segment_prod` and `tf.math.unsorted_segment_sqrt`; all forward
-* `tf.sparse.sparse_dense_matmul`
-* `tf.image.adjust_contrast`
+* `tfa.image.dense_image_warp` gradient w.r.t `image`
 * `tf.compat.v1.nn.fused_batch_norm` gradient w.r.t. `offset`
+* `tf.convert_to_tensor` forward, when `value` is of type `tf.IndexedSlices`
+* `tf.gather` gradient w.r.t dense `params`
+* `tf.image.resize` gradient w.r.t `image`, when `method=ResizeMethod.NEAREST`
+* `tf.image.crop_and_resize` gradient w.r.t both `image` and `boxes`
+* `tf.image.adjust_contrast` forward
+* `tf.math_segment_prod` forward
+* `tf.math.segment_sum` forward
+* `tf.math.unsorted_segment_mean` forward
+* `tf.math.unsorted_segment_sqrt_n` forward
+* `tf.math.unsorted_segment_prod` forward
+* `tf.math.unsorted_segment_sum` forward
+* `tf.nn.softmax_cross_entropy_with_logits` forward
+* `tf.nn.sparse_softmax_cross_entropy_with_logits` forward
+* `tf.sparse.sparse_dense_matmul` forward
 
 We have a list of other ops that use CUDA's `atomicAdd` and are therefore likely to be sources of nondeterminism. Once it has been confirmed that those ops function nondeterministically, they will be made to throw errors when determinism is enabled. In the long term, we can add a deterministic implementation to such ops.
 
