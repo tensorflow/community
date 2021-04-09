@@ -86,8 +86,14 @@ The following decisions are provided for easy digestion:
         compatible within all 1.x releases, with the exception of:
         1.  Experimental APIs: either with `experimental` in its symbol/path, or
             explicitly called out in PyDoc.
-            1.  We propose only use `__init__.py` for public APIs. PyDoc can be
-                generated that way.
+            1.  All public Python and proto APIs from tfx will be moved to a
+                `tfx.v1` module. While accessing old symbols from unversioned
+                API module is still possible, we recommend all public users to use
+                the stable public API whenever possible. This also enables TFX
+                team to release future v2 APIs if we choose do so in the long
+                future, although there is no concrete plan for that right now.
+                TFX API docs on TensorFlow doc sites will be updated
+                accordingly.
         2.  Internal APIs: Any other API which is not covered by our public API
             rules listed above are considered internal to the library, even if
             they do not have "internal" or underscore prefix. These APIs should
