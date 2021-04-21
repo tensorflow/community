@@ -263,7 +263,7 @@ Note: "Flex" is the code name for
 project, which enables using TensorFlow kernels in TensorFlow Lite directly.
 Throughout the document, it will be referred as "Flex" to be concise.
 
-This is the easiest approach: Just whitelist these training ops to Flex whitelist. However this means Flex runtime is required for training (bloating binary size), and Flex kernels are not optimized for mobile.
+This is the easiest approach: Just add these training ops to Flex allowlist. However this means Flex runtime is required for training (bloating binary size), and Flex kernels are not optimized for mobile.
 
 **Implement fused ops as TensorFlow Lite builtin ops (optimization)**<br/>
 We can implement these fused ops as TensorFlow Lite builtin ops. This further
