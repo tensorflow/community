@@ -244,7 +244,7 @@ compatibility guarantee is the following:
 
 #### SDK (aka DSL), Official Components {#sdk-aka-dsl-official-components}
 
-All parts of SDK (aka DSL), IR, interfaces of official components shall comply
+All parts of SDK (aka DSL) and interfaces of official components shall comply
 with SemVer. The functionalities form the following core CUJs, which include but
 are not limited to:
 
@@ -335,6 +335,13 @@ to a narrow range as much as possible in these rare cases.
 
 The new orchestrator is in early stages of development and we don’t think it’ll
 be production-ready for 1.0 timeline, thus it will enter 1.0 as `experimental`.
+
+
+#### Intermediate Representation (IR) and Container entrypoint {#ir-entrypoint}
+
+Both the intermediate representataion (IR) and container entrypoint of official
+TFX images are under active development and **excluded** from the stability /
+compatiblity scope of this doc.
 
 #### Portability Layer to Other Runners (aka Orchestrators) {#portability-layer-to-other-runner-orchestrators}
 
