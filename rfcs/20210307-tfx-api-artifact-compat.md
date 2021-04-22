@@ -203,6 +203,12 @@ Therefore we propose the following for all TFX 1.x versions:
         to test tfx with `apache-beam` RC so such breakages should be
         exceedingly rare in the future.
 
+For users who wants to use older versions of `apache-beam` and `tfx` together,
+while TFX team cannot directly support them in our released packages, we plan to
+refactor our build scripts so that beam dependency can be overridden by
+themselves, so they can build Python packages and container images in a
+self-service fashion.
+
 #### PyArrow {#pyarrow}
 
 TFX’s dependency on PyArrow comes from
@@ -360,11 +366,8 @@ compatibility:
 The following Dag runners will remain experimental:
 
 *   AirflowDagRunner
-    *   Honestly speaking, support of this one is on the fence. Due to lack of
-        proper configuration for a distributed backend support, it’s not much
-        more powerful than the LocalDagRunner when used out-of-box. However,
-        some partner teams managed to connect this to a distributed backend.
-        Until that is supported in TFX, we don’t think this one is stable.
+    *   Due to low utilization of the AirflowDagRunner, we want to avoid calling
+        it stable. Support will continue to graduate it into production as utilization evolves.
 
 The following dag runners are slated to be deprecated and therefore won’t
 comply:
