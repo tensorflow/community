@@ -114,6 +114,7 @@ As part of the implementation, we will review all ops to make a determination of
 * `tf.math.unsorted_segment_sqrt_n` forward
 * `tf.math.unsorted_segment_prod` forward
 * `tf.math.unsorted_segment_sum` forward
+* `tf.nn.depthwise_conv2d` gradient w.r.t `filter`
 * `tf.nn.softmax_cross_entropy_with_logits` forward
 * `tf.nn.sparse_softmax_cross_entropy_with_logits` forward
 * `tf.sparse.sparse_dense_matmul` forward
