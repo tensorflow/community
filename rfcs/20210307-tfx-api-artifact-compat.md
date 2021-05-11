@@ -1,6 +1,6 @@
 # API & Artifact Compatibility for TFX::OSS & Libraries
 
-| Status        | Proposed                                                 |
+| Status        | Accepted                                                 |
 | :------------ | :------------------------------------------------------- |
 | **Author(s)** | Zhitao Li (zhitaoli@google.com), Jiayi Zhao              |
 :               : (jyzhao@google.com), Zhuo Peng (zhuo@google.com)         :
@@ -17,8 +17,8 @@ below) to achieve necessary API & Artifact compatibility.
 
 ### Goals {#goals}
 
-*   Clearly define a stable API surface of TFX::OSS, and lay out a
-    structure to determine what falls into the stable public APIs.
+*   Clearly define a stable API surface of TFX::OSS, and lay out a structure to
+    determine what falls into the stable public APIs.
 *   API stability: TFX::OSS (as pipeline) and all APIs from the
     [Key Dependency Libs](#key-dependency-libraries-in-scope) exposed through
     TFX::OSS should achieve desired backward compatibility (see
@@ -86,14 +86,14 @@ The following decisions are provided for easy digestion:
         compatible within all 1.x releases, with the exception of:
         1.  Experimental APIs: either with `experimental` in its symbol/path, or
             explicitly called out in PyDoc.
-            1.  All public Python and proto APIs from tfx will be moved to a
-                `tfx.v1` module. While accessing old symbols from unversioned
-                API module is still possible, we recommend all public users to use
-                the stable public API whenever possible. This also enables TFX
-                team to release future v2 APIs if we choose do so in the long
-                future, although there is no concrete plan for that right now.
-                TFX API docs on TensorFlow doc sites will be updated
-                accordingly.
+            1.  For `tfx` and `ml-pipelines-sdk` package: All public Python and
+                proto APIs will be moved to a `tfx.v1` module. While accessing
+                old symbols from unversioned API module is still possible, we
+                recommend all public users to use the stable public API whenever
+                possible. This also enables TFX team to release future v2 APIs
+                if we choose do so in the long future, although there is no
+                concrete plan for that right now. TFX API docs on TensorFlow doc
+                sites will be updated accordingly.
         2.  Internal APIs: Any other API which is not covered by our public API
             rules listed above are considered internal to the library, even if
             they do not have "internal" or underscore prefix. These APIs should
@@ -155,10 +155,10 @@ is only guaranteed to work with one version of TensorFlow.
 Meanwhile, there are users who need to use a different version of TensorFlow in
 their training code, therefore we anticipate a need to mix TFX components which
 link with different TensorFlow versions in the same pipeline. This is possible
-in a containerized deployment, because we will support configuring each component
-with different container images. In order to process Artifacts produced from
-different TensorFlow versions, we will rely on the guarantees provided by
-TensorFlow on SavedModel
+in a containerized deployment, because we will support configuring each
+component with different container images. In order to process Artifacts
+produced from different TensorFlow versions, we will rely on the guarantees
+provided by TensorFlow on SavedModel
 ([source](https://www.tensorflow.org/guide/versions#compatibility_of_savedmodels_graphs_and_checkpoints)),
 most importantly:
 
@@ -203,11 +203,16 @@ Therefore we propose the following for all TFX 1.x versions:
         to test tfx with `apache-beam` RC so such breakages should be
         exceedingly rare in the future.
 
-For users who wants to use older versions of `apache-beam` and `tfx` together,
-while TFX team cannot directly support them in our released packages, we plan to
-refactor our build scripts so that beam dependency can be overridden by
-themselves, so they can build Python packages and container images in a
-self-service fashion.
+For users who wants to use older versions of `apache-beam` and `tfx` together:
+TFX team does not recommend such usage in general (nor directly support them),
+because sometimes a newer version of `apache-beam` (and many other major
+dependencies) offer functionality that is *required* for the TFX libraries (i.e.
+older versions might lead to check failures or incorrect behavior). Upon future
+requests, we are open to refactor, and open up, our build scripts, so that beam
+dependency can be overridden by users themselves, if they choose to build Python
+packages and container images in a self-service fashion and maintain the
+distribution themselves. Such users should always include the output of `pip
+freeze` when reporting issues, to make triaging easier.
 
 #### PyArrow {#pyarrow}
 
@@ -245,8 +250,8 @@ compatibility guarantee is the following:
     version of a component, we do not guarantee this will work. A warning will
     be generated in this case.
 *   Resolvers and importers would only resolve Artifacts produced with same or
-    older versions of the library, by default. A warning will be issued for
-    any artifacts skipped due to newer versions.
+    older versions of the library, by default. A warning will be issued for any
+    artifacts skipped due to newer versions.
 
 #### SDK (aka DSL), Official Components {#sdk-aka-dsl-official-components}
 
@@ -342,12 +347,12 @@ to a narrow range as much as possible in these rare cases.
 The new orchestrator is in early stages of development and we don’t think it’ll
 be production-ready for 1.0 timeline, thus it will enter 1.0 as `experimental`.
 
-
 #### Intermediate Representation (IR) and Container entrypoint {#ir-entrypoint}
 
-Both the intermediate representataion (IR) and container entrypoint of official
+Both the intermediate representation (IR) and container entrypoint of official
 TFX images are under active development and **excluded** from the stability /
-compatiblity scope of this doc.
+compatibility scope of this doc. We expect that changes to IR and Containers to
+be transparent to all users that use our higher level APIs.
 
 #### Portability Layer to Other Runners (aka Orchestrators) {#portability-layer-to-other-runner-orchestrators}
 
@@ -366,8 +371,9 @@ compatibility:
 The following Dag runners will remain experimental:
 
 *   AirflowDagRunner
-    *   Due to low utilization of the AirflowDagRunner, we want to avoid calling
-        it stable. Support will continue to graduate it into production as utilization evolves.
+    *   Due to low usage of the AirflowDagRunner, we want to avoid calling it
+        stable. Support will continue to graduate it into production as usage
+        evolves.
 
 The following dag runners are slated to be deprecated and therefore won’t
 comply:
