@@ -138,6 +138,7 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
 
 #### Core TensorFlow
 * **ProfileOptions support**
+
   To enable [ProfileOptions](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/profiler_options.proto#L6) support for `PluggableTracer`, we add a new device type `PLUGGABLE_DEVICE` in the `enum DeviceType` field.
   ```c++
   // Next ID: 11
@@ -165,6 +166,7 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
   Due to `device_type` here is enum, we can't differentiate between multiple pluggable profilers, so we define a common device type `PLUGGABLE_DEVICE` for them, if `ProfileOptions` is configured with `PLUGGABLE_DEVICE` type, then all the registered pluggable profilers will be enabled.
 
 * **Plugin Profiler Initialization**
+
   Core TensorFlow will load `TF_InitProfiler` from plug-in's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins" and pass the handle to `InitPluginProfiler` to do initialization. Here we define a `PluginInterfaceFatory` to store all the registed pluggable profilers, all of pluggable profilers in this factory will be enabled if `device_type` in `ProfileOptions` is configured as `PLUGGABLE_DEVICE`.
   ```c++
   class PluginInterfaceFactory {
