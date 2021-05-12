@@ -210,6 +210,7 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
   }
   ```
 * **PluginTracerInterface**
+
   PluginTracerInterface is a pluggable profiler instance, it is the component of forwarding `Start`, `Stop`, `CollectData` requets from `PluggableTracer` to plugin profiler implementations. It is also responsible for deserializing `Xspace` and `RunMetadata` protocal buffer objects retrieved from plugin.
   ```c++
   class PluginTracerInterface {
@@ -286,6 +287,63 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
   };
 
   ```
-  
+* **PluggableTracer Registeration**
+
+  `PluggableTracer` is the implementation of [ProfilerInterface](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_interface.h#L33), it controls all the registered pluggable profilers. For example, if `device_type` of `ProfileOptions` is set as `PLUGGABLE_DEVICE`, all the registered pluggable profilers will be enabled, when `ProfilerSession` invokes `profiler->Start()`, all the registered pluggable profilers will start the profiling.
+  ```c++
+  class PluggableTracer : public ProfilerInterface {
+   public:
+     explicit PluggableTracer(std::vector<PluginTracerInterface> plugin_interfaces)
+             : plugin_interfaces_(plugin_interfaces) {}
+
+     ~PluggableTracer() override {}
+
+     Status Start() override {
+       for (auto& profiler_interface : plugin_interfaces_) {
+         profiler_interface.DoStart().IgnoreError();
+       }
+       return Status::OK();
+     }
+
+     Status Stop() override {
+       for (auto& plugin_interface : plugin_interfaces_) {
+         plugin_interface.DoStop().IgnoreError();
+       }
+       return Status::OK();
+     }
+     // Unsupported.
+     Status CollectData(RunMetadata* run_metadata) override {
+       for (auto& plugin_interface : plugin_interfaces_) {
+         plugin_interface.DoCollectData(run_metadata).IgnoreError();
+       }
+       return Status::OK();
+     }
+
+     Status CollectData(XSpace* space) override {
+       for (auto& plugin_interface : plugin_interfaces_) {
+         plugin_interface.DoCollectData(space).IgnoreError();
+       }
+       return Status::OK();
+     }
+
+   private:
+     std::vector<PluginTracerInterface> plugin_interfaces_;
+  };
+
+  std::unique_ptr<ProfilerInterface> CreatePluggableTracer(
+    const ProfileOptions& options) {
+    if (options.device_type() != ProfileOptions::PLUGGABLE_DEVICE &&
+        options.device_type() != ProfileOptions::UNSPECIFIED) {
+      return nullptr;
+    }
+    return absl::make_unique<PluggableTracer>(*PluginInterfaceFactory::GetPluginTracerInterfaces());
+  }
 
 
+  auto register_pluggable_tracer_factory = [] {
+    RegisterProfilerFactory(&CreatePluggableTracer);
+    return 0;
+  }();
+
+
+  ```
