@@ -139,30 +139,75 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
 #### Core TensorFlow
 * **ProfileOptions support**
   To enable [ProfileOptions](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/profiler_options.proto#L6) support for `PluggableTracer`, we add a new device type `PLUGGABLE_DEVICE` in the `enum DeviceType` field.
-```c++
-// Next ID: 11
-message ProfileOptions {
-  // Some default value of option are not proto3 default value. Use this version
-  // to determine if we should use default option value instead of proto3
-  // default value.
-  uint32 version = 5;
+  ```c++
+  // Next ID: 11
+  message ProfileOptions {
+    // Some default value of option are not proto3 default value. Use this version
+    // to determine if we should use default option value instead of proto3
+    // default value.
+    uint32 version = 5;
+  
+    enum DeviceType {
+      UNSPECIFIED = 0;
+      CPU = 1;
+      GPU = 2;
+      TPU = 3;
+      PLUGGABLE_DEVICE = 4;
+    }
+      // Device type to profile/trace: (version >= 1)
+    // DeviceType::UNSPECIFIED: All registered device profiler will be enabled.
+    // DeviceType::CPU: only CPU will be profiled.
+    // DeviceType::GPU: only CPU/GPU will be profiled.
+    // DeviceType::TPU: only CPU/TPU will be profiled.
+    // DeviceType::PLUGGABLE_DEVICE: all pluggable devices with profiler enabled will be profiled. 
+    DeviceType device_type = 6;
+  ```
+  Due to `device_type` here is enum, we can't differentiate between multiple pluggable profilers, so we define a common device type `PLUGGABLE_DEVICE` for them, if `ProfileOptions` is configured with `PLUGGABLE_DEVICE` type, then all the registered pluggable profilers will be enabled.
 
-  enum DeviceType {
-    UNSPECIFIED = 0;
-    CPU = 1;
-    GPU = 2;
-    TPU = 3;
-    PLUGGABLE_DEVICE = 4;
+* **Plugin Profiler Initialization**
+  Core TensorFlow will load `TF_InitProfiler` from plug-in's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins" and pass the handle to `InitPluginProfiler` to do initialization. Here we define a `PluginInterfaceFatory` to store all the registed pluggable profilers, all of pluggable profilers in this factory will be enabled if `device_type` in `ProfileOptions` is configured as `PLUGGABLE_DEVICE`.
+  ```c++
+  class PluginInterfaceFactory {
+   public:
+    static void Register(PluginTracerInterface plugin_interface) {
+      tensorflow::mutex_lock l(*get_factory_lock());
+      GetPluginTracerInterfaces()->push_back(plugin_interface);
+    }
+  
+    static std::vector<PluginTracerInterface>* GetPluginTracerInterfaces() {
+      static auto factories = new std::vector<PluginTracerInterface>();
+      return factories;
+    }
+  
+   private:
+    static tensorflow::mutex* get_factory_lock() {
+      static tensorflow::mutex factory_lock(LINKER_INITIALIZED);
+      return &factory_lock;
+    }
+  };
+
+
+  Status InitPluginProfiler(TFInitProfilerFn init_fn) {
+    TF_ProfilerRegistrationParams params{TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE};
+    TP_Profiler profiler{TP_PROFILER_STRUCT_SIZE};
+    TP_ProfilerFns profiler_fns{TF_PROFILER_FNS_STRUCT_SIZE};
+    params.major_version = TP_MAJOR;
+    params.minor_version = TP_MINOR;
+    params.patch_version = TP_PATCH;
+    params.profiler = &profiler;
+    params.profiler_fns = &profiler_fns;
+    OwnedTFStatus c_status(TF_NewStatus());
+    init_fn(&params, c_status.get());
+    TF_RETURN_IF_ERROR(tensorflow::StatusFromTF_Status(c_status.get()));
+    TF_RETURN_IF_ERROR(ValidateTPProfilerRegistrationParams(params));
+    TF_RETURN_IF_ERROR(ValidateTPProfiler(profiler));
+    TF_RETURN_IF_ERROR(ValidateTPProfilerFns(profiler_fns));
+    // Register new profiler
+    PluginInterfaceFactory::Register(PluginTracerInterface(std::move(profiler), params.destroy_profiler, std::move(profiler_fns), params.destroy_profiler_fns));
+    return Status::OK();
   }
-    // Device type to profile/trace: (version >= 1)
-  // DeviceType::UNSPECIFIED: All registered device profiler will be enabled.
-  // DeviceType::CPU: only CPU will be profiled.
-  // DeviceType::GPU: only CPU/GPU will be profiled.
-  // DeviceType::TPU: only CPU/TPU will be profiled.
-  // DeviceType::PLUGGABLE_DEVICE: all pluggable devices with profiler enabled will be profiled. 
-  DeviceType device_type = 6;
-```
-  Since `device_type` 
+  ```
+
   
 
 
