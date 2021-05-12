@@ -26,6 +26,7 @@ This RFC provides a plugin infrastructure for extending third-party device profi
 
 This RFC is intended to provide a set of C APIs for plugin writers to implement and register their own pluggable profilers. To make C APIs protable, we propose serialized `XSpace` and `RunMetadata` as the object to pass between proper and plugin. When proper calls `CollectData`, plugin serializes XSpace and RunMetadata to big enough buffers provided by proper, then proper deserializes them back to `XSpace` and `RunMetadata` and finally generates a trace view and set of summaries based on these data.
 
+- Xspace:
 <div align=center>
-<img src=>
+<img src=20210427-pluggable-profiler-for-tensorflow/Xspace.png>
 </div>
