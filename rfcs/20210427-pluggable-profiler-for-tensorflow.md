@@ -137,3 +137,32 @@ void TF_InitProfiler(TF_ProfilerRegistrationParams* params, TF_Status* status);
 This section provides some pseudo code to show what core TensorFlow and plugin's code may looks like.
 
 #### Core TensorFlow
+* **ProfileOptions support**
+  To enable [ProfileOptions](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/profiler_options.proto#L6) support for `PluggableTracer`, we add a new device type `PLUGGABLE_DEVICE` in the `enum DeviceType` field.
+```c++
+// Next ID: 11
+message ProfileOptions {
+  // Some default value of option are not proto3 default value. Use this version
+  // to determine if we should use default option value instead of proto3
+  // default value.
+  uint32 version = 5;
+
+  enum DeviceType {
+    UNSPECIFIED = 0;
+    CPU = 1;
+    GPU = 2;
+    TPU = 3;
+    PLUGGABLE_DEVICE = 4;
+  }
+    // Device type to profile/trace: (version >= 1)
+  // DeviceType::UNSPECIFIED: All registered device profiler will be enabled.
+  // DeviceType::CPU: only CPU will be profiled.
+  // DeviceType::GPU: only CPU/GPU will be profiled.
+  // DeviceType::TPU: only CPU/TPU will be profiled.
+  // DeviceType::PLUGGABLE_DEVICE: all pluggable devices with profiler enabled will be profiled. 
+  DeviceType device_type = 6;
+```
+  Since `device_type` 
+  
+
+
