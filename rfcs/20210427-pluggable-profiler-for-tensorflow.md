@@ -209,7 +209,83 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
     return Status::OK();
   }
   ```
+* **PluginTracerInterface**
+  PluginTracerInterface is a pluggable profiler instance, it is the component of forwarding `Start`, `Stop`, `CollectData` requets from `PluggableTracer` to plugin profiler implementations. It is also responsible for deserializing `Xspace` and `RunMetadata` protocal buffer objects retrieved from plugin.
+  ```c++
+  class PluginTracerInterface {
+   public:
+    explicit PluginTracerInterface(TP_Profiler profiler,
+                              void (*destroy_profiler)(TP_Profiler*),
+                              TP_ProfilerFns profiler_fns,
+                              void (*destroy_profiler_fns)(TP_ProfilerFns*))
+            : profiler_(std::move(profiler)),
+              destroy_profiler_(destroy_profiler),
+              profiler_fns_(std::move(profiler_fns)),
+              destroy_profiler_fns_(destroy_profiler_fns) {}
 
+    ~PluginTracerInterface() {
+      destroy_profiler_(&profiler_);
+      destroy_profiler_fns_(&profiler_fns_);
+    }
+
+    Status DoStart() {
+      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
+      profiler_fns_.start(&profiler_, c_status.get());
+      Status s = tensorflow::StatusFromTF_Status(c_status.get());
+      return s;
+    }
+
+    Status DoStop() {
+      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
+      profiler_fns_.stop(&profiler_, c_status.get());
+      Status s = tensorflow::StatusFromTF_Status(c_status.get());
+      return s;
+    }
+
+    Status DoCollectData(RunMetadata* run_metadata) {
+      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
+      // Get size of buffer required for Plugin to serialize RunMetadata into.
+      size_t size_in_bytes;
+      profiler_fns_.collect_data_run_metadata(&profiler_, /*buffer=*/nullptr, &size_in_bytes, c_status.get())
+
+      // Prepare an appropriately sized buffer.
+      if (size_in_bytes > 0) {
+        std::vector<uint8_t> buffer(size_in_bytes);
+        profiler_fns_.collect_data_run_metadata(&profiler_, buffer.data(), &size_in_bytes, c_status.get())
+      }
+      return Status::OK();
+    }
+
+    Status DoCollectData(XSpace* space) {
+      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
+      // Get size of buffer required for Plugin to serialize XSpace into.
+      size_t size_in_bytes;
+      profiler_fns_.collect_data_xspace(&profiler_, /*buffer=*/nullptr, &size_in_bytes, c_status.get());
+
+      // Prepare an appropriately sized buffer.
+      if (size_in_bytes > 0) {
+        std::vector<uint8_t> buffer(size_in_bytes);
+        profiler_fns_.collect_data_xspace(&profiler_, buffer.data(), &size_in_bytes, c_status.get());
+        // Deserialize XSpace from the buffer and return it.
+        XSpace plugin_space;
+        plugin_space.ParseFromArray(buffer.data(), buffer.size());
+        for (XPlane& plugin_plane: *plugin_space.mutable_planes()) {
+          XPlane* plane = space->add_planes();
+          plane->Swap(&plugin_plane);
+        }
+      }
+      Status s = tensorflow::StatusFromTF_Status(c_status.get());
+      return s;
+    }
+
+   private:
+     TP_Profiler profiler_;
+     void (*destroy_profiler_)(TP_Profiler*);
+     TP_ProfilerFns profiler_fns_;
+     void (*destroy_profiler_fns_)(TP_ProfilerFns*);
+  };
+
+  ```
   
 
 
