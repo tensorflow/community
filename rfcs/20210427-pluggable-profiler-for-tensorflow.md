@@ -30,3 +30,7 @@ This RFC is intended to provide a set of C APIs for plugin writers to implement 
 <div align=center>
 <img src=20210427-pluggable-profiler-for-tensorflow/Xspace.png>
 </div>
+- RunMetadata:
+<div align=center>
+<img src=src=20210427-pluggable-profiler-for-tensorflow/RunMetadata.png>
+<div>
