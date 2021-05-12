@@ -58,7 +58,7 @@ The table below summarizes all structures defined and the functionality they inv
 | collect Xspace | `TP_ProfilerFns::collect_data_xspace` | None | None |
 | collect RunMetadata | `TP_ProfilerFns::collect_data_run_metadata` | None | None |
 
-### Registration
+#### Registration
 Core TensorFlow will register a new ProfilerInterface with [ProfilerFactory](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_factory.h#L29).
 1. Core TensorFlow loads the function `TF_InitProfiler` from plug-in's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins".
 2. Core TensorFlow populates `TF_ProfilerRegistrationParams` and passes it in a call to `TF_InitProfiler`.
@@ -66,7 +66,7 @@ Core TensorFlow will register a new ProfilerInterface with [ProfilerFactory](htt
 3. Core TensorFlow can now create a `PluginTracerInterface` through functions in `TP_ProfilerFns` and register it to `PluginInterfaceFactory`(contains a vector of `PluginTracerInterface` registered by multiple plugins);
 4. Core Tensorflow will create a `PluggableTracer` during [ProfilerSession](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_session.cc#L109) setup.
 
-## Detailed API
+### Detailed API
 ```c++
 #define TP_MAJOR 0
 #define TP_MINOR 0
@@ -132,3 +132,8 @@ void TF_InitProfiler(TF_ProfilerRegistrationParams* params, TF_Status* status);
 } // extern "C"
 #endif
 ```
+
+### Usage Example
+This section provides some pseudo code to show what core TensorFlow and plugin's code may looks like.
+
+#### Core TensorFlow
