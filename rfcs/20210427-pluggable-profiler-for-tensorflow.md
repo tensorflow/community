@@ -41,3 +41,20 @@ To achieve the goal, this RFC extends the TensorFlow profiler class hierachy to 
 <img src=20210427-pluggable-profiler-for-tensorflow/Architecture.png>
 </div>
 
+## Versioning Strategy and Stability
+* **Profiler C API**
+    Version strategy of Profiler C API follows Semantic Versioning 2.0.0 ([semver](http://semver.org/)). Each release version has a format `MAJOR.MINOR.PATCH`, as outlined in [TensorFlow version compatibility](https://www.tensorflow.org/guide/versions#semantic_versioning_20). Struct size is used to track compatibility. More details can be found in [StreamExecutor C API Versioning Strategy RFC](https://github.com/tensorflow/community/blob/master/rfcs/20200612-stream-executor-c-api/C_API_versioning_strategy.md)
+* **XPlane and RunMetadata**
+   The compatibility of `XPlane` and `RunMetadata` between plugin and proper follows the same compatibility [rules](https://developers.google.com/protocol-buffers/docs/cpptutorial?hl=en#extending-a-protocol-buffer) and [guarantees](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#updating) as protobuf library.
+
+## Usage Overview
+
+The table below summarizes all structures defined and the functionality they involve.
+| Action | Function call(s) | Populated by Core TensorFlow | Populated by plug-in |
+| :----- | :-------------- | :--------------------------- | :------------------- |
+| Register profiler | `TF_InitProfiler` | `TF_ProfilerRegistrationParams` | `TP_Profiler`, `TP_ProfilerFns` |
+| start profiling | `TP_ProfilerFns::start` | None | None |
+| stop profiling | `TP_ProfilerFns::stop` | None | None |
+| collect Xspace | `TP_ProfilerFns::collect_data_xspace` | None | None |
+| collect RunMetadata | `TP_ProfilerFns::collect_data_run_metadata` | None | None |
+
