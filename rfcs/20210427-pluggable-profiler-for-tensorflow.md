@@ -34,7 +34,7 @@ This RFC is intended to provide a set of C APIs for plugin writers to implement 
 - RunMetadata:
 <div align=center>
 <img src=20210427-pluggable-profiler-for-tensorflow/RunMetadata.png>
-<div>
+</div>
 
 To achieve the goal, this RFC extends the TensorFlow profiler class hierachy to add a new profiler named `PluggableProfiler` which is built on top of a set of C APIs, all plugin writers who want to integrate their own device profilers to  current TensorFlow runtime only need to implement Profiler C APIs(shown as diagram of Architecture overview).
 <div align=center>
