@@ -438,5 +438,4 @@ How will this proposal interact with other parts of the TensorFlow Ecosystem?
 ## Questions and Discussion Topics
 
 *   Any comments on the API design? Any missing functionality?
-*   Please let us know if you plan to use this C API for device integration.
 
