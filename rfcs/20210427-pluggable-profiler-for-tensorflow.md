@@ -365,31 +365,21 @@ void profiler_stop(const TP_Profiler* profiler, TF_Status* status) {
 }
 
 void profiler_collect_data_run_metadata(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status) {
-  
   RunMetadata metadata = get_my_run_metadata(); // Plugin generates RunMetadata based on collected profiler data.
-  
   *size_in_bytes = metadata.ByteSizeLong(); // get the size of RunMetadata
-
   if (buffer == nullptr) {
     return; // Proper will first get the size of RunMetadata, then allocate the big enough buffer and pass it to plugin for retrieving RunMetadata.
   }
-
   metadata.SerializeToArray(buffer, metadata.ByteSizeLong());
-
 }
 
 void profiler_collect_data_xspace(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status) {
-  
   Xspace xspace = get_my_xspace(); // Plugin generates Xspace based on collected profiler data.
-  
   *size_in_bytes = xspace.ByteSizeLong(); // get the size of Xspace
-
   if (buffer == nullptr) {
     return; // Proper will first get the size of Xspace, then allocate the big enough buffer and pass it to plugin for retrieving Xspace.
   }
-
   xspace.SerializeToArray(buffer, xspace.ByteSizeLong());
-
 }
 ```
 
