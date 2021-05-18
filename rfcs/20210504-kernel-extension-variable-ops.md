@@ -1,6 +1,6 @@
 # Kernel Extension for Variable Operations API
 
-| Status        | Proposed      |
+| Status        | Accepted     |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [20210504-kernel-extension-variable-ops](https://github.com/tensorflow/community/pull/20210504-kernel-extension-variable-ops) |
 | **Author(s)** | Kulin Seth (Apple), Charles Brissart (Apple)                                                                                  |
