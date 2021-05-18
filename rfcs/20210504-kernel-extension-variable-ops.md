@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [20210504-kernel-extension-variable-ops](https://github.com/tensorflow/community/pull/20210504-kernel-extension-variable-ops) |
 | **Author(s)** | Kulin Seth (Apple), Charles Brissart (Apple)                                                                                  |
-| **Sponsor**   | Saurabh Saksena (srbs@google.com)                                                                                             |
+| **Sponsor**   | Saurabh Saxena (srbs@google.com)                                                                                              |
 | **Updated**   | 2021-05-04                                                                                                                    |
 
 ## Objective
@@ -92,6 +92,7 @@ TF_CAPI_EXPORT extern void TF_GetInputTensorFromVariable(
                                         TF_OpKernelContext* ctx, 
                                         int input,
                                         bool lock_held,
+                                        bool isVariantType,
                                         bool sparse,
                                         void (*copyFunc)(
                                                 TF_OpKernelContext * ctx,
@@ -138,21 +139,29 @@ TF_CAPI_EXPORT extern void TF_AssignVariable(TF_OpKernelContext* ctx,
 
 // Expose higher level AssignUpdate operation for Pluggable vendors to implement
 // in the plugin for Training. The API takes in the context with indices for
-// the input and value tensors. It also accepts the copy/update functor provided by
+// the input and value tensors. It also accepts the update functor provided by
 // pluggable vendor to perform these operations respectively.
 TF_CAPI_EXPORT extern void TF_AssignUpdateVariable(
                                     TF_OpKernelContext* ctx,
                                     int input_index,
                                     int value_index,
                                     int Op,
-                                    int isVariantType,
-                                    void (*copyFunc)(TF_OpKernelContext * ctx, 
-                                                     TF_Tensor *source, 
-                                                     TF_Tensor *dest),
+                                    bool isVariantType,
                                     void (*updateFunc)(TF_OpKernelContext *ctx,
                                                        TF_Tensor *tensor,
                                                        TF_Tensor *value, int Op),
                                     TF_Status* status);
+
+```
+
+*Helper Function*
+
+We are proposing to add simple helper function which allows plugins to get the Tensor by providing an input_name.
+
+```
+// Allows plugin to get TF_Tensor when passed its input_name
+TF_CAPI_EXPORT extern void TF_GetInputByName(TF_OpKernelContext* ctx, const char *input_name,
+                                             TF_Tensor** tensor, TF_Status* status);
 
 ```
 
