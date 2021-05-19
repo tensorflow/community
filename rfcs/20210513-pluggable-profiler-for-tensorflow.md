@@ -14,7 +14,7 @@ This RFC is based on the Modular TensorFlow  [RFC](https://github.com/tensorflow
 
 ## **Motivation**
 
-Performance is a key consideration of successful ML research and production solutions. TensorFlow profiler provides a set of good tools to help user better understand the hardware resource consumption(time and memory) of various TensorFlow operations(ops) as well as perforamnce bottlenecks of TensorFlow models. [PluggableDevice](https://github.com/tensorflow/community/pull/262) provides a mechanism which allows third-party devices to be modularly integrated to current TensorFlow runtime. However, current TensorFlow does not provide a stable application binary infterface(ABI) for registering a new profiler in a modular way. We propose a C API wrapper of methods in [ProfilerInterface](https://github.com/tensorflow/tensorflow/blob/0a3773ed7b4c1fc60486dddfacbe9a5cbf2b2bdd/tensorflow/core/profiler/lib/profiler_interface.h#L33) as an ABI-stable way to register a custom profiler. The pluggable profiler discovery and initialization are transparent to end users. As long as the profiler plugin libraries follow the design described in this RFC, it can be plugged to TensorFlow proper and register a new profiler into ProfilerFactory.
+Performance is a key consideration of successful ML research and production solutions. TensorFlow profiler provides a set of good tools to help user better understand the hardware resource consumption(time and memory) of various TensorFlow operations(ops) as well as perforamnce bottlenecks of TensorFlow models. [PluggableDevice](https://github.com/tensorflow/community/pull/262) provides a mechanism which allows third-party devices to be modularly integrated to current TensorFlow runtime. However, current TensorFlow does not provide a stable application binary infterface(ABI) for registering a new pluggable device specific profiler in a modular way. We propose a C API wrapper of methods in [ProfilerInterface](https://github.com/tensorflow/tensorflow/blob/0a3773ed7b4c1fc60486dddfacbe9a5cbf2b2bdd/tensorflow/core/profiler/lib/profiler_interface.h#L33) as an ABI-stable way to register a custom profiler. The pluggable profiler discovery and initialization are transparent to end users. As long as the profiler plugin libraries follow the design described in this RFC, it can be plugged to TensorFlow proper and register a new profiler into ProfilerFactory.
 
 ## **User Benefit**
 
@@ -24,7 +24,7 @@ This RFC provides a plugin infrastructure for extending third-party device profi
 
 ### Design Overview
 
-This RFC is intended to provide a set of C APIs for plugin writers to implement and register their own pluggable profilers. To make C APIs protable, we propose serialized `XSpace` and `RunMetadata` as the object to pass between proper and plugin. When proper invokes `CollectData()`, plugin serializes `XSpace` and `RunMetadata` to the big enough buffers provided by proper, then proper deserializes them back to `XSpace` and `RunMetadata` and finally generates a trace view and a set of summaries based on these collected data.
+This RFC is intended to provide a set of C APIs for plugin writers to implement and register their own pluggable profilers. To make C APIs portable, we propose serialized `XSpace` and `RunMetadata` as the object to pass between proper and plugin. When proper invokes `CollectData()`, plugin serializes `XSpace` and `RunMetadata` to the big enough buffers provided by proper, then proper deserializes them back to `XSpace` and `RunMetadata` and finally generates a trace view and a set of summaries based on these collected data.
 
 - Xspace:
 <div align=center>
@@ -36,7 +36,7 @@ This RFC is intended to provide a set of C APIs for plugin writers to implement 
 <img src=20210513-pluggable-profiler-for-tensorflow/RunMetadata.png>
 </div>
 
-To achieve the goal, this RFC extends the TensorFlow profiler class hierachy to add a new profiler named `PluggableProfiler` which is built on top of a set of C APIs, all plugin writers who want to integrate their own device profilers to  current TensorFlow runtime only need to implement Profiler C APIs(shown as diagram of Architecture overview).
+To achieve the goal, this RFC extends the TensorFlow profiler class hierarchy to add a new profiler named `PluggableProfiler` which is built on top of a set of C APIs, all plugin writers who want to integrate their own device profilers to  current TensorFlow runtime only need to implement Profiler C APIs(shown as diagram of Architecture overview).
 <div align=center>
 <img src=20210513-pluggable-profiler-for-tensorflow/Architecture.png>
 </div>
@@ -67,8 +67,8 @@ Core TensorFlow will register a new ProfilerInterface with [ProfilerFactory](htt
 4. Core Tensorflow will create a `PluggableTracer` during [ProfilerSession](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_session.cc#L109) setup.
 
 #### Protobuf class
-Profiler uses `RunMetadata` and `XSpace` to store the performance data collected by backends. With these two data, proper's profiler tools can generate various view of performance, such as timeline, memory consumption, perforamnce of every TensorFlow op and set of summaries. `RunMedata` and `XSpace` are C++ objects generated by protobuf toolchain with a predifined structure in [config.proto](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/protobuf/config.proto#L721) and [xplane.proto](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/protobuf/xplane.proto#L9).
-In plugin side, plugin will collect performance data with its own profiler tools. When proper invokes `CollectData()`, plugin transforms the perfromance data to `RunMetadata` and `XSpace` and then serializes `RunMedata` and `XSpace` to the buffer provided by proper. To successfully serialize the object, plugin writers should keep a copy of `config.proto` and `xspace.proto`, and make it exactly the same as that in proper side.
+Profiler uses `RunMetadata` and `XSpace` to store the performance data collected by backends. With these two data, proper's profiler tools can generate various views of performance, such as timeline, memory consumption, performance of every TensorFlow op and set of summaries. `RunMedata` and `XSpace` are C++ objects generated by protobuf toolchain with a predefined structure in [config.proto](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/protobuf/config.proto#L721) and [xplane.proto](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/protobuf/xplane.proto#L9).
+On the plugin side, plugin will collect performance data with its own profiler infrastructures. When proper invokes `CollectData()`, plugin transforms the performance data to `RunMetadata` and `XSpace` and then serializes `RunMetadata` and `XSpace` to the buffer provided by proper. To successfully serialize the object, plugin writers should keep a copy of `config.proto` and `xspace.proto`, and make it exactly the same as that in the proper side.
 
 ### Detailed API
 ```c++
@@ -138,7 +138,7 @@ void TF_InitProfiler(TF_ProfilerRegistrationParams* params, TF_Status* status);
 ```
 
 ### Usage Example
-This section provides some pseudo code to show what core TensorFlow and plugin's code may looks like.
+This section provides some pseudo code to show what core TensorFlow and plugin's code may look like.
 
 #### Core TensorFlow
 * **ProfileOptions support**
@@ -171,7 +171,7 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
 
 * **Plugin Profiler Initialization**
 
-  Core TensorFlow will load `TF_InitProfiler` from plug-in's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins" and pass the handle to `InitPluginProfiler` to do initialization. Here we define a `PluginInterfaceFatory` to store all the registed pluggable profilers, all of pluggable profilers in this factory will be enabled if `device_type` in `ProfileOptions` is configured as `PLUGGABLE_DEVICE`.
+  Core TensorFlow will load `TF_InitProfiler` from plug-in's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins" and pass the handle to `InitPluginProfiler` to do initialization. Here we define a `PluginInterfaceFatory` to store all the registered pluggable profilers, all of pluggable profilers in this factory will be enabled if `device_type` in `ProfileOptions` is configured as `PLUGGABLE_DEVICE`.
   ```c++
   class PluginInterfaceFactory {
    public:
@@ -215,7 +215,7 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
   ```
 * **PluginTracerInterface**
 
-  PluginTracerInterface is a pluggable profiler instance, it is the component of forwarding `Start()`, `Stop()`, `CollectData()` requets from `PluggableTracer` to plugin profiler implementations. It is also responsible for deserializing `Xspace` and `RunMetadata` protocal buffer objects retrieved from plugin.
+  PluginTracerInterface is a pluggable profiler instance, it is the component of forwarding `Start()`, `Stop()`, `CollectData()` requests from `PluggableTracer` to plugin profiler implementations. It is also responsible for deserializing `Xspace` and `RunMetadata` protocol buffer objects retrieved from the plugin.
   ```c++
   class PluginTracerInterface {
    public:
@@ -291,7 +291,7 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
   };
 
   ```
-* **PluggableTracer Registeration**
+* **PluggableTracer Registration**
 
   `PluggableTracer` is the implementation of [ProfilerInterface](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_interface.h#L33), it controls all the registered pluggable profilers. For example, if `device_type` of `ProfileOptions` is set as `PLUGGABLE_DEVICE`, all the registered pluggable profilers will be enabled, when `ProfilerSession` invokes `profiler->Start()`, all the registered pluggable profilers will start the profiling.
   ```c++
@@ -412,7 +412,7 @@ The C API should not affect TensorFlow’s performance.
 * It depends on Modular TensorFlow [RFC](https://github.com/tensorflow/community/blob/master/rfcs/20190305-modular-tensorflow.md)
 
 ## **Engineering Impact**
-* The impact to binary size / startup time / build time / test times are minimum. 
+* The impact to binary size / startup time / build time / test times are minimal. 
 * The TensorFlow team will maintain this code. Profiler C API will be packaged along with other C APIs that TensorFlow currently has.
 
 ## **Platforms and Environments**
@@ -421,7 +421,7 @@ The C API should not affect TensorFlow’s performance.
 
 ## **Best Practices**
 
-* This works with Modular TensorFlow which will be the only way to integrate new custome profilers to the current TensorFlow stack.
+* This works with Modular TensorFlow which will be the only way to integrate new custom profilers to the current TensorFlow stack.
 
 ## Compatibility
 
