@@ -14,7 +14,7 @@ This RFC is based on the Modular TensorFlow  [RFC](https://github.com/tensorflow
 
 ## **Motivation**
 
-Performance is a key consideration of successful ML research and production solutions. TensorFlow profiler provides a set of good tools to help user better understand the hardware resource consumption(time and memory) of various TensorFlow operations(ops) as well as perforamnce bottlenecks of TensorFlow models. [PluggableDevice](https://github.com/tensorflow/community/pull/262) provides a mechanism which allows third-party devices to be modularly integrated to current TensorFlow runtime. However, current TensorFlow does not provide a stable application binary infterface(ABI) for registering a new pluggable device specific profiler in a modular way. We propose a C API wrapper of methods in [ProfilerInterface](https://github.com/tensorflow/tensorflow/blob/0a3773ed7b4c1fc60486dddfacbe9a5cbf2b2bdd/tensorflow/core/profiler/lib/profiler_interface.h#L33) as an ABI-stable way to register a custom profiler. The pluggable profiler discovery and initialization are transparent to end users. As long as the profiler plugin libraries follow the design described in this RFC, it can be plugged to TensorFlow proper and register a new profiler into ProfilerFactory.
+Performance is a key consideration of successful ML research and production solutions. TensorFlow profiler provides a set of good tools to help user better understand the hardware resource consumption(time and memory) of various TensorFlow operations(ops) as well as performance bottlenecks of TensorFlow models. [PluggableDevice](https://github.com/tensorflow/community/pull/262) provides a mechanism which allows third-party devices to be modularly integrated to current TensorFlow runtime. However, current TensorFlow does not provide a stable application binary interface(ABI) for registering a new pluggable device specific profiler in a modular way. We propose a C API wrapper of methods in [ProfilerInterface](https://github.com/tensorflow/tensorflow/blob/0a3773ed7b4c1fc60486dddfacbe9a5cbf2b2bdd/tensorflow/core/profiler/lib/profiler_interface.h#L33) as an ABI-stable way to register a custom profiler. The pluggable profiler discovery and initialization are transparent to end users. As long as the profiler plugin libraries follow the design described in this RFC, it can be plugged to TensorFlow framework and register a new profiler into ProfilerFactory.
 
 ## **User Benefit**
 
@@ -438,4 +438,3 @@ How will this proposal interact with other parts of the TensorFlow Ecosystem?
 ## Questions and Discussion Topics
 
 *   Any comments on the API design? Any missing functionality?
-
