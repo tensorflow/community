@@ -50,7 +50,7 @@ To achieve the goal, this RFC extends the TensorFlow profiler class hierarchy to
 ### Usage Overview
 
 The table below summarizes all structures defined and the functionality they involve.
-| Action | Function call(s) | Populated by Core TensorFlow | Populated by plug-in |
+| Action | Function call(s) | Populated by Core TensorFlow | Populated by plugin |
 | :----- | :-------------- | :--------------------------- | :------------------- |
 | Register profiler | `TF_InitProfiler` | `TF_ProfilerRegistrationParams` | `TP_Profiler`, `TP_ProfilerFns` |
 | start profiling | `TP_ProfilerFns::start` | None | None |
