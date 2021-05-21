@@ -383,7 +383,7 @@ void profiler_collect_data_xspace(const TP_Profiler* profiler, uint8_t* buffer, 
 }
 ```
 
-Define `TF_InitProfiler` that TensorFlow will call when registering the profiler plug-in:
+Define `TF_InitProfiler` that TensorFlow will call when registering the profiler plugin:
 ```c++
 void TF_InitProfiler(TF_ProfilerRegistrationParams* params, TF_Status* status) {
   params->struct_size = TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE;
