@@ -368,7 +368,7 @@ void profiler_collect_data_run_metadata(const TP_Profiler* profiler, uint8_t* bu
   RunMetadata metadata = get_my_run_metadata(); // Plugin generates RunMetadata based on collected profiler data.
   *size_in_bytes = metadata.ByteSizeLong(); // get the size of RunMetadata
   if (buffer == nullptr) {
-    return; // Proper will first get the size of RunMetadata, then allocate the big enough buffer and pass it to plugin for retrieving RunMetadata.
+    return; // TensorFlow will first get the size of RunMetadata, then allocate the big enough buffer and pass it to plugin for retrieving RunMetadata.
   }
   metadata.SerializeToArray(buffer, metadata.ByteSizeLong());
 }
