@@ -60,7 +60,7 @@ The table below summarizes all structures defined and the functionality they inv
 
 #### Registration
 Core TensorFlow will register a new ProfilerInterface with [ProfilerFactory](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_factory.h#L29).
-1. Core TensorFlow loads the function `TF_InitProfiler` from plug-in's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins".
+1. Core TensorFlow loads the function `TF_InitProfiler` from plugin's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins".
 2. Core TensorFlow populates `TF_ProfilerRegistrationParams` and passes it in a call to `TF_InitProfiler`.
     * In `TF_InitProfiler`, plug-in populates `TF_ProfilerRegistrationParams::TP_Profiler` and `TF_ProfilerRegistrationParams::TP_ProfilerFns`.
 3. Core TensorFlow can now create a `PluginTracerInterface` through functions in `TP_ProfilerFns` and register it to `PluginInterfaceFactory`(contains a vector of `PluginTracerInterface` registered by multiple plugins);
