@@ -417,7 +417,7 @@ The C API should not affect TensorFlow’s performance.
 
 ## **Platforms and Environments**
 
-* The pluggable profiler mechanism is based on `LoadLibrary()` so it should work on all the platforms supported by `LoadLibrary`. The other enhancement to TensorFlow proper is platform independent.
+* The pluggable profiler mechanism is based on `LoadLibrary()` so it should work on all the platforms supported by `LoadLibrary`. The other enhancement to TensorFlow is platform independent.
 
 ## **Best Practices**
 
