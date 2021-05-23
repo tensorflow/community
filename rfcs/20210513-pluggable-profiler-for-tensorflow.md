@@ -97,13 +97,13 @@ typedef struct TP_ProfilerFns {
   // Stops profiling.
   void (*stop)(const TP_Profiler* profiler, TF_Status* status);
 
-  // Saves collected profile data into XSpace and serializes it to the buffer.
-  // After this or the overload above are called once, subsequent calls might
+  // Saves collected profile data into RunMetadata and serializes it to the buffer.
+  // If either this or `collect_data_xspace` have been called, subsequent calls might
   // return empty data.
   void (*collect_data_run_metadata)(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status)
 
-  // Saves collected profile data into run_metadata and serializes it to the buffer.
-  // After this or the overload below are called once, subsequent calls might
+  // Saves collected profile data into XSpace and serializes it to the buffer.
+  // If either this or `collect_data_run_metadata` have been called, subsequent calls might
   // return empty data.
   void (*collect_data_xspace)(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status);
 } TP_ProfilerFns;
