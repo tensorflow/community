@@ -92,10 +92,10 @@ typedef struct TP_ProfilerFns {
   size_t struct_size;
 
   void* ext; // reserved for future use.
-
-  void (*start)(const TP_Profiler* profiler, TF_Status* status); // Starts profiling
-
-  void (*stop)(const TP_Profiler* profiler, TF_Status* status); // Stops profiling.
+  // Starts profiling.
+  void (*start)(const TP_Profiler* profiler, TF_Status* status);
+  // Stops profiling.
+  void (*stop)(const TP_Profiler* profiler, TF_Status* status);
 
   // Saves collected profile data into XSpace and serializes it to the buffer.
   // After this or the overload above are called once, subsequent calls might
