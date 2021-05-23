@@ -106,7 +106,7 @@ typedef struct TP_ProfilerFns {
   // After this or the overload below are called once, subsequent calls might
   // return empty data.
   void (*collect_data_xspace)(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status);
-};
+} TP_ProfilerFns;
 
 #define TF_PROFILER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(TP_ProfilerFns, collect_data_xspace)
 
