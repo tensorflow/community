@@ -3,7 +3,7 @@
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [389](https://github.com/tensorflow/community/pull/389)|
 | **Author(s)** | Zhoulong Jiang (zhoulong.jiang@intel.com), Yiqiang Li (yiqiang.li@intel.com), Eric Lin (eric.lin@intel.com), Jianhui Li (jian.hui.li@intel.com) |
-| **Sponsor**   | Situ Yi (yisitu@google.com)                          |
+| **Sponsor**   | Yi Situ (yisitu@google.com)                          |
 | **Updated**   | 2021-05-13                                          |
 
 ## **Objective**
