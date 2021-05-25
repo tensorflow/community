@@ -169,9 +169,9 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
   ```
   Due to `device_type` here is enum, we can't differentiate between multiple pluggable profilers, so we define a common device type `PLUGGABLE_DEVICE` for them, if `ProfileOptions` is configured with `PLUGGABLE_DEVICE` type, then all the registered pluggable profilers will be enabled.
 
-* **Plugin Profiler Initialization**
+* **Plugin Profiler Load and Initialization**
 
-  Core TensorFlow will load `TF_InitProfiler` from plugin's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins" and pass the handle to `InitPluginProfiler` to do initialization. Here we define a `PluginInterfaceFatory` to store all the registered pluggable profilers, all of pluggable profilers in this factory will be enabled if `device_type` in `ProfileOptions` is configured as `PLUGGABLE_DEVICE`.
+  Core TensorFlow will load `TF_InitProfiler` from plugin's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins" and pass the address of `TF_InitProfiler` symbol to `InitPluginProfiler` to do initialization. Here we define a `PluginInterfaceFatory` to store all the registered pluggable profilers, all of pluggable profilers in this factory will be enabled if `device_type` in `ProfileOptions` is configured as `PLUGGABLE_DEVICE`.
   ```c++
   class PluginInterfaceFactory {
    public:
@@ -212,6 +212,32 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
     PluginInterfaceFactory::Register(PluginTracerInterface(std::move(profiler), params.destroy_profiler, std::move(profiler_fns), params.destroy_profiler_fns));
     return Status::OK();
   }
+
+  static Status InitProfilerModule(void* dso_handle) {
+    void *dso_symbol;
+    tensorflow::Env* env = tensorflow::Env::Default();
+  
+    TF_RETURN_IF_ERROR(env->GetSymbolFromLibrary(dso_handle, "TF_InitProfiler", &dso_symbol));
+    auto init_fn = reinterpret_cast<profiler::TFInitProfilerFn>(dso_symbol);
+    TF_RETURN_IF_ERROR(profiler::InitPluginProfiler(init_fn));
+  
+    return Status::OK();
+  }
+
+
+  Status RegisterPluggableDevicePlugin(void* dso_handle) {
+    // Step 1 Init Device/Graph Module
+    TF_RETURN_IF_ERROR(InitDeviceAndGraphModule(dso_handle));
+  
+    // Step 2 Init Kernel Module
+    TF_RETURN_IF_ERROR(InitKernelModule(dso_handle));
+  
+    // Step 3 Init Profiler Module
+    TF_RETURN_IF_ERROR(InitProfilerModule(dso_handle));
+  
+    return Status::OK();
+  }
+
   ```
 * **PluginTracerInterface**
 
