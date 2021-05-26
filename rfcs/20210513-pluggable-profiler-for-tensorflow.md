@@ -350,31 +350,35 @@ Because `device_type` here is an enum, we cannot differentiate between multiple 
      ~PluggableProfiler() override {}
 
      Status Start() override {
+       Status status;
        for (auto& profiler_interface : plugin_interfaces_) {
-         profiler_interface.DoStart().IgnoreError();
+         status.Update(profiler_interface.DoStart());
        }
-       return Status::OK();
+       return status;
      }
 
      Status Stop() override {
+       Status status;
        for (auto& plugin_interface : plugin_interfaces_) {
-         plugin_interface.DoStop().IgnoreError();
+         status.Update(plugin_interface.DoStop());
        }
-       return Status::OK();
+       return status;
      }
      // Unsupported.
      Status CollectData(RunMetadata* run_metadata) override {
+       Status status;
        for (auto& plugin_interface : plugin_interfaces_) {
-         plugin_interface.DoCollectData(run_metadata).IgnoreError();
+         status.Update(plugin_interface.DoCollectData(run_metadata));
        }
-       return Status::OK();
+       return status;
      }
 
      Status CollectData(XSpace* space) override {
+       Status status;
        for (auto& plugin_interface : plugin_interfaces_) {
-         plugin_interface.DoCollectData(space).IgnoreError();
+         status.Update(plugin_interface.DoCollectData(space));
        }
-       return Status::OK();
+       return status;
      }
 
    private:
