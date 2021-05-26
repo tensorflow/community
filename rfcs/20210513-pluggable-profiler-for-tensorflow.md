@@ -134,11 +134,17 @@ typedef struct TF_ProfilerRegistrationParams {
   int32_t minor_version;
   int32_t patch_version;
 
-  TP_Profiler* profiler; // output, set by plugin
-  TP_ProfilerFns* profiler_fns; // output set by plugin
-  // Clean up fields inside TP_Profiler that were allocated
-  // by the plugin. `profiler` itself should not be deleted here.
-  void (*destroy_profiler)(TP_Profiler* profiler); // out, set by plugin
+  [in/out] Memory owned by core but attributes within are populated by the plugin.
+  TP_Profiler* profiler;
+  [in/out] Memory owned by core but attributes within are populated by the plugin.
+  TP_ProfilerFns* profiler_fns;
+  // [out] Pointer to plugin's `TP_Profiler` clean up function. 
+  // Cleans up fields inside `TP_Profiler` that were allocated
+  // by the plugin. `profiler` itself must not be deleted by the plugin.
+  void (*destroy_profiler)(TP_Profiler* profiler);
+  // [out] Pointer to plugin's `TP_ProfilerFns` clean up function. 
+  // Cleans up fields inside `TP_ProfilerFns` that were allocated
+  // by the plugin. `profiler_fns` itself must not be deleted by the plugin.
   void (*destroy_profiler_fns)(TP_ProfilerFns* profiler_fns);
 } TF_ProfilerRegistrationParams;
 
