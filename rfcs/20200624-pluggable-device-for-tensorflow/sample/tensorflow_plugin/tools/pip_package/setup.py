@@ -36,7 +36,7 @@ if sys.byteorder == 'little':
   # See https://github.com/tensorflow/tensorflow/issues/17882.
   REQUIRED_PACKAGES.append('grpcio >= 1.8.6')
 
-project_name = 'tensorflow-plugins'
+project_name = 'my_tensorflow_plugin_package'
 
 # python3 requires wheel 0.26
 if sys.version_info.major == 3:
