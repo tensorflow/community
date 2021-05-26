@@ -99,6 +99,10 @@ function prepare_src() {
   cp tensorflow_plugin/tools/pip_package/MANIFEST.in ${TMPDIR}
   cp tensorflow_plugin/tools/pip_package/README ${TMPDIR}
   cp tensorflow_plugin/tools/pip_package/setup.py ${TMPDIR}
+  # my_plugin_dir should be the same with _MY_PLUGIN_PATH in setup.py
+  mkdir -p ${TMPDIR}/my_plugin_dir
+  cp -r tensorflow_plugin/python/ ${TMPDIR}/my_plugin_dir
+  touch ${TMPDIR}/my_plugin_dir/__init__.py
   if [ -d ${TMPDIR}/tensorflow_plugin ] ; then
     mv ${TMPDIR}/tensorflow_plugin/* ${TMPDIR}/tensorflow-plugins
   fi

@@ -1,0 +1,1 @@
+try-import %workspace%/.tf_plugin_configure.bazelrc

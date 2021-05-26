@@ -25,6 +25,9 @@ DOCLINES = __doc__.split('\n')
 # Also update tensorflow/demo_plugin.bzl and
 # tensorflow/core/public/version.h
 _VERSION = '0.0.1'
+# this path can't be modified.
+_PLUGIN_LIB_PATH = 'tensorflow-plugins'
+_MY_PLUGIN_PATH = 'my_plugin_dir'
 
 REQUIRED_PACKAGES = [
     'tensorflow >= 2.5.0',
@@ -36,6 +39,7 @@ if sys.byteorder == 'little':
   # See https://github.com/tensorflow/tensorflow/issues/17882.
   REQUIRED_PACKAGES.append('grpcio >= 1.8.6')
 
+# The wheel package name, change it as your requirements
 project_name = 'my_tensorflow_plugin_package'
 
 # python3 requires wheel 0.26
@@ -197,19 +201,20 @@ setup(
     author='Tensorflow',
     author_email='packages@tensorflow.org',
     # Contained modules and scripts.
-    packages= ['tensorflow-plugins'],
+    packages= [_PLUGIN_LIB_PATH, _MY_PLUGIN_PATH],
     entry_points={
         'console_scripts': CONSOLE_SCRIPTS,
     },
     headers=headers,
     install_requires=REQUIRED_PACKAGES,
     tests_require=REQUIRED_PACKAGES + TEST_PACKAGES,
-    # Add in any packaged data.
-    include_package_data=True,
     package_data={
-        '': [
-            EXTENSION_NAME, '*.so', '*.h', '*.py', '*.hpp'
-        ] + matches,
+        _PLUGIN_LIB_PATH: [
+            '*.so'
+        ],
+        _MY_PLUGIN_PATH: [
+            '*', '*/*'
+        ]
     },
     zip_safe=False,
     distclass=BinaryDistribution,
