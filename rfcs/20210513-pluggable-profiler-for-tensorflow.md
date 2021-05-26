@@ -422,11 +422,13 @@ void profiler_collect_data_run_metadata(const TP_Profiler* profiler, uint8_t* bu
 
 void profiler_collect_data_xspace(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status) {
   Xspace xspace = get_my_xspace(); // Plugin generates Xspace based on collected profiler data.
+  size_t buffer_size_in_bytes = * size_in_bytes;
   *size_in_bytes = xspace.ByteSizeLong(); // get the size of Xspace
   if (buffer == nullptr) {
     return; // TensorFlow will first get the size of Xspace, then allocate the big enough buffer and pass it to plugin for retrieving Xspace.
   }
-  xspace.SerializeToArray(buffer, xspace.ByteSizeLong());
+  bool success = xspace.SerializeToArray(buffer, buffer_size_in_bytes);
+ // TODO: set status to FAILED_PRECONDITION if success is false, OK otherwise.
 }
 ```
 
