@@ -134,11 +134,17 @@ typedef struct TF_ProfilerRegistrationParams {
   int32_t minor_version;
   int32_t patch_version;
 
-  TP_Profiler* profiler; // output, set by plugin
-  TP_ProfilerFns* profiler_fns; // output set by plugin
-  // Clean up fields inside TP_Profiler that were allocated
-  // by the plugin. `profiler` itself should not be deleted here.
-  void (*destroy_profiler)(TP_Profiler* profiler); // out, set by plugin
+  [in/out] Memory owned by core but attributes within are populated by the plugin.
+  TP_Profiler* profiler;
+  [in/out] Memory owned by core but attributes within are populated by the plugin.
+  TP_ProfilerFns* profiler_fns;
+  // [out] Pointer to plugin's `TP_Profiler` clean up function. 
+  // Cleans up fields inside `TP_Profiler` that were allocated
+  // by the plugin. `profiler` itself must not be deleted by the plugin.
+  void (*destroy_profiler)(TP_Profiler* profiler);
+  // [out] Pointer to plugin's `TP_ProfilerFns` clean up function. 
+  // Cleans up fields inside `TP_ProfilerFns` that were allocated
+  // by the plugin. `profiler_fns` itself must not be deleted by the plugin.
   void (*destroy_profiler_fns)(TP_ProfilerFns* profiler_fns);
 } TF_ProfilerRegistrationParams;
 
@@ -416,11 +422,13 @@ void profiler_collect_data_run_metadata(const TP_Profiler* profiler, uint8_t* bu
 
 void profiler_collect_data_xspace(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status) {
   Xspace xspace = get_my_xspace(); // Plugin generates Xspace based on collected profiler data.
+  size_t buffer_size_in_bytes = * size_in_bytes;
   *size_in_bytes = xspace.ByteSizeLong(); // get the size of Xspace
   if (buffer == nullptr) {
     return; // TensorFlow will first get the size of Xspace, then allocate the big enough buffer and pass it to plugin for retrieving Xspace.
   }
-  xspace.SerializeToArray(buffer, xspace.ByteSizeLong());
+  bool success = xspace.SerializeToArray(buffer, buffer_size_in_bytes);
+ // TODO: set status to FAILED_PRECONDITION if success is false, OK otherwise.
 }
 ```
 
