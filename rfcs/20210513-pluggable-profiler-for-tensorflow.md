@@ -47,6 +47,20 @@ To achieve the goal, this RFC extends the TensorFlow profiler class hierarchy to
 * **XPlane and RunMetadata**
    The compatibility of `XPlane` and `RunMetadata` between plugin and TensorFlow follows the same compatibility [rules](https://developers.google.com/protocol-buffers/docs/cpptutorial?hl=en#extending-a-protocol-buffer) and [guarantees](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#updating) as protobuf library.
 
+## Implementation Conventions
+
+* Struct prefix indicates whether struct fields should be filled by the plug-in or core TensorFlow implementation:
+  * `TF_`: Set/filled by core, unless marked otherwise.
+  * `TP_`: Set/filled by plug-in, unless marked otherwise.
+  * This prefix rule only applies to structures. Enumerations and methods are all prefixed with `TP_`.
+* Structs begin with two fields:
+  * `size_t struct_size`: Stores the unpadded size of the struct.
+  * `void* ext`: A reserved field that may be populated by a plugin in `TP_*` structs or potential future extension points in `TF_` structs. Must be set to zero by default if it unused.
+* We use `struct_size` for version checking by both core and plug-in.
+  * It is exempt from the `TF/TP` rule above and must be set both by core and plug-in.
+  * It can be checked programmatically to determine which struct fields are available in the structure.
+* When a member is added to a struct, the struct size definition must be updated to use the new last member of the struct.
+
 ### Usage Overview
 
 The table below summarizes all structures defined and the functionality they involve.
@@ -109,7 +123,7 @@ typedef struct TP_ProfilerFns {
   void (*collect_data_xspace)(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status);
 } TP_ProfilerFns;
 
-#define TF_PROFILER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(TP_ProfilerFns, collect_data_xspace)
+#define TP_PROFILER_FNS_STRUCT_SIZE TF_OFFSET_OF_END(TP_ProfilerFns, collect_data_xspace)
 
 typedef struct TF_ProfilerRegistrationParams {
   size_t struct_size;
@@ -197,7 +211,7 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
   Status InitPluginProfiler(TFInitProfilerFn init_fn) {
     TF_ProfilerRegistrationParams params{TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE};
     TP_Profiler profiler{TP_PROFILER_STRUCT_SIZE};
-    TP_ProfilerFns profiler_fns{TF_PROFILER_FNS_STRUCT_SIZE};
+    TP_ProfilerFns profiler_fns{TP_PROFILER_FNS_STRUCT_SIZE};
     params.major_version = TP_MAJOR;
     params.minor_version = TP_MINOR;
     params.patch_version = TP_PATCH;
@@ -415,7 +429,7 @@ Define `TF_InitProfiler` that TensorFlow will call when registering the profiler
 void TF_InitProfiler(TF_ProfilerRegistrationParams* params, TF_Status* status) {
   params->struct_size = TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE;
   params->profiler->struct_size = TP_PROFILER_STRUCT_SIZE;
-  params->profiler_fns->struct_size = TF_PROFILER_FNS_STRUCT_SIZE;
+  params->profiler_fns->struct_size = TP_PROFILER_FNS_STRUCT_SIZE;
 
   params->profiler->type = "MyDeviceType";
 
