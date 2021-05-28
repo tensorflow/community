@@ -816,7 +816,7 @@ Modular TensorFlow provides three opaque handles, i.e.,  `TF_GrapplerItem`, `TF_
     ```
 
 - `TF_FunctionLibraryDefinition` maintains a map between op names and op definitions, typical use case is to look up an OpDef by op name, and then get some op attributes.
-  - `TF_NewFunctionLibraryDefinition()`,`TF_DeleteFunctionLibraryDefinition()`: Create/Destroy NewFunctionLibraryDefinition.
+  - `TF_NewFunctionLibraryDefinition()`,`TF_DeleteFunctionLibraryDefinition()`: Create/Destroy FunctionLibraryDefinition.
   - `TF_LookUpOpDef()`: Shorthand for calling LookUp to get the OpDef from FunctionLibraryDefinition given op name.
 
     An example of how to get OpDef:
