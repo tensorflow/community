@@ -594,7 +594,255 @@ void TF_RegisterKernelBuilder(const char* name, TF_KernelBuilder* builder, TF_St
 ```
 ### **Graph optimization**
 
- To be added😊
+Modular TensorFlow provides a new mechanism for custom graph optimizers and a set of C APIs as the ABI-stable APIs for implementing graph optimizers.
+The C APIs follows current C++ API implementation, [TF_Buffer](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/c/c_api.h#L110-L114) and related proto files are the interface between proper and plugin.
+When initializing, TensorFlow loads the plugin and registers a new graph optimizer into Grappler. In the [Optimize](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/c/experimental/grappler/grappler.h#L134) function, plugin authors need to deserialize `TF_Buffer` to `plugin::GraphDef` object to do some graph transformations, and serialize the optimized `plugin::GraphDef` object back to `TF_Buffer` as output. Noted that the graph in this part is all represented by GraphDef/TF_Buffer, not [graph](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/graph/graph.h#L498).
+The graph C APIs can be found in [grappler.h](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/c/experimental/grappler/grappler.h).
+
+We will introduce graph optimization C APIs from the following three aspects: optimize registration, implementation and util function.
+
+<p align="center">
+ <img src="flow.png" height="400"/>
+</p>
+
+§  **Optimizer registration**
+
+Plugins need to define `TF_InitGraph` function and populates `TP_OptimizerRegistrationParams`.
+When the plugin is loaded by TF at runtime, `TF_InitGraph` method will be called and new plugin optimizers will be registered to Core TensorFlow.
+
+Example:
+```c++
+#include "tensorflow/c/experimental/grappler/grappler.h"
+
+void TF_InitGraphPlugin(TP_OptimizerRegistrationParams* params,
+                        TF_Status* status) {
+  params->struct_size = TP_OPTIMIZER_REGISTRATION_PARAMS_STRUCT_SIZE;
+  params->device_type = "CPU";
+
+  params->optimizer_configs->struct_size = TP_OPTIMIZER_CONFIGS_STRUCT_SIZE;
+  params->optimizer_configs->remapping = TF_TriState_Off;
+  params->optimizer_configs->layout_optimizer = TF_TriState_Off;
+
+  params->optimizer->struct_size = TP_OPTIMIZER_STRUCT_SIZE;
+  params->optimizer->create_func = Optimizer_Create;
+  params->optimizer->optimize_func = Optimizer_Optimize;
+  params->optimizer->destroy_func = Optimizer_Destroy;
+}
+```
+
+As you may see in the example, plugin needs to populate the `optimizer_configs` and `optimizer`.
+
+* `struct_size`: plugin needs to set it as `TP_OPTIMIZER_REGISTRATION_PARAMS_STRUCT_SIZE` (defined in grappler.h). This field is used for the Graph C API version check between Core TensorFlow and the plugin.
+
+* `device_type`: This field indicates the backend device type that the graph optimizer is targeting.
+
+* `optimizer_configs->remapping`: This field indicates whether remapping optimizer in Tensorflow proper should be disabled. It is a tri-state enum value `TF_TriState`, and the default value is on. Each optimizer defined in TensorFlow proper has a competitive config value. Detailed configuration of these optimizers can be seen in [grappler.h](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/c/experimental/grappler/grappler.h#L98-L115).
+
+* `optimizer->create_func`: This field is an optional function for creating an optimizer. Destroy functions are also optional. But if a creation is provided that causes memory allocation, a deletion function that frees the memory should also be provided, otherwise a leak will occur.
+
+* `optimizer->optimize_func`: This field is the main part of the optimizer. Core TensorFlow will call this function to perform a graph transformation.
+
+§  **Optimizer implementation**
+
+Graph Optimize function(`optimize_func`) is the main part that plugin authors need to implement. The function looks like below. The first param is an optimizer pointer created by `create_func`, or a nullptr if `create_func` is not provided. The second param is serialized input graph(`GraphDef`). The third param is input `TF_GrapplerItem` handle which contains feed/fetch nodes info. The fourth param is serialized output graph(`GraphDef`).
+
+```cpp
+void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_GrapplerItem* item,
+                        TF_Buffer* optimized_graph_buf, TF_Status* s);
+```
+
+
+Example:
+```cpp
+void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_GrapplerItem* item,
+                        TF_Buffer* optimized_graph_buf, TF_Status* tf_status) {
+
+  // Deserialize input graph
+  plugin::GraphDef graph_def;
+  BufferToMessage(graph_buf, graph_def);
+
+  Status status;
+  // Create GraphView object which provides helper functions to modify graph.
+  GraphView graph_view(graph_def, status);
+  const int num_nodes = graph_def.node_size();
+  for (int i = num_nodes - 1; i >= 0; --i) {
+    // Fetch a node.
+    const auto* node_view = graph_view.GetNode(i);
+    const auto* node_def = node_view->node();
+
+    // Create a new node.
+    NodeDef new_node;
+    new_node.set_name(node_def.name());
+    new_node.set_op(node_def.name());
+
+    // Add new nodes into graph.
+    Mutation* mutation = graph_view.GetMutationBuilder();
+    mutation->AddNode(std::move(new_node), &status);
+    mutation->Apply();
+  }
+
+  // Serialize output graph.
+  plugin::GraphDef optimized_graph_def = graph_def;
+  MessageToBuffer(optimized_graph_def, optimized_graph_buf);
+}
+```
+
+* `plugin::GraphDef`: This is a C++ object generated by protobuf toolchain with a predefined structure in graph.proto. Noted that the namespace has changed from `tensorflow::` to `plugin::`, which means it is a class defined in plugin. Plugin should maintain protobuf toolchain and graph.proto files. They should copy graph.proto from tensorflow proper and change the package name to `plugin`.
+
+  Here lists all proto files needed in plugin:
+    - [attr_value.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/attr_value.proto): AttrValue, NameAttrList
+    - [cost_graph.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/cost_graph.proto): CostGraphDef
+    - [function.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/function.proto): FunctionDefLibrary, FunctionDef, GradientDef
+    - [graph.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/graph.proto): GraphDef
+    - [node_def.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/node_def.proto): NodeDef
+    - [op_def.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/op_def.proto): OpDef, OpDeprecation, OpList
+    - [op_performance_data.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/grappler/costs/op_performance_data.proto): SessionInfo, OpInfo, NormalDistribution, LogNormalDistribution, OpPerformance, OpPerformanceList
+    - [resource_handle.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/resource_handle.proto): ResourceHandleProto
+    - [tensor.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/tensor.proto): TensorProto, VariantTensorDataProto
+    - [tensor_shape.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/tensor_shape.proto): TensorShapeProto
+    - [types.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/types.proto): DataType, SpecializedType
+    - [versions.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/versions.proto): VersionDef
+
+* `BufferToMessage`, `MessageToBuffer`: They are serialization/deserialization functions for `TF_Buffer` and protobuf objects(e.g., `GraphDef`). Plugin can deserialize input graph(`TF_Buffer`) to plugin `GraphDef` object, and serialize the output `GraphDef` object when graph transformation is finished.
+
+  Example:
+  ```cpp
+  Status MessageToBuffer(const protobuf::MessageLite& in, TF_Buffer* out) {
+    if (out->data != nullptr) {
+      return errors::InvalidArgument("Passing non-empty TF_Buffer is invalid.");
+    }
+    const size_t proto_size = in.ByteSizeLong();
+    void* buf = malloc(proto_size);
+    if (buf == nullptr) {
+      return errors::ResourceExhausted(
+          "Failed to allocate memory to serialize message of type '",
+          in.GetTypeName(), "' and size ", proto_size);
+    }
+    if (!in.SerializeWithCachedSizesToArray(static_cast<uint8*>(buf))) {
+      free(buf);
+      return errors::InvalidArgument(
+          "Unable to serialize ", in.GetTypeName(),
+          " protocol buffer, perhaps the serialized size (", proto_size,
+          " bytes) is too large?");
+    }
+    out->data = buf;
+    out->length = proto_size;
+    out->data_deallocator = [](void* data, size_t length) { free(data); };
+    return Status::OK();
+  }
+
+  Status BufferToMessage(const TF_Buffer* in, protobuf::MessageLite& out) {
+    if (in == nullptr || !out.ParseFromArray(in->data, in->length)) {
+      return errors::InvalidArgument("Unparsable proto");
+    }
+    return Status::OK();
+  }
+  ```
+
+* `GraphView`, `Mutation`: These are helper classes provided by TensorFlow in [tensorflow/core/grappler/utils](https://github.com/tensorflow/tensorflow/tree/r2.5/tensorflow/core/grappler/utils) folder to modify `GraphDef` objects. Plugin authors can manually copy this part into plugin side, or they can write their own util functions.
+
+§  **Optimizer util functions**
+
+Modular TensorFlow provides three opaque handles, i.e.,  `TF_GrapplerItem`, `TF_GraphProperties` and `TF_FunctionLibraryDefinition`, and related C APIs for retrieving necessary graph information:
+  - `TF_GrapplerItem` represents a combination of a graph, and some more information about feed/fetch nodes, preserved nodes.
+  - `TF_GetNodesToPreserveListSize()`,`TF_GetNodesToPreserveList()`: Get a set of preserved node names which can not be transformed or removed during the graph transformation. This includes feed and fetch nodes, keep_ops, init_ops.
+  - `TF_GetFetchNodesListSize()`,`TF_GetFetchNodesList()`: Get a set of node names for fetch nodes.
+
+    An example of how to get a set of preserved nodes:
+
+    ```cpp
+    void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_GrapplerItem* item,
+                            TF_Buffer* optimized_graph_buf, TF_Status* tf_status) {
+      TF_GrapplerItem* item;
+      TF_Status* status = TF_NewStatus();
+      int num_values = 0, storage_size = 0;
+      TF_GetNodesToPreserveListSize(item, &num_values, &storage_size, status);
+      CHECK_EQ(TF_OK, TF_GetCode(status))
+          << "Error for TF_GetNodesToPreserveListSize";
+
+      std::unique_ptr<char*[]> values(new char*[num_values]);
+      std::unique_ptr<size_t[]> lens(new size_t[num_values]);
+      std::unique_ptr<char[]> storage(new char[storage_size]);
+      TF_GetNodesToPreserveList(
+          item, reinterpret_cast<void**>(values.get()), lens.get(), num_values,
+          reinterpret_cast<void*>(storage.get()), storage_size, status);
+      CHECK_EQ(TF_OK, TF_GetCode(status)) << "Error for TF_GetNodesToPreserveList";
+
+      std::unordered_set<string> nodes;
+      for (int32_t i = 0; i < num_values; ++i) {
+        nodes.insert(string(values[i], lens[i]));
+      }
+      TF_DeleteStatus(status);
+    }
+    ```
+
+- `TF_GraphProperties` can be used to infer OpInfo::TensorProperties. Typical use case is to first call `TF_InferStatically` to statically infer shapes and then call `TF_GetInputPropertiesList` to get input shapes.
+  - `TF_NewGraphProperties()`,`TF_DeleteGraphProperties()`: Create/Destroy GraphProperties.
+  - `TF_InferStatically()`: Infer tensor shapes through abstract interpretation.
+  - `TF_GetInputPropertiesListSize()`,`TF_GetInputPropertiesList()`: Get a list of input `OpInfo::TensorProperties` given node name.
+
+    An example of how to get input properties:
+
+    ```cpp
+    void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_GrapplerItem* item,
+                            TF_Buffer* optimized_graph_buf, TF_Status* tf_status) {
+      TF_GrapplerItem* item;
+      TF_Status* status = TF_NewStatus();
+      int num_values = 0, storage_size = 0;
+      TF_GraphProperties* graph_properties = TF_NewGraphProperties(item);
+      TF_InferStatically(graph_properties, true, false, false, false, status);
+      CHECK_EQ(TF_OK, TF_GetCode(status)) << "Error for TF_InferStatically";
+
+      for (const NodeDef& node : item->graph.node()) {
+        int num_values = 0;
+        TF_GetInputPropertiesListSize(graph_properties, node.name().c_str(),
+                                      &num_values, status);
+        CHECK_EQ(TF_OK, TF_GetCode(status));
+
+        std::vector<TF_Buffer*> in_props_buf(num_values, TF_NewBuffer());
+        TF_GetInputPropertiesList(graph_properties, node.name().c_str(),
+                                  in_props_buf.data(), num_values, status);
+        CHECK_EQ(TF_OK, TF_GetCode(status));
+
+        OpInfo::TensorProperties in_props;
+        Status s = BufferToMessage(in_props_buf[0], &in_props);
+
+        for (int i = 0; i < in_props_buf.size(); i++)
+          TF_DeleteBuffer(in_props_buf[i]);
+      }
+      TF_DeleteGraphProperties(graph_properties);
+      TF_DeleteStatus(status);
+    }
+    ```
+
+- `TF_FunctionLibraryDefinition` maintains a map between op names and op definitions, typical use case is to look up an OpDef by op name, and then get some op attributes.
+  - `TF_NewFunctionLibraryDefinition()`,`TF_DeleteFunctionLibraryDefinition()`: Create/Destroy NewFunctionLibraryDefinition.
+  - `TF_LookUpOpDef()`: Shorthand for calling LookUp to get the OpDef from FunctionLibraryDefinition given op name.
+
+    An example of how to get OpDef:
+
+    ```cpp
+    void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_GrapplerItem* item,
+                            TF_Buffer* optimized_graph_buf, TF_Status* tf_status) {
+      TF_GrapplerItem* item;
+      TF_Buffer* g_buf = TF_NewBuffer();
+      TF_Buffer* op_buf = TF_NewBuffer();
+      TF_Status* status = TF_NewStatus();
+
+      string name = "Add";
+      Status s = MessageToBuffer(item->graph, g_buf);
+      TF_FunctionLibraryDefinition* func =
+          TF_NewFunctionLibraryDefinition(g_buf, status);
+      TF_LookUpOpDef(func, name.c_str(), op_buf, status);
+      OpDef op_def;
+      BufferToMessage(op_buf, op_def);
+
+      TF_DeleteBuffer(g_buf);
+      TF_DeleteBuffer(op_buf);
+      TF_DeleteStatus(status);
+      TF_DeleteFunctionLibraryDefinition(func);
+    }
+    ```
 
 ## **Plugin build**
 
@@ -612,7 +860,7 @@ Step1: install TF with:
 ```
 python3 -m venv venv
 source venv/bin/activate
-pip install tf-nightlyy</td>
+pip install tensorflow
 ```
 Step2: Then build plugin with:
 ```

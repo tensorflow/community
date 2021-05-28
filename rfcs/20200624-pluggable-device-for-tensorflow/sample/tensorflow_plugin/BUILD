@@ -4,6 +4,7 @@ cc_binary(
     visibility = ["//visibility:public"],
     deps = [
         "//tensorflow_plugin/src:plugin_device",
+        "//tensorflow_plugin/src:plugin_graph",
         "//tensorflow_plugin/src:plugin_kernel",
     ],
 )

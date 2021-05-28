@@ -7,6 +7,11 @@
 
 #include <stdio.h>
 
+void plugin_get_device_count(const SP_Platform* platform, int* device_count,
+                             TF_Status* status) {
+  *device_count = 1;
+}
+
 void plugin_create_device(const SP_Platform* platform,
                           SE_CreateDeviceParams* params,
                           TF_Status* const status) {
@@ -259,7 +264,7 @@ void plugin_destroy_platform_fns(SP_PlatformFns* const platform_fns) {}
 
 void SE_InitPluginFns(SE_PlatformRegistrationParams* const params,
                       TF_Status* const status) {
-  params->platform->visible_device_count = 1;
+  params->platform_fns->get_device_count = plugin_get_device_count;
   params->platform_fns->create_device = plugin_create_device;
   params->platform_fns->destroy_device = plugin_destroy_device;
   params->platform_fns->create_device_fns = plugin_create_device_fns;

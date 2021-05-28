@@ -76,7 +76,7 @@ cc_library(
 genrule(
     name = "protoc",
     outs = ["protoc.bin"],
-    cmd = "ln -s $$(which protoc) $@",
+    cmd = "which protoc; pwd; ln -s $$(which protoc) $@",
     executable = 1,
     visibility = ["//visibility:public"],
 )

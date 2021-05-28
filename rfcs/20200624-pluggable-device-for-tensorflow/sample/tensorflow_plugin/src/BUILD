@@ -16,6 +16,20 @@ cc_library(
 )
 
 cc_library(
+    name = "plugin_graph",
+    srcs = ["plugin_graph.cc"],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        ":plugin_device",
+        "//tensorflow_plugin/src/graph:plugin_optimizer",
+        "//tensorflow_plugin/src/kernels/cpu:cpu_kernel_impl",
+        "@local_config_tf//:tf_header_lib",
+    ],
+    alwayslink = True,
+)
+
+cc_library(
     name = "plugin_kernel",
     srcs = ["plugin_kernel.cc"],
     hdrs = ["plugin_kernel.h"],

@@ -7,5 +7,4 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-
 %{TF_HEADER_GENRULE}
