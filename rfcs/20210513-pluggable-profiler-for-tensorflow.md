@@ -85,7 +85,7 @@ Profiler uses `RunMetadata` and `XSpace` to store the performance data collected
 On the plugin side, plugin will collect performance data with its own profiler infrastructures. When TensorFlow invokes `CollectData()`, plugin transforms the performance data to `RunMetadata` and `XSpace` and then serializes `RunMetadata` and `XSpace` to the buffer provided by TensorFlow. To successfully serialize the object, plugin writers should keep a copy of `config.proto` and `xspace.proto`, and make it exactly the same as that in the TensorFlow side.
 
 ### Detailed API
-The C API will be placed in `tensorflow/c/experimental/profiler.h`.
+The C API will be placed in `tensorflow/c/experimental/profiler/profiler.h`.
 ```c++
 #define TP_MAJOR 0
 #define TP_MINOR 0
