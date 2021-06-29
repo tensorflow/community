@@ -24,19 +24,14 @@ This RFC provides a plugin infrastructure for extending third-party device profi
 
 ### Design Overview
 
-This RFC is intended to provide a set of C APIs for plugin writers to implement and register their own pluggable profilers. To make C APIs portable, we propose serialized `XSpace` and `RunMetadata` as the objects to pass between TensorFlow framework and plugin. When the framework invokes `CollectData()`, the plugin serializes `XSpace` and `RunMetadata` into sufficiently sized buffers provided by the framework. Subsequently, the framework deserializes these buffers back into `XSpace` and `RunMetadata`, and generates a trace view and a set of summaries based on these collected data.
+This RFC is intended to provide a set of C APIs for plugin writers to implement and register their own pluggable profilers. To make C APIs portable, we propose serialized `XSpace` as the objects to pass between TensorFlow framework and plugin. When the framework invokes `CollectData()`, the plugin serializes `XSpace` into a sufficiently sized buffer provided by the framework. Subsequently, the framework deserializes these buffers back into `XSpace`, and generates a trace view as well as a set of summaries based on these collected data.
 
 - Xspace:
 <div align=center>
 <img src=20210513-pluggable-profiler-for-tensorflow/Xspace.png>
 </div>
 
-- RunMetadata:
-<div align=center>
-<img src=20210513-pluggable-profiler-for-tensorflow/RunMetadata.png>
-</div>
-
-To achieve the goal, this RFC extends the TensorFlow profiler class hierarchy to add a new profiler named `PluggableProfiler` which is built on top of a set of C APIs, all plugin writers who want to integrate their own device profilers to  current TensorFlow runtime only need to implement Profiler C APIs(shown as diagram of Architecture overview).
+To achieve the goal, this RFC extends the TensorFlow profiler class hierarchy to add a new profiler named `PluggableProfiler` which is built on top of a set of C APIs, all plugin writers who want to integrate their own device profilers to  current TensorFlow runtime only need to implement Profiler C APIs (shown as diagram of Architecture overview).
 <div align=center>
 <img src=20210513-pluggable-profiler-for-tensorflow/Architecture.png>
 </div>
@@ -44,8 +39,8 @@ To achieve the goal, this RFC extends the TensorFlow profiler class hierarchy to
 ### Versioning Strategy and Stability
 * **Profiler C API**
     Version strategy of Profiler C API follows Semantic Versioning 2.0.0 ([semver](http://semver.org/)). Each release version has a format `MAJOR.MINOR.PATCH`, as outlined in [TensorFlow version compatibility](https://www.tensorflow.org/guide/versions#semantic_versioning_20). Struct size is used to track compatibility. More details can be found in [StreamExecutor C API Versioning Strategy RFC](https://github.com/tensorflow/community/blob/master/rfcs/20200612-stream-executor-c-api/C_API_versioning_strategy.md)
-* **XPlane and RunMetadata**
-   The compatibility of `XPlane` and `RunMetadata` between plugin and TensorFlow follows the same compatibility [rules](https://developers.google.com/protocol-buffers/docs/cpptutorial?hl=en#extending-a-protocol-buffer) and [guarantees](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#updating) as protobuf library.
+* **XPlane**
+   The compatibility of `XPlane` between plugin and TensorFlow follows the same compatibility [rules](https://developers.google.com/protocol-buffers/docs/cpptutorial?hl=en#extending-a-protocol-buffer) and [guarantees](https://developers.google.com/protocol-buffers/docs/proto3?hl=en#updating) as protobuf library.
 
 ## Implementation Conventions
 
@@ -70,19 +65,17 @@ The table below summarizes all structures defined and the functionality they inv
 | start profiling | `TP_ProfilerFns::start` | None | None |
 | stop profiling | `TP_ProfilerFns::stop` | None | None |
 | collect Xspace | `TP_ProfilerFns::collect_data_xspace` | None | None |
-| collect RunMetadata | `TP_ProfilerFns::collect_data_run_metadata` | None | None |
 
 #### Registration
 Core TensorFlow will register a new ProfilerInterface with [ProfilerFactory](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_factory.h#L29).
 1. Core TensorFlow loads the function `TF_InitProfiler` from plugin's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins".
 2. Core TensorFlow populates `TF_ProfilerRegistrationParams` and passes it in a call to `TF_InitProfiler`. Core TensorFlow owns the memory of `TF_ProfilerRegistrationParams`'s `profiler` and `profiler_fns`.
     * In `TF_InitProfiler`, plugin populates `TF_ProfilerRegistrationParams`'s `profiler` and `profiler_fns`.
-3. Core TensorFlow can now create a `PluginTracerInterface` through functions in `TP_ProfilerFns` and register it to `PluginInterfaceFactory`(contains a vector of `PluginTracerInterface` registered by multiple plugins);
-4. Core Tensorflow will create a `PluggableProfiler` during [ProfilerSession](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_session.cc#L109) setup.
+3. Core Tensorflow will create a `PluggableProfiler` during [ProfilerSession](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_session.cc#L109) setup.
 
 #### Protobuf class
-Profiler uses `RunMetadata` and `XSpace` to store the performance data collected by backends. With these two types of data structures, TensorFlow's profiler tools can generate various views of performance, such as timeline, memory consumption, performance of every TensorFlow op and set of summaries. `RunMedata` and `XSpace` are C++ objects generated by protobuf toolchain with a predefined structure in [config.proto](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/protobuf/config.proto#L721) and [xplane.proto](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/protobuf/xplane.proto#L9).
-On the plugin side, plugin will collect performance data with its own profiler infrastructures. When TensorFlow invokes `CollectData()`, plugin transforms the performance data to `RunMetadata` and `XSpace` and then serializes `RunMetadata` and `XSpace` to the buffer provided by TensorFlow. To successfully serialize the object, plugin writers should keep a copy of `config.proto` and `xspace.proto`, and make it exactly the same as that in the TensorFlow side.
+Profiler uses `XSpace` to store the performance data collected by backends. With this type of data structure, TensorFlow's profiler tools can generate various views of performance, such as timeline, memory consumption, performance of every TensorFlow op and set of summaries. `XSpace` is C++ object generated by protobuf toolchain with a predefined structure in [xplane.proto](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/protobuf/xplane.proto#L9).
+On the plugin side, plugin will collect performance data with its own profiler infrastructures. When TensorFlow invokes `CollectData()`, plugin transforms the performance data to `XSpace` and then serializes `XSpace` to the buffer provided by TensorFlow. To successfully serialize the object, plugin writers should keep a copy of `xspace.proto`, and make it exactly the same as that in the TensorFlow side.
 
 ### Detailed API
 The C API will be placed in `tensorflow/c/experimental/profiler/profiler.h`.
@@ -112,13 +105,8 @@ typedef struct TP_ProfilerFns {
   // Stops profiling.
   void (*stop)(const TP_Profiler* profiler, TF_Status* status);
 
-  // Saves collected profile data into RunMetadata and serializes it to the buffer.
-  // If either this or `collect_data_xspace` have been called, subsequent calls might
-  // return empty data.
-  void (*collect_data_run_metadata)(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status)
-
   // Saves collected profile data into XSpace and serializes it to the buffer.
-  // If either this or `collect_data_run_metadata` have been called, subsequent calls might
+  // If this have been called, subsequent calls might
   // return empty data.
   void (*collect_data_xspace)(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status);
 } TP_ProfilerFns;
@@ -187,33 +175,107 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
     // DeviceType::TPU: only CPU/TPU will be profiled.
     // DeviceType::PLUGGABLE_DEVICE: all pluggable devices with profiler enabled will be profiled. 
     DeviceType device_type = 6;
+    
+    // The library implementing PluggableProfiler owns the interpretation of
+    // serialized_pluggable_profiler_options.
+    bytes serialized_pluggable_profiler_options = 11;
+  }
   ```
 Because `device_type` here is an enum, we cannot differentiate between multiple pluggable profilers. Therefore, we define a common device type `PLUGGABLE_DEVICE` for them, such that if `ProfileOptions` is configured with a `PLUGGABLE_DEVICE` type, then all the registered pluggable profilers will be enabled.
 
-* **Plugin Profiler Load and Initialization**
+* **PluggableProfiler**
+  `PluggableProfiler` is the implementation of [ProfilerInterface](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_interface.h#L33), TensorFlow will instantiate `PluggableProfiler` for each plugin if the plugin provides`TF_InitProfiler` implementation.  
 
-  Core TensorFlow will load `TF_InitProfiler` from plugin's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins" and pass the address of `TF_InitProfiler` symbol to `InitPluginProfiler` to do initialization. Here we define a `PluginInterfaceFatory` to store all the registered pluggable profilers, all of pluggable profilers in this factory will be enabled if `device_type` in `ProfileOptions` is configured as `PLUGGABLE_DEVICE`.
   ```c++
-  class PluginInterfaceFactory {
+  class PluggableProfiler: public tensorflow::profiler::ProfilerInterface {
    public:
-    static void Register(PluginTracerInterface plugin_interface) {
-      tensorflow::mutex_lock l(*get_factory_lock());
-      GetPluginTracerInterfaces()->push_back(plugin_interface);
+    // The caller must have validated profiler_fns and profiler.
+    std::unique_ptr<tensorflow::profiler::ProfilerInterface> CreatePluggableProfiler(
+      const ProfileOptions& options, TP_ProfilerFns* profiler_fns,
+      TP_Profiler* profiler) {
+      if (options.device_tracer_level() == 0) {
+        return nullptr;
+      }
+      if (options.device_type() != ProfileOptions::UNSPECIFIED
+          && options.device_type() != ProfileOptions::PLUGGABLE_DEVICE) {
+        return nullptr;
+      }
+      return absl::WrapUnique(new PluggableProfiler(profiler_fns, profiler));
+    } 
+  
+    Status Start() override {
+      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
+      profiler_fns_->start(profiler_, c_status.get());
+      return tensorflow::StatusFromTF_Status(c_status.get());
     }
   
-    static std::vector<PluginTracerInterface>* GetPluginTracerInterfaces() {
-      static auto factories = new std::vector<PluginTracerInterface>();
-      return factories;
+    Status Stop() override {
+      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
+      profiler_fns_->stop(profiler_, c_status.get());
+      return tensorflow::StatusFromTF_Status(c_status.get());
+    }
+  
+    Status CollectData(XSpace* space) override {
+      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
+      // Get size of buffer required for Plugin to serialize XSpace ito.
+      size_t size_in_bytes;
+      profiler_fns_->collect_data_xspace(profiler_, /*buffer=*/nullptr,
+         				&size_in_bytes, c_status.get());
+  
+      // Prepare an appropriately sized buffer.
+      if (size_in_bytes > 0) {
+        std::vector<uint8_t> buffer(size_in_bytes);
+        profiler_fns_->collect_data_xspace(profiler_, buffer.data(),
+         				  &size_in_bytes, c_status.get());
+        // Desearialize XSpace from the buffer and return it.
+        XSpace plugin_space;
+        plugin_space.ParseFromArray(buffer.data(), buffer.size());
+        for (XPlane& plugin_plane: *plugin_space.mutable_planes()) {
+          XPlane* plane = space->add_planes();
+          plane->Swap(&plugin_plane);
+        }
+      }
+      return tensorflow::StatusFromTF_Status(c_status.get());
     }
   
    private:
-    static tensorflow::mutex* get_factory_lock() {
-      static tensorflow::mutex factory_lock(LINKER_INITIALIZED);
-      return &factory_lock;
+    PluggableProfiler(TP_ProfilerFns* profiler_fns, TP_Profiler* profiler) 
+      : profiler_fns_(profiler_fns), profiler_(profiler) {}
+    
+    TP_ProfilerFns* profiler_fns_;
+    TP_Profiler* profiler_;
+  }
+  ```
+
+* **PluggableProfiler Initialization and Registration**
+
+  Core TensorFlow will load `TF_InitProfiler` from plugin's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins" and pass the address of `TF_InitProfiler` symbol to `InitPluginProfiler` to do initialization and registration. TensorFlow retrieves `TF_ProfilerRegistrationParams` from plugin and do the compability checks. If pass, TensorFlow will register PluggableProfiler creation function to the ProfilerFactroy.
+
+  ```c++
+  class PluggableProfilerFactory{
+   public:
+    PluggableProfilerFactory(TP_Profiler profiler,
+  			   void (*destroy_profiler)(TP_Profiler*),
+  			   TP_ProfilerFns profiler_fns,
+  			   void (*destroy_profiler_fns)(TP_ProfilerFns*))
+    	: profiler_(std::move(profiler)),
+            destroy_profiler_(destroy_profiler),
+            profiler_fns_(std::move(profiler_fns)),
+            destroy_profiler_fns_(destroy_profiler_fns) {}
+  
+    ~PluggableProfilerFactory() {
+      destroy_profiler_(&profiler_);
+      destroy_profiler_fns_(&profiler_fns_);
+    
+    private:
+      TP_Profiler profiler_{TP_PROFILER_STRUCT_SIZE};
+      void (*destroy_profiler_)(TP_Profiler*);
+      TP_ProfilerFns profiler_fns_{TP_PROFILER_FNS_STRUCT_SIZE};
+      void (*destroy_profiler_fns_)(TP_ProfilerFns*);
     }
-  };
-
-
+  
+  }
+  
   Status InitPluginProfiler(TFInitProfilerFn init_fn) {
     TF_ProfilerRegistrationParams params{TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE};
     TP_Profiler profiler{TP_PROFILER_STRUCT_SIZE};
@@ -229,11 +291,21 @@ Because `device_type` here is an enum, we cannot differentiate between multiple 
     TF_RETURN_IF_ERROR(ValidateTPProfilerRegistrationParams(params));
     TF_RETURN_IF_ERROR(ValidateTPProfiler(profiler));
     TF_RETURN_IF_ERROR(ValidateTPProfilerFns(profiler_fns));
-    // Register new profiler
-    PluginInterfaceFactory::Register(PluginTracerInterface(std::move(profiler), params.destroy_profiler, std::move(profiler_fns), params.destroy_profiler_fns));
+  
+    PluggableProfilerFactory factory(std::move(profiler),
+  				   params.destroy_profiler,
+  				   std::move(profiler_fns),
+  				   params.destroy_profiler_fns);
+    )
+  
+    tensorflow::profiler::ProfilerFactory::RegisterProfilerFactory(
+      [factory = std::move(factory)](const ProfileOptions& options) {
+        factory.CreatePluggableProfiler(options);
+      });
+  
     return Status::OK();
   }
-
+  
   static Status InitProfilerModule(void* dso_handle) {
     void *dso_symbol;
     tensorflow::Env* env = tensorflow::Env::Default();
@@ -244,8 +316,7 @@ Because `device_type` here is an enum, we cannot differentiate between multiple 
   
     return Status::OK();
   }
-
-
+  
   Status RegisterPluggableDevicePlugin(void* dso_handle) {
     // Step 1 Init Device/Graph Module
     TF_RETURN_IF_ERROR(InitDeviceAndGraphModule(dso_handle));
@@ -258,148 +329,6 @@ Because `device_type` here is an enum, we cannot differentiate between multiple 
   
     return Status::OK();
   }
-
-  ```
-* **PluginTracerInterface**
-
-  PluginTracerInterface is a pluggable profiler instance, it is the component of forwarding `Start()`, `Stop()`, `CollectData()` requests from `PluggableProfiler` to plugin profiler implementations. It is also responsible for deserializing `Xspace` and `RunMetadata` protocol buffer objects retrieved from the plugin.
-  ```c++
-  class PluginTracerInterface {
-   public:
-    explicit PluginTracerInterface(TP_Profiler profiler,
-                              void (*destroy_profiler)(TP_Profiler*),
-                              TP_ProfilerFns profiler_fns,
-                              void (*destroy_profiler_fns)(TP_ProfilerFns*))
-            : profiler_(std::move(profiler)),
-              destroy_profiler_(destroy_profiler),
-              profiler_fns_(std::move(profiler_fns)),
-              destroy_profiler_fns_(destroy_profiler_fns) {}
-
-    ~PluginTracerInterface() {
-      destroy_profiler_(&profiler_);
-      destroy_profiler_fns_(&profiler_fns_);
-    }
-
-    Status DoStart() {
-      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
-      profiler_fns_.start(&profiler_, c_status.get());
-      Status s = tensorflow::StatusFromTF_Status(c_status.get());
-      return s;
-    }
-
-    Status DoStop() {
-      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
-      profiler_fns_.stop(&profiler_, c_status.get());
-      Status s = tensorflow::StatusFromTF_Status(c_status.get());
-      return s;
-    }
-
-    Status DoCollectData(RunMetadata* run_metadata) {
-      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
-      // Get size of buffer required for Plugin to serialize RunMetadata into.
-      size_t size_in_bytes;
-      profiler_fns_.collect_data_run_metadata(&profiler_, /*buffer=*/nullptr, &size_in_bytes, c_status.get())
-
-      // Prepare an appropriately sized buffer.
-      if (size_in_bytes > 0) {
-        std::vector<uint8_t> buffer(size_in_bytes);
-        profiler_fns_.collect_data_run_metadata(&profiler_, buffer.data(), &size_in_bytes, c_status.get())
-      }
-      return Status::OK();
-    }
-
-    Status DoCollectData(XSpace* space) {
-      std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
-      // Get size of buffer required for Plugin to serialize XSpace into.
-      size_t size_in_bytes;
-      profiler_fns_.collect_data_xspace(&profiler_, /*buffer=*/nullptr, &size_in_bytes, c_status.get());
-
-      // Prepare an appropriately sized buffer.
-      if (size_in_bytes > 0) {
-        std::vector<uint8_t> buffer(size_in_bytes);
-        profiler_fns_.collect_data_xspace(&profiler_, buffer.data(), &size_in_bytes, c_status.get());
-        // Deserialize XSpace from the buffer and return it.
-        XSpace plugin_space;
-        plugin_space.ParseFromArray(buffer.data(), buffer.size());
-        for (XPlane& plugin_plane: *plugin_space.mutable_planes()) {
-          XPlane* plane = space->add_planes();
-          plane->Swap(&plugin_plane);
-        }
-      }
-      Status s = tensorflow::StatusFromTF_Status(c_status.get());
-      return s;
-    }
-
-   private:
-     TP_Profiler profiler_;
-     void (*destroy_profiler_)(TP_Profiler*);
-     TP_ProfilerFns profiler_fns_;
-     void (*destroy_profiler_fns_)(TP_ProfilerFns*);
-  };
-
-  ```
-* **PluggableProfiler Registration**
-
-  `PluggableProfiler` is the implementation of [ProfilerInterface](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_interface.h#L33), it controls all the registered pluggable profilers. For example, if `device_type` of `ProfileOptions` is set as `PLUGGABLE_DEVICE`, all the registered pluggable profilers will be enabled, when `ProfilerSession` invokes `profiler->Start()`, all the registered pluggable profilers will start the profiling.
-  ```c++
-  class PluggableProfiler : public ProfilerInterface {
-   public:
-     explicit PluggableProfiler(std::vector<PluginTracerInterface> plugin_interfaces)
-             : plugin_interfaces_(plugin_interfaces) {}
-
-     ~PluggableProfiler() override {}
-
-     Status Start() override {
-       Status status;
-       for (auto& profiler_interface : plugin_interfaces_) {
-         status.Update(profiler_interface.DoStart());
-       }
-       return status;
-     }
-
-     Status Stop() override {
-       Status status;
-       for (auto& plugin_interface : plugin_interfaces_) {
-         status.Update(plugin_interface.DoStop());
-       }
-       return status;
-     }
-     // Unsupported.
-     Status CollectData(RunMetadata* run_metadata) override {
-       Status status;
-       for (auto& plugin_interface : plugin_interfaces_) {
-         status.Update(plugin_interface.DoCollectData(run_metadata));
-       }
-       return status;
-     }
-
-     Status CollectData(XSpace* space) override {
-       Status status;
-       for (auto& plugin_interface : plugin_interfaces_) {
-         status.Update(plugin_interface.DoCollectData(space));
-       }
-       return status;
-     }
-
-   private:
-     std::vector<PluginTracerInterface> plugin_interfaces_;
-  };
-
-  std::unique_ptr<ProfilerInterface> CreatePluggableProfiler(
-    const ProfileOptions& options) {
-    if (options.device_type() != ProfileOptions::PLUGGABLE_DEVICE &&
-        options.device_type() != ProfileOptions::UNSPECIFIED) {
-      return nullptr;
-    }
-    return absl::make_unique<PluggableProfiler>(*PluginInterfaceFactory::GetPluginTracerInterfaces());
-  }
-
-
-  auto register_pluggable_tracer_factory = [] {
-    RegisterProfilerFactory(&CreatePluggableProfiler);
-    return 0;
-  }();
-
   ```
 
 #### Plugin
@@ -413,15 +342,6 @@ void profiler_start(const TP_Profiler* profiler, TF_Status* status) {
 void profiler_stop(const TP_Profiler* profiler, TF_Status* status) {
   // Disable Profiler
   ...
-}
-
-void profiler_collect_data_run_metadata(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status) {
-  RunMetadata metadata = get_my_run_metadata(); // Plugin generates RunMetadata based on collected profiler data.
-  *size_in_bytes = metadata.ByteSizeLong(); // get the size of RunMetadata
-  if (buffer == nullptr) {
-    return; // TensorFlow will first get the size of RunMetadata, then allocate the big enough buffer and pass it to plugin for retrieving RunMetadata.
-  }
-  metadata.SerializeToArray(buffer, metadata.ByteSizeLong());
 }
 
 void profiler_collect_data_xspace(const TP_Profiler* profiler, uint8_t* buffer, size_t* size_in_bytes, TF_Status* status) {
@@ -448,11 +368,24 @@ void TF_InitProfiler(TF_ProfilerRegistrationParams* params, TF_Status* status) {
   params->profiler_fns->start =  profiler_start;
   params->profiler_fns->stop = profiler_stop;
   params->profiler_fns->collect_data_xspace = profiler_collect_data_xspace;
-  params->profiler_fns->collect_data_run_metadata = profiler_collect_data_run_metadata;
   params->destroy_profiler = profiler_destroy_profiler;
   params->destroy_profiler_fns = profiler_destroy_profiler_fns;
 }
 ```
+
+## Requirements for the Profiler Library
+* If there's no actual device to be profiled (e.g., if running on a machine w/o the required device), the profiler does nothing on Start/Stop and produces no output on CollectData.
+* If the profiled program does not use the device, the profiler produces no output on CollectData.
+e.g., returns 0 as the required buffer size for the serialized XSpace.
+* Restartability: It must be possible to Start/Stop the profiler many times. (Since a single TP_Profiler object is created per library).
+* No (perceivable) overhead: Profiling should not change the observed performance of the profiled job.
+e.g. the step time of a TF training job should be similar with profiling on or off.
+* No OOM: Profiling should not require significant additional memory resources.
+Also, profiling should not cause the process to be killed due to running out-of-memory (OOM).
+* No leaks: any resources (memory) acquired for handling a profiling request should be released by the end of the request.
+Repeated profiling requests should not increase resource utilization over time.
+* No memory corruption: profiling should not corrupt memory due to dangling pointers.
+* No deadlocks: any synchronization necessary to start/stop profiling should not block any application (TF) thread for a long time.
 
 ## **Alternatives Considered**
 
