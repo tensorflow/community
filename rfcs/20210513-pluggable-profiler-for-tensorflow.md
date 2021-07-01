@@ -24,7 +24,7 @@ This RFC provides a plugin infrastructure for extending third-party device profi
 
 ### Design Overview
 
-This RFC is intended to provide a set of C APIs for plugin writers to implement and register their own pluggable profilers. To make C APIs portable, we propose serialized `XSpace` as the objects to pass between TensorFlow framework and plugin. When the framework invokes `CollectData()`, the plugin serializes `XSpace` into a sufficiently sized buffer provided by the framework. Subsequently, the framework deserializes these buffers back into `XSpace`, and generates a trace view as well as a set of summaries based on these collected data.
+This RFC is intended to provide a set of C APIs for plugin writers to implement and register their own pluggable profilers. To make C APIs portable, we propose serialized `XSpace` as the objects to pass between TensorFlow framework and plugin. When the framework invokes `CollectData()`, the plugin serializes `XSpace` into a sufficiently sized buffer provided by the framework. Subsequently, the framework deserializes the buffer back into `XSpace`, and generates a trace view as well as a set of summaries based on these collected data.
 
 - Xspace:
 <div align=center>
@@ -175,10 +175,6 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
     // DeviceType::TPU: only CPU/TPU will be profiled.
     // DeviceType::PLUGGABLE_DEVICE: all pluggable devices with profiler enabled will be profiled. 
     DeviceType device_type = 6;
-    
-    // The library implementing PluggableProfiler owns the interpretation of
-    // serialized_pluggable_profiler_options.
-    bytes serialized_pluggable_profiler_options = 11;
   }
   ```
 Because `device_type` here is an enum, we cannot differentiate between multiple pluggable profilers. Therefore, we define a common device type `PLUGGABLE_DEVICE` for them, such that if `ProfileOptions` is configured with a `PLUGGABLE_DEVICE` type, then all the registered pluggable profilers will be enabled.
