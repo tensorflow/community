@@ -262,8 +262,14 @@ Because `device_type` here is an enum, we cannot differentiate between multiple 
     ~PluggableProfilerFactory() {
       destroy_profiler_(&profiler_);
       destroy_profiler_fns_(&profiler_fns_);
-    
-    private:
+
+    std::unique_ptr<tensorflow::profiler::ProfilerInterface> CreatePluggableProfiler(
+        const ProfileOptions& options) {
+      return PluggableProfiler::CreatePluggableProfiler(options, &profiler_,
+                                                      &profiler_fns_);
+    }
+
+   private:
       TP_Profiler profiler_{TP_PROFILER_STRUCT_SIZE};
       void (*destroy_profiler_)(TP_Profiler*);
       TP_ProfilerFns profiler_fns_{TP_PROFILER_FNS_STRUCT_SIZE};
