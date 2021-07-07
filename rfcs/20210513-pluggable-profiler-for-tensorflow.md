@@ -178,7 +178,7 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
     DeviceType device_type = 6;
   }
   ```
-Because `device_type` here is an enum, we cannot differentiate between multiple pluggable profilers. Therefore, we define a common device type `PLUGGABLE_DEVICE` for them, such that if `ProfileOptions` is configured with a `PLUGGABLE_DEVICE` type, then all the registered pluggable profilers will be enabled.
+Because `device_type` here is an enum, we cannot differentiate between multiple pluggable profilers. Therefore, we define a common device type `PLUGGABLE_DEVICE` for them, so that if `ProfileOptions` is configured with a `PLUGGABLE_DEVICE` type, all the registered pluggable profilers will be enabled.
 
 * **PluggableProfiler**
   `PluggableProfiler` is the implementation of [ProfilerInterface](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/profiler/lib/profiler_interface.h#L33), TensorFlow will instantiate `PluggableProfiler` for each plugin if the plugin provides`TF_InitProfiler` implementation.  
