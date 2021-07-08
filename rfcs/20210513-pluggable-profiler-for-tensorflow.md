@@ -123,9 +123,9 @@ typedef struct TF_ProfilerRegistrationParams {
   int32_t minor_version;
   int32_t patch_version;
 
-  [in/out] Memory owned by core but attributes within are populated by the plugin.
+  // [in/out] Memory owned by core but attributes within are populated by the plugin.
   TP_Profiler* profiler;
-  [in/out] Memory owned by core but attributes within are populated by the plugin.
+  // [in/out] Memory owned by core but attributes within are populated by the plugin.
   TP_ProfilerFns* profiler_fns;
   // [out] Pointer to plugin's `TP_Profiler` clean up function. 
   // Cleans up fields inside `TP_Profiler` that were allocated
@@ -174,7 +174,7 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
     // DeviceType::CPU: only CPU will be profiled.
     // DeviceType::GPU: only CPU/GPU will be profiled.
     // DeviceType::TPU: only CPU/TPU will be profiled.
-    // DeviceType::PLUGGABLE_DEVICE: all pluggable devices with profilers enabled will be profiled. 
+    // DeviceType::PLUGGABLE_DEVICE: only CPU/pluggable devices with profilers will be profiled. 
     DeviceType device_type = 6;
   }
   ```
@@ -263,6 +263,7 @@ Because `device_type` here is an enum, we cannot differentiate between multiple 
     ~PluggableProfilerFactory() {
       destroy_profiler_(&profiler_);
       destroy_profiler_fns_(&profiler_fns_);
+    }
 
     std::unique_ptr<tensorflow::profiler::ProfilerInterface> CreatePluggableProfiler(
         const ProfileOptions& options) {
@@ -288,7 +289,7 @@ Because `device_type` here is an enum, we cannot differentiate between multiple 
     params.patch_version = TP_PATCH;
     params.profiler = &profiler;
     params.profiler_fns = &profiler_fns;
-    OwnedTFStatus c_status(TF_NewStatus());
+    std::unique_ptr<TF_Status, TFStatusDeleter> c_status(TF_NewStatus());
     init_fn(&params, c_status.get());
     TF_RETURN_IF_ERROR(tensorflow::StatusFromTF_Status(c_status.get()));
     TF_RETURN_IF_ERROR(ValidateTPProfilerRegistrationParams(params));
@@ -299,11 +300,10 @@ Because `device_type` here is an enum, we cannot differentiate between multiple 
   				   params.destroy_profiler,
   				   std::move(profiler_fns),
   				   params.destroy_profiler_fns);
-    )
   
     tensorflow::profiler::ProfilerFactory::RegisterProfilerFactory(
       [factory = std::move(factory)](const ProfileOptions& options) {
-        factory.CreatePluggableProfiler(options);
+        return factory.CreatePluggableProfiler(options);
       });
   
     return Status::OK();
