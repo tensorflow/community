@@ -1,10 +1,10 @@
 # Extension Types
 
-| Status        | Accepted                                            |
+| Status        | Approved                                             |
 :-------------- |:---------------------------------------------------- |
 | **Authors**   | Edward Loper (edloper@google.com) |
 | **Sponsor**   | Alex Passos (apassos@google.com)                     |
-| **Updated**   | 2020-07-21                                           |
+| **Updated**   | 2020-08-11                                           |
 
 ## Objective
 
@@ -16,7 +16,7 @@ object-oriented Python types_** that are supported by TensorFlow APIs.
 Object oriented types can make systems more readable, modular, maintainable.
 However, most TensorFlow APIs do not currently support user-defined Python
 types.  This includes both high-level APIs (such as `Keras`, `tf.function`,
-`tf.SavedModel`) and lower-level APIs (such as `tf.while_loop` and `tf.add`).  
+`tf.SavedModel`) and lower-level APIs (such as `tf.while_loop` and `tf.add`).
 
 This RFC proposes a set of protocols that will allow TensorFlow APIs to handle
 user-defined Python types.  A version of this interface is already used
@@ -94,18 +94,20 @@ supported by the following APIs:
   `SavedModels`.
 * **tf.function**: User-defined types can be used as arguments and return
   values for functions wrapped with the `@tf.function` decorator.
-* **While Loops**: User-defined types can be used as loop variables in 
+* **While Loops**: User-defined types can be used as loop variables in
   `tf.while_loop`, and can be used as arguments and return values for the
   while-loop's body.
 * **Conditionals**: User-defined types can be conditionally selected using
   `tf.cond` and `tf.case`.
 * **py_function**: User-defined types can be used as arguments and return
   values for the function defined by `tf.py_function`.
-* **Tensor ops**: User-defined types can optionally be supported by most ops
-  that accept Tensor inputs (e.g., `tf.matmul`, `tf.gather`, and
+* **Tensor ops**: User-defined types can _optionally_ be supported by most ops
+  that accept `Tensor` inputs (e.g., `tf.matmul`, `tf.gather`, and
   `tf.reduce_sum`).
 * **Distribution Strategy**: User-defined types can be used as per-replica
   values.
+* **Gradients**: Gradients can be calculated for graphs that use extension
+  types. Extension types can also be used as inputs for gradients.
 
 ## Background
 
@@ -122,7 +124,7 @@ dispatch registry), and updates those interfaces to be simpler and more robust:
 
 In the design proposed by this RFC, the `CompositeTensor` base class is replaced
 by a `tf.ExtensionType` protocol; and the dispatch registry is replaced by a
-`tf.DispatchableType `protocol.  The internal implementation of type-based
+`tf.DispatchableType` protocol.  The internal implementation of type-based
 dispatch is also refactored to increase robustness.  For further details about
 the current design, and how the design proposed by this RFC differs from it, see
 the appendix "Changes from Current (Internal-Only) Design".
@@ -139,8 +141,8 @@ TensorFlow extension types are defined using two protocols:
   default behavior for TensorFlow ops when they are called with an extension
   type value.
 
-Classes that implement the `tf.ExtensionType` protocol are sometimes also called
-"composite tensors."
+Classes that implement the `tf.ExtensionType` protocol are sometimes also
+called "***composite tensors***."
 
 **Note:** We are also considering using registries or base classes rather than
 protocols; see the section on "Registry vs Protocol vs Base class" for a
@@ -157,9 +159,9 @@ parts:
 * A collection of Tensors, which encodes the value's dynamic data -- i.e., data
   that may change for different executions of a graph.
 
-* An instance of a TypeSpec subclass, which encodes the value's static data --
-  i.e., data that is the same for all executions of a graph.  (Each extension type
-  implements its own TypeSpec subclass.)
+* An instance of a `TypeSpec` subclass, which encodes the value's static data --
+  i.e., data that is the same for all executions of a graph.  (Each extension
+  type implements its own `TypeSpec` subclass.)
 
 As an example, consider `tf.RaggedTensor`, which adds ragged dimensions to a
 `flat_values` `Tensor` by using `row_partition` tensors to divide it into
@@ -243,7 +245,11 @@ class TypeSpec(object):
 
 ##### TypeSpec Job 1: Storing Static Value Data
 
-The first responsibility of a `TypeSpec` subclass is to store any static (non-tensor) data associated with a value.  A few examples will help demonstrate the type of data that is included in `TypeSpecs`:
+The first responsibility of a `TypeSpec` subclass is to store any static (non-
+tensor) data associated with a value.  A few examples will help demonstrate the
+type of data that is included in `TypeSpec`s:
+
+
 
 * `tf.SparseTensorSpec` includes the dtype and static shape of a sparse tensor.
 * `tf.RaggedTensorSpec` includes the dtype and static shape of a ragged tensor,
@@ -506,18 +512,16 @@ These cases are handled by `TypeSpec.most_specific_compatible_type`:
 Notes:
 
 * `spec1.is_compatible_with(spec2)` and
-  `spec1.most_specific_compatible_type(spec2)` should generally return False
+  `spec1.most_specific_compatible_type(spec2)` will almost always return False
   if `type(spec1) != type(spec2)`.
-
 * `TypeSpec.is_compatible_with` is used to check if two `TypeSpecs` are
   compatible.  E.g., `tf.function` can re-use a traced graph if the `TypeSpecs`
   of the arguments it is called with are compatible with the `TypeSpecs` that
   were used to trace the graph.
-
-* `TypeSpec.most_specific_compatible_type` is used to merge two `TypeSpecs` or
-  values.  E.g., in `tf.cond(pred, lambda: v1, lambda: v2)`, the `TypeSpec`
+* `TypeSpec.most_specific_compatible_type` is used to merge two `TypeSpec`s or
+  values.  E.g., in `tf.cond(pred, lambda: rt1, lambda: rt2)`, the `TypeSpec`
   used to reassemble the result is `spec1.most_specific_compatible_type(spec2)`
-  (where `spec1=v1.__tf_type_spec__` and `spec2=v2.__tf_type_spec__`).
+  (where `spec1=rt1.__tf_type_spec__` and `spec2=rt2.__tf_type_spec__`).
 
 
 #### tf.nest support for tf.ExtensionType
@@ -594,8 +598,8 @@ def register_type_spec(type_spec_subclass, name=None):
 
   Args:
     type_spec_subclass: A concrete subclass of `TypeSpec`.
-    name: The name of the type spec.  Must be globally unique.
-      Defaults to `type_spec_subclass.__name__`.
+    name: The name of the type spec.  Must be globally unique.  Defaults to
+      `f'{type_spec_subclass.__module__}.{type_spec_subclass.__name__}'`.
 
   Raises:
     ValueError: If a different `TypeSpec` has already been registered with the
@@ -634,9 +638,9 @@ defined by the `TypeSpec` base class):
 
 Stacking, unstacking, or concatenating boxed tensors must be equivalent to
 stacking, unstacking, or concatenating the corresponding unboxed values.  I.e.,
-if `values=[v<sub>1</sub>, v<sub>2</sub>, …, v<sub>N</sub>]` is a list of values
-that have the same `type_spec`, then boxing those values, stacking the boxed
-tensors, and unboxing the result is equivalent to stacking the values:
+if `values=[v1, v2, …, vN]` is a list of values that have the same `type_spec`,
+then boxing those values, stacking the boxed tensors, and unboxing the result is
+equivalent to stacking the values:
 
 ```python
 boxed_tensors = [type_spec.to_boxed_tensor(v) for v in values]
@@ -749,6 +753,24 @@ encoding" is that `to_boxed_tensor` and `from_boxed_tensor` may (and often do)
 add operations to the graph, while `to_components` and `from_components` may
 not.
 
+**Note:** The StackableTypeSpec API can only be used to stack or unstack values
+of the same type (in particular, when the `TypeSpec`s of the values are combined
+using `most_specific_compatible_type`, the result must not be `None`).  For
+example, you **_can not_** create boxed tensors for a `SparseTensor` and
+`RaggedTensor`, stack those, and then unbox the result (since
+`RaggedTensorSpec.from_boxed_tensor` does not understand the boxed encoding for
+`SparseTensor`s, and vice versa).
+
+**Note**: The StackableTypeSpec API can be used to implement batching and
+unbatching.  For example, the following code snippet will batch a tensor `v`
+with shape `[N, …]` into a tensor `batched_v` with shape `[M, batch_size, …]`.
+
+```python
+spec = v.__tf_type_spec__
+boxed = spec.to_boxed_tensor(v, minimum_rank=1)
+boxed_and_batched = v.reshape([-1, batch_size])
+batched_v = spec.from_boxed_tensor(boxed_and_batched)
+```
 
 ##### Motivation for tf.StackableTypeSpec
 
@@ -857,7 +879,7 @@ override the operations that make sense for that type.  For example:
   operations (such as `tf.add` or `tf.reduce_sum`).
 
 * `tf.RaggedTensor` does not support the operations `tf.shape` and `tf.reshape`,
-  since ragged shapes can not be encoded as a vector of dimension sizes. 
+  since ragged shapes can not be encoded as a vector of dimension sizes.
 
 TensorFlow defines a large number of operations, which makes it difficult to
 define overrides for all of them.  In order to simplify the task of overriding
@@ -872,7 +894,6 @@ information about the semantic properties of an operation.  For example:
   independent transformation to the corresponding elements of its first two
   arguments.  Examples include: `tf.math.add`, `tf.math.equal`.  Note that these
   operations generally support broadcasting between their first two arguments.
-
 * `tf.disptach.is_reduction_op(op)`: Returns true if `op` combines the values of
   its first argument along an axis (or set of axes) specified by the `axis`
   argument.  Examples include: `tf.math.reduce_sum`, `tf.strings.reduce_join`.
@@ -898,11 +919,9 @@ following rules (which are consistent with Numpy’s
   methods), and `issubclass(x, y)`, then `type(x).__tf_dispatch__` method should
   be called instead of `type(y).__tf_dispatch__`, even if `y` occurs first in
   the argument list.
-
 * Otherwise, values are used left-to-right.  I.e., earlier arguments are used
   before later arguments; and for sequence-valued arguments, values are used in
   the order they appear in the sequence.
-
 * If all `__tf_dispatch__` methods return `NotImplemented`, then the original op
   is called (which will typically lead to a `TypeError` unless the extension
   type is convertible to a tensor).
@@ -1117,139 +1136,6 @@ base classes in c++ (where the template parameter `T` is a subclass of
 `ExtensionType`).
 
 
-## Open Questions
-
-
-### Which Class should Decompose & Reconstruct Values?
-
-In the current design, the only job of an `ExtensionType` is to return a
-`TypeSpec`; but, as described above, the `TypeSpec` class has four different
-jobs it must perform:
-
-1.  Storing static (non-tensor) data for values.
-2.  Serializing the TypeSpec itself.
-3.  Decomposing values into tensors and reconstructing values from tensors.
-4.  Checking for type compatibility.
-
-In an alternative design, we could move job (3) from `TypeSpec` to
-`ExtensionType`.  I.e., the `ExtensionType` would be responsible for decomposing
-and reconstructing values.  In particular, this would require removing the
-`to_components`, `from_components`, and `component_specs` methods from
-`TypeSpec`, and adding them to `ExtensionType` as:
-
-
-```python
-class ExtensionType(Protocol):
-  def __tf_to_components__(self):
-    """Encodes `self` as a nested structure."""
-
-  @classmethod
-  def __tf_from_components__(cls, components, type_spec):
-    """Reconstructs a value from a nested structure and a TypeSpec."""
-
-  @classmethod
-  def __tf_component_specs__(cls, type_spec):
-    """Returns the TypeSpecs for the components a value with a given TypeSpec."""
-```
-
-(With this heavier-weight definition, we might also want to change
-`ExtensionType` from a `Protocol` to an abstract base class.)
-
-Advantages of moving the responsibility for decomposing & reconstructing values
-from `TypeSpec` to `ExtensionType` include:
-
-* Reduces the number of jobs that `TypeSpec` is expected to perform.
-  `TypeSpec` becomes closer to a pure-data class (though it still needs to
-  understand type compatibility.)
-
-* Eliminates a circular dependency between `ExtensonType` and `TypeSpec`
-  (assuming that a registry is added to track the `ExtensionType` for each
-  `TypeSpec` -- the link from `TypeSpec` to `ExtensionType` is required to
-  implement `tf.nest.pack_structure_as(type_spec, list_of_tensors)`).
-
-* Makes it easier to define extension types with "hidden implementations" --
-  i.e., where the component tensors are not meant to be publicly accessible.
-
-But advantages of the currently proposed design include:
-
-* All the code needed to turn a type into an extension type is kept together in
-  one place (rather than being split across two types: the extension type itself
-  and the TypeSpec).  This is important because the logic behind this code can
-  be fairly tightly tied.  For example, the definitions for `is_compatible_with`
-  and `most_specific_compatible_type` must be kept consistent with the component
-  decomposition.
-
-* Makes it possible to non-invasively turn types into extension types (though
-  see below for a discussion about whether this is a good idea or not).
-
-### Should it be possible to define extension types non-invasively?
-
-Allowing types to be non-invasively declared as TensorFlow extensions has both
-pros and cons:
-
-* **Pro:** TensorFlow APIs can be used with a type, even if that type was not
-  designed to be used with TensorFlow.  (However, that type must satisfy the
-  requirements of extension types: namely it must be immutable; it must store
-  all dynamic data in tensors; and all static data must be serializable.)
-
-* **Con:** Multiple users might declare different (incompatible) TypeSpecs for
-  the same type, especially for common types.  In most cases, this will result
-  in an error (which may not be very actionable if the incompatible TypeSpecs
-  are registered by libraries that a user is using).  But in some cases, this
-  could result in silently incorrect behavior -- e.g., if one TypeSpec is
-  registered for a type when a model is saved to a SavedModel, but a different
-  TypeSpec is registered for that type when a model is loaded via tf.hub.
-
-### Registry vs Protocol vs Base Class
-
-The current RFC proposes that the API for defining TensorFlow extension types be
-implemented using protocols.  Two alternative APIs that we considered are:
-
-* **Base classes**: Define an abstract class that must be included as a base
-  class for TensorFlow extension types.  We could have a single base class with
-  an abstract `type_spec` property and an abstract `dispatch` method; or we
-  could have separate "mix-in" base classes for each one.  These base classes
-  might or might not have metaclasses.
-
-* **Registration**: Provide functions which can be used to register the
-  `TypeSpec` and the dispatch handler for an extension type.
-
-The following table summarizes some of the pros and cons of each approach:
-
-Feature                                       | Protocol   | Subclass | Registry
---------------------------------------------- | ---------- | -------- | -------
-Works well with type annotations                    | Y    |    Y     |    N
-Extension type doesn't need to depend on TensorFlow | Y    |    N     |    N
-Extension types can be added non-invasively ①      | N    |    N     |    Y
-Provides a centralized list of all extension types  | N    |    Y ②   |    Y
-
-① As noted above, allowing extension types to be added non-invasively has both
-pros and cons.
-
-② Requires defining a metaclass.
-
-
-### TypeSpec.name
-
-`TensorSpec` is currently the only `TypeSpec` that defines a `name` attribute.
-To my knowledge, the main use for this attribute is to override the default
-argument names for concrete functions when they are called with the flat-
-arguments calling convention.  The question has been raised as to whether all
-`TypeSpecs` should have a `name` attribute.  My initial feeling is that they
-should not, because the core concept for `TypeSpec` is a type specification, and
-type specifications are generally not named.  However, feedback on this question
-is welcome, especially when grounded in concrete use cases.  (Does
-`TensorSpec.name` get used for other things than concrete signature argument
-naming?)
-
-
-### Should user-defined types be supported as inputs/outputs when computing gradients?
-
-User-defined types are not currently supported as the inputs or outputs for
-gradients.  I.e., gradients need to be computed with respect to individual
-component tensors.  We could potentially add support for using extension types
-with gradients directly, though further work might be needed to define the exact
-semantics.
 
 
 ## Appendix: Changes from Current (Internal-Only) Design
