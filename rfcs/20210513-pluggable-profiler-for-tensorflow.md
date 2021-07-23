@@ -246,7 +246,7 @@ Because `device_type` here is an enum, we cannot differentiate between multiple 
 
 * **PluggableProfiler Initialization and Registration**
 
-  Core TensorFlow will load `TF_InitProfiler` from plugin's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins" and pass the address of `TF_InitProfiler` symbol to `InitPluginProfiler` to do initialization and registration. TensorFlow retrieves `TF_ProfilerRegistrationParams` from the plugin and does the compatibility checks. If passed, TensorFlow will register the PluggableProfiler creation function to the [ProfilerFactroy](https://github.com/tensorflow/tensorflow/blob/aa855d21ac89e6649ec782ef4efd4e126b37d79d/tensorflow/core/profiler/lib/profiler_factory.cc#L39).
+  Core TensorFlow will load `TF_InitProfiler` from plugin's dynamic library installed under "…python_dir.../site-packages/tensorflow-plugins" and pass the address of `TF_InitProfiler` symbol to `InitPluginProfiler` to do initialization and registration. TensorFlow retrieves `TF_ProfilerRegistrationParams` from the plugin and does the compatibility checks. If passed, TensorFlow will register the PluggableProfiler creation function to the [ProfilerFactory](https://github.com/tensorflow/tensorflow/blob/aa855d21ac89e6649ec782ef4efd4e126b37d79d/tensorflow/core/profiler/lib/profiler_factory.cc#L39).
 
   ```c++
   class PluggableProfilerFactory{
