@@ -169,7 +169,7 @@ This section provides some pseudo code to show what core TensorFlow and plugin's
       TPU = 3;
       PLUGGABLE_DEVICE = 4;
     }
-      // Device type to profile/trace: (version >= 1)
+    // Device type to profile/trace: (version >= 1)
     // DeviceType::UNSPECIFIED: All registered device profiler will be enabled.
     // DeviceType::CPU: only CPU will be profiled.
     // DeviceType::GPU: only CPU/GPU will be profiled.
