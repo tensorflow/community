@@ -362,7 +362,7 @@ void profiler_collect_data_xspace(const TP_Profiler* profiler, uint8_t* buffer, 
 Define `TF_InitProfiler` that TensorFlow will call when registering the profiler plugin:
 ```c++
 void TF_InitProfiler(TF_ProfilerRegistrationParams* params, TF_Status* status) {
-  params->struct_size = TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE;
+  *params = { TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE };
   params->profiler->struct_size = TP_PROFILER_STRUCT_SIZE;
   params->profiler_fns->struct_size = TP_PROFILER_FNS_STRUCT_SIZE;
 
