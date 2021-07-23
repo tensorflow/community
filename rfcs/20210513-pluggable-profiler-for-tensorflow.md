@@ -387,7 +387,7 @@ e.g. the step time of a TF training job should be similar with profiling on or o
 Also, profiling should not cause the process to be killed due to running out-of-memory (OOM).
 * No leaks: any resources (memory) acquired for handling a profiling request should be released by the end of the request.
 Repeated profiling requests should not increase resource utilization over time.
-* No memory corruption: profiling should not corrupt memory due to dangling pointers.
+* No memory corruption: profiling should not corrupt memory. e.g. due to dangling pointers.
 * No deadlocks: any synchronization necessary to start/stop profiling should not block any application (TF) thread for a long time.
 
 ## **Alternatives Considered**
