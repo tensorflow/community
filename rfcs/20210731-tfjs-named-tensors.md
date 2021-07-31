@@ -181,7 +181,7 @@ Because batching is a key and often complex part of programming, we note that th
 
 One simply has to specify the name of the batch dimension.
 
-A prototype implementation of all of this is included ([`gtensor.ts`](gtensor.ts) and [`gtensor.spec.ts`](gtensor_spec.ts))
+A prototype implementation of all of this is included ([`gtensor.ts`](20210731-tfjs-named-tensors/gtensor.ts) and [`gtensor.spec.ts`](20210731-tfjs-named-tensors/gtensor.spec.ts))
 
 ### Alternatives Considered
 
