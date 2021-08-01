@@ -1,6 +1,6 @@
 // gtensor.spec.ts
 import * as gtensor from './gtensor';
-import { Dims } from './gtensor';
+import { Dims, gtensorOfDims } from './gtensor';
 import * as tf from '@tensorflow/tfjs'
 
 describe('gtensor', () => {
@@ -49,55 +49,89 @@ describe('gtensor', () => {
         ],
       ]
       ), ['example', 'pos', 'repSize']);
-    const x = typeof(g1)
-    expect(g1.gshape).toEqual({'example': 3, 'pos': 3, 'repSize': 2});
-
-    console.log('g1.gshape', g1.gshape());
-    console.log(x);
-
+    expect(g1.gshape()).toEqual({'example': 4, 'pos': 3, 'repSize': 2});
     const g2 = g1.transpose();
-    console.log(g1.dimNames);
-    console.log(g1.tensor.shape);
-    console.log(g2.dimNames);
-    console.log(g2.tensor.shape);
+    const g1DimsReversed = g1.dimNames.slice().reverse();
+    expect(g2.dimNames).toEqual(g1DimsReversed);
+    const g1TensorShapeReversed = g1.tensor.shape.slice().reverse()
+    expect(g2.tensor.shape).toEqual(g1TensorShapeReversed);
+  });
 
-    expect(g2.dimNames).toEqual(g1.dimNames.slice().reverse());
-    expect(g2.tensor.shape).toEqual(g1.tensor.shape.slice().reverse());
-
-    // GTensor is the thing that holds a dimension map with the tensor and dimNames.
+  it('basicMultiplications', () => {
+    // GTensor is the thing that holds a dimension map with the tensor and
+    // dimNames.
     const bar = new gtensor.GTensor(
-      tf.initializers.truncatedNormal({}).apply([1,2,3,4,5]),
-      ['a', 'b', 'c', 'd', 'e', 'f']);
+      tf.initializers.truncatedNormal({}).apply(
+        // Dimension sizes. Notice: c = 3.
+        [1,2,3,4,5]),
+      ['a', 'b', 'c', 'd', 'e']);
 
     // It's usually more convenient to work directly with dimension maps.
-    const foo = gtensor.makeZeros({  x: 3, y: 2, c: 3 }).dim;
+    const foo = gtensor.makeZeros({ x: 6, y: 2, c: 3 }).dim;
 
     // But they can work together easily too... for gtensors you just access
     // the dimension map via 'dim'
-    gtensor.dot(foo.c, bar.dim.c);
+    const g = gtensor.dot(foo.c, bar.dim.c);
     // gtensor.dot(foo.c, bar.dim.a)  // type error!
     // foo.c.dot(bar.dim.a);  // type error!
-    foo.c.dot(bar.dim.c);
-// ---------------
+
+    expect(g.gshape()).toEqual({a: 1, b: 2, d: 4, e: 5, x: 6, y: 2});
+    expect(g.dimNames).toEqual(['x','y','a','b','d','e']);
+    expect(g.tensor.shape).toEqual([6,2,1,2,4,5]);
+
+    // You can also use functions on the dimension names directly.
+    const ugg = foo.c.dot(bar.dim.c);
+    const g2 = gtensorOfDims(ugg);
+    expect(g2.gshape()).toEqual({a: 1, b: 2, d: 4, e: 5, x: 6, y: 2});
+    expect(g2.dimNames).toEqual(['x','y','a','b','d','e']);
+    expect(g2.tensor.shape).toEqual([6,2,1,2,4,5]);
+  });
+
+  it('attentionHead1', () => {
     const queryM = gtensor.makeTruncNormal({ inputRep: 2, kqRep: 3 }).dim;
     const keyM = gtensor.makeTruncNormal({ inputRep: 2, kqRep: 3 }).dim;
     const valueM = gtensor.makeTruncNormal({ inputRep: 2, valueRep: 4 }).dim;
     const oneInput = gtensor.makeTruncNormal({ seqLen: 8, inputRep: 2 }).dim;
-    const batchedInput = gtensor.makeTruncNormal({ batchSize: 10, seqLen: 8, inputRep: 2 }).dim;
+    const batchedInput = gtensor.makeTruncNormal(
+      { batchSize: 10, seqLen: 8, inputRep: 2 }).dim;
 
     // const inputKeys = inputM.dim.inputRep.dot(keyM.dim.inputRep).rename(
     //   'seqLen', 'seqLen2' )
     // const inputKeys = inputM.dim.inputRep.dot(keyM.dim.inputRep).renaming(
     //   { seqLen: 'keySeqLen'});
 
-    function attentionHeadFn(input: Dims<'seqLen'|'inputRep'>): Dims<'seqLen'|'valueRep'> {
-      const inputKeys = input.inputRep.dot(keyM.inputRep).seqLen.rename('keySeqLen');
+    function attentionHeadFn(input: Dims<'seqLen'|'inputRep'>)
+    : Dims<'seqLen'|'valueRep'> {
+      const inputKeys = input.inputRep.dot(
+        keyM.inputRep).seqLen.rename('keySeqLen');
       const inputQueries = input.inputRep.dot(queryM.inputRep);
       const attention = inputKeys.kqRep.dot(inputQueries.kqRep);
       const values = input.inputRep.dot(valueM.inputRep);
-      const attendedValues = values.seqLen.dot(attention.seqLen).keySeqLen.rename('seqLen');
+      const attendedValues = values.seqLen.dot(
+        attention.seqLen).keySeqLen.rename('seqLen');
       return attendedValues;
     }
+
+    const attendedValues = attentionHeadFn(oneInput);
+    expect(gtensorOfDims(attendedValues).gshape()).toEqual({
+      seqLen: 8, valueRep: 4
+    });
+
+    const batchedAttentionHeadFn = gtensor.liftFnOverDim(
+      'batchSize', attentionHeadFn);
+    const batchedAttendedValues = batchedAttentionHeadFn(batchedInput);
+    expect(gtensorOfDims(batchedAttendedValues).gshape()).toEqual({
+      batchSize: 10, seqLen: 8, valueRep: 4
+    });
+  });
+
+  it('attentionHead2', () => {
+    const queryM = gtensor.makeTruncNormal({ inputRep: 2, kqRep: 3 }).dim;
+    const keyM = gtensor.makeTruncNormal({ inputRep: 2, kqRep: 3 }).dim;
+    const valueM = gtensor.makeTruncNormal({ inputRep: 2, valueRep: 4 }).dim;
+    const oneInput = gtensor.makeTruncNormal({ seqLen: 8, inputRep: 2 }).dim;
+    const batchedInput = gtensor.makeTruncNormal(
+      { batchSize: 10, seqLen: 8, inputRep: 2 }).dim;
 
     // It's possible to make input be matched strictly, but you have to introduce `ExactDims`
     // wrapper and a new type parameter. :/
@@ -106,29 +140,27 @@ describe('gtensor', () => {
     }
 
     type ExactDims<Exact extends string, Given extends string> =
-      Exclude<Given,Exact> extends never ? Dims<Given> : Error_GivenHadExtraTypes<Exclude<Given,Exact>>;
+      Exclude<Given,Exact> extends never ? Dims<Given>
+      : Error_GivenHadExtraTypes<Exclude<Given,Exact>>;
 
     function attentionHeadFn2<T extends string>(
         maybeInput: ExactDims<'seqLen'|'inputRep',T>): Dims<'seqLen'|'valueRep'> {
       const input = maybeInput as never as Dims<'seqLen'|'inputRep'>;
-      const inputKeys = input.inputRep.dot(keyM.inputRep).seqLen.rename('keySeqLen');;
+      const inputKeys = input.inputRep.dot(
+        keyM.inputRep).seqLen.rename('keySeqLen');;
       const inputQueries = input.inputRep.dot(queryM.inputRep);
       const attention = inputKeys.kqRep.dot(inputQueries.kqRep);
       const values = input.inputRep.dot(valueM.inputRep);
-      const attendedValues = values.seqLen.dot(attention.seqLen).keySeqLen.rename('seqLen');
+      const attendedValues = values.seqLen.dot(
+        attention.seqLen).keySeqLen.rename('seqLen');
       return attendedValues;
     }
     // Bug/TODO: extra dimensions don't get caught by type-checker. :(
     //   const attendedValues = attentionHeadFn(batchedInput);
     // Maybe we have to use record types instead of simple string unions...
-    const attendedValues = attentionHeadFn(oneInput);
 
     //const attendedValues2 = attentionHeadFn2(batchedInput); // Has error, yay, but what a mess...
     const attendedValues3 = attentionHeadFn2(oneInput);
-
-    const batchedAttentionHeadFn = gtensor.liftFnOverDim('batchSize', attentionHeadFn);
-    const batchedAttendedValues = batchedAttentionHeadFn(batchedInput);
-
     //
     function attentionHeadFn3(input: Dims<'seqLen'|'inputRep'>):
     { attendedValues: Dims<'seqLen'|'valueRep'>,

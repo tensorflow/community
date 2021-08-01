@@ -33,18 +33,6 @@ export interface DimensionData<G extends DName, D extends G> {
   index: number;
 }
 
-// There's one lucky case when no permutations are needed... that's when the last dimension of the
-// first tensor matches (has the same size) as the second-to-last dimension of the second tensor.
-function luckyCaseMultiply<D extends G1 & G2, G1 extends DName, G2 extends DName>(
-  g1: GTensor<G1>, g2: GTensor<G2>): GTensor<Exclude<G1|G2, D>> {
-  const resultTensor = tf.matMul(g1.tensor, g2.tensor);
-  const newNames =
-    (g2.dimNames.slice(0, g1.dimNames.length - 3) as DName[])
-    .concat(g1.dimNames.slice(0, g1.dimNames.length - 2))
-    .concat([g2.dimNames[g2.dimNames.length - 1]]);
-  return new GTensor(resultTensor, newNames as (Exclude<G1|G2, D>)[]);
-}
-
 interface DotError_MustPassDimensionToDot {
   _DotError_MustPassDimensionToDot: ['DotError_MustPassDimensionToDot']
 }
@@ -77,38 +65,50 @@ export function dot<D1 extends G1, D2 extends G2, G1 extends DName, G2 extends D
   d1: Dimension<G1, D1>,
   maybed2: DotCompatibleDimension<G1,D1,G2,D2>
 ): GTensor<Exclude<G1|G2, D1>> {
-  // TODO: maybe we canmake the type system do more for us...
-  //   D extends D2 ? (D2 extends D ? GTensor<Exclude<G1|G2, D>> : never) : never
-  // TODO(ldixon): this is a cheep way to find a local-optima in terms of tensor permutations. The
-  // 'right' way to do this is of course to track the graph and do a global
-  // compilation/optimization. But this will be reasonable for now I expect (and probably still
-  // better than what I'd be able to do eaily in my head.
+  // TODO: maybe we canmake the type system do more for us... D extends D2 ? (D2
+  //   extends D ? GTensor<Exclude<G1|G2, D>> : never) : never
+  //
+  // TODO: We use `tf.einsum`, and consturct the inputs for it via
+  // strings; this is quite a bit of indirection, and likely we could use an
+  // underlying API directly and it save string construction and parsing.
   //
   // TODO: think about if the 'never' below is needed.
   let d2 = maybed2 as never as Dimension<G2, D2>;
-  if (d1.isLastDim) {
-    if (d2.isSecondLastDim) {
-      return luckyCaseMultiply(d1.gtensor, d2.gtensor) as never as GTensor<Exclude<G1|G2, D1>>;
-    } else if (d2.isSecondDim) {
-      luckyCaseMultiply(d1.gtensor, d2.gtensor.transpose());
-    } else {
-      luckyCaseMultiply(d1.gtensor, d2.gtensor._permuteIndexToSecondLast(d2.index));
-    }
-  } else if (d1.isSecondLastDim) {
-    if (d2.isLastDim) {
-      return luckyCaseMultiply(d2.gtensor, d1.gtensor) as never as GTensor<Exclude<G1|G2, D1>>;
-    } else if (d2.isFirstDim) {
-      return luckyCaseMultiply(d2.gtensor.transpose(), d1.gtensor) as never as GTensor<Exclude<G1|G2, D1>>;
-    } else {
-      return luckyCaseMultiply(d2.gtensor._permuteIndexToLast(d2.index), d1.gtensor) as never as GTensor<Exclude<G1|G2, D1>>;;
-    }
+
+  const FIRST_CHAR_CODE_FOR_d1 = 'A'.charCodeAt(0);
+
+  const d1Names = d1.gtensor.dimNames;
+  const d1CharNames = d1Names.map(
+    (n, i) => String.fromCharCode(FIRST_CHAR_CODE_FOR_d1 + i));
+  const d1CharName = d1CharNames[d1.index];
+
+  const FIRST_CHAR_CODE_FOR_d2 = FIRST_CHAR_CODE_FOR_d1 + d1CharNames.length;
+  const d2Names = d2.gtensor.dimNames;
+  const d2CharNames = d2Names.map(
+    (n, i) => String.fromCharCode(FIRST_CHAR_CODE_FOR_d2 + i));
+  // const d2CharName = d1CharNames[d2.index];
+  d2CharNames.splice(d2.index, 1, d1CharName);
+
+  if ((d2CharNames.length + d1CharNames.length) > 52) {
+    console.warn('');
   }
 
-  // General case... have to permute both tensors to do the multiplication. AWESOME: type-checking
-  // index names fixed a bug here, I had accidentally multiplied the matrix with itself.
-  return luckyCaseMultiply(
-    d1.gtensor._permuteIndexToLast(d1.index),
-    d2.gtensor._permuteIndexToSecondLast(d2.index)) as never as GTensor<Exclude<G1|G2, D1>>;
+  const resultCharNames = d1CharNames.concat(d2CharNames).filter(
+    c => c !== d1CharName);
+
+  const einsumStr = `${d1CharNames.join('')},${d2CharNames.join('')}->${
+    resultCharNames.join('')}`;
+  // console.log(einsumStr);
+
+  const resultTensor = tf.einsum(
+    einsumStr, d1.gtensor.tensor, d2.gtensor.tensor);
+
+  const newNames =
+    (d1Names.slice(0, d1.index) as DName[])
+    .concat(d1Names.slice(d1.index + 1, d1Names.length))
+    .concat(d2Names.slice(0, d2.index) as DName[])
+    .concat(d2Names.slice(d2.index + 1, d2Names.length));
+  return new GTensor(resultTensor, newNames as (Exclude<G1|G2, D1>)[]);
 }
 
 
@@ -128,9 +128,11 @@ type DimensionFnToLift<D extends DName, G extends DName, G2 extends DName> =
 export function liftFnOverDim<D extends DName, G extends DName, G2 extends DName>(
   liftDim: DimensionFnToLift<D,G,G2>,
   toLiftFn: (input: Dims<G>) => Dims<G2>): (input: Dims<G|D>) => Dims<G2|D> {
+
   function liftedFn(input: Dims<G|D>): Dims<G2|D> {
-    if ((liftDim as DName) in input) {
-      throw new ValueError(`The lift dimension ${liftDim} already occurs in input's dimensions: ${Object.keys(input)}`);
+    if (!((liftDim as DName) in input)) {
+      throw new ValueError(`The lift dimension ${liftDim
+      } must occur in input's dimensions: ${Object.keys(input)}`);
     }
     const unstacked_dims = input[liftDim as D].unstack() as never as Dims<G>[];
     return stack(liftDim as D, unstacked_dims.map(toLiftFn));
@@ -149,8 +151,8 @@ export function liftMapFnOverDim<
 ): (input: Dims<G|D>) => { [key in keyof MapDim]: Dims<MapDim[key]|D> } {
 
   function liftedFn(input: Dims<G|D>): { [key in keyof MapDim]: Dims<MapDim[key]|D> } {
-    if ((liftDim as string) in input) {
-      throw new ValueError(`The lift dimension ${liftDim} already occurs in input's dimensions: ${Object.keys(input)}`);
+    if (!((liftDim as string) in input)) {
+      throw new ValueError(`The lift dimension ${liftDim} must occur in input's dimensions: ${Object.keys(input)}`);
     }
     const unstacked_dims = input[liftDim as D].unstack() as never as Dims<G>[];
     const unstackedApplications = unstacked_dims.map(toLiftFn);
@@ -226,7 +228,8 @@ export class Dimension<G extends DName, D extends G> implements DimensionData<G,
 
   _unstack(): GTensor<Exclude<G, D>>[] {
     const tensors = tf.unstack(this.gtensor.tensor, this.index);
-    const newDimNames = ([...this.gtensor.dimNames].splice(this.index, 1) as Exclude<G, D>[]);
+    const newDimNames = [...this.gtensor.dimNames] as Exclude<G, D>[];
+    newDimNames.splice(this.index, 1);
     return tensors.map(t => new GTensor<Exclude<G, D>>(t, newDimNames));
   }
 
@@ -239,8 +242,11 @@ export class Dimension<G extends DName, D extends G> implements DimensionData<G,
 
 export class ValueError extends Error {}
 
+// export function gtensorOfDims<G extends DName>(dims: Dims<G>): GTensor<G> {
+//   return dims._gtensor;
+// }
 
-function gtensorOfDims<G extends DName>(dims: Dims<G>): GTensor<G> {
+export function gtensorOfDims<G extends DName>(dims: Dims<G>): GTensor<G> {
   // Technically, we don't know the dimension is G... but it doesn't matter, this makes TS happy.
   // In theory I think `unknown` should replace the second G.
   const d = Object.values(dims)[0] as Dimension<G, G>;
@@ -272,7 +278,9 @@ export function stack<G extends DName, NewD extends DName>(
   return stackGtensors(newDimName, gtensors).dim;
 }
 
-export type Dims<G extends DName> = { [key in G]: Dimension<G, key> };
+export type Dims<G extends DName> = {
+  [key in G]: Dimension<G, key>
+};
 
 export class GTensor<G extends DName> {
   // TODO: the type-system fails here because we can't force dim to always have all the keys of T,
@@ -285,7 +293,9 @@ export class GTensor<G extends DName> {
 
   constructor(tensor: tf.Tensor, dimNames: G[]) {
     if(tensor.shape.length !== dimNames.length) {
-      throw new ValueError(`tensor.shape.length: ${tensor.shape.length} should be the same as dimNames.length: ${dimNames}.`);
+      throw new ValueError(
+        `tensor.shape: ${tensor.shape
+        } should be the same length as dimNames: ${dimNames}.`);
     }
     this.tensor = tensor;
     this.dimNames = dimNames;
@@ -352,18 +362,24 @@ export class GTensor<G extends DName> {
         throw new ValueError(`${fromName} is missing from ${this.dimNames}`);
     }
 
-    const newDimNames =
-      [...this.dimNames].splice(i, 1, toName as never) as (Exclude<G, T1>|T2)[];
+    // console.log('this.dimNames:', this.dimNames);
+    // console.log('i:', i);
+    // console.log('toName:', toName);
+    const newDimNames = [...this.dimNames] as (Exclude<G, T1>|T2)[];
+    newDimNames.splice(i, 1, toName);
+    // console.log('newDimNames:', newDimNames);
     return new GTensor<Exclude<G, T1>|T2>(this.tensor, newDimNames);
   }
 
   public _permuteIndexTo(i:number, new_i:number): GTensor<G> {
     // hack/trick to start with the identity permutation [0,1,...n].
+    console.log('this.dimNames', this.dimNames);
     const permutation = this.dimNames.map((s, i) => i);
+    console.log('permutation', permutation);
     // Now swap the last and the ith index.
     //
-    // TODO(ldixon): I heard that some permutations are cheeper than others, so is there some
-    // super-smart way to do an optimal permutation?
+    // TODO(ldixon): I heard that some permutations are cheeper than others,
+    // so is there some smart way to do an optimal permutation?
     const lastIndex = new_i;
     permutation[i] = lastIndex;
     permutation[lastIndex] = i;
@@ -372,7 +388,8 @@ export class GTensor<G extends DName> {
     const newDimNames = this.dimNames.slice();
     newDimNames[lastIndex] = newLastName;
     newDimNames[i] = oldLastName;
-    return new GTensor<G>(tf.transpose(permutation), newDimNames);
+    console.log('newDimNames', newDimNames);
+    return new GTensor<G>(tf.transpose(this.tensor, permutation), newDimNames);
   }
 
   _permuteIndexToLast(i:number): GTensor<G> {
@@ -413,7 +430,7 @@ export function makeInitializer(config: InitializerConfig) {
 export function fromInitializer<T extends string>(
   dims: { [key in T]: number },
   initialiser:  tf_init.Initializer, dtype?: tf.DataType) {
-  const dimNames = Object.values(dims) as T[];
+  const dimNames = Object.keys(dims) as T[];
   const shape = dimNames.map((n: T) => dims[n]);
   return new GTensor(initialiser.apply(shape, dtype), dimNames);
 }
@@ -436,4 +453,3 @@ export function makeConstant<T extends string>(dims: { [key in T]: number },
   constant: number, dtype?: tf.DataType) {
   return fromInitializer(dims, tf.initializers.constant({value: constant}), dtype);
 }
-
