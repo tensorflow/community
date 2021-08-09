@@ -89,3 +89,4 @@ Current Release Team:
 - Yuan (Terry) Tang - GitHub: [@terrytangyuan](https://github.com/terrytangyuan) - PyPI: [terrytangyuan](https://pypi.org/user/terrytangyuan)
 - Bryan Cutler - GitHub: [@BryanCutler](https://github.com/BryanCutler) - PyPI: [cutlerb](https://pypi.org/user/cutlerb)
 - Aleksey Vlasenko - GitHub: [@vlasenkoalexey](https://github.com/vlasenkoalexey) - PyPI: [vlasenkoalexey](https://pypi.org/user/vlasenkoalexey)
+- Vignesh Kothapalli - GitHub: [@kvignesh1420](https://github.com/kvignesh1420) - PyPI: [kvignesh1420](https://pypi.org/user/kvignesh1420/)
