@@ -90,6 +90,8 @@ const valueM: GTensor<'inputRep', 'kqRep'> = ...
 const xs: GTensor<'inputRep', 'seqLen'> = ...
 
 const inputKeys = xs.inputRep.dot(keyM.inputRep).seqLen.rename('keySeqLen');
+// Note: that rename returns a GTensor, and typechecking happens at edit time,
+// so 'xs.inputRep.dot(keyM.kqRep)' would give a red underline and nice error :)
 const inputQueries = xs.inputRep.dot(queryM.inputRep);
 const attention = inputKeys.kqRep.dot(inputQueries.kqRep);
 const values = xs.inputRep.dot(valueM.inputRep);
@@ -253,9 +255,6 @@ const batchedAttendedValues = batchedAttentionHeadFn(batchedInput);
 
 One simply has to specify the name of the batch dimension.
 
-A prototype implementation of all of this is included
-([`gtensor.ts`](20210731-tfjs-named-tensors/gtensor.ts) and [`20210731-tfjs-named-tensors/gtensor.spec.ts`](gtensor_spec.ts))
-
 ### Alternatives Considered
 
 #### Dimensionsets
@@ -332,7 +331,7 @@ to spot, and typically also caught by any tests on the first execution run.
   you expect and how will you confirm?
 
   * No impact. In time one would imagine a compilation from NamedTensors to XLA.
-    This would allow TFJS code to directly on accelerators.
+    This would allow TFJS code to work directly on accelerators.
 
 ### Best Practices
 
@@ -398,20 +397,112 @@ Yes.
   ecosystem for this experiment as we can leverage the flexible and strong
   TypeScript type system and modern IDE support.
 
+## Detailed Design
+
+If this idea seems promising, we'll work on sketching a detailed design in the
+future. For now we provide an example interface for GTensor and Dimension, and a prototype implementation has also been written, see [`gtensor.ts`](20210731-tfjs-named-tensors/gtensor.ts) and [`20210731-tfjs-named-tensors/gtensor.spec.ts`](gtensor_spec.ts).
+
+### GTensor Interface
+
+```ts
+interface GTensor<G extends DName> {
+  dim!: Dims<G>;
+  tensor: tf.Tensor;
+  dimNames: G[];
+
+  constructor(tensor: tf.Tensor, dimNames: G[]);
+
+  gshape(): { [key in G]: number };
+
+  // Rename a set of dimensions.
+  public renaming<ReplacedNames extends G, NewNames extends DName>(
+    renaming: { [Key in ReplacedNames]: NewNames }
+  ): GTensor<Exclude<G, ReplacedNames>|NewNames>;
+
+  // Rename a single dimension.
+  public rename<T1 extends DName, T2 extends DName>(
+    fromName: G extends T1 ? T1 : never,
+    toName: T2
+  ): GTensor<Exclude<G, T1>|T2>
+
+  // Optionally, all class operation on Tensors can be here.
+}
+```
+
+### Dimension Interface
+
+```ts
+// G is the set of all dimension names in the GTensor, while D is the specific
+// name of this dimension.
+interface Dimension<G extends DName, D extends G> {
+  name: D;
+  size: number;
+  gtensor: GTensor<G>;
+  index: number;
+
+  constructor(e: DimensionData<G, D>);
+
+  get dtype(): tf.DataType;
+
+  // Operations on dimensions (basically anything that has an axis parameter)
+  dot<D2 extends G2, G2 extends DName>(
+    d2: DotCompatibleDimension<G,D,G2,D2>
+  ): Dims<Exclude<G | G2, D>>;
+
+  rename<T extends DName>(newName: T): Dims<Exclude<G, D> | T>;
+
+  unstack(): Dims<Exclude<G, D>>[];
+
+  // ...
+}
+```
 
 ## Questions and Discussion Topics
 
-* We have not looked hard at the permutation optimization code, pointers or
-  remarks on the difficulty of this and its potential impact would be
-  particularly welcome.
+* Should GTensor contain a representation of the 'the model' that was used to create it? This could offer some interesting features...
+
+  * If there was interest in have XLA compilation, then this might provide a
+    competitive framework for writing larger scale models in TypeScript. This
+    feels like it could be particularly interesting for the NodeJS ML community. GTensors could be placeholders for the models that compute them.
+
+  * If there was a model stored behind the scenes, some global permutation
+    optimization would be possible. We have not looked hard at the permutation
+    optimization code, pointers or remarks on the difficulty of this and its
+    potential impact would be particularly welcome. Right now the toy
+    implementation does everything eagerly with `einsum`.
+
+  * What's the relationship between the Layers API and GTensor?
+
+    The Layers API is important for TFJS, so the relationship to `GTensors`
+    should be elaborated and explored beyond the obvious: every `GTensor`
+    contains a tensor internally, so Layers can be applied to it, and conversely
+    the output of any layers operation can be turned into a `GTensor`.
+
+    It is worth noting that the `Lifting` operation on `GTensors` provides a
+    simpler and more direct alternative to `batch` functionality of Layers. So
+    it may be that `GTensors` essentially replace the `Layers` API, but that
+    would take some work to make `GTensor` equivalents for all the functionality
+    in the Layers API.
+
+  * Could/should GTensor's be thought of as an extended EINSUM notation? Can
+    GTensor provide a DSL for easier to understand EINSUM operations?
+
+* What should we do with rehape operations? One option is that reshaping is an
+  operation like renaming, but selects a set of dimensions, and introduces a new
+  set of dimensions e.g.
+
+  ```ts
+  reshape<GTensor<Names>>(
+    inputNames: ChangeNames[],
+    newShape: { [newName:NewNames]: number }
+    ) -> GTensor<Exclude<Names,ChangeNames>|NewNames>
+  ```
+
+  Related to this, we should explore splitting and merging of dimensions. Ideas and proposals for this would be welcome.
 
 * We think the typing code could be simplified with a small amount of support
   for the TypeScript team. We have not explored this but would welcome pointers
   or thoughts about this.
-
-* If there was interest in have XLA compilation, then this might provide a
-  competitive framework for writing larger scale models in TypeScript. This
-  feels like it could be particularly interesting for the NodeJS ML community.
 
 * There is a tradeoff with complexity of types that get checked vs
   understandability of type error messages. Currently type errors are very easy
@@ -441,29 +532,11 @@ Yes.
   indexes isn't something people do well, and using names and having that
   automated will be a better compromise.
 
-* We should explore splitting and merging of dimensions.
-
-* What's the relationship between the Layers API and GTensor?
-
-  The Layers API is important for TFJS, so the relationship to `GTensors` should
-  be elaborated and explored beyond the obvious: every `GTensor` contains a
-  tensor internally, so Layers can be applied to it, and conversely the output
-  of any layers operation can be turned into a `GTensor`.
-
-  It is worth noting that the `Lifting` operation on `GTensors` provides a
-  simpler and more direct alternative to `batch` functionality of Layers. So it
-  may be that `GTensors` essentially replace the `Layers` API, but that would
-  take some work to make `GTensor` equivalents for all the functionality in the
-  Layers API.
-
 * Should we just make Tensor always be "named" (aka a GTensor)? There's a lot of
   code that depends on not having names. One option we could consider is that
   Tensor can optionally have names. And if they do, then named stuff "just
   works". This might introduce more complexity where having a separate simpler
   library might be easier to work with.
-
-* Bridge to EINSUM/XMAP notation? Can GTensor provide a DSL for EINSUM/XMAP
- operation?
 
 ## Related Reading:
 
