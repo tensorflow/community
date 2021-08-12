@@ -254,7 +254,7 @@ const batchedAttendedValues = batchedAttentionHeadFn(batchedInput);
 One simply has to specify the name of the batch dimension.
 
 A prototype implementation of all of this is included
-([`gtensor.ts`](gtensor.ts) and [`gtensor.spec.ts`](gtensor_spec.ts))
+([`gtensor.ts`](20210731-tfjs-named-tensors/gtensor.ts) and [`20210731-tfjs-named-tensors/gtensor.spec.ts`](gtensor_spec.ts))
 
 ### Alternatives Considered
 
