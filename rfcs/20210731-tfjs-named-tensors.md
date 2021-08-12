@@ -5,7 +5,7 @@
 | **RFC #**     | [395](https://github.com/tensorflow/community/pull/395) |
 | **Author(s)** | Lucas Dixon (ldixon@google.com) |
 | **Sponsor**   | Ping Yu (piyu@google.com)       |
-| **Updated**   | 2021-07-31                      |
+| **Updated**   | 2021-08-12                      |
 
 ## Objective
 

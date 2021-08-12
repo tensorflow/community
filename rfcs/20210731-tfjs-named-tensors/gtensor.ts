@@ -185,19 +185,6 @@ export class Dimension<G extends DName, D extends G> implements DimensionData<G,
     return this.gtensor.tensor.dtype;
   }
 
-  get isFirstDim(): boolean {
-    return (this.index === 0);
-  }
-  get isSecondDim(): boolean {
-    return (this.index === 1);
-  }
-  get isLastDim(): boolean {
-    return (this.index === this.gtensor.tensor.shape.length);
-  }
-  get isSecondLastDim(): boolean {
-    return (this.index === this.gtensor.tensor.shape.length);
-  }
-
   _dot<D2 extends G2, G2 extends DName>(
     d2: DotCompatibleDimension<G,D,G2,D2>
   ): GTensor<Exclude<G | G2, D>> {
