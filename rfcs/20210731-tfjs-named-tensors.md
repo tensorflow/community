@@ -400,7 +400,7 @@ Yes.
 ## Detailed Design
 
 If this idea seems promising, we'll work on sketching a detailed design in the
-future. For now we provide an example interface for GTensor and Dimension, and a prototype implementation has also been written, see [`gtensor.ts`](20210731-tfjs-named-tensors/gtensor.ts) and [`20210731-tfjs-named-tensors/gtensor.spec.ts`](gtensor_spec.ts).
+future. For now we provide an example interface for GTensor and Dimension, and a prototype implementation has also been written, see [`gtensor.ts`](20210731-tfjs-named-tensors/gtensor.ts) and [`20210731-tfjs-named-tensors/gtensor.spec.ts`](20210731-tfjs-named-tensors/gtensor.spec.ts).
 
 ### GTensor Interface
 
