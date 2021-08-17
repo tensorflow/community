@@ -491,6 +491,19 @@ interface Dimension<G extends DName, D extends G> {
   * Could/should GTensor's be thought of as an extended EINSUM notation? Can
     GTensor provide a DSL for easier to understand EINSUM operations?
 
+* Instead of having dimensions apply functions, one could have make GTensor
+  itself do the multiplication e.g.
+
+  ```ts
+    const inputQueries = gtensor.dot(['inputRep'], [input, queryM]);
+  ```
+
+  This could still be typechecked, although it would not auto-complete the dimension name ('inputRep'). Another variant that could support auto-completion would be:
+
+  ```ts
+    const inputQueries = gtensor.combine([input, queryM]).inputRep.dot();
+  ```
+
 * What should we do with rehape operations? One option is that reshaping is an
   operation like renaming, but selects a set of dimensions, and introduces a new
   set of dimensions e.g.
