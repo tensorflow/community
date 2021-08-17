@@ -73,11 +73,10 @@ const keyM: = ...
 const valueM: = ...
 const xs: = ...
 
-const keys = tf.matMul(xs, keyM.read())
-const queries = tf.matMul(xs, queryM.read())
-const attention = tf.softmax(
- tf.div(tf.matMul(queries, keys, true, false), inputRepSizeSqrt)) as tf.Tensor2D;
-const values = tf.matMul(xs, valueM.read(), true, false)
+const inputKeys = tf.matMul(xs, keyM.read());
+const inputQueries = tf.matMul(xs, queryM.read());
+const attention = tf.matMul(inputQueries, inputKeys, true, false);
+const values = tf.matMul(xs, valueM.read(), true, false);
 const attendedValues = tf.matMul(attention, values, false, true);
 ```
 
@@ -147,7 +146,7 @@ dimension.
 
 ```ts
 const g1: GTensor<'inputTokens'|'tokenRep'> = ...;
-const g2: GTensor<'tokenRep'|'queryRep'> = ...;
+const g2: GTensor<'tokenRep'|'queryTokens'> = ...;
 const g3 = g1.dim.tokenRep.dot(g2.dim.tokenRep);
 // g3: GTensor<'inputTokens'|'queryRep'>
 ```
@@ -155,17 +154,22 @@ const g3 = g1.dim.tokenRep.dot(g2.dim.tokenRep);
 Type-checking ensures that dimension names match. i.e.
 
 ```ts
-g1.dim.tokenRep.dot(g2.dim.foo)
-             // Type Error: "tokenRep" is different from "foo".
+g1.dim.inputTokens.dot(g2.dim.queryTokens)
+             // Type Error: "inputTokens" is different from "queryTokens".
 ```
 
-Dimensions can be renamed also to provide a new dimension object with the
-correct name, e.g. if `g2` didn't have an `tokenRep` dimension, but we wanted to
-dot product with the `foo` dimension, we could do:
+Sometimes one wants to multiply dimensions that have different names. In such
+cases, this is done by an explicit renaming e.g. for the above example, `g2`'s
+dimension `inputRep` can be renamed to `tokenRep` to allow the above
+multiplication:
 
 ```ts
-g1.dim.tokenRep.dot(g2.dim.foo.rename('tokenRep'));
+g1.dim.inputTokens.dot(g2.dim.queryTokens.rename('inputTokens'));
 ```
+
+This can be seen as an analag to explicit type-casting, and ensures that
+dimensions with different names are being multiplied together intentionally by
+the user.
 
 By working at this more abstract level, you never need to worry about the axis position, you just reference it by name. Underneath this abstraction, we can now optimise the "layout" of the tensors (the order of the axis) and the various permutation operations.
 
