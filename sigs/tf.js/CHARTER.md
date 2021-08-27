@@ -98,3 +98,4 @@ new, community-owned repos that the SIG will drive.
 - Va Barbosa (IBM)
 - YiHong Wang (IBM)
 - Zebai (Alibaba)
+- Belem Zhang (Intel)
