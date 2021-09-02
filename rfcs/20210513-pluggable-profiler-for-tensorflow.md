@@ -390,6 +390,9 @@ Repeated profiling requests should not increase resource utilization over time.
 * No memory corruption: profiling should not corrupt memory. e.g. due to dangling pointers.
 * No deadlocks: any synchronization necessary to start/stop profiling should not block any application (TF) thread for a long time.
 
+### Assumptions
+Profiler libraries can assume that each time TensorFlow calls a `Start()`, it will call a `Stop()` next, i.e., no multiple consecutive `Start()` calls.
+
 ## **Alternatives Considered**
 
 ## **Performance Implications**
