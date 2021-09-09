@@ -2,7 +2,7 @@
 
 | Status        | (Proposed)       |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [398](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
 | **Author(s)** | Elena Zhelezina (elena.zhelezina@arm.com) |
 | **Sponsor**   | David Rim (davidrim@gmail.com)                 |
 | **Updated**   | 2021-09-13                                           |
