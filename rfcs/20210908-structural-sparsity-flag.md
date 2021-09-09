@@ -38,9 +38,9 @@ table StructuralSparsityParameters {
 During the model conversion, we need to indicate whether tensors should be checked.
 For this purpose we introduce a new flag `STRUCTURAL_SPARSITY` to the TensorFlow Lite convertor.
 
-```cpp
+```python
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
-converter.optimizations = {tf.lite.Optimize.STRUCTURAL_SPARSITY}
+converter.optimizations = [tf.lite.Optimize.STRUCTURAL_SPARSITY]
 tflite_model = converter.convert()
 ```
 
