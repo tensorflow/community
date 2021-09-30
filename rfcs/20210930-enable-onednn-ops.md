@@ -52,7 +52,10 @@ See the full list of ops in the [Supported Operations](#supported-operations) se
 * **Eager mode:** Because TensorFlow processes one op at a time in eager execution, [oneDNN eager op rewrite pass](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/common_runtime/mkl_layout_pass.cc) only does 1:1 op mappings (replaces the op with its corresponding oneDNN op if it has one).
 * **Graph mode:** In graph mode (this includes tf.function graph from eager mode), TensorFlow sees more than one ops at a time, so the [oneDNN graph rewrite pass](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/common_runtime/mkl_layout_pass.cc) can either do 1:1 op mapping or replace a sequence of standard TF ops with a single fused oneDNN custom op. See examples in Figure 1.
 
-![oneDNN graph rewrite passes](20210930-enable-onednn-ops/oneDNN-graph-rewrite-passes.png)
+<div align="center">
+  <img alt="oneDNN graph rewrite passes" src="20210930-enable-onednn-ops/onednn-graph-rewrite-passes.png">
+</div>
+
 **Figure 1.** oneDNN custom ops are introduced to the graph through graph rewrite passes. Each op could substitute for one standard TF op, e.g., (a) and (b), or a sequence of ops, e.g., (c). oneDNN ops names are prefixed with “_MklNative”. (“Mkl” comes from oneDNN’s old name, MKL-DNN.)
 
 **Software-managed cache** is an internal data structure that lives throughout a TensorFlow session. It is used to store oneDNN primitives and temporaries constructed by oneDNN ops for reuse next time the same op or other applicable ops are run. Its purpose is purely for reducing the framework overhead, i.e., it is not needed for correctness. The caching process is automatic and is not visible to users.
@@ -132,7 +135,10 @@ Your CPU supports instructions that this TensorFlow binary was not compiled to u
 
 From TF 1.13 onwards, we mitigate this issue for contraction ops, i.e., matrix multiplications and convolutions, which account for the majority of model execution time. TensorFlow contraction ops relies on Eigen’s [tensor contraction](https://gitlab.com/libeigen/eigen/-/blob/master/unsupported/Eigen/CXX11/src/Tensor/TensorContractionBlocking.h), which shards the work into many small, L1-cache-fitted matrix multiplications, enqueues them as tasks in the thread pool, and calls Eigen’s single-threaded [general block-panel kernel (gebp)](https://gitlab.com/libeigen/eigen/-/blob/master/Eigen/src/Core/products/GeneralBlockPanelKernel.h) to compute each task. By replacing the gebp call with oneDNN’s single-threaded [matrix multiplication (dnnl_sgemm)](https://github.com/oneapi-src/oneDNN/blob/073206ba120b51668eb4e47ecc938af77d449a8e/include/oneapi/dnnl/dnnl.h#L3742) which has dynamic dispatch, TensorFlow can use CPU instructions newer than AVX in all contraction ops. Figure 2 illustrates the process.
 
-![Eigen contraction kernel](20210930-enable-onednn-ops/eigen-contraction-kernel.png)
+<div align="center">
+  <img alt="Eigen contraction kernel" width=600 src="20210930-enable-onednn-ops/eigen-contraction-kernel.png">
+</div>
+
 **Figure 2.** Replacing Eigen single-threaded matrix multiplication with oneDNN’s lets TensorFlow use CPU instructions newer than AVX in contraction ops such as matrix multiplications and convolutions.
 
 However, this workaround has limitations:
