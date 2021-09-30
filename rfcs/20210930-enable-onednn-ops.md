@@ -2,7 +2,7 @@
 
 | Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | TBD                                                  |
+| **RFC #**     | [400](https://github.com/tensorflow/community/pull/400) |
 | **Author(s)** | Penporn Koanantakool (penporn@google.com)            |
 | **Sponsor**   | Tatiana Shpeisman (shpeisman@google.com)             |
 | **Updated**   | 2021-09-30                                           |
