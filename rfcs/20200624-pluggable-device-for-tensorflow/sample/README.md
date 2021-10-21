@@ -57,8 +57,43 @@ $ python
 *  Relu case:
 ```
 $ python relu.py
+random_normal/RandomStandardNormal: (RandomStandardNormal): /job:localhost/replica:0/task:0/device:CPU:0
+2021-10-21 12:48:20.714819: I tensorflow/core/common_runtime/placer.cc:114] random_normal/RandomStandardNormal: (RandomStandardNormal): /job:localhost/replica:0/task:0/device:CPU:0
+random_normal/mul: (Mul): /job:localhost/replica:0/task:0/device:CPU:0
+2021-10-21 12:48:20.714864: I tensorflow/core/common_runtime/placer.cc:114] random_normal/mul: (Mul): /job:localhost/replica:0/task:0/device:CPU:0
+random_normal: (AddV2): /job:localhost/replica:0/task:0/device:CPU:0
+2021-10-21 12:48:20.714903: I tensorflow/core/common_runtime/placer.cc:114] random_normal: (AddV2): /job:localhost/replica:0/task:0/device:CPU:0
+Relu: (Relu): /job:localhost/replica:0/task:0/device:MY_DEVICE:0
+2021-10-21 12:48:20.714937: I tensorflow/core/common_runtime/placer.cc:114] Relu: (Relu): /job:localhost/replica:0/task:0/device:MY_DEVICE:0
+random_normal/shape: (Const): /job:localhost/replica:0/task:0/device:CPU:0
+2021-10-21 12:48:20.714968: I tensorflow/core/common_runtime/placer.cc:114] random_normal/shape: (Const): /job:localhost/replica:0/task:0/device:CPU:0
+random_normal/mean: (Const): /job:localhost/replica:0/task:0/device:CPU:0
+2021-10-21 12:48:20.714997: I tensorflow/core/common_runtime/placer.cc:114] random_normal/mean: (Const): /job:localhost/replica:0/task:0/device:CPU:0
+random_normal/stddev: (Const): /job:localhost/replica:0/task:0/device:CPU:0
+2021-10-21 12:48:20.715022: I tensorflow/core/common_runtime/placer.cc:114] random_normal/stddev: (Const): /job:localhost/replica:0/task:0/device:CPU:0
+[2.9109507 0.        0.        0.        0.        0.        0.
+ 0.        0.        1.316411 ]
+
 ```
 * Conv + Relu case:
 ```
 $ python conv_relu.py
+2021-10-21 12:53:36.389514: I tensorflow/core/common_runtime/placer.cc:114] random_normal_3/mul: (Mul): /job:localhost/replica:0/task:0/device:CPU:0
+random_normal_3: (AddV2): /job:localhost/replica:0/task:0/device:CPU:0
+2021-10-21 12:53:36.389537: I tensorflow/core/common_runtime/placer.cc:114] random_normal_3: (AddV2): /job:localhost/replica:0/task:0/device:CPU:0
+Relu: (Relu): /job:localhost/replica:0/task:0/device:MY_DEVICE:0
+2021-10-21 12:53:36.389565: I tensorflow/core/common_runtime/placer.cc:114] Relu: (Relu): /job:localhost/replica:0/task:0/device:MY_DEVICE:0
+Conv2D: (Conv2D): /job:localhost/replica:0/task:0/device:MY_DEVICE:0
+2021-10-21 12:53:36.389592: I tensorflow/core/common_runtime/placer.cc:114] Conv2D: (Conv2D): /job:localhost/replica:0/task:0/device:MY_DEVICE:0
+Relu_1: (Relu): /job:localhost/replica:0/task:0/device:CPU:0
+2021-10-21 12:53:36.389617: I tensorflow/core/common_runtime/placer.cc:114] Relu_1: (Relu): /job:localhost/replica:0/task:0/device:CPU:0
+Conv2D_1: (Conv2D): /job:localhost/replica:0/task:0/device:CPU:0
+2021-10-21 12:53:36.389641: I tensorflow/core/common_runtime/placer.cc:114] Conv2D_1: (Conv2D): /job:localhost/replica:0/task:0/device:CPU:0
+```
+* Profiler case:
+```
+$python test_profiler.py
+<div>
+<img src=1.png>
+</div>
 ```
