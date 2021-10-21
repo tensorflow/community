@@ -42,3 +42,20 @@ cc_library(
     ],
     alwayslink = True,
 )
+
+
+cc_library(
+    name = "plugin_profiler",
+    srcs = ["plugin_profiler.cc"],
+    hdrs = ["plugin_device.h"],
+    linkstatic = 1,
+    visibility = ["//visibility:public"],
+    deps = [
+        "//tensorflow_plugin/src/profiler/cpu:demo_profiler",
+        "@local_config_tf//:tf_header_lib",
+    ],
+    alwayslink = True,
+)
+
+
+

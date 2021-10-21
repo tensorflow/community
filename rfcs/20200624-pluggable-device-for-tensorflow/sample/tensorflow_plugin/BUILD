@@ -6,6 +6,7 @@ cc_binary(
         "//tensorflow_plugin/src:plugin_device",
         "//tensorflow_plugin/src:plugin_graph",
         "//tensorflow_plugin/src:plugin_kernel",
+        "//tensorflow_plugin/src:plugin_profiler",
     ],
 )
 

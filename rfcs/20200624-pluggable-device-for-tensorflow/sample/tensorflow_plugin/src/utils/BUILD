@@ -113,6 +113,13 @@ cc_proto(
     ],
 )
 
+cc_proto(
+    name = "xplane",
+    src = "xplane.proto",
+)
+
+
+
 cc_library(
     name = "protos_all",
     visibility = ["//visibility:public"],
@@ -120,5 +127,65 @@ cc_library(
         ":api_def_proto",
         ":graph_proto",
         ":op_performance_data_proto",
+        ":xplane_proto",
+    ],
+)
+
+cc_library(
+  name = "platform",
+  hdrs = ["platform.h"],
+)
+
+
+cc_library(
+  name = "prefetch",
+  hdrs = ["prefetch.h"],
+  visibility = ["//visibility:public"],
+  deps = [":platform"],
+)
+
+cc_library(
+  name = "tstring",
+  hdrs = [
+     "ctstring.h",
+     "tstring.h",
+  ],
+  deps = [
+    "@com_google_absl//absl/strings",
+    "@local_config_tf//:tf_header_lib",
+  ],
+)
+
+cc_library(
+  name = "types",
+  hdrs = ["types.h"],
+  visibility = ["//visibility:public"], 
+  deps = [
+    ":platform",
+    ":tstring"
+  ],
+)
+
+
+cc_library(
+    name = "logging",
+    srcs = ["logging.cc"],
+    visibility = ["//visibility:public"],
+    hdrs = [
+       "env_time.h",
+       "integral_types.h",
+       "logging.h",
+       "macros.h",
+       #"numeric_types.h",
+       "stringpiece.h",
+       "types.h",
+       "protobuf.h"
+    ],
+    deps = [
+        ":platform",
+        ":tstring",
+        "//tensorflow_plugin/src/utils/gtl:gtl_libs",
+        #"//third_party/eigen3",
+        ":protos_all",
     ],
 )

@@ -614,7 +614,7 @@ Example:
 ```c++
 #include "tensorflow/c/experimental/grappler/grappler.h"
 
-void TF_InitGraphPlugin(TP_OptimizerRegistrationParams* params,
+void TF_InitGraph(TP_OptimizerRegistrationParams* params,
                         TF_Status* status) {
   params->struct_size = TP_OPTIMIZER_REGISTRATION_PARAMS_STRUCT_SIZE;
   params->device_type = "CPU";

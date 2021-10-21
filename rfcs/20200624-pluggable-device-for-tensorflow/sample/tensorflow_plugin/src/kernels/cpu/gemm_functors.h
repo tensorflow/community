@@ -1,10 +1,10 @@
 #ifndef TENSORFLOW_PLUGIN_SRC_KERNEL_CPU_H_
 #define TENSORFLOW_PLUGIN_SRC_KERNEL_CPU_H_
 
-#define EIGEN_USE_THREADS
+//#define EIGEN_USE_THREADS
 
-#include <string.h>
 #include <map>
+#include <string.h>
 #include <vector>
 
 #include "third_party/eigen3/unsupported/Eigen/CXX11/Tensor"
@@ -14,11 +14,10 @@
 #include "third_party/eigen3/unsupported/Eigen/CXX11/FixedPoint"
 // clang-format on
 
-template <class T1, class T2, class T3>
-class FastGemmFunctor {
- public:
-  void operator()(size_t m, size_t n, size_t k, const T1* a, size_t lda,
-                  const T2* b, size_t ldb, T3* c, size_t ldc) {
+template <class T1, class T2, class T3> class FastGemmFunctor {
+public:
+  void operator()(size_t m, size_t n, size_t k, const T1 *a, size_t lda,
+                  const T2 *b, size_t ldb, T3 *c, size_t ldc) {
     Eigen::array<size_t, 2> dim_a = {{m, k}};
     Eigen::array<size_t, 2> dim_b = {{k, n}};
     Eigen::array<size_t, 2> dim_c = {{m, n}};
@@ -43,4 +42,4 @@ class FastGemmFunctor {
   }
 };
 
-#endif  // TENSORFLOW_PLUGIN_SRC_KERNEL_CPU_H_
+#endif // TENSORFLOW_PLUGIN_SRC_KERNEL_CPU_H_

@@ -28,6 +28,7 @@ cc_library(
         "//tensorflow_plugin:core",
         "@com_google_absl//absl/container:inlined_vector",
         "@eigen_archive//:eigen",
+        "//third_party/eigen3"
     ],
     alwayslink = True,
 )

@@ -1,7 +1,7 @@
-#define EIGEN_USE_THREADS
+//#define EIGEN_USE_THREADS
 
-#include <string.h>
 #include <map>
+#include <string.h>
 #include <vector>
 
 #include "gemm_functors.h"
@@ -14,7 +14,7 @@
 namespace demo_plugin {
 
 struct StatusDeleter {
-  void operator()(TF_Status* s) {
+  void operator()(TF_Status *s) {
     if (s != nullptr) {
       TF_DeleteStatus(s);
     }
@@ -22,7 +22,7 @@ struct StatusDeleter {
 };
 
 struct TensorDeleter {
-  void operator()(TF_Tensor* t) {
+  void operator()(TF_Tensor *t) {
     if (t != nullptr) {
       TF_DeleteTensor(t);
     }
@@ -33,9 +33,9 @@ using StatusSafePtr = std::unique_ptr<TF_Status, StatusDeleter>;
 using TensorSafePtr = std::unique_ptr<TF_Tensor, TensorDeleter>;
 
 enum Padding {
-  VALID = 1,     // No padding.
-  SAME = 2,      // Input and output layers have the same size.
-  EXPLICIT = 3,  // Padding is explicitly specified.
+  VALID = 1,    // No padding.
+  SAME = 2,     // Input and output layers have the same size.
+  EXPLICIT = 3, // Padding is explicitly specified.
 };
 
 enum TensorFormat {
@@ -47,33 +47,28 @@ enum TensorFormat {
   FORMAT_HWCN = 5,
 };
 
-template <typename T>
-struct TypeToEnum {};
+template <typename T> struct TypeToEnum {};
 
-template <>
-struct TypeToEnum<float> {
+template <> struct TypeToEnum<float> {
   static TF_DataType v() { return TF_DataType::TF_FLOAT; }
 };
 
-template <>
-struct TypeToEnum<double> {
+template <> struct TypeToEnum<double> {
   static TF_DataType v() { return TF_DataType::TF_DOUBLE; }
 };
 
-template <>
-struct TypeToEnum<Eigen::half> {
+template <> struct TypeToEnum<Eigen::half> {
   static TF_DataType v() { return TF_DataType::TF_HALF; }
 };
 
-template <>
-struct TypeToEnum<Eigen::bfloat16> {
+template <> struct TypeToEnum<Eigen::bfloat16> {
   static TF_DataType v() { return TF_DataType::TF_BFLOAT16; }
 };
 
 static bool GetWindowedOutputSize(int64_t input_size, int64_t filter_size,
                                   int64_t dilation_rate, int64_t stride,
-                                  Padding padding_type, int64_t* output_size,
-                                  int64_t* padding_before) {
+                                  Padding padding_type, int64_t *output_size,
+                                  int64_t *padding_before) {
   if (stride <= 0) {
     std::cerr << "Stride must be > 0, but got " << stride << std::endl;
     return false;
@@ -86,19 +81,19 @@ static bool GetWindowedOutputSize(int64_t input_size, int64_t filter_size,
 
   int64_t effective_filter_size = (filter_size - 1) * dilation_rate + 1;
   switch (padding_type) {
-    case Padding::VALID:
-      *output_size = (input_size - effective_filter_size + stride) / stride;
-      *padding_before = 0;
-      break;
-    case Padding::SAME:
-      *output_size = (input_size + stride - 1) / stride;
-      const int64_t padding_needed =
-          std::max(int64_t{0}, (*output_size - 1) * stride +
-                                   effective_filter_size - input_size);
-      // For odd values of total padding, add more padding at the 'right'
-      // side of the given dimension.
-      *padding_before = padding_needed / 2;
-      break;
+  case Padding::VALID:
+    *output_size = (input_size - effective_filter_size + stride) / stride;
+    *padding_before = 0;
+    break;
+  case Padding::SAME:
+    *output_size = (input_size + stride - 1) / stride;
+    const int64_t padding_needed =
+        std::max(int64_t{0}, (*output_size - 1) * stride +
+                                 effective_filter_size - input_size);
+    // For odd values of total padding, add more padding at the 'right'
+    // side of the given dimension.
+    *padding_before = padding_needed / 2;
+    break;
   }
   if (*output_size < 0) {
     std::cerr << "Computed output size would be negative: " << *output_size
@@ -110,51 +105,51 @@ static bool GetWindowedOutputSize(int64_t input_size, int64_t filter_size,
   return true;
 }
 
-static int64_t GetTensorDim(TF_Tensor* tensor, std::string& format, char dim) {
+static int64_t GetTensorDim(TF_Tensor *tensor, std::string &format, char dim) {
   int idx = -1;
   if (format == "NCHW") {
     switch (dim) {
-      case 'N': {
-        idx = 0;
-        break;
-      }
-      case 'C': {
-        idx = 1;
-        break;
-      }
-      case 'H': {
-        idx = 2;
-        break;
-      }
-      case 'W': {
-        idx = 3;
-        break;
-      }
-      default: {
-        idx = -1;
-      }
+    case 'N': {
+      idx = 0;
+      break;
+    }
+    case 'C': {
+      idx = 1;
+      break;
+    }
+    case 'H': {
+      idx = 2;
+      break;
+    }
+    case 'W': {
+      idx = 3;
+      break;
+    }
+    default: {
+      idx = -1;
+    }
     }
   } else if (format == "NHWC") {
     switch (dim) {
-      case 'N': {
-        idx = 0;
-        break;
-      }
-      case 'C': {
-        idx = 3;
-        break;
-      }
-      case 'H': {
-        idx = 1;
-        break;
-      }
-      case 'W': {
-        idx = 2;
-        break;
-      }
-      default: {
-        idx = -1;
-      }
+    case 'N': {
+      idx = 0;
+      break;
+    }
+    case 'C': {
+      idx = 3;
+      break;
+    }
+    case 'H': {
+      idx = 1;
+      break;
+    }
+    case 'W': {
+      idx = 2;
+      break;
+    }
+    default: {
+      idx = -1;
+    }
     }
   } else {
     std::cerr << "Unsupport data_format now" << std::endl;
@@ -163,18 +158,18 @@ static int64_t GetTensorDim(TF_Tensor* tensor, std::string& format, char dim) {
   return TF_Dim(tensor, idx);
 }
 
-#define CHECK_CONSTRUCT_STATUS(ctx, status)         \
-  do {                                              \
-    if (TF_GetCode(status) != TF_OK) {              \
-      TF_OpKernelConstruction_Failure(ctx, status); \
-    }                                               \
+#define CHECK_CONSTRUCT_STATUS(ctx, status)                                    \
+  do {                                                                         \
+    if (TF_GetCode(status) != TF_OK) {                                         \
+      TF_OpKernelConstruction_Failure(ctx, status);                            \
+    }                                                                          \
   } while (0);
 
-#define CHECK_CTX_STATUS(ctx, status)          \
-  do {                                         \
-    if (TF_GetCode(status) != TF_OK) {         \
-      TF_OpKernelContext_Failure(ctx, status); \
-    }                                          \
+#define CHECK_CTX_STATUS(ctx, status)                                          \
+  do {                                                                         \
+    if (TF_GetCode(status) != TF_OK) {                                         \
+      TF_OpKernelContext_Failure(ctx, status);                                 \
+    }                                                                          \
   } while (0);
 
 namespace {
@@ -185,12 +180,12 @@ const size_t kMaxChunkSize = (16 * 1024 * 1024);
 // final result.
 template <class T1, class T2, class T3, class TGemmFunctor>
 class Im2ColConvFunctor {
- public:
-  void operator()(const T1* input_data, int input_batches, int input_height,
-                  int input_width, int input_depth, const T2* filter_data,
+public:
+  void operator()(const T1 *input_data, int input_batches, int input_height,
+                  int input_width, int input_depth, const T2 *filter_data,
                   int filter_height, int filter_width, int filter_count,
                   int stride_rows, int stride_cols, Padding padding,
-                  T3* output_data, int output_height, int output_width) {
+                  T3 *output_data, int output_height, int output_width) {
     if ((input_batches <= 0) || (input_width <= 0) || (input_height <= 0) ||
         (input_depth <= 0)) {
       std::cerr << "Conv2D was called with bad input dimensions: "
@@ -298,22 +293,22 @@ class Im2ColConvFunctor {
         const int64_t batch = patch_index / (output_height * output_width);
         const int64_t out_y = (patch_index / output_width) % output_height;
         const int64_t out_x = patch_index % output_width;
-        const T1* input_batch_start =
+        const T1 *input_batch_start =
             input_data + (batch * input_height * input_width * input_depth);
         const int in_y_origin = (out_y * stride_rows) - filter_top_offset;
         const int in_x_origin = (out_x * stride_cols) - filter_left_offset;
         const int patch_index_within_chunk = patch_index % patches_per_chunk;
-        T1* im2col_patch_start =
+        T1 *im2col_patch_start =
             im2col_buffer.get() +
             (patch_index_within_chunk * filter_value_count);
         for (int filter_y = 0; filter_y < filter_height; ++filter_y) {
           const int in_y = in_y_origin + filter_y;
-          T1* im2col_row_start =
+          T1 *im2col_row_start =
               im2col_patch_start + (filter_y * filter_width * input_depth);
           // If we're off the top or the bottom of the input, fill the
           // whole row with zeroes.
           if ((in_y < 0) || (in_y >= input_height)) {
-            T1* im2col_row_end =
+            T1 *im2col_row_end =
                 im2col_row_start + (filter_width * input_depth);
             std::fill(im2col_row_start, im2col_row_end, T1(0));
           } else {
@@ -340,26 +335,26 @@ class Im2ColConvFunctor {
             const int center_copy_count =
                 filter_width - (left_zero_count + right_zero_count);
             if (left_zero_count > 0) {
-              T1* im2col_left_start = im2col_row_start;
-              T1* im2col_left_end =
+              T1 *im2col_left_start = im2col_row_start;
+              T1 *im2col_left_end =
                   im2col_left_start + (left_zero_count * input_depth);
               std::fill(im2col_left_start, im2col_left_end, T1(0));
             }
             if (center_copy_count > 0) {
-              const T1* input_row_start =
+              const T1 *input_row_start =
                   input_batch_start + (in_y * input_width * input_depth) +
                   (std::max(0, in_x_origin) * input_depth);
-              const T1* input_row_end =
+              const T1 *input_row_end =
                   input_row_start + (center_copy_count * input_depth);
-              T1* im2col_center_start =
+              T1 *im2col_center_start =
                   im2col_row_start + (left_zero_count * input_depth);
               std::copy(input_row_start, input_row_end, im2col_center_start);
             }
             if (right_zero_count > 0) {
-              T1* im2col_right_start =
+              T1 *im2col_right_start =
                   im2col_row_start +
                   ((left_zero_count + center_copy_count) * input_depth);
-              T1* im2col_right_end =
+              T1 *im2col_right_end =
                   im2col_right_start + (right_zero_count * input_depth);
               std::fill(im2col_right_start, im2col_right_end, T1(0));
             }
@@ -376,7 +371,7 @@ class Im2ColConvFunctor {
       const int lda = filter_value_count;
       const int ldb = filter_count;
       const int ldc = filter_count;
-      T3* chunk_output_data = output_data + (patch_index_start * filter_count);
+      T3 *chunk_output_data = output_data + (patch_index_start * filter_count);
       TGemmFunctor gemm_functor;
       gemm_functor(m, n, k, im2col_buffer.get(), lda, filter_data, ldb,
                    chunk_output_data, ldc);
@@ -384,10 +379,9 @@ class Im2ColConvFunctor {
   }
 };
 
-}  // namespace
+} // namespace
 
-template <class T>
-struct Conv2DUsingGemmOp {
+template <class T> struct Conv2DUsingGemmOp {
   Conv2DUsingGemmOp() : data_format_("") {}
   std::vector<int32_t> strides_;
   Padding padding_;
@@ -395,7 +389,7 @@ struct Conv2DUsingGemmOp {
 };
 
 template <class T>
-void* Conv2DUsingGemmOp_Create(TF_OpKernelConstruction* ctx) {
+void *Conv2DUsingGemmOp_Create(TF_OpKernelConstruction *ctx) {
   auto kernel = new Conv2DUsingGemmOp<T>();
 
   StatusSafePtr status(TF_NewStatus());
@@ -441,26 +435,25 @@ void* Conv2DUsingGemmOp_Create(TF_OpKernelConstruction* ctx) {
   return kernel;
 }
 
-template <typename T>
-void Conv2DUsingGemmOp_Delete(void* kernel) {
+template <typename T> void Conv2DUsingGemmOp_Delete(void *kernel) {
   if (kernel != nullptr) {
-    delete static_cast<Conv2DUsingGemmOp<T>*>(kernel);
+    delete static_cast<Conv2DUsingGemmOp<T> *>(kernel);
   }
 }
 
 template <class T, class TConvFunctor>
-void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
+void Conv2DUsingGemmOp_Compute(void *kernel, TF_OpKernelContext *ctx) {
   StatusSafePtr status(TF_NewStatus());
   // Input tensor is of the following dimensions:
   // [ batch, in_rows, in_cols, in_depth ]
-  TF_Tensor* input = nullptr;
+  TF_Tensor *input = nullptr;
   TF_GetInput(ctx, 0, &input, status.get());
   CHECK_CTX_STATUS(ctx, status.get());
   TensorSafePtr input_safe_ptr(input);
 
   // Input filter is of the following dimensions:
   // [ filter_rows, filter_cols, in_depth, out_depth]
-  TF_Tensor* filter = nullptr;
+  TF_Tensor *filter = nullptr;
   TF_GetInput(ctx, 1, &filter, status.get());
   CHECK_CTX_STATUS(ctx, status.get());
   TensorSafePtr filter_safe_ptr(filter);
@@ -484,7 +477,7 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
   // The last dimension for input is in_depth. It must be the same as the
   // filter's in_depth.
   const int64_t in_depth = GetTensorDim(
-      input, static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_, 'C');
+      input, static_cast<Conv2DUsingGemmOp<T> *>(kernel)->data_format_, 'C');
   if (in_depth != TF_Dim(filter, 2)) {
     std::cerr << "input and filter must have the same depth" << std::endl;
     return;
@@ -496,7 +489,7 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
   // The second dimension for input is rows/height.
   // The first dimension for filter is rows/height.
   const int64_t input_rows_raw = GetTensorDim(
-      input, static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_, 'H');
+      input, static_cast<Conv2DUsingGemmOp<T> *>(kernel)->data_format_, 'H');
   if (input_rows_raw >= std::numeric_limits<int>::max()) {
     std::cerr << "Input rows too large";
     return;
@@ -507,7 +500,7 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
   // The third dimension for input is columns/width.
   // The second dimension for filter is columns/width.
   const int64_t input_cols_raw = GetTensorDim(
-      input, static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_, 'W');
+      input, static_cast<Conv2DUsingGemmOp<T> *>(kernel)->data_format_, 'W');
   if (input_cols_raw >= std::numeric_limits<int>::max()) {
     std::cerr << "Input cols too large" << std::endl;
     return;
@@ -517,7 +510,7 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
 
   // The first dimension for input is batch.
   const int64_t batch_raw = GetTensorDim(
-      input, static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_, 'N');
+      input, static_cast<Conv2DUsingGemmOp<T> *>(kernel)->data_format_, 'N');
   if (batch_raw >= std::numeric_limits<int>::max()) {
     std::cerr << "batch is too large" << std::endl;
     return;
@@ -528,13 +521,13 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
   // do not support striding on the batch or depth dimension).
   int stride_rows = 0;
   int stride_cols = 0;
-  if (static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_ == "NCHW") {
-    stride_rows = static_cast<Conv2DUsingGemmOp<T>*>(kernel)->strides_[2];
-    stride_cols = static_cast<Conv2DUsingGemmOp<T>*>(kernel)->strides_[3];
-  } else if (static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_ ==
+  if (static_cast<Conv2DUsingGemmOp<T> *>(kernel)->data_format_ == "NCHW") {
+    stride_rows = static_cast<Conv2DUsingGemmOp<T> *>(kernel)->strides_[2];
+    stride_cols = static_cast<Conv2DUsingGemmOp<T> *>(kernel)->strides_[3];
+  } else if (static_cast<Conv2DUsingGemmOp<T> *>(kernel)->data_format_ ==
              "NHWC") {
-    stride_rows = static_cast<Conv2DUsingGemmOp<T>*>(kernel)->strides_[1];
-    stride_cols = static_cast<Conv2DUsingGemmOp<T>*>(kernel)->strides_[2];
+    stride_rows = static_cast<Conv2DUsingGemmOp<T> *>(kernel)->strides_[1];
+    stride_cols = static_cast<Conv2DUsingGemmOp<T> *>(kernel)->strides_[2];
   } else {
     std::cerr << "Unsupported data format" << std::endl;
     return;
@@ -543,7 +536,7 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
   int64_t out_rows = 0, out_cols = 0, pad_rows = 0, pad_cols = 0;
   if (!GetWindowedOutputSize(
           input_rows, filter_rows, 1, stride_rows,
-          static_cast<Conv2DUsingGemmOp<T>*>(kernel)->padding_, &out_rows,
+          static_cast<Conv2DUsingGemmOp<T> *>(kernel)->padding_, &out_rows,
           &pad_rows)) {
     std::cerr << "Invalid filter size" << std::endl;
     return;
@@ -551,7 +544,7 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
 
   if (!GetWindowedOutputSize(
           input_cols, filter_cols, 1, stride_cols,
-          static_cast<Conv2DUsingGemmOp<T>*>(kernel)->padding_, &out_cols,
+          static_cast<Conv2DUsingGemmOp<T> *>(kernel)->padding_, &out_cols,
           &pad_cols)) {
     std::cerr << "Invalid filter size" << std::endl;
     return;
@@ -559,11 +552,11 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
   auto output_size = batch * out_rows * out_cols * out_depth;
   std::vector<int64_t> out_shape;
   out_shape.push_back(batch);
-  if (static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_ == "NCHW") {
+  if (static_cast<Conv2DUsingGemmOp<T> *>(kernel)->data_format_ == "NCHW") {
     out_shape.push_back(out_depth);
     out_shape.push_back(out_rows);
     out_shape.push_back(out_cols);
-  } else if (static_cast<Conv2DUsingGemmOp<T>*>(kernel)->data_format_ ==
+  } else if (static_cast<Conv2DUsingGemmOp<T> *>(kernel)->data_format_ ==
              "NHWC") {
     out_shape.push_back(out_rows);
     out_shape.push_back(out_cols);
@@ -584,18 +577,17 @@ void Conv2DUsingGemmOp_Compute(void* kernel, TF_OpKernelContext* ctx) {
     return;
   }
   TConvFunctor conv_functor;
-  conv_functor(static_cast<T*>(TF_TensorData(input_safe_ptr.get())), batch,
+  conv_functor(static_cast<T *>(TF_TensorData(input_safe_ptr.get())), batch,
                input_rows, input_cols, in_depth,
-               static_cast<T*>(TF_TensorData(filter_safe_ptr.get())),
+               static_cast<T *>(TF_TensorData(filter_safe_ptr.get())),
                filter_rows, filter_cols, out_depth, stride_rows, stride_cols,
-               static_cast<Conv2DUsingGemmOp<T>*>(kernel)->padding_,
-               static_cast<T*>(TF_TensorData(output_safe_ptr.get())), out_rows,
+               static_cast<Conv2DUsingGemmOp<T> *>(kernel)->padding_,
+               static_cast<T *>(TF_TensorData(output_safe_ptr.get())), out_rows,
                out_cols);
 };
-template <typename T>
-void RegisterConvOpKernel(const char* device_type) {
+template <typename T> void RegisterConvOpKernel(const char *device_type) {
   StatusSafePtr status(TF_NewStatus());
-  auto* builder = TF_NewKernelBuilder(
+  auto *builder = TF_NewKernelBuilder(
       "Conv2D", device_type, &Conv2DUsingGemmOp_Create<T>,
       &Conv2DUsingGemmOp_Compute<
           T, Im2ColConvFunctor<T, T, T, FastGemmFunctor<T, T, T>>>,
@@ -609,8 +601,8 @@ void RegisterConvOpKernel(const char* device_type) {
     std::cout << " Error while registering relu kernel";
 }
 
-}  // namespace demo_plugin
+} // namespace demo_plugin
 
-void RegisterDeviceConv2D(const char* device_type) {
+void RegisterDeviceConv2D(const char *device_type) {
   demo_plugin::RegisterConvOpKernel<float>(device_type);
 }

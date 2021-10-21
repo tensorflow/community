@@ -1,6 +1,3 @@
-#ifndef INTEL_CPU_ONLY
-#include "eigen_dpcpp_runtime.h"
-#endif
 
 #include "unsupported/Eigen/CXX11/Tensor"
 
