@@ -11,26 +11,22 @@ This sample is a simple demo shows how to implement, build, install and run a Te
 * Python (version 3.6 and above)
 
 ## Build and Run
-This demo depends on the folllowing ongoing PRs:
-* [\[PluggableDevice\]] PluggableDevice mechanism implementation](https://github.com/tensorflow/tensorflow/pull/45784)
-
-* [\[PluggableDevice\] Add device alias support] (https://github.com/tensorflow/tensorflow/pull/43611) (gpu only)
 
 ### Linux
-1. Run the following command to install `tf-nightly`.
+1. Run the following command to install the latest `tensorflow`.
 ```
-$ pip install tf-nightly
+$ pip install tensorflow
 ```
-2. In the plug-in `sample` code folder, configure build options:
+2. In the plug-in `sample` code folder, configure the build options:
 ```
 $ ./configure 
 
-Please specify the location of python. [Default is /home/guizili/miniconda2/envs/sycl3.6/bin/python]: 
+Please specify the location of python. [Default is /home/test/miniconda2/envs/sycl3.6/bin/python]: 
 
 
 Found possible Python library paths:
-  /home/guizili/miniconda2/envs/sycl3.6/lib/python3.6/site-packages
-Please input the desired Python library path to use.  Default is [/home/guizili/miniconda2/envs/sycl3.6/lib/python3.6/site-packages]
+  /home/test/miniconda2/envs/sycl3.6/lib/python3.6/site-packages
+Please input the desired Python library path to use.  Default is [/home/test/miniconda2/envs/sycl3.6/lib/python3.6/site-packages]
 
 Do you wish to build TensorFlow plug-in with MPI support? [y/N]: 
 No MPI support will be enabled for TensorFlow plug-in.
