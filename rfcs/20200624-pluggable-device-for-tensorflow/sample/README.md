@@ -93,7 +93,8 @@ Conv2D_1: (Conv2D): /job:localhost/replica:0/task:0/device:CPU:0
 * Profiler case:
 ```
 $python test_profiler.py
-<div>
-<img src=1.png>
-</div>
 ```
+<div>
+<img src=profiler_result.png>
+</div>
+
