@@ -55,7 +55,7 @@ Modular TensorFlow provides a set of C API as an ABI-stable way to register a cu
 <img src=modular_TensorFlow.png>
 </div>
 
-We anticipate three basic functionalities within a device plug-in module: device runtime, kernel/op, graph optimizer.
+We anticipate three basic functionalities within a device plug-in module: device runtime, kernel/op, graph optimize and profiler.
 
 ### **Device Runtime**
 
