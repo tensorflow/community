@@ -921,7 +921,7 @@ buffer, size_t* size_in_bytes, TF_Status* status) {
 ```
 * `params->destroy_profiler`: pointer to plugin's `TP_Profiler` clean up function. Cleans up fields inside `TP_Profiler` that were allocated by the plugin. `profiler` itself must not be deleted by the plugin.
 * `params->destroy_profiler_fns`: pointer to plugin's `TP_ProfilerFns` clean up function. Cleans up fields inside `TP_ProfilerFns` that were allocated by the plugin. `profiler_fns` itself must not be deleted by the plugin.
-
+you can find profiler implementation sample code in `sample/tensorflow_plugin/src/profiler`.
 
 ## **Plugin build**
 
