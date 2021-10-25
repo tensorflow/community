@@ -19,7 +19,7 @@
 
 # **Introduction**
 
-This tutorial is intended for developers who wish to extend TensorFlow to support a new device for the current TensorFlow stack through Modular TensorFlow. Plugin provides a decoupled way to add a new device to TensorFlow and has benefits:
+This tutorial is intended for those developers who want to extend TensorFlow to support a new device for the current TensorFlow runtime stack through Modular TensorFlow interface. Plugin provides a decoupled way to add a new device to TensorFlow and has benefits:
 
   -  Simpler process: Does not have to add a new build toolchain to TensorFlow
 
@@ -27,9 +27,9 @@ This tutorial is intended for developers who wish to extend TensorFlow to suppor
 
   -  Lower maintenance efforts: Only C-API-related changes could break the integration. Unrelated TensorFlow changes would not break the code.
 
-The article describes how to implement, build, install and run the plugin. The plugin implementation section covers device runtime registration, kernel registration as well as graph optimizer registration.
+The article describes how to implement, build, install and run the plugin. The plugin implementation section covers device runtime registration, kernel registration, graph optimizer registration as well as profiler registration.
 
-Developers are also recommended to read the Modular TensorFlow design RFC to have a better understanding of the architecture.
+Developers are also recommended to read the Modular TensorFlow design RFC to have a better understanding of the whole architecture.
 
 * [Modular TensorFlow](https://github.com/tensorflow/community/blob/master/rfcs/20190305-modular-tensorflow.md)
 
@@ -41,6 +41,8 @@ Developers are also recommended to read the Modular TensorFlow design RFC to hav
 
 * [Modular TensorFlow Graph C API](https://github.com/tensorflow/community/blob/master/rfcs/20201027-modular-tensorflow-graph-c-api.md)
 
+* [Modular TensorFlow profiler C API](https://github.com/jzhoulon/community/blob/32df34e83472a6f6eb0655b5822afc498da49dd9/rfcs/20210513-pluggable-profiler-for-tensorflow.md)
+
 The build environment in this tutorial is based on Linux, however, it is also expected to work on other OS(Windows, MacOS, etc).
 
 # **Getting started**
@@ -49,7 +51,7 @@ In this section, you will learn how to implement, build, install, and run a plug
 
 ## **Plugin Implementation**
 
-Modular TensorFlow provides a set of C API as an ABI-stable way to register a custom device runtime, kernels/ops and graph optimizer. This will simplify the distribution of plugins and allow plugin authors to distribute binary artifacts without necessarily publishing plugin source code.
+Modular TensorFlow provides a set of C API as an ABI-stable way to register a custom device runtime, kernels/ops, graph optimizer and profiler. This will simplify the distribution of plugins and allow plugin authors to distribute binary artifacts without necessarily publishing plugin source code.
 
 <div align=center>
 <img src=modular_TensorFlow.png>
@@ -59,7 +61,7 @@ We anticipate three basic functionalities within a device plug-in module: device
 
 ### **Device Runtime**
 
-StreamExecutor is TensorFlow’s main device manager, responsible for work execution and memory management. It provides a set of methods (such as Memcpy) that can be customized for a particular device. Modular TensorFlow proposed a C API wrapper of a subset of methods in StreamExecutorInterface as an ABI-stable way to register a custom StreamExecutor platform. The API can be found in[ tensorflow/c/experimental/stream_executor/stream_executor.h](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/c/experimental/stream_executor/stream_executor.h). Plugins need to include implementation of the interfaces declared in this file.
+StreamExecutor is TensorFlow’s main device manager, responsible for work execution and memory management. It provides a set of methods (such as Memcpy) that can be customized for a particular device. Modular TensorFlow proposed a C API wrapper of a subset of methods in StreamExecutorInterface as an ABI-stable way to register a custom StreamExecutor platform. The API can be found in[ tensorflow/c/experimental/stream_executor/stream_executor.h](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/c/experimental/stream_executor/stream_executor.h). Plugins need to implement those interfaces declared in this file.
 
 Here we will introduce how to register a device runtime through StreamExecutor C API. Before that, we will have some conventions:
 
@@ -75,20 +77,20 @@ Here we will introduce how to register a device runtime through StreamExecutor C
 
 §  **SE_InitPlugin**
 
-Plugins need to define `SE_InitPlugin` function and populates `SE_PlatformRegistrationParams::SP_Platform` and `SE_PlatformRegistrationParams::SP_PlatformFns`. When this plugin is loaded by TF at runtime, `SE_InitPlugin` method will be called and a new StreamExecutor platform will be registered by Core TensorFlow.
+Plugins need to define `SE_InitPlugin` function and populates `SE_PlatformRegistrationParams::SP_Platform` and `SE_PlatformRegistrationParams::SP_PlatformFns`.It is the entry point to initialize the plugin device runtime. When this plugin is loaded by TF(the loading procedure is transparent to user, it will automatically loaded by TF as long as the library installed in site-packages/tensorflow/python/tensorflow-plugins/), `SE_InitPlugin` method will be invoked and a new StreamExecutor platform will be created and registered by Core TensorFlow.
 
 Example:
 ```c++
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
 
 void SE_InitPlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
-   	std::string type = "MyDevice";
-   	std::string name = "MyPlatform";
+   	std::string type = "MyDevice"; // It is device's type, such as GPU, APU, which is visible in python front-end.
+   	std::string name = "MyPlatform"; // it is SE platform's name, such as CUDA, ROCM.
    	// Sets struct_size to a valid value, and zero initializes other attributes.
    	params->platform->struct_size = SP_PLATFORM_STRUCT_SIZE;
    	params->platform->type = type.c_str();
    	params->platform->name = name.c_str();
-   	params->platform->visible_device_count = plugin_visible_device_count();
+   	params->platform_fns->get_device_count = plugin_get_device_count;
    	params->platform_fns->create_device = plugin_create_device;
    	params->platform_fns->destroy_device = plugin_destroy_device;
    	params->platform_fns->create_stream_executor = plugin_create_stream_executor;
@@ -101,16 +103,23 @@ void SE_InitPlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
 ```
 As you may see in the example, plugin needs to populate the platform and platform_fns.
 
-* `platform->struct_size`: plugin needs to set it as `SP_PLATFORM_STRUCT_SIZE` (defined in stream_executor.h). This field is used for the StreamExecutor C API version check between Core TensorFlow and the plugin.
+* `platform->struct_size`: plugin needs to set it as `SP_PLATFORM_STRUCT_SIZE` (defined in stream_executor.h). This field is for the StreamExecutor C API version check between Core TensorFlow and the plugin.
 
-* `platform->type`: This field allows plugin authors to register a new device type to the Core TensorFlow, this device type will be visible in front-end, such as tf.device("device type").
+* `platform->type`: This field allows plugin authors to register a new device type to the Core TensorFlow, such as GPU, APU..,this device type will be visible in python front-end, for example, user can assign the graph to "device type" through `with tf.device("device type")`.
 
-* `platform->name`: This field allows plugin authors to register a new StreamExecutor platform name to the Core TensorFlow. This name should be a unique name, you can’t choose a name like "CUDA", “ROCM” which are first party platform names.
+* `platform->name`: This field allows plugin authors to register a new StreamExecutor platform name to the Core TensorFlow, such as CUDA, ROCM, this name is not visible in python front-end. Note: this name should be a unique name, you can’t choose a name like "CUDA", “ROCM” which are first party platform names.
 
-* `platform->visible_device_count`: Core TensorFlow will query this number to decide how many physical devices are discovered by the plugin's device runtime.
+* `platform_fns->get_device_count`: a callback for quering the number of physical devices discovered by plugin's device runtime.
+```c++
+#include "tensorflow/c/experimental/stream_executor/stream_executor.h"
 
-* `platform_fns->create_device`: a callback for creating `SP_Device`. plugin authors need to define function that populate the `SP_Device`:
-
+void plugin_get_device_count() {
+  int device_count;
+  pluginGetDeviceCount(&device_count);
+  return device_count;
+}
+```
+* `platform_fns->create_device`: a callback for creating `SP_Device`. plugin authors need to define the function that  populate the `SP_Device`:
 ```c++
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
 
@@ -123,7 +132,7 @@ void plugin_create_device(const SP_Platform* platform,
    	params->device->ordinal = params->ordinal;
 }
 ```
-* `platform_fns->destroy_device`: a callback for destroying `SP_Device`. plugin authors need to define function that destroy the `SP_Device`:
+* `platform_fns->destroy_device`: a callback for destroying `SP_Device`. plugin authors need to define the function that to destroy the `SP_Device`:
 ```c++
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
 
@@ -163,7 +172,7 @@ void plugin_create_stream_executor(const SP_Platform* platform,
    	... ...
 }
 ```
-plugin authors need to populate all fields in `SP_StreamExecutor`. For example, register allocate function with plugin_malloc, it synchronously allocates 'size' bytes on the underlying platform and returns `SP_DeviceMemoryBase` representing that allocation.
+plugin authors need to populate all fields in `SP_StreamExecutor`. For example, registering allocate function with `plugin_allocate`, it synchronously allocates 'size' of bytes on the underlying platform and returns `SP_DeviceMemoryBase` representing that allocation.
 ```c++
 /*StreamExecutor Backend Impl*/
 
@@ -343,6 +352,7 @@ explicit Conv2DOp(OpKernelConstruction* context) : BinaryOp<T>(context) {
 Kernel C API provides a set of `TF_OpKernelConstruction_GetAttrXX` API to retrieve attributions from `TF_OpKernelConstruction`. These APIs can be separated into four categories according to the attribution’s container:
 
 1. Scalar
+
 `TF_OpKernelConstruction_GetAttr(Type, Float,Int32, Int64, Bool…)` interprets the named kernel construction attribute as scalar value and places it into *val, float for example:
 ```c++
 float value;
@@ -843,6 +853,75 @@ Modular TensorFlow provides three opaque handles, i.e.,  `TF_GrapplerItem`, `TF_
       TF_DeleteFunctionLibraryDefinition(func);
     }
     ```
+### **Profiler Registration**
+Performance is a key consideration of successful ML research and production solutions. TensorFlow profiler provides a set of good tools to help users better understanding the performance bottlenecks of TensorFlow models. TensorFlow Profiler C API provides the capability of connecting third-party device's profiler library(e.g. CUPTI)  to TensorFlow profiler.
+
+Note: Profiler is an optional module in plugin, plugin authors can deside whether to implement this module.
+
+To make C APIs portable, Modular TensorFlow adopts serialized `XSpace` as the objects to pass between TensorFlow framework and plugin. When the framework invokes `CollectData()`, the plugin need to serializes `XSpace` into a sufficiently sized buffer provided by framework.Subsequently, the framework deserializes the buffer back into `XSpace`, and generates a trace view.
+
+<div align=center>
+<img src=Xspace.png>
+</div>
+
+In this section, you will learn how to plugin a profiler library step by step.
+
+§  **TF_InitProfiler**
+
+TF_InitProfiler is the entry point to initialize the plugin profiler, you need to define and implement this function if you want to enable profiler through modular interface. This function will be automatically loaded and invoked by TensorFlow if you defined this function.
+
+Example:
+```
+void TF_InitProfiler(TF_ProfilerRegistrationParams *params, TF_Status *status) {
+  params->struct_size = TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE;
+  params->profiler_fns->struct_size = TP_PROFILER_FNS_STRUCT_SIZE;
+  params->profiler->type =
+      DEVICE_TYPE; // type is device type, such as GPU, APU..
+  params->profiler_fns->start = plugin_start;
+  params->profiler_fns->stop = plugin_stop;
+  params->profiler_fns->collect_data_xspace = plugin_collect_data_xspace;
+  params->destroy_profiler = plugin_destroy_profiler;
+  params->destroy_profiler_fns = plugin_destroy_profiler_fns;
+}
+```
+As you may see in the example, plugin needs to populate the `profiler` and `profiler_fns`.
+
+* `params->struct_size`: plugin needs to set it as `TF_PROFILER_REGISTRATION_PARAMS_STRUCT_SIZE` (defined in pluggable_profiler.h). This field is used for the Profiler C API version check between TensorFlow and the plugin.
+* `params->profiler_fns->struct_size`: plugin needs to set it as `TP_PROFILER_FNS_STRUCT_SIZE` (defined in pluggable_profiler.h). This field is used for the Profiler C API version check between TensorFlow and the plugin.
+* `params->profiler->type`: This field is the device type(e.g. GPU, APU..).
+* `params->profiler_fns->start`: a callback for starting the profiler.
+```c++
+void profiler_start(const TP_Profiler* profiler, TF_Status* status) {
+  /* Enable profiler */
+  ...
+}
+```
+* `params->profiler_fns->stop`: a callback for stopping the profiler.
+```c++
+void profiler_stop(const TP_Profiler* profiler, TF_Status* status) {
+  /* Disable Profiler */
+  ...
+}
+```
+* `params->profiler_fns->collect_data_xspace`: a callback for saving collected profile data into XSpace and serializeds it in to the buffer. If this have been called, subsequent calls might return empty data.
+```c++
+void profiler_collect_data_xspace(const TP_Profiler* profiler, uint8_t*
+buffer, size_t* size_in_bytes, TF_Status* status) {
+  Xspace xspace = get_my_xspace(); /* Plugin generates Xspace based on
+  collected profiler data. */ size_t buffer_size_in_bytes = *size_in_bytes;
+  *size_in_bytes = xspace.ByteSizeLong(); /* get the size of Xspace */
+  if (buffer == nullptr) {
+    return; /* TensorFlow will first get the size of Xspace, then allocate
+    the big enough buffer and pass it to the plugin for retrieving Xspace.
+    */
+  }
+  bool success = xspace.SerializeToArray(buffer, buffer_size_in_bytes);
+}
+
+```
+* `params->destroy_profiler`: pointer to plugin's `TP_Profiler` clean up function. Cleans up fields inside `TP_Profiler` that were allocated by the plugin. `profiler` itself must not be deleted by the plugin.
+* `params->destroy_profiler_fns`: pointer to plugin's `TP_ProfilerFns` clean up function. Cleans up fields inside `TP_ProfilerFns` that were allocated by the plugin. `profiler_fns` itself must not be deleted by the plugin.
+
 
 ## **Plugin build**
 
@@ -876,7 +955,7 @@ After building the plugin, you may want to distribute it through the python pack
 
 ## **Plugin Running**
 
-After installing the plugin to the specified path (site-packages/tensorflow/python/ tensorflow-plugins/). we can run the TensorFlow with plugin now.
+After installing the plugin to the specified path (site-packages/tensorflow/python/tensorflow-plugins/). we can run the TensorFlow with plugin now.
 
 Front-end usage of the plugged device has no difference with first party devices. Suppose you have installed a plugin registers a new device with "MY_DEVICE" device type, you can:
 
