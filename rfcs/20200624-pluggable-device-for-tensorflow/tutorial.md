@@ -10,6 +10,8 @@
       2). [Kernels/Ops](#Kernels/Ops)
 
       3). [Graph optimization](#Graph-optimization)
+      
+      4). [Profiler](#Profiler)
 
    2. [Plugin build](#Plugin-build)
 
@@ -853,7 +855,7 @@ Modular TensorFlow provides three opaque handles, i.e.,  `TF_GrapplerItem`, `TF_
       TF_DeleteFunctionLibraryDefinition(func);
     }
     ```
-### **Profiler Registration**
+### **Profiler**
 Performance is a key consideration of successful ML research and production solutions. TensorFlow profiler provides a set of good tools to help users better understanding the performance bottlenecks of TensorFlow models. TensorFlow Profiler C API provides the capability of connecting third-party device's profiler library(e.g. CUPTI)  to TensorFlow profiler.
 
 Note: Profiler is an optional module in plugin, plugin authors can deside whether to implement this module.
