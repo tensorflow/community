@@ -1,6 +1,6 @@
 # A "Named-Dimensions" TypeScript Library for TensorFlowJS
 
-| Status        | Proposed       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [395](https://github.com/tensorflow/community/pull/395) |
 | **Author(s)** | Lucas Dixon (ldixon@google.com) |
