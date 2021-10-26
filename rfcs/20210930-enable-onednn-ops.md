@@ -43,7 +43,8 @@ The design consists of three main components: oneDNN custom ops, graph rewrite p
 **oneDNN custom ops** are TensorFlow ops that perform some set up (e.g., creating oneDNN compute primitives, memory descriptors, etc) before calling oneDNN routines.
 * **Visibility:** These custom ops are hidden from users in the Python layer, cannot be saved in SavedModels, and are only introduced into the TensorFlow graph by graph rewrite passes in the C++ layer.
 * **Scope and signature:** Most ops have a 1:1 mapping to a standard TensorFlow op, with the same op signatures (inputs, attributes, outputs, etc). The rest are fused operations (one op is equivalent to a sequence of standard TensorFlow ops).
-* **Expected tensor format:** oneDNN ops process tensors directly in TensorFlow’s native format (NHWC), e.g., no tensor layout conversions.
+* **Expected tensor format:** oneDNN ops process all tensors directly in TensorFlow’s native format (NHWC), e.g., no tensor layout conversions. 
+    * For CPU execution, we observed no significant performance difference between the NHWC format and other block formats that oneDNN supports.
 * **Threading:** All oneDNN primitives are configured to use TensorFlow’s intra-op threadpool for parallelization to prevent resource contention with other standard TensorFlow ops that could  run at the same time. 
 
 See the full list of ops in the [Supported Operations](#supported-operations) section.
@@ -65,7 +66,7 @@ The whole mechanism has been added to the official TensorFlow builds since TF 2.
 When we switch to running the rewrite passes by default, users can fall back to standard TensorFlow ops by setting the environment variable `TF_ENABLE_ONEDNN_OPTS=0` instead.
 
 ### Supported Operations
-The table below shows operations that are already supported in TF 2.7 for each execution mode. We plan to gradually add support for more quantized ops from the TF-oneDNN build in the future.
+The table below shows operations that are already supported in TF 2.7 for each execution mode. We plan to gradually add support for more quantized ops and more aggressive fusions from the TF-oneDNN build in the future.
 
 <table>
     <tr><th colspan=2>Ops</th><th>Eager Mode</th><th>Graph Mode</th></tr>
@@ -186,7 +187,8 @@ tf.function: oneDNN custom ops work normally with tf.function.
     - **SavedModel:** oneDNN ops are hidden and won’t be serialized to a SavedModel. On the other hand, models from SavedModel will be able to use oneDNN ops, as they are read into TF Graphs and will go through oneDNN graph rewrite in the C++ layer during execution.
 
 ### User Impact
-Users will see changes in model execution time on CPUs (see [Performance Implications](#performance-implications)). They will also see changes in numerical accuracy due to floating point round-off errors from different computation orders. Tests that use hard-coded golden values may need to be updated. If these changes are not acceptable, users can always disable usage of oneDNN ops by setting the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+Users will see changes in model execution time on CPUs (see [Performance Implications](#performance-implications)). They will also see changes in numerical accuracy due to floating point round-off errors from different computation orders. Tests that use hard-coded golden values may need to be updated. If these changes are not acceptable, users can always disable usage of oneDNN ops by setting the environment variable `TF_ENABLE_ONEDNN_OPTS=0`. 
+
 
 ## Questions and Discussion Topics
 
