@@ -21,7 +21,7 @@
 
 # **Introduction**
 
-This tutorial is intended for those developers who want to extend TensorFlow to support a new device for the current TensorFlow runtime stack through Modular TensorFlow interface. Plugin provides a decoupled way to add a new device to TensorFlow and has benefits:
+This tutorial is intended for those developers who want to extend TensorFlow to support a new device for the current TensorFlow runtime stack through the Modular TensorFlow interface. Plugin provides a decoupled way to add a new device to TensorFlow and has benefits:
 
   -  Simpler process: Does not have to add a new build toolchain to TensorFlow
 
@@ -69,9 +69,9 @@ Here we will introduce how to register a device runtime through StreamExecutor C
 
 *  Struct defined in StreamExecutor C API: struct prefix indicates whether fields should be filled by the plugin or core implementation
 
-   * SE_: set/filled by core unless explicit marked otherwise.
+   * SE_: set/filled by core unless explicitly marked otherwise.
 
-   * SP_: set/filled by plugin unless explicit marked otherwise.
+   * SP_: set/filled by plugin unless explicitly marked otherwise.
 
 * Struct with Plugin prefix: these are structs defined in plugin, plugin can choose whatever name/definition they want.
 
@@ -86,7 +86,7 @@ Example:
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
 
 void SE_InitPlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
-   	std::string type = "MyDevice"; // It is device's type, such as GPU, APU, which is visible in python front-end.
+   	std::string type = "MyDevice"; // It is device's type, such as GPU, APU, which is visible in the python front-end.
    	std::string name = "MyPlatform"; // it is SE platform's name, such as CUDA, ROCM.
    	// Sets struct_size to a valid value, and zero initializes other attributes.
    	params->platform->struct_size = SP_PLATFORM_STRUCT_SIZE;
@@ -103,15 +103,15 @@ void SE_InitPlugin(SE_PlatformRegistrationParams* params, TF_Status* status) {
    	params->destroy_platform_fns = plugin_destroy_platform_fns;
 }
 ```
-As you may see in the example, plugin needs to populate the platform and platform_fns.
+As you may see in the example, the plugin needs to populate the platform and platform_fns.
 
 * `platform->struct_size`: plugin needs to set it as `SP_PLATFORM_STRUCT_SIZE` (defined in stream_executor.h). This field is for the StreamExecutor C API version check between Core TensorFlow and the plugin.
 
-* `platform->type`: This field allows plugin authors to register a new device type to the Core TensorFlow, such as GPU, APU..,this device type will be visible in python front-end, for example, user can assign the graph to "device type" through `with tf.device("device type")`.
+* `platform->type`: This field allows plugin authors to register a new device type to the Core TensorFlow, such as GPU, APU..,this device type will be visible in the python front-end, for example, user can assign the graph to "device type" through `with tf.device("device type")`.
 
 * `platform->name`: This field allows plugin authors to register a new StreamExecutor platform name to the Core TensorFlow, such as CUDA, ROCM, this name is not visible in python front-end. Note: this name should be a unique name, you can’t choose a name like "CUDA", “ROCM” which are first party platform names.
 
-* `platform_fns->get_device_count`: a callback for quering the number of physical devices discovered by plugin's device runtime.
+* `platform_fns->get_device_count`: a callback for querying the number of physical devices discovered by the plugin's device runtime.
 ```c++
 #include "tensorflow/c/experimental/stream_executor/stream_executor.h"
 
@@ -174,7 +174,7 @@ void plugin_create_stream_executor(const SP_Platform* platform,
    	... ...
 }
 ```
-plugin authors need to populate all fields in `SP_StreamExecutor`. For example, registering allocate function with `plugin_allocate`, it synchronously allocates 'size' of bytes on the underlying platform and returns `SP_DeviceMemoryBase` representing that allocation.
+plugin authors need to populate all fields in `SP_StreamExecutor`. For example, registering an allocation function with `plugin_allocate`, it synchronously allocates 'size' of bytes on the underlying platform and returns `SP_DeviceMemoryBase` representing that allocation.
 ```c++
 /*StreamExecutor Backend Impl*/
 
@@ -205,17 +205,17 @@ void plugin_destroy_stream_executor(const SP_Platform* platform,
 ```
 * `platform_fns-> create_timer_fns`: creating `SP_Timer`. Allocates timer resources on the underlying platform and initializes its internals, setting 'timer' output variable. You can provide a dummy function if you don’t need this.
 
-* `platform_fns->destroy_timer_fns`: destroy `SP_Timer` and deallocates timer resources on the underlying platform. You can provide a dummy implementation if you don't need this.
+* `platform_fns->destroy_timer_fns`: destroy `SP_Timer` and deallocate timer resources on the underlying platform. You can provide a dummy implementation if you don't need this.
 
-* `platform_fns->destroy_platform`: clean up fields insides `SP_Platform` that were allocated by the plugin. platform itself should not be deleted here.
+* `platform_fns->destroy_platform`: clean up fields inside `SP_Platform` that were allocated by the plugin. platform itself should not be deleted here.
 
-* `platform_fns->destroy_platform_fns`: clean up fields insides `SP_PlatformFns`.
+* `platform_fns->destroy_platform_fns`: clean up fields inside `SP_PlatformFns`.
 
 ### **Kernels/Ops**
 
 Modular TensorFlow provides a set of C APIs as the ABI-stable API for implementing kernels and ops. The intention is that existing kernels should be able to be ported to the new APIs with a minimum of reimplementation effort. The ops C API can be found in[ tensorflow/c/ops.h](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/c/ops.h) and kernels C API can be found in[ tensorflow/c/kernels.h](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/c/kernels.h).[ tensorflow/c/tf_tensor.h](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/c/tf_tensor.h),[ tensorflow/c/tf_status.h](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/c/tf_status.h).
 
-Plugin authors need to define `TF_InitKernel` function (include Ops/Kernels registration). When the plugin is loaded by TF at runtime, `TF_InitKernel` method will be called and new Ops/Kernels will be registered to Core TensorFlow.
+Plugin authors need to define the `TF_InitKernel` function (include Ops/Kernels registration). When the plugin is loaded by TF at runtime, `TF_InitKernel` method will be called and new Ops/Kernels will be registered to Core TensorFlow.
 
 §  **Ops registration**
 
@@ -328,9 +328,9 @@ void Conv2DOp_Destroy(void* kernel)
 ```
 Usually, plugin authors need to provide three functions: a creation function, a compute function and a deletion function. Compute function is a must, creation function and deletion functions are optional but if a creation is provided that causes memory allocation, a deletion function that frees the memory should also be provided, otherwise a leak will occur.
 
-* **Creation function(optional)**: responsible for creating a kernel, allocating private resource (such as memory), and storing attributions (if it has) retrieved from `TF_OpKernelConstruction` to the kernel. Core TensorFlow will call this function when it needs to instantiate the kernel. The `TF_OpKernelConstruction` pointer is owned by TensorFlow and will be deleted once the creation function returns.
+* **Creation function(optional)**: responsible for creating a kernel, allocating private resources (such as memory), and storing attributions (if it has) retrieved from `TF_OpKernelConstruction` to the kernel. Core TensorFlow will call this function when it needs to instantiate the kernel. The `TF_OpKernelConstruction` pointer is owned by TensorFlow and will be deleted once the creation function returns.
 
-* **Compute function**: responsible for retrieving inputs and a compute stream and produce outputs. Core TensorFlow will call this function when needed to perform a computation with this kernel.
+* **Compute function**: responsible for retrieving inputs and a compute stream and producing outputs. Core TensorFlow will call this function when needed to perform a computation with this kernel.
 
 * **Destroy function(optional)**: responsible for destroying the kernel and free the resource allocated in the creation function. When TensorFlow no longer needs the kernel, it will call this function if one is provided. This function will retrieve the pointer returned in the creation function or nullptr if no creation function was provided.
 
@@ -362,7 +362,7 @@ TF_OpKernelConstruction_GetAttrFloat(ctx, "float_attr", &val, status);
 ```
 2. Vector
 
-`TF_OpKernelConstruction_GetAttr(Type, Float, Int32, Int64, Bool…)List` interprets the named kernel construction as a (Type, Float, Int32, Int64, Bool) array and places it into *vals. vals must point to an array of length at lease `max_values` (ideally set to the list_size from `TF_OpKernelConstruction_GetAttrSize()`).
+`TF_OpKernelConstruction_GetAttr(Type, Float, Int32, Int64, Bool…)List` interprets the named kernel construction as a (Type, Float, Int32, Int64, Bool) array and places it into *vals. vals must point to an array of length at least `max_values` (ideally set to the list_size from `TF_OpKernelConstruction_GetAttrSize()`).
 ```c++
 int32_t list_size = 0;
 int32_t total_size = 0；
@@ -470,7 +470,7 @@ void* Conv2D_Create(Conv2D* kernel, TF_OpKernelConstruction* ctx) {
 ```
  **Compute function**
 
-Basically, compute functions are able to retrieve their input tensors and provide output tensors. In the C++ API, the `tensorflow::OpKernelContext::input` and `setoutput` family of functions provide this functionality. The equivalent C calls will be `TF_GetInput` and `TF_SetOutput` family of functions. These C functions operate on `TF_Tensor`. Besides, the kernel C API provides `TF_GetStream()` for retrieving a computation stream, which allows kernels submitted to the hardware.
+Basically, compute functions are able to retrieve their input tensors and provide output tensors. In the C++ API, the `tensorflow::OpKernelContext::input` and `setoutput` family of functions provide this functionality. The equivalent C calls will be the `TF_GetInput` and `TF_SetOutput` family of functions. These C functions operate on `TF_Tensor`. Besides, the kernel C API provides `TF_GetStream()` for retrieving a computation stream, which allows kernels submitted to the hardware.
 
 In the C++ API, `OpKernelContext` provides a set of functions to retrieve input tensors, shapes, stream as well as allocate output tensors or forward input to output tensor. A simple Conv2D compute function with C++ API can be like:
 ```c++
@@ -608,7 +608,7 @@ void TF_RegisterKernelBuilder(const char* name, TF_KernelBuilder* builder, TF_St
 
 Modular TensorFlow provides a new mechanism for custom graph optimizers and a set of C APIs as the ABI-stable APIs for implementing graph optimizers.
 The C APIs follows current C++ API implementation, [TF_Buffer](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/c/c_api.h#L110-L114) and related proto files are the interface between proper and plugin.
-When initializing, TensorFlow loads the plugin and registers a new graph optimizer into Grappler. In the [Optimize](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/c/experimental/grappler/grappler.h#L134) function, plugin authors need to deserialize `TF_Buffer` to `plugin::GraphDef` object to do some graph transformations, and serialize the optimized `plugin::GraphDef` object back to `TF_Buffer` as output. Noted that the graph in this part is all represented by GraphDef/TF_Buffer, not [graph](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/graph/graph.h#L498).
+When initializing, TensorFlow loads the plugin and registers a new graph optimizer into Grappler. In the [Optimize](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/c/experimental/grappler/grappler.h#L134) function, plugin authors need to deserialize `TF_Buffer` to `plugin::GraphDef` object to do some graph transformations, and serialize the optimized `plugin::GraphDef` object back to `TF_Buffer` as output. Note that the graph in this part is all represented by GraphDef/TF_Buffer, not [graph](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/graph/graph.h#L498).
 The graph C APIs can be found in [grappler.h](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/c/experimental/grappler/grappler.h).
 
 We will introduce graph optimization C APIs from the following three aspects: optimize registration, implementation and util function.
@@ -619,7 +619,7 @@ We will introduce graph optimization C APIs from the following three aspects: op
 
 §  **Optimizer registration**
 
-Plugins need to define `TF_InitGraph` function and populates `TP_OptimizerRegistrationParams`.
+Plugins need to define the `TF_InitGraph` function and populate `TP_OptimizerRegistrationParams`.
 When the plugin is loaded by TF at runtime, `TF_InitGraph` method will be called and new plugin optimizers will be registered to Core TensorFlow.
 
 Example:
@@ -642,13 +642,13 @@ void TF_InitGraph(TP_OptimizerRegistrationParams* params,
 }
 ```
 
-As you may see in the example, plugin needs to populate the `optimizer_configs` and `optimizer`.
+As you may see in the example, the plugin needs to populate the `optimizer_configs` and `optimizer`.
 
 * `struct_size`: plugin needs to set it as `TP_OPTIMIZER_REGISTRATION_PARAMS_STRUCT_SIZE` (defined in grappler.h). This field is used for the Graph C API version check between Core TensorFlow and the plugin.
 
 * `device_type`: This field indicates the backend device type that the graph optimizer is targeting.
 
-* `optimizer_configs->remapping`: This field indicates whether remapping optimizer in Tensorflow proper should be disabled. It is a tri-state enum value `TF_TriState`, and the default value is on. Each optimizer defined in TensorFlow proper has a competitive config value. Detailed configuration of these optimizers can be seen in [grappler.h](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/c/experimental/grappler/grappler.h#L98-L115).
+* `optimizer_configs->remapping`: This field indicates whether the remapping optimizer in Tensorflow proper should be disabled. It is a tri-state enum value `TF_TriState`, and the default value is on. Each optimizer defined in TensorFlow proper has a competitive config value. Detailed configuration of these optimizers can be seen in [grappler.h](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/c/experimental/grappler/grappler.h#L98-L115).
 
 * `optimizer->create_func`: This field is an optional function for creating an optimizer. Destroy functions are also optional. But if a creation is provided that causes memory allocation, a deletion function that frees the memory should also be provided, otherwise a leak will occur.
 
@@ -656,7 +656,7 @@ As you may see in the example, plugin needs to populate the `optimizer_configs` 
 
 §  **Optimizer implementation**
 
-Graph Optimize function(`optimize_func`) is the main part that plugin authors need to implement. The function looks like below. The first param is an optimizer pointer created by `create_func`, or a nullptr if `create_func` is not provided. The second param is serialized input graph(`GraphDef`). The third param is input `TF_GrapplerItem` handle which contains feed/fetch nodes info. The fourth param is serialized output graph(`GraphDef`).
+Graph Optimize function(`optimize_func`) is the main part that plugin authors need to implement. The function looks like below. The first param is an optimizer pointer created by `create_func`, or a nullptr if `create_func` is not provided. The second param is serialized input graph(`GraphDef`). The third param is the input `TF_GrapplerItem` handle which contains feed/fetch nodes info. The fourth param is serialized output graph(`GraphDef`).
 
 ```cpp
 void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_GrapplerItem* item,
@@ -674,7 +674,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_Gr
   BufferToMessage(graph_buf, graph_def);
 
   Status status;
-  // Create GraphView object which provides helper functions to modify graph.
+  // Create a GraphView object which provides helper functions to modify the graph.
   GraphView graph_view(graph_def, status);
   const int num_nodes = graph_def.node_size();
   for (int i = num_nodes - 1; i >= 0; --i) {
@@ -687,7 +687,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_Gr
     new_node.set_name(node_def.name());
     new_node.set_op(node_def.name());
 
-    // Add new nodes into graph.
+    // Add new nodes into the graph.
     Mutation* mutation = graph_view.GetMutationBuilder();
     mutation->AddNode(std::move(new_node), &status);
     mutation->Apply();
@@ -699,7 +699,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_Gr
 }
 ```
 
-* `plugin::GraphDef`: This is a C++ object generated by protobuf toolchain with a predefined structure in graph.proto. Noted that the namespace has changed from `tensorflow::` to `plugin::`, which means it is a class defined in plugin. Plugin should maintain protobuf toolchain and graph.proto files. They should copy graph.proto from tensorflow proper and change the package name to `plugin`.
+* `plugin::GraphDef`: This is a C++ object generated by protobuf toolchain with a predefined structure in graph.proto. Note that the namespace has changed from `tensorflow::` to `plugin::`, which means it is a class defined in plugin. Plugin should maintain protobuf toolchain and graph.proto files. They should copy graph.proto from tensorflow proper and change the package name to `plugin`.
 
   Here lists all proto files needed in plugin:
     - [attr_value.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/attr_value.proto): AttrValue, NameAttrList
@@ -715,7 +715,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_Gr
     - [types.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/types.proto): DataType, SpecializedType
     - [versions.proto](https://github.com/tensorflow/tensorflow/blob/r2.5/tensorflow/core/framework/versions.proto): VersionDef
 
-* `BufferToMessage`, `MessageToBuffer`: They are serialization/deserialization functions for `TF_Buffer` and protobuf objects(e.g., `GraphDef`). Plugin can deserialize input graph(`TF_Buffer`) to plugin `GraphDef` object, and serialize the output `GraphDef` object when graph transformation is finished.
+* `BufferToMessage`, `MessageToBuffer`: They are serialization/deserialization functions for `TF_Buffer` and protobuf objects(e.g., `GraphDef`). Plugin can deserialize input graph(`TF_Buffer`) to the plugin `GraphDef` object, and serialize the output `GraphDef` object when graph transformation is finished.
 
   Example:
   ```cpp
@@ -751,7 +751,7 @@ void Optimizer_Optimize(void* optimizer, const TF_Buffer* graph_buf, const TF_Gr
   }
   ```
 
-* `GraphView`, `Mutation`: These are helper classes provided by TensorFlow in [tensorflow/core/grappler/utils](https://github.com/tensorflow/tensorflow/tree/r2.5/tensorflow/core/grappler/utils) folder to modify `GraphDef` objects. Plugin authors can manually copy this part into plugin side, or they can write their own util functions.
+* `GraphView`, `Mutation`: These are helper classes provided by TensorFlow in [tensorflow/core/grappler/utils](https://github.com/tensorflow/tensorflow/tree/r2.5/tensorflow/core/grappler/utils) folder to modify `GraphDef` objects. Plugin authors can manually copy this part into the plugin side, or they can write their own util functions.
 
 §  **Optimizer util functions**
 
@@ -856,11 +856,11 @@ Modular TensorFlow provides three opaque handles, i.e.,  `TF_GrapplerItem`, `TF_
     }
     ```
 ### **Profiler**
-Performance is a key consideration of successful ML research and production solutions. TensorFlow profiler provides a set of good tools to help users better understanding the performance bottlenecks of TensorFlow models. TensorFlow Profiler C API provides the capability of connecting third-party device's profiler library(e.g. CUPTI)  to TensorFlow profiler.
+Performance is a key consideration of successful ML research and production solutions. TensorFlow profiler provides a set of good tools to help users better understand the performance bottlenecks of TensorFlow models. TensorFlow Profiler C API provides the capability of connecting third-party device's profiler library(e.g. CUPTI)  to TensorFlow profiler.
 
-Note: Profiler is an optional module in plugin, plugin authors can deside whether to implement this module.
+Note: Profiler is an optional module in plugin, plugin authors can decide whether to implement this module.
 
-To make C APIs portable, Modular TensorFlow adopts serialized `XSpace` as the objects to pass between TensorFlow framework and plugin. When the framework invokes `CollectData()`, the plugin need to serializes `XSpace` into a sufficiently sized buffer provided by framework.Subsequently, the framework deserializes the buffer back into `XSpace`, and generates a trace view.
+To make C APIs portable, Modular TensorFlow adopts serialized `XSpace` as the objects to pass between TensorFlow framework and plugin. When the framework invokes `CollectData()`, the plugin needs to serialize `XSpace` into a sufficiently sized buffer provided by framework.Subsequently, the framework deserializes the buffer back into `XSpace`, and generates a trace view.
 
 <div align=center>
 <img src=Xspace.png>
@@ -870,7 +870,7 @@ In this section, you will learn how to plugin a profiler library step by step.
 
 §  **TF_InitProfiler**
 
-TF_InitProfiler is the entry point to initialize the plugin profiler, you need to define and implement this function if you want to enable profiler through modular interface. This function will be automatically loaded and invoked by TensorFlow if you defined this function.
+TF_InitProfiler is the entry point to initialize the plugin profiler, you need to define and implement this function if you want to enable profiler through the Modular TensorFlow interface. This function will be automatically loaded and invoked by TensorFlow if you define this function.
 
 Example:
 ```
@@ -905,7 +905,7 @@ void profiler_stop(const TP_Profiler* profiler, TF_Status* status) {
   ...
 }
 ```
-* `params->profiler_fns->collect_data_xspace`: a callback for saving collected profile data into XSpace and serializeds it in to the buffer. If this have been called, subsequent calls might return empty data.
+* `params->profiler_fns->collect_data_xspace`: a callback for saving collected profile data into XSpace and serializers it into the buffer. If this have been called, subsequent calls might return empty data.
 ```c++
 void profiler_collect_data_xspace(const TP_Profiler* profiler, uint8_t*
 buffer, size_t* size_in_bytes, TF_Status* status) {
@@ -923,7 +923,12 @@ buffer, size_t* size_in_bytes, TF_Status* status) {
 ```
 * `params->destroy_profiler`: pointer to plugin's `TP_Profiler` clean up function. Cleans up fields inside `TP_Profiler` that were allocated by the plugin. `profiler` itself must not be deleted by the plugin.
 * `params->destroy_profiler_fns`: pointer to plugin's `TP_ProfilerFns` clean up function. Cleans up fields inside `TP_ProfilerFns` that were allocated by the plugin. `profiler_fns` itself must not be deleted by the plugin.
+
 you can find profiler implementation sample code in `sample/tensorflow_plugin/src/profiler`.
+* profiler example:
+ <div>
+<img src=profiler_result.png>
+</div>
 
 ## **Plugin build**
 
@@ -953,11 +958,11 @@ With this procedure, you can always build the plugin with installed TensorFlow �
 
 ## **Plugin installation**
 
-After building the plugin, you may want to distribute it through the python package. One additional thing you need to do is to make the plugin’s dynamic library (libplugin.so for example) be installed to the specified path (site-packages/tensorflow/python/ tensorflow-plugins/) when the user installs the package. Core TensorFlow will automatically iterate and load all the installed dynamic libraries in this path, then it will register device runtime, kernels/ops and graph optimizer by calling `SE_InitPlugin`, `TF_InitKernel` and `TF_InitGraphPlugin`.
+After building the plugin, you may want to distribute it through the python package. One additional thing you need to do is to make the plugin’s dynamic library (libplugin.so for example) be installed/copied to the specified path (site-packages/tensorflow/python/ tensorflow-plugins/) when the user installs the package. Core TensorFlow will automatically iterate and load all the installed dynamic libraries in this path, then it will register device runtime, kernels/ops and graph optimizer by calling `SE_InitPlugin`, `TF_InitKernel` and `TF_InitGraphPlugin`.
 
 ## **Plugin Running**
 
-After installing the plugin to the specified path (site-packages/tensorflow/python/tensorflow-plugins/). we can run the TensorFlow with plugin now.
+After installing the plugin to the specified path (site-packages/tensorflow/python/tensorflow-plugins/). we can run TensorFlow with the plugin now.
 
 Front-end usage of the plugged device has no difference with first party devices. Suppose you have installed a plugin registers a new device with "MY_DEVICE" device type, you can:
 
@@ -977,7 +982,7 @@ you can use with tf.device("my_device:0") to specify the MY_DEVICE device to be 
 ```
 3)  automatic device placement
 
-if you don’t specify the device to be user for ops created/executed in a particular context, the op will be auto placed into the MY_DEVICE device if the op for the MY_DEVICE device is registered. Plugged devices currently have the highest priority.
+if you don’t specify the device to be used for ops created/executed in a particular context, the op will be auto placed into the MY_DEVICE device if the op for the MY_DEVICE device is registered. Plugged devices currently have the highest priority.
 
  
 
