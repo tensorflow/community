@@ -43,15 +43,17 @@ The design consists of three main components: oneDNN custom ops, graph rewrite p
 **oneDNN custom ops** are TensorFlow ops that perform some set up (e.g., creating oneDNN compute primitives, memory descriptors, etc) before calling oneDNN routines.
 * **Visibility:** These custom ops are hidden from users in the Python layer, cannot be saved in SavedModels, and are only introduced into the TensorFlow graph by graph rewrite passes in the C++ layer.
 * **Scope and signature:** Most ops have a 1:1 mapping to a standard TensorFlow op, with the same op signatures (inputs, attributes, outputs, etc). The rest are fused operations (one op is equivalent to a sequence of standard TensorFlow ops).
-* **Expected tensor format:** oneDNN ops process all tensors directly in TensorFlow’s native format (NHWC), e.g., no tensor layout conversions. 
-    * For CPU execution, we observed no significant performance difference between the NHWC format and other block formats that oneDNN supports.
+* **Expected tensor format:** oneDNN ops expects TensorFlow’s native format (NHWC) for both input and output. 
+    * Internally, weight tensors may be cached in different layouts (block formats). 
+    * Other tensors are processed directly in NHWC format, i.e., no tensor layout conversions. 
+        * For CPU execution, we observed no significant performance difference between NHWC and other block formats that oneDNN supports.
 * **Threading:** All oneDNN primitives are configured to use TensorFlow’s intra-op threadpool for parallelization to prevent resource contention with other standard TensorFlow ops that could  run at the same time. 
 
 See the full list of ops in the [Supported Operations](#supported-operations) section.
 
-**Graph rewrite passes** are graph optimizations on the TensorFlow graph. They are run in the C++ layer, before each graph is executed. We use two graph rewrite passes to substitute applicable standard TF ops with oneDNN custom ops, one pass per each execution mode:
+**Graph rewrite passes** are graph optimizations on the TensorFlow graph. They are run in the C++ layer before each graph is executed. We use two graph rewrite passes to substitute applicable standard TF ops with oneDNN custom ops, one pass per each execution mode:
 * **Eager mode:** Because TensorFlow processes one op at a time in eager execution, [oneDNN eager op rewrite pass](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/common_runtime/mkl_layout_pass.cc) only does 1:1 op mappings (replaces the op with its corresponding oneDNN op if it has one).
-* **Graph mode:** In graph mode (this includes tf.function graph from eager mode), TensorFlow sees more than one ops at a time, so the [oneDNN graph rewrite pass](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/common_runtime/mkl_layout_pass.cc) can either do 1:1 op mapping or replace a sequence of standard TF ops with a single fused oneDNN custom op. See examples in Figure 1.
+* **Graph mode:** In graph mode (this includes tf.function graph from eager mode), TensorFlow sees more than one ops at a time, so the [oneDNN graph rewrite pass](https://cs.opensource.google/tensorflow/tensorflow/+/master:tensorflow/core/common_runtime/mkl_layout_pass.cc) can either do 1:1 op mapping or replace a subgraph of standard TF ops with a single fused oneDNN custom op. See examples in Figure 1.
 
 <div align="center">
   <img alt="oneDNN graph rewrite passes" src="20210930-enable-onednn-ops/onednn-graph-rewrite-passes.png">
@@ -189,6 +191,8 @@ tf.function: oneDNN custom ops work normally with tf.function.
 ### User Impact
 Users will see changes in model execution time on CPUs (see [Performance Implications](#performance-implications)). They will also see changes in numerical accuracy due to floating point round-off errors from different computation orders. Tests that use hard-coded golden values may need to be updated. If these changes are not acceptable, users can always disable usage of oneDNN ops by setting the environment variable `TF_ENABLE_ONEDNN_OPTS=0`. 
 
+### Known Caveats
+oneDNN can consume nontrivial stack space (e.g., >80 KB) in some cases. Applications with limited stack space might want to profile actual stack usage before deployment. The oneDNN team is looking into decreasing stack space usage, targeting oneDNN v2.6 or later. We do not expect this to be an issue for the majority of our users.
 
 ## Questions and Discussion Topics
 
