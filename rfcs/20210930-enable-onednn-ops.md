@@ -1,6 +1,6 @@
 # Enabling oneDNN operations for x86 CPUs
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [400](https://github.com/tensorflow/community/pull/400) |
 | **Author(s)** | Penporn Koanantakool (penporn@google.com)            |
