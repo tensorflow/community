@@ -2,7 +2,7 @@
 
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [404](https://github.com/tensorflow/community/pull/404) |
 | **Author(s)** | Bogdan Alexe (Google), Yu Feng (Google) |
 | **Sponsor**   | Rohan Jain (Google)                 |
 | **Updated**   | 2021-11-16                                           |
