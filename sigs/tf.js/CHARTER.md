@@ -70,6 +70,7 @@ new, community-owned repos that the SIG will drive.
 ### Project Lead(s):
 - Ping Yu (Google)
 - Sandeep Gupta (Google)
+- Jason Mayes (Google)
 - Ton Ngo (IBM): 
   - Server side support (GPU, training)
   - End-to-end pipeline on Kubernetes (Kubeflow)
