@@ -2,7 +2,7 @@
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)       |
 :-------------- |:---------------------------------------------------- |
-| **RFC #** | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #** | [408](https://github.com/tensorflow/community/pull/408)|
 | **Author(s)** | Sebastian Larsson (sebastian.larsson@arm.com), Oscar Andersson (oscar.andersson@arm.com), Måns Nilsson (mans.nilsson@arm.com) |
 | **Sponsor**   | Pete Warden (petewarden@google.com)                 |
 | **Updated**   | 2022-01-03                                           |
