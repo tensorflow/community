@@ -331,7 +331,7 @@ class TunerSpec(ComponentSpec):
   }
 ```
 
-The KerasTuner library allows users to config
+The KerasTuner library allows users to configure
 [`tf.distribute.Strategy`](https://www.tensorflow.org/tutorials/distribute/kerass)
 if they are using
 [`kerastuner.Tuner`](https://github.com/keras-team/keras-tuner/blob/1.0.0/kerastuner/engine/tuner.py)
@@ -340,15 +340,17 @@ training) is executed in a single worker, as such only single machine strategy
 is allowed. To support multi-worker distributed training, we need to be able to
 execute the trial (training) on different workers.
 
-At the time of writing, KerasTuner library can be used for parallel tuning with
-single machine `tf.distribute.Strategy`, e.g.,
-[`MirroredStrategy`](https://www.tensorflow.org/api_docs/python/tf/distribute/MirroredStrategy)
-, multi-worker strategy (distributed training for trial) support is on the
-roadmap (note that cluster managing is not part of the library).
+At the time of writing, the KerasTuner library can be used for parallel
+execution of trail with a single machine `tf.distribute.Strategy`, e.g.,
+[`MirroredStrategy`](https://www.tensorflow.org/api_docs/python/tf/distribute/MirroredStrategy),
+multi-worker strategy (distributed training for trial) support is on the
+[roadmap of KerasTuner](https://keras-team.github.io/keras-tuner/tutorials/distributed-tuning/#data-parallelism-with-tfdistribute).
+Note that cluster management of multiple worker machines is not part of the
+KerasTuner library.
 
-At the time of writing, TFX doesn’t have the ability to manage the multi-worker
-cluster and the centralized optimization service, so parallel tuning or
-distributed training is not supported natively in TFX (local or on-prem), but in
+At the time of writing, TFX does not have the ability to manage the multi-worker
+cluster and the centralized optimization service. As a result parallel tuning or
+distributed training is not supported natively in TFX (local or on-prem). In
 the next section, we will discuss the integration for Google Cloud. Similar
 parallel tuning support can be built for other execution environments.
 
