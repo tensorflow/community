@@ -1,6 +1,6 @@
 # Tensorflow Model Optimization Compression API
 
-| Status        | Draft       |
+| Status        | Accepted       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [342](https://github.com/tensorflow/community/pull/342) |
 | **Author(s)** | Jaehong Kim (kimjaehong@google.com), Alan Chiao (alanchiao@google.com), Jae Yoo (jaeyoo@google.com) |
