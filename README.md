@@ -11,7 +11,7 @@ The `community` repository stores documents used by the developer community.
 ## Contact
 
 For questions about this repository, please file an issue or reach out
-to Edd Wilder-James: ewj@google.com.
+to Thea Lamkin: thealamkin@google.com.
 
 ## Further Community Resources
 
