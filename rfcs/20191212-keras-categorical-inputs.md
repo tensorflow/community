@@ -255,7 +255,6 @@ for key in INT_CATEGORICAL_COLUMNS:
 for key in NUMERIC_COLUMNS:
   keras_input = tf.keras.Input(shape=(1,), dtype=tf.float32, name=key)
   keras_inputs[key] = keras_input
-  keras_preproc_inputs.append(keras_preproc_input)
 
 age_x_sex = tf.keras.layers.experimental.preprocessing.CategoryCrossing(name='age_x_sex_crossing')([keras_inputs['age'], keras_inputs['sex']])
 age_x_sex = tf.keras.layers.experimental.preprocessing.Hashing(num_bins=100, name='age_x_sex_hashing')(age_x_sex)
