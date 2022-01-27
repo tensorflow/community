@@ -4,7 +4,7 @@
 :-------------- |:---------------------------------------------------- |
 | **RFC #** | [408](https://github.com/tensorflow/community/pull/408)|
 | **Author(s)** | Sebastian Larsson (sebastian.larsson@arm.com), Oscar Andersson (oscar.andersson@arm.com), Måns Nilsson (mans.nilsson@arm.com) |
-| **Sponsor**   | Pete Warden (petewarden@google.com)                 |
+| **Sponsor**   | Advait Jain (advaitjain@google.com)                 |
 | **Updated**   | 2022-01-03                                           |
 
 ## Objective
