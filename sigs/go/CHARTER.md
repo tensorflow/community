@@ -24,9 +24,12 @@ Archives of the mailing list will be publicly available.
 ## Quarterly Meetings
 
 SIG Go will hold quarterly meetings via public Google Video Conference for
-discussion related to the TensorFlow Go bindings.  All subscribers to the
-[go@tensorflow.org](mailto:go@tensorflow.org) mailing list will be invited.
-The primary topics for these meetings will include:
+discussion related to the TensorFlow Go bindings.  Additional meetings may be
+scheduled as needed or on a more frequent basis to facilitate SIG launch
+activites or to provide timely discussion on one or more topics of interest to
+the community.  Meeting announcements will be made to the
+[go@tensorflow.org](mailto:go@tensorflow.org) mailing list and all subscribers
+will be invited.  The primary topics for quarterly meetings will include:
 
 1. Discussion and review of significant decisions and changes.
 2. Roadmap discussions.

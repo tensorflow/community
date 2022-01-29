@@ -69,6 +69,7 @@ problems/objectives:
   with Go tooling for module installation.
 * Improving unit testing and the coverage of tests.
 * Improving package documentation, including example code.
+* Authoring and publishing tutorials and other instructional content.
 * Assessing design and functionality of the package, identifying opportunities
   and developing a roadmap.
 
@@ -76,6 +77,7 @@ problems/objectives:
 
 * A dedicated mailing list backed by Google Groups.
 * As needed, video conferencing on Google Hangouts.
+* Other communication platforms, consistent with community preferences.
 
 ## Launch plan
 
