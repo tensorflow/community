@@ -4,16 +4,21 @@
 ## SIG presentation
 A general short description of the Repository/SIG.
 
+## Example
+A very minimal inline primer just to quiclky expose the library
+
+## DOCS/API
+Link to the Tensorflow web site
+
 ## Badges section
 Add badges for you repostiroy (pypy, python, gitter, api etc.) 
-
 CI/Buid specifc badges
-
-## Project/Repository structure
-A repository overiew with a short description of its tree/modularity
 
 ## Tensorflow compatibility Matrix
 Repository releases compatibility with TF and Python version or (other languages, cuda, etc.)
+
+## Project/Repository structure
+A repository overiew with a short description of its tree/modularity
 
 ## Release policy
 Describe the release policy:
@@ -29,12 +34,6 @@ If the specific repo doesn't maintain its own Docker image we could route the us
 
 ## Build from source
 Pointer to a specific CONTRIBUTING.md section
-
-## Example
-A very minimal inline primer just to quiclky expose the library
-
-## DOCS/API
-Link to the Tensorflow web site
 
 ## Contributing
 Link to the CONTRIBUTING.md
