@@ -1,4 +1,4 @@
-# tf._internal API namespace
+# tf.\_\_internal\_\_ API namespace
 
 | Status        | Accepted |
 :-------------- |:---------------------------------------------------- |
@@ -10,7 +10,7 @@
 
 ## Objective
 
-Adding a new "_internal" API namespace in TF to host APIs for framework building
+Adding a new "\_\_internal\_\_" API namespace in TF to host APIs for framework building
 /testing, etc. The API namespace will serve as a whitelist for client libraries 
 to gradually migrate off the usage tf private API symbol.
 
@@ -38,7 +38,7 @@ framework-builders, but not typical TensorFlow users.
 
 ## Design Proposal
 
-Add a new namespace "tensorflow._internal" to host the framework building/
+Add a new namespace "tensorflow.\_\_internal\_\_" to host the framework building/
 testing related APIs that are currently used by other high level API in TF 
 (Keras, and estimator, etc.). This name space will be treated as a protected 
 API, which shouldn't be used by the end users. It will have no API contract 
@@ -53,7 +53,7 @@ caused on the client side, TF must be aware who is using this API, so that any
 changes to those API will be verified against the client code.
 
 ### Acceptance Criteria
-The candidate of the "_internal" API should:
+The candidate of the "\_\_internal\_\_" API should:
 
 1. Does NOT fit for core TF API, otherwise it should be exposed as core TF API.
 1. Are currently used by other high level API to build/test/deploy a framework 
@@ -96,12 +96,12 @@ and will discuss with the API owner on a case to case basis.
 
 |Symbol location  |API Name  | 
 :-------------- |:---------------------------------------------------- |
-|python.framework.func_graph.FuncGraph |tf.internal.FuncGraph     |
-|python.framework.combinations.*| tf.internal.test.combinations.* |
-|python.distribute.strategy_combinations.* |tf.internal.test.combinations.* |
-|python.util.object_identity.*|tf.internal.object_identity.* |
-|python.util.tf_decorator.TFDecorator|tf.internal.decorator.TFDecorator |
-|python.util.tf_decorator.unwrap|tf.internal.inspect.unwrap |
+|python.framework.func_graph.FuncGraph |tf.\_\_internal\_\_.FuncGraph     |
+|python.framework.combinations.*| tf.\_\_internal\_\_.test.combinations.* |
+|python.distribute.strategy_combinations.* |tf.\_\_internal\_\_.test.combinations.* |
+|python.util.object_identity.*|tf.\_\_internal\_\_.object_identity.* |
+|python.util.tf_decorator.TFDecorator|tf.\_\_internal\_\_.decorator.TFDecorator |
+|python.util.tf_decorator.unwrap|tf.\_\_internal\_\_.inspect.unwrap |
 
 ### Alternative Names
 1. <b>"tf.internal"</b>: It gives the user the impression that this is not a 
@@ -110,5 +110,5 @@ and will discuss with the API owner on a case to case basis.
 1. <b>"tf.infra"</b>: infrastructure is aligned with "building blocks" and low 
    level functionalities, like file system/network etc. So far, the APIs we want
    to add are still high level APIs and utility functions. 
-1. By Martin <b>"tf.\_internal"</b>: the extra "_" emphasis in the pythonic way
+1. By Martin <b>"tf.\_\_internal\_\_"</b>: the extra "_" emphasis in the pythonic way
    that this is for private usage.
