@@ -4,6 +4,12 @@
 
 One or two sentences describing the group's purpose.
 
+## Scope
+
+Provide a brief overview of the scope of contributions/workstreams you intend to 
+drive through this SIG, and how they might relate to the TensorFlow ecosystem and/or
+existing libraries. 
+
 ## Membership
 
 *Who can join? How can they join? Who can read the group's activity?*
@@ -25,8 +31,7 @@ administrative purposes*
 
 * *Project lead: A N Other [@githubhandle](https://github.com/githubhandle) -
   another at companyname*
-* For administrative questions, contact Edd Wilder-James
-  [@ewilderj](https://github.com/ewilderj) - ewj at google
+* For administrative questions, contact tf-community-team at google
 
 ## Code of Conduct
 
