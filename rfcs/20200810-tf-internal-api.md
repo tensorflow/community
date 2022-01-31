@@ -1,6 +1,6 @@
 # tf._internal API namespace
 
-| Status        | Proposed |
+| Status        | Accepted |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [278](https://github.com/tensorflow/community/pull/278)|
 | **Author(s)** | Qianli Zhu (scottzhu@google.com) |
