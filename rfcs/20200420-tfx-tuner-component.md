@@ -1,6 +1,6 @@
 # TFX Tuner Component
 
-| Status        | Approved                                                  |
+| Status        | Accepted                                                 |
 | :------------ | :-------------------------------------------------------- |
 | **Author(s)** | Jiayi Zhao (jyzhao@google.com), Amy Wu (wuamy@google.com) |
 | **Sponsor**   | Zhitao Li (zhitaoli@google.com), Tom O'Malley (omalleyt@google.com), Matthieu Monsch (mtth@google.com), Makoto Uchida (muchida@google.com), Goutham Bhat (goutham@google.com) |
