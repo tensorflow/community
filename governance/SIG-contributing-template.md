@@ -5,7 +5,7 @@ Describe what kind of issues a new contributor could pick.
 
 ## Contributor checklist
 * Comment on an existing ticket or open a new one before coding any PR
-* Wait for a specific approval reply from mantainers and an `approved-for-PR` label
+* Wait for a specific approval reply from maintainers and an `approved-for-PR` label
 * Read and Sign the CLA
 * Follow Tensorflow coding style
 * Follow extra repository specific code style
@@ -47,4 +47,4 @@ Describe how codeownership and maintainership in the repo:
 * Orphaned modules/features handling
 
 ## Extra info
-Pleae add any extra info or references to others Markdown files in the specific repo
+Please add any extra info or references to others Markdown files in the specific repo
