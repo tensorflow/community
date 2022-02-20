@@ -19,7 +19,7 @@ Archives of the mailing list will be publicly available.
 
 ## Contacts
 
-* Project leads: Neil Tan [@neil-tan](https://github.com/neil-tan), Arm, and Pete Warden [@petewarden](https://github.com/petewarden), [Advait Jain] (https://github.com/advaitjain), Google
+* Project leads: Neil Tan [@neil-tan](https://github.com/neil-tan), Arm, and Pete Warden [@petewarden](https://github.com/petewarden), [Advait Jain](https://github.com/advaitjain), Google
 * For administrative questions, contact Joana Carrasqueira - joanafilipa at google.
 
 ## Code of Conduct
