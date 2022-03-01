@@ -14,14 +14,13 @@ Archives of the mailing list will be publicly available.
 
 * [SIG Micro mailing list](https://groups.google.com/a/tensorflow.org/forum/#!forum/micro)
 * [SIG Micro Gitter chat channel](https://gitter.im/tensorflow/sig-micro)
-* [TensorFlow Micro code](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/lite/micro)
+* [TensorFlow Micro code](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tflite-micro)
 * [SIG Micro monthly meeting notes and agenda](https://goo.gle/tf-micro-notes)
 
 ## Contacts
 
-* Project leads: Neil Tan [@neil-tan](https://github.com/neil-tan), Arm, and Pete Warden [@petewarden](https://github.com/petewarden), Google.
-* For administrative questions, contact Edd Wilder-James
-  [@ewilderj](https://github.com/ewilderj) - ewj at google
+* Project leads: Neil Tan [@neil-tan](https://github.com/neil-tan), Arm, and Pete Warden [@petewarden](https://github.com/petewarden), [Advait Jain](https://github.com/advaitjain), Google
+* For administrative questions, contact Joana Carrasqueira - joanafilipa at google.
 
 ## Code of Conduct
 
