@@ -1,6 +1,6 @@
 # TensorFlow on DirectML
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Chai Chaoweeraprasit (wchao@microsoft.com), Justin Stoecker (justoeck@microsoft.com), Adrian Tsai (adtsai@microsoft.com), Patrice Vignola (pavignol@microsoft.com)    |
 | **Sponsor**   | Penporn Koanantakool (penporn@google.com)  |
