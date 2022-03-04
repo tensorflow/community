@@ -103,3 +103,14 @@ The following pseudo-code illustrates how a kernel for the TensorFlow Keras [Bat
 - What is the long-term goal for XLA in TensorFlow?
 - What is the path to integrate this change to TensorFlow 2.0? What about TensorFlow Runtime?
 - How do MLIR and its development affect the future direction of TensorFlow?
+
+## Design Change for TensorFlow 2
+Since the conception of the original proposal as outlined in this document (followed by our successful launch of TensorFlow-DirectML, a custom fork of TensorFlow 1.15 with built-in DirectML device runtime support), we've revised the original design based on the community feedback to further refactor the DirectML device runtime into a standalone plug-in component implementing the TensorFlow 2 pluggable device interface as outlined in [RFC #262](https://github.com/tensorflow/community/pull/262) based on the [Modular TensorFlow](https://github.com/tensorflow/community/blob/master/rfcs/20190305-modular-tensorflow.md) design.
+
+To minimize code changes when porting our source to the new plugin repo by preserving a similar interface between core TensorFlow runtime and all DirectML source files, a kernel migration path is introduced. This path allows us to get the plugin up and running more quickly while preserving the current level of stability and functional completeness. Minimizing code changes is especially important when porting kernels, which comprise the bulk of the source code in the original TensorFlow device runtime. This process can be achieved by introducing an adapter layer between the pluggable APIs and our plugin code that retain the same interface that was present in the core TensorFlow runtime. The diagram below shows what this looks like:
+
+![Kernel migration](20200511-tensorflow-on-directml/kernel_migration.png)
+
+We anticipate the release of our initial developer preview of TensorFlow-DirectML-Plugin that works with TensorFlow 2.9 in the first quarter of 2022. Following our practice for the previous release of TensorFlow-DirectML 1.15, the plugin code for DirectML will also be an open source project.
+
+
