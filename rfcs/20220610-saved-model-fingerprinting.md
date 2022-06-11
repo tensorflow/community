@@ -9,7 +9,7 @@
 
 ## Objective
 
-Following the convention of other types of electronic files and artifacts, the SavedModel format would benefit from having a fingerprint that uniquely identify the program it serializes.
+Following the convention of other types of electronic files and artifacts, the SavedModel format would benefit from having a fingerprint that uniquely identify the program it serializes. This fingerprint will better enable users to track their SavedModels in ML pipelines and other infrastructure using native metadata.
 
 ## Motivation
 
