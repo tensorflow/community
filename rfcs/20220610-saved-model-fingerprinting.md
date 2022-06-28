@@ -9,7 +9,7 @@
 
 ## Objective
 
-Following the convention of other types of electronic files and artifacts, the SavedModel format would benefit from having a fingerprint that uniquely identify the program it serializes. This fingerprint will better enable users to track their SavedModels in ML pipelines and other infrastructure using native metadata.
+Following the convention of other types of electronic files and artifacts, the SavedModel format would benefit from having a fingerprint that uniquely identify the program it serializes.
 
 ## Motivation
 
@@ -201,7 +201,7 @@ We can also explore the option of adding a Python API such as `tf.saved_model.ch
 
 The fingerprinting will be added as a final step of serialization. The fingerprint infrastructure will take as input the MetaGraphDef and hash each component of it, doing the necessary regularization as well.
 
-The hashing will occur in C++, since it is easier to find an open source hashing algorithm in C++ than in Python. Hashing in C++ is also much faster. There will be pybinded wrappers for access from Python. This will require passing the protobuf across the Python and C++ boundary which may require an extra cycle of de/serialization.
+The hashing will occur in C++, since it is easier to find an open source hashing algorithm in C++ than in Python. There will be pybinded wrappers for access from Python. This will require passing the protobuf across the Python and C++ boundary which may require an extra cycle of de/serialization.
 
 ### Launch Plan
 
@@ -246,6 +246,13 @@ This alternative proposed a a protocol method `def __fingerprint__(self)` to the
 When creating the SavedModel proto, we’d collect the fingerprints of each of these instances in the model. And then combine each of them into a single hash them again to create a final fingerprint that uniquely identifies the part of the SavedModel proto they belong to.
 
 The disadvantage of this approach is that it is primarily in Python and works with the objects as defined in Python. Working in C++ is preferable to working in Python.
+
+#### Text Format Proto
+
+One idea is have the fingerprint be in [text format](https://developers.google.com/protocol-buffers/docs/text-format-spec) so it
+can be human-readable. However, the disadvantage is that using text format prevents us from making changes to the fields in the
+fingerprint protobuf. Text format is not designed with the same forward- and backward-compatibility properties as the binary format, so
+we avoid using it with production infrastructure.
 
 ### Future Ideas
 
