@@ -35,11 +35,6 @@ With this update the user can do post-processing directly without joining differ
 
 ## Design Proposal
 
-This is the meat of the document, where you explain your proposal. If you have
-multiple alternatives, be sure to use sub-sections for better separation of the
-idea, and list pros/cons to each approach. If there are alternatives that you
-have eliminated, you should also list those here, and explain why you believe
-your chosen approach is superior.
 
 ### Filter Output Features
 
