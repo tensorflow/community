@@ -31,6 +31,7 @@ Everyone involved in developing or integrating with XLA is welcome to participat
 Creating a successful OpenXLA project will also benefit from a collaborative effort from key representatives from ML frameworks, hardware platforms, users and integrators. The following organizations have agreed to participate in SIG discussions and provide resources allowing the SIG to reach its goals (in alphabetical order):
 
 * AMD
+* Apple
 * ARM
 * AWS
 * Google (TensorFlow, JAX, Pytorch/XLA)
