@@ -1,6 +1,6 @@
 # RFC: Establish SIG OpenXLA
 
-| Status        | Proposed     |
+| Status        | Accepted     |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [419](https://github.com/tensorflow/community/pull/419)|
 | **Author(s)** | Thea Lamkin (thealamkin@google.com), Mehdi Amini (aminim@google.com) |
