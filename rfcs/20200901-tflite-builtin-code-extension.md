@@ -1,6 +1,6 @@
 # Builtin operator code extension in TensorFlow Lite
 
-Status        | Proposed
+Status        | Accepted
 :------------ | :----------------------------------
 **Author(s)** | Jae sung Chung (jaesung@google.com)
 **Sponsor**   | Jared Duke (jdduke@google.com)
