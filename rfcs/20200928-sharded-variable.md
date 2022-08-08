@@ -1,6 +1,6 @@
 # Sharded Variable For Parameter Server Training
 
-| Status        | (Proposed)                                           |
+| Status        | Accepted                                          |
 :-------------- |:---------------------------------------------------- |
 | **Author(s)** | Chenkai Kuang (chenkai@google.com)                   |
 | **Sponsor**   | Priya Gupta (priyag@google.com)                      |
