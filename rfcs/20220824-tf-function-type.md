@@ -3,7 +3,7 @@
 
 | Status        | Proposed         |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [TODO](https://github.com/tensorflow/community/pull/NNN) |
+| **RFC #**     | [424](https://github.com/tensorflow/community/pull/424) |
 | **Author(s)** | Faizan Muhammad (fmuham@google.com)|
 | **Sponsor**   | Yanhua Sun (yanhuasun@google.com)                 |
 | **Updated**   | 2022-08-24                                           |
