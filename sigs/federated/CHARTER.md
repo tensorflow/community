@@ -27,6 +27,7 @@ Everyone involved in developing or integrating with TensorFlow Federated (TFF) i
 The following organizations have agreed to participate in discussions and provide resources allowing the SIG to reach its goals:
 
 *   LinkedIn
+*   OpenMined
 
 Other SIG members will be added via PR to [this document in GitHub]. Members are expected to regularly attend meetings, participate in technical discussions, and make regular technical contributions to the project.
 
