@@ -2,7 +2,7 @@
 
 ## Objective
 
-The OpenXLA Project [GitHub](https://github.com/openxla) will be a community-driven and modular open source compiler ecosystem. It will enable efficient lowering, optimization and deployment of ML models from most major frameworks to any hardware backend notably CPUs, GPUs, and ML ASICs. This work will be done collaboratively with major ML frameworks and hardware vendors.
+The OpenXLA Project ([GitHub](https://github.com/openxla)) will be a community-driven and modular open source compiler ecosystem. It will enable efficient lowering, optimization and deployment of ML models from most major frameworks to any hardware backend notably CPUs, GPUs, and ML ASICs. This work will be done collaboratively with major ML frameworks and hardware vendors.
 
 SIG OpenXLA will focus on creating the OpenXLA project, including the extraction of XLA from TensorFlow into a standalone project. SIG discussions will facilitate coordination around roadmap, design evolution, and new workflows to be created in OpenXLA. 
 
