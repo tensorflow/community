@@ -1,4 +1,4 @@
-## SIG OpenXLA
+## OpenXLA Project Charter
 
 ## Objective
 
