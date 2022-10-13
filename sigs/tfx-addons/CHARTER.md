@@ -6,9 +6,9 @@ SIG TFX-Addons aims to facilitate community contributions of community-supported
 ## Context
 Machine learning in production environments is a mission-critical part of a growing number of products and services across many industries. To become an [AI First company](https://ai.google/), Google required a state-of-the-art production ML infrastructure framework, and created TensorFlow Extended (TFX). Google open-sourced TFX in 2019 to enable other developers worldwide to benefit from and help us improve the TFX framework, and established open layers within the TFX architecture specifically focused at customization for a wide range of developer needs. These include custom pipeline components, containers, templates, and orchestrator support.
 
-In order to accelerate the sharing of community customizations and additions to TFX, the TFX team would like to encourage, enable, and organize community contributions to help continue to meet the needs of production ML, expand the vision, and help drive new directions for TFX and the ML community. 
+In order to accelerate the sharing of community customizations and additions to TFX, the TFX team would like to encourage, enable, and organize community contributions to help continue to meet the needs of production ML, expand the vision, and help drive new directions for TFX and the ML community.
 
-## Goals & Objectives 
+## Goals & Objectives
 We welcome community contributions on any area of TFX, but this SIG will initially focus on the following goals:
 - Driving the development of high-quality custom pipeline components, including Python function-based components, container-based components, and fully custom components.
 - Shaping a standardized set of descriptive metadata for community-contributed components to enable easy understanding, comparison, and sharing of components during discovery.
@@ -20,15 +20,15 @@ These projects will begin as proposals to the SIG, and upon approval will be led
 Although TFX is an open-source project and we welcome contributions to TFX itself, **this SIG does not include contributions or additions to core TFX**.  It is focused only on building community-contributed and maintained additions on top of core TFX.  [Core TFX has its own repo](https://github.com/tensorflow/tfx), and PRs and issues will continue to be managed there. **In addition, all contributions must not violate the [Google AI Principles](https://ai.google/principles/) or [Responsible AI Practices](https://ai.google/responsibilities/responsible-ai-practices/).**
 
 ## Membership
-We encourage any developers working in production ML environments, infrastructure, or applications to join and participate in the activities of the SIG. Whether you are working on advancing the platform, prototyping or building specific applications, or authoring new components, templates, libraries, and/or orchestrator support, we welcome your feedback on and contributions to TFX and its tooling, and are eager to hear about any downstream results, implementations, and extensions. 
+We encourage any developers working in production ML environments, infrastructure, or applications to join and participate in the activities of the SIG. Whether you are working on advancing the platform, prototyping or building specific applications, or authoring new components, templates, libraries, and/or orchestrator support, we welcome your feedback on and contributions to TFX and its tooling, and are eager to hear about any downstream results, implementations, and extensions.
 
-We have multiple channels for participation, and publicly archive discussions in our user group mailing list: 
+We have multiple channels for participation, and publicly archive discussions in our user group mailing list:
 - tfx@tensorflow.org – our general mailing list that all are welcome to join (archive group: https://groups.google.com/a/tensorflow.org/g/tfx)
 - tfx-addons-core@tensorflow.org – Google group for core team (to be created)
 
-We will create a new mailing list for TFX SIG members. 
+We will create a new mailing list for TFX SIG members.
 
-Other Resources 
+Other Resources
 - SIG Repository: http://github.com/tensorflow/tfx-addons (to be created)
 - Documentation: https://www.tensorflow.org/tfx
 
@@ -59,6 +59,12 @@ SIG TFX-Addons is a community-led open source project. As such, the project depe
 - Community Lead(s)
   - Hannes Hapke (Digits)
 - Core Team Members:
+  - Gerard Casas Saez (Twitter)
+  - Suzen Fylke (Twitter)
+  - Wihan Booyse (Kriterion)
+  - Badrul Chowdhury (Apple)
+  - Kshitijaa Jaglan (IIITD)
+- Founding Core Team Members:
   - Paul Selden (OpenX)
   - Gerard Casas Saez (Twitter)
   - Newton Le (Twitter)
@@ -66,15 +72,20 @@ SIG TFX-Addons is a community-led open source project. As such, the project depe
   - Ryan Clough (Spotify)
   - Samuel Ngahane (Spotify)
   - Michal Brys (OpenX)
-  -  Baris Can Durak (maiot)
-  -  Hamza Tahir (maiot)
-  -  Larry Price (OpenX)
-- SIG members: 
+  - Baris Can Durak (maiot)
+  - Hamza Tahir (maiot)
+  - Larry Price (OpenX)
+- SIG members:
   - <add yourself here to participate in SIG meetings & discussion>
-- Administrative questions: 
-  - Thea Lamkin (Google): thealamkin at google dot com 
+- Administrative questions:
+  - Thea Lamkin (Google): thealamkin at google dot com
   - Joana Carrasqueira (Google): joanafilipa at google dot com
   - tf-community at tensorflow dot org
 
 Meeting cadence:
-- TBD 
+- Bi-weekly Wednesdays 9:00am PST / 5:00pm GMT / 9:30pm IST
+
+The current list of project ideas for TFX Addons is available in the [TFX Addons repo](https://github.com/tensorflow/tfx-addons/issues?q=is%3Aissue+is%3Aopen+label%3A%22Project%3A+Idea%22).
+
+The notes from our last meetings can be found at [here](https://docs.google.com/document/d/1T0uZPoZhwNStuKkeCNsfE-kfc-PINISKIitYxkTK3Gw/edit?usp=sharing&resourcekey=0-N9vT9Tn171wYplyYn4IPjQ).
+
