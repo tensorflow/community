@@ -29,14 +29,18 @@ Everybody with an interest in helping extend TensorFlow with new types of Ops, L
 
 ## Contacts
 
-* Project leads: Sean Morgan [@seanpmorgan](https://github.com/seanpmorgan),
-  Yan Facai (颜发才) [@facaiy](https://github.com/facaiy), Tzu-Wei Sung [@WindQaQ](https://github.com/windqaq)
+* Project leads: 
+  * Sean Morgan [@seanpmorgan](https://github.com/seanpmorgan)
+  * Stefano Fabri [@bhack](https://github.com/bhack)
 * TensorFlow technical contact [@tomerk](https://github.com/tomerk) - kaftan@google.com
 * For administrative questions, contact tf-community-team at google
 
 ## Archive
 
-* Lead Emeritus: Armando Fandango [@armando-fandango](https://github.com/armando-fandango)
+* Leads Emeritus:
+  * Yan Facai (颜发才) [@facaiy](https://github.com/facaiy)
+  * Tzu-Wei Sung [@WindQaQ](https://github.com/windqaq)
+  * Armando Fandango [@armando-fandango](https://github.com/armando-fandango)
 
 ## Code of Conduct
 
