@@ -22,11 +22,9 @@ Currently TF has no consistent, well-defined type promotion rules. This document
 
 ## **Motivation**
 
-In Tensorflow’s APIs, dtype promotion is very broken compared to JAX or NumPy. Many users have complained about these surprising behaviors (example: go/broccoli-tf-add, b/158346631, b/154456219). See [this doc ](https://docs.google.com/document/d/1jOXJ1YAQAtseyYDDGm4gsr7xJ4F2FtvfwZJgNsW8cVA/edit#)for a more detailed description.
+In Tensorflow’s APIs, dtype promotion is very broken compared to JAX or NumPy. Many users have complained about these surprising behaviors ([example](https://github.com/tensorflow/tensorflow/issues/38658)).
 
-[TF-numpy](https://www.tensorflow.org/guide/tf_numpy#type_promotion) is a strategic project in Tensorflow. Compared to Tensorflow, TF-numpy’s dtype promotion behavior is more consistent because it [mainly relies on NumPy’s dtype promotion semantics](https://source.corp.google.com/piper///depot/google3/third_party/tensorflow/python/ops/numpy_ops/np_dtypes.py;rcl=399530502;l=112). In the [long-term vision doc](https://goto.google.com/tf-numpy-path-forward), unifying the dtype promotion semantics of TF and TF-numpy is a necessary first step.
-
-The unification of TF and TF-numpy’s dtype promotion semantics is a great chance to think about what semantics should be the long-term, user-friendly solution for TF. 
+[TF-numpy](https://www.tensorflow.org/guide/tf_numpy#type_promotion) is a strategic project in Tensorflow. Compared to Tensorflow, TF-numpy’s dtype promotion behavior is more consistent because it [mainly relies on NumPy’s dtype promotion semantics](https://github.com/tensorflow/tensorflow/blob/a3a9d4d6538b025d0c6c821a72076e084a5b597b/tensorflow/python/ops/numpy_ops/np_dtypes.py#L112). Based on TF-numpy’s dtype promotion semantics we can develop a long-term, user-friendly solution for TF. 
 
 
 ## **User Benefit**
@@ -60,7 +58,7 @@ The table below summarizes the dtype promotion behavior between two TF tensors/p
 <p align="center">
 Table: TF dtype promotion result of dunder method `__add__` and `tf.add` 
 
-![Diff1](20221018-promotion-semantics/Table-TF-dtype-promotion-add-current.png)
+![Table1](20221018-promotion-semantics/Table-TF-dtype-promotion-add-current.png)
 </p>
 
 In the table, the dash symbol `-` means unsupported: an error gets raised if the two dtypes are used in the call to that op. The cells highlighted in red are only supported in `__add__`, and the cells in yellow are only supported in `tf.add`. In summary, the existing TF APIs have these significant issues:
@@ -92,7 +90,7 @@ The three modes determine how often implicit dtype promotions happen in TF APIs.
 <p align="center">
 Table: TF dtype promotion result of `tf.add` after the proposed changes. `NONE` only allows the unhighlighted cells. `SAFE` allows all `NONE` cases plus the cells highlighted in green. `ALL` allows all `SAFE` cases plus the cells highlighted in yellow. Rows/columns highlighted in blue only show the default result without overflow of inputs.
 
-![Diff1](20221018-promotion-semantics/Table-TF-dtype-promotion-add-proposed.png)
+![Table2](20221018-promotion-semantics/Table-TF-dtype-promotion-add-proposed.png)
 </p>
 
 
@@ -146,7 +144,7 @@ The dtype behavior of mode `NONE` is the most conservative: no dtype promotion i
 
 ### **Alternatives Considered: Capping the promotion system at float32**
 
-The TF-NumPy project contains another flag <code>[allow_float64](https://source.corp.google.com/piper///depot/google3/third_party/tensorflow/python/ops/numpy_ops/np_dtypes.py;rcl=399530502;l=88)</code>. When disabled, it caps the converted floating numbers to 32 bits, and complex numbers to 64 bits. This is useful when users want to enjoy implicit conversions in all cases and avoid any performance regressions related to double precision floating point numbers.
+The TF-NumPy project contains another flag <code>[allow_float64](https://github.com/tensorflow/tensorflow/blob/a3a9d4d6538b025d0c6c821a72076e084a5b597b/tensorflow/python/ops/numpy_ops/np_dtypes.py#L88)</code>. When disabled, it caps the converted floating numbers to 32 bits, and complex numbers to 64 bits. This is useful when users want to enjoy implicit conversions in all cases and avoid any performance regressions related to double precision floating point numbers.
 
 Our current plan does not involve adding this flag in TF, as it’s orthogonal to the proposed modes. If there are more user needs we can consider exposing it in TF as well.
 
@@ -250,14 +248,14 @@ Currently, inplace ops such as `assign_add` are also broken. The two tables belo
 <p align="center">
 Table: Result of tf.Variable (rows) inplace op `assign_add` with a Tensor or python scalar as the argument (columns).
 
-![Diff1](20221018-promotion-semantics/Table-TF-dtype-promotion-assign_add-current.png)
+![Table3](20221018-promotion-semantics/Table-TF-dtype-promotion-assign_add-current.png)
 </p>
 
 
 <p align="center">
 Table: Result of tf.Variable (rows) inplace op `assign_add` with a NumPy array as the argument (columns).
 
-![Diff1](20221018-promotion-semantics/Table-TF-dtype-promotion-assign_add_np-current.png)
+![Table4](20221018-promotion-semantics/Table-TF-dtype-promotion-assign_add_np-current.png)
 </p>
 
 
@@ -267,7 +265,7 @@ We can make these ops more consistent as well, following the rules in the three 
 <p align="center">
 Table: Result of tf.Variable (rows) inplace op `assign_add` with a Tensor or python scalar as the argument (columns) after the proposed changes. `NONE` only allows the unhighlighted cells. `SAFE` allows all `NONE` cases plus the cells highlighted in green. `ALL` allows all `SAFE` cases plus the cells highlighted in yellow.
 
-![Diff1](20221018-promotion-semantics/Table-TF-dtype-promotion-assign_add-proposed.png)
+![Table5](20221018-promotion-semantics/Table-TF-dtype-promotion-assign_add-proposed.png)
 </p>
 
 
@@ -289,14 +287,14 @@ To give a comprehensive overview, the two tables below show the results of `tf.a
 <p align="center">
 Table: TF dtype promotion result of `tf.add` with a Tensor as the first argument (rows) and np array in the second argument (columns).
 
-![Diff1](20221018-promotion-semantics/Table-TF-dtype-promotion-add_tensor_np-current.png)
+![Table6](20221018-promotion-semantics/Table-TF-dtype-promotion-add_tensor_np-current.png)
 </p>
 
 
 <p align="center">
 Table: TF dtype promotion result of `tf.add` with a np array as the first argument (rows) and tensor in the second argument (columns).
 
-![Diff1](20221018-promotion-semantics/Table-TF-dtype-promotion-add_np_tensor-current.png)
+![Table7](20221018-promotion-semantics/Table-TF-dtype-promotion-add_np_tensor-current.png)
 </p>
 
 
