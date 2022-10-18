@@ -5,37 +5,6 @@
 ## RFC: Making dtype promotion semantics in Tensorflow more consistent
 
 
-```
-
-Username
-Role
-Status
-Last Change
-rohanj
-Approver
-PENDING
-2022-09-12
-wangpeng
-Approver
-APPROVED
-2022-09-20
-yanhuasun
-Approver
-PENDING
-2022-09-12
-fchollet
-Reviewer
-PENDING
-2022-09-12
-vanderplas
-Reviewer
-PENDING
-2022-09-12
-#begin-approvals-addon-section
-Using go/DocWrap. Table auto-updated hourly. Don't edit this section and don't add comments in it.
-```
-
-
 **Status**: Draft | In Review | Approved | Final | Obsolete
 
 **Authors**: , LDAP
