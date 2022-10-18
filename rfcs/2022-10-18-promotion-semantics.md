@@ -1,8 +1,14 @@
 <!-- Copy and paste the converted output. -->
 
 
+# Making dtype promotion semantics in Tensorflow more consistent
 
-## Making dtype promotion semantics in Tensorflow more consistent
+| Status        | (Proposed / Accepted / Implemented / Obsolete)       |
+:-------------- |:---------------------------------------------------- |
+| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **Author(s)** | Jiawei Xia (jiaweix@google.com)                      |
+| **Sponsor**   | Peng Wang (pengwang@google.com)                      |
+| **Updated**   | 2022-10-18                                           |
 
 
 ## **Objective**
