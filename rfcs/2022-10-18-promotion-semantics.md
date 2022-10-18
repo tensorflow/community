@@ -3,7 +3,7 @@
 
 # Making dtype promotion semantics in Tensorflow more consistent
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)       |
+| Status        | (Proposed)       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
 | **Author(s)** | Jiawei Xia (jiaweix@google.com)                      |
