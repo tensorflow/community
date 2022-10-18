@@ -70,7 +70,7 @@ In the table, the dash symbol `-` means unsupported: an error gets raised if the
 3. Implicit conversion from some python dtypes to some TF dtypes are disallowed;
 4. `tf.add` is not even commutative - switching the position of the two arguments sometimes produces errors, otherwise results in correct values.
 
-When the inputs involve NumPy arrays, the behaviors can be even more broken. For brevity we have included NumPy-input behaviors in the appendix at the end of the doc.
+When the inputs involve NumPy arrays, the behaviors can be even more broken. For brevity we have included NumPy-input behaviors in [a sub section](#are-there-also-issues-in-conversions-between-tensor-and-numpy-arrays) at the end of the doc.
 
 We aim to make the system commutative, predictable and correct.
 
@@ -85,7 +85,7 @@ We propose introducing three dtype promotion modes in TF:
 *   `tf.ImplicitPromotion.SAFE`
 *   `tf.ImplicitPromotion.NONE`
 
-The three modes determine how often implicit dtype promotions happen in TF APIs. In the following examples we will use `tf.add` to demonstrate the modes. The dunder method `__add__` is expected to have the same behavior as `tf.add`. For brevity, NumPy (np) array inputs are not discussed in this section. However the proposed modes in this RFC will treat the np array inputs in the same way as the tensor inputs (see more in the appendix).
+The three modes determine how often implicit dtype promotions happen in TF APIs. In the following examples we will use `tf.add` to demonstrate the modes. The dunder method `__add__` is expected to have the same behavior as `tf.add`. For brevity, NumPy (np) array inputs are not discussed in this section. However the proposed modes in this RFC will treat the np array inputs in the same way as the tensor inputs (see more in the [bottom]((#are-there-also-issues-in-conversions-between-tensor-and-numpy-arrays))).
 
 <p align="center">
 Table: TF dtype promotion result of `tf.add` after the proposed changes. `NONE` only allows the unhighlighted cells. `SAFE` allows all `NONE` cases plus the cells highlighted in green. `ALL` allows all `SAFE` cases plus the cells highlighted in yellow. Rows/columns highlighted in blue only show the default result without overflow of inputs.
@@ -198,25 +198,23 @@ We can carry out the following steps to mitigate user surprises:
 This proposal is not expected to affect dependencies to Tensorflow.
 
 
-#### **Engineering Impact**
+### **Engineering Impact**
 
 
-#### We do not expect changes in binary size/startup time/build time/test time.
-
-The majority of the dtype promotion logic already exists in Tensorflow under namescope `tensorflow.experimental.numpy`. However, refactoring/updates will be needed under directory tensorflow/python/ops.
+We do not expect changes in binary size/startup time/build time/test time. The majority of the dtype promotion logic already exists in Tensorflow under namescope `tensorflow.experimental.numpy`. However, refactoring/updates will be needed under directory tensorflow/python/ops.
 
 
-#### **Platforms and Environments**
+### **Platforms and Environments**
 
 This proposal is expected to take effect on all platforms in the python environment.
 
 
-#### **Best Practices/Tutorials and Examples**
+### **Best Practices/Tutorials and Examples**
 
 As mentioned in section “Performance Implications” we will publish tutorials that help users select the most appropriate dtype promotion modes.
 
 
-#### **Compatibility/User Impact**
+### **Compatibility/User Impact**
 
 This is a breaking change. As mentioned above, existing code is expected to continue working. However, some tests will fail because more implicit dtype conversions are allowed. We can mitigate the user impact by adding a flag that sticks to the existing dtype promotion behaviors.
 
@@ -229,7 +227,7 @@ The proposed changes will be rolled out in various stages:
 3. [optional] Completely disable the old, broken dtype promotion behaviors.
 
 
-## **Questions and Discussion Topics**
+### **Questions and Discussion Topics**
 
 
 #### **Are there changes expected in tf.Variable?**
