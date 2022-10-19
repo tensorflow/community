@@ -307,18 +307,6 @@ To briefly describe the issues:
 Though the behaviors with np arrays inputs are not the same as python scalars, they share the same root cause: At present, TF does not have a centralized dtype promotion system, and incorrectly uses the [dtype of the first Tensor in its list of arguments](https://github.com/tensorflow/tensorflow/blob/a3a9d4d6538b025d0c6c821a72076e084a5b597b/tensorflow/python/ops/math_ops.py#L1371) to promote all arguments to. <span style="text-decoration:underline;">The proposed modes in this RFC will treat the np array inputs in the same way as the tensor inputs</span>.
 
 
-#### What happens to e.g. <code>bool - bool</code> or <code>bool / bool</code>?</strong>
-
-With NumPy:
-
-
-
-*   Addition between two Booleans: equivalent to OR
-*   Subtraction between two Booleans: forbidden
-*   Multiplication between two Booleans: AND
-*   Division between two Booleans: converted to float64 then divide
-
-
 #### **What happens to truediv operations?**
 
 The op truediv is special because it implicitly promotes integral types. For example when the inputs are matching dtypes, 16-bit integral types are promoted to `f32`, and 32-bit integral types are promoted to `float64`.
