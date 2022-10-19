@@ -6,8 +6,8 @@
 | Status        | (Proposed)       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
-| **Author(s)** | Jiawei Xia (jiaweix@google.com), Antonio Sanchez (cantonios@google.com ) |
-| **Sponsor**   | Peng Wang (pengwang@google.com)                      |
+| **Author(s)** | Jiawei Xia (Google), Antonio Sanchez (Google) |
+| **Sponsor**   | Peng Wang (Google)                      |
 | **Updated**   | 2022-10-18                                           |
 
 
