@@ -182,7 +182,7 @@ This slightly reduces the risk of overflow. However, the result is unpredictable
 
 <span style="text-decoration:underline;">For an existing piece of TF code in python, we do not expect the performance to change after switching to any of the proposed modes.</span> This is because all the allowed implicit dtype promotions in TF will stay unchanged. As to the currently disallowed dtype promotions, users must have used explicit dtype promotions which are not affected by the change.
 
-When users develop a new piece of code, however, the new modes have higher chances of computation slowdown due to implicit promotions in mode `ALL`.
+When users develop a new piece of code, however, the mode `ALL` has higher chances of computation slowdown due to implicit promotions to wider types.
 
 We can carry out the following steps to mitigate user surprises:
 
