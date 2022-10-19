@@ -6,7 +6,7 @@
 | Status        | (Proposed)       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
-| **Author(s)** | Jiawei Xia (jiaweix@google.com)                      |
+| **Author(s)** | Jiawei Xia (jiaweix@google.com), Antonio Sanchez (cantonios@google.com ) |
 | **Sponsor**   | Peng Wang (pengwang@google.com)                      |
 | **Updated**   | 2022-10-18                                           |
 
@@ -108,7 +108,7 @@ In this mode, we allow all implicit promotions to happen in the op, even if both
     *   If the python scalar value falls within the range of the TF dtype, the result dtype is loosely described with the following promotion direction: TF bool -> python integer -> TF signed/unsigned integers -> python float -> TF float -> python complex/TF complex.
     *   The dtype promotion is allowed only if the python scalar is within the range of the determined dtype. Otherwise, an exception is raised. For example, `tf.constant([1], tf.int8) + 1` produces a `tf.int8` Tensor, while `tf.constant([1], tf.int8) + 1000` raises an error.
 
-This mode is intended to provide a user experience similar to NumPy behaviors.
+This mode is intended to provide a user experience somewhat similar to NumPy behaviors.
 
 
 ### **Mode 2: tf.ImplicitPromotion.SAFE**
