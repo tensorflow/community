@@ -4,8 +4,8 @@
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
 | **Author(s)** | Reed Wanderman-Milne (reedwm@google.com), Jonathan Dekhtiar (jdekhtiar@nvidia.com) |
-| **Sponsor**   |                                                      |
-| **Updated**   | 2022-10-24                                           |
+| **Sponsor**   | Rohan Jain (rohanj@google.com)                       |
+| **Updated**   | 2022-10-25                                           |
 
 ## Objective
 
