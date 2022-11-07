@@ -417,11 +417,11 @@ be used with general indexing to update an underlying tensor:
 ```python
 class TensorIndexUpdateHelper:
   """Helper class that allows copying/modifying a tensor at a set of indices."""
-  def __init__(self, tensor, index_exp):
+  def __init__(self, tensor: tf.Tensor, index_exp: Any):
     self.tensor = tensor
     self.index_exp = index_exp
 
-  def set(self, values):
+  def set(self, values: tf.Tensor) -> tf.Tensor:
     """Replaces values in a tensor, returning the modified copy."""
     # Internal implementation that performs the copy-and-update operation.
     return tf.internal.copy_and_update(self.tensor, self.index_exp, values)
@@ -429,17 +429,17 @@ class TensorIndexUpdateHelper:
 
 class TensorIndexUpdateHelperFactory:
   """Creates `TensorIndexUpdateHelper`s via __getitem__."""
-  def __init__(self, tensor):
+  def __init__(self, tensor: tf.Tensor):
     self.tensor = tensor
 
-  def __getitem__(self, index_exp):
+  def __getitem__(self, index_exp: Any) -> TensorIndexUpdateHelper:
     """Creates a helper via Tensor.at[index_exp]"""
     return TensorIndexUpdateHelper(self.tensor, index_exp)
 
 
 class Tensor:
   # ...
-  def create_index_update_helper(self):
+  def create_index_update_helper(self) -> TensorIndexUpdateHelperFactory:
     return TensorIndexUpdateHelperFactory(self)
 
   # Allows Tensor.at to be treated as a function call, returning a
