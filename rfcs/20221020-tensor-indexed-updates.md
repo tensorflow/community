@@ -247,8 +247,11 @@ x = tf.copy_and_update(x, np.index_exp[:, :, 2], 0)
   - New untested API.
   - Lack of consistency with JAX.
   
-In discussions with the JAX team, they initially started with a syntax like this
-but then eventually switched to the current `.at` syntax due to user feedback.
+In discussions with the JAX team, they initially started with a syntax like
+this, but eventually switched to the current `.at` syntax due to user feedback.
+In particular, users found `index_exp` unintuitive, which led to syntax errors
+when trying to use integer/tuple indices directly.  The `.at` approach was found
+more readable and succinct.
 
 #### Augment Existing Tensor Scatter Methods
 
