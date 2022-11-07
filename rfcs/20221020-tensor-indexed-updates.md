@@ -292,7 +292,8 @@ x = var_x.read_value()       # Extract the modified contents.
 ```
 Forcing this to be the main update syntax for regular tensors seems a bit
 clunky and heavy-handed, since we don't need all that `tf.Variable` provides.
-The `.at[]` syntax provides a more direct option.
+We also cannot freely create `tf.Variable`s within `tf.function`, which would
+limit usage.  The `.at[]` syntax provides a more direct option.
   
 ### Performance Implications
 
