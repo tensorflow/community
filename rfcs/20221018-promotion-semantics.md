@@ -1,7 +1,7 @@
 <!-- Copy and paste the converted output. -->
 
 
-# Making dtype promotion semantics in Tensorflow more consistent
+# Making dtype promotion semantics in TensorFlow more consistent
 
 | Status        | (Proposed)       |
 :-------------- |:---------------------------------------------------- |
@@ -15,16 +15,16 @@
 
 Currently TF has no consistent, well-defined type promotion rules. This document proposes a well-defined, consistent and clear dtype promotion rule for TF. The introduced changes make TF APIs more similar to NumPy, with some differences that emphasize TF’s applications in machine learning. This should make dtype promotions in TF much more consistent and predictable.
 
-[**What the doc is**] This doc discusses the preferred dtype promotion semantics/behaviors of Tensorflow (TF) and Tensorflow-numpy (TF-numpy) in the binary ops including add, sub, mul, div, pow and mod.
+[**What the doc is**] This doc discusses the preferred dtype promotion semantics/behaviors of TensorFlow (TF) and TensorFlow-NumPy (TF-NumPy) in the binary ops including add, sub, mul, div, pow and mod.
 
 [**What the doc is not**] This doc does not discuss the implementation plans.
 
 
 ## **Motivation**
 
-In Tensorflow’s APIs, dtype promotion is very broken compared to JAX or NumPy. Many users have complained about these surprising behaviors ([example](https://github.com/tensorflow/tensorflow/issues/38658)).
+In TensorFlow’s APIs, dtype promotion is very broken compared to JAX or NumPy. Many users have complained about these surprising behaviors ([example](https://github.com/tensorflow/tensorflow/issues/38658)).
 
-[TF-numpy](https://www.tensorflow.org/guide/tf_numpy#type_promotion) is a strategic project in Tensorflow. Compared to Tensorflow, TF-numpy’s dtype promotion behavior is more consistent because it [mainly relies on NumPy’s dtype promotion semantics](https://github.com/tensorflow/tensorflow/blob/a3a9d4d6538b025d0c6c821a72076e084a5b597b/tensorflow/python/ops/numpy_ops/np_dtypes.py#L112). Based on TF-numpy’s dtype promotion semantics we can develop a long-term, user-friendly solution for TF. 
+[TF-NumPy](https://www.tensorflow.org/guide/tf_numpy#type_promotion) is a strategic project in TensorFlow. Compared to TensorFlow, TF-NumPy’s dtype promotion behavior is more consistent because it [mainly relies on NumPy’s dtype promotion semantics](https://github.com/tensorflow/tensorflow/blob/a3a9d4d6538b025d0c6c821a72076e084a5b597b/tensorflow/python/ops/numpy_ops/np_dtypes.py#L112). Based on TF-NumPy’s dtype promotion semantics we can develop a long-term, user-friendly solution for TF. 
 
 
 ## **User Benefit**
