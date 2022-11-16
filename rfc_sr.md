@@ -67,7 +67,7 @@ p_1(x)=1-\frac{x-\lfloor{x}\rfloor}{\delta}\\
 \text{with probability } p_2(x)=\frac{x-\lfloor{x}\rfloor}{\delta}\\ \end{cases}
 $$
 
-Where $$\delta$$ indicates the greatest representable floating/fixed-point
+Where $\delta$ indicates the greatest representable floating/fixed-point
 number less than or equal to x.
 
 ## User Benefit
@@ -129,10 +129,10 @@ tf.stochastic_cast(input, dtype, random_seed=None, random_algo=’Philox’)
 | ----------- | ------------------------------------------------------------- |
 | input       | The original tensor to be casted                              |
 | dtype       | Desired type after casting                                    |
-| random_seed | Random seed if users need to control the randomness. If None, |
-:             : the system will generate a seed.                              :
-| random_algo | Random number generator algorithms to be used, currently      |
-:             : support ‘Philox’ or ‘Threefry’.                               :
+| random_seed | Random seed if users need to control the randomness. If None,
+                the system will generate a seed.                              |
+| random_algo | Random number generator algorithms to be used, currently      
+                support ‘Philox’ or ‘Threefry’.                               |
 
 Returns |                                                                 |
 ------- | ---------------------------------------------------------------
@@ -164,17 +164,17 @@ inside of the API call and asks users to provide random seed and random number
 generation algorithms.
 
 ```
-tf.stochastic_cast(input, random_number, dtype)`
+tf.stochastic_cast(input, random_number, dtype)
 ```
 
 | Args          |                                                            |
 | ------------- | ---------------------------------------------------------- |
 | input         | The original tensor to be casted                           |
 | dtype         | Desired type after casting                                 |
-| random_number | Random numbers for determining the rounding direction. If  |
-:               : the random number is less than the fractional part, the    :
-:               : result will be rounded up. This is required to be unsigned :
-:               : integers whose bit width is the same as the operand.       :
+| random_number | Random numbers for determining the rounding direction. If  
+                the random number is less than the fractional part, the    
+                result will be rounded up. This is required to be unsigned 
+               integers whose bit width is the same as the operand.       |
 
 Returns |                                                                 |
 ------- | ---------------------------------------------------------------
@@ -205,10 +205,10 @@ tf.stochastic_round(input, to_precision, random_seed=None, random_algo=’Philox
 | ------------ | ------------------------------------------------------------- |
 | input        | The original tensor to be rounded                             |
 | to_precision | Desired precision after rounding                              |
-| random_seed  | Random seed if users need to control the randomness. If None, |
-:              : the system will generate a seed.                              :
-| random_algo  | Random number generator algorithms to be used, currently      |
-:              : support ‘Philox’ or ‘Threefry’.                               :
+| random_seed  | Random seed if users need to control the randomness. If None, 
+                 the system will generate a seed.                              
+| random_algo  | Random number generator algorithms to be used, currently      
+                 support ‘Philox’ or ‘Threefry’.                               |
 
 Returns |                                                                  |
 ------- | ----------------------------------------------------------------
