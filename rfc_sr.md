@@ -125,14 +125,14 @@ proposed like below:
 tf.stochastic_cast(input, dtype, random_seed=None, random_algo=’Philox’)
 ```
 
-| Args        |                                                               |
-| ----------- | ------------------------------------------------------------- |
-| input       | The original tensor to be casted                              |
-| dtype       | Desired type after casting                                    |
-| random_seed | Random seed if users need to control the randomness. If None,
-                the system will generate a seed.                              |
-| random_algo | Random number generator algorithms to be used, currently      
-                support ‘Philox’ or ‘Threefry’.                               |
+Args        |                                                               
+: ----------| : ------------------------------------------------------------- 
+input       |  The original tensor to be casted                              
+dtype       |  Desired type after casting                                    
+random_seed |  Random seed if users need to control the randomness. If None,
+                the system will generate a seed.                              
+random_algo | Random number generator algorithms to be used, currently      
+                support ‘Philox’ or ‘Threefry’.                               
 
 Returns |                                                                 |
 ------- | ---------------------------------------------------------------
@@ -167,14 +167,11 @@ generation algorithms.
 tf.stochastic_cast(input, random_number, dtype)
 ```
 
-| Args          |                                                            |
-| ------------- | ---------------------------------------------------------- |
-| input         | The original tensor to be casted                           |
-| dtype         | Desired type after casting                                 |
-| random_number | Random numbers for determining the rounding direction. If  
-                the random number is less than the fractional part, the    
-                result will be rounded up. This is required to be unsigned 
-               integers whose bit width is the same as the operand.       |
+Args          |                                                            
+:-------------| :----------------------------------------------------------
+input         | The original tensor to be casted                           
+dtype         | Desired type after casting                                 
+random_number | Random numbers for determining the rounding direction. If the random number is less than the fractional part, the  result will be rounded up. This is required to be unsigned integers whose bit width is the same as the operand.       
 
 Returns |                                                                 |
 ------- | ---------------------------------------------------------------
@@ -201,14 +198,13 @@ Another way that sticks to the current rounding API design:
 tf.stochastic_round(input, to_precision, random_seed=None, random_algo=’Philox’)
 ```
 
-| Args         |                                                               |
-| ------------ | ------------------------------------------------------------- |
-| input        | The original tensor to be rounded                             |
-| to_precision | Desired precision after rounding                              |
-| random_seed  | Random seed if users need to control the randomness. If None, 
-                 the system will generate a seed.                              
-| random_algo  | Random number generator algorithms to be used, currently      
-                 support ‘Philox’ or ‘Threefry’.                               |
+Args         |                                            
+:----------- |: -------------------------------------------------------------
+input        | The original tensor to be rounded                             
+to_precision | Desired precision after rounding                              
+random_seed  | Random seed if users need to control the randomness. If None, the system will generate a seed.                              
+random_algo  | Random number generator algorithms to be used, currently support ‘Philox’ or ‘Threefry’.
+
 
 Returns |                                                                  |
 ------- | ----------------------------------------------------------------
