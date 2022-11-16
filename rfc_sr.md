@@ -57,8 +57,8 @@ expected value of the rounding result would be E(x) = 3 * 0.3 + 4 * 0.7 = 3.7.
 
 ![image](sr.png)
 
-Let $$ x ∈ R $$, and let $$\delta$$ be the rounding precision. Then the rounded
-value $$sr(x)$$ of $$x$$ using stochastic rounding is defined as
+Let $x ∈ R$, and let $\delta$ be the rounding precision. Then the rounded
+value $sr(x)$ of $x$ using stochastic rounding is defined as
 
 $$
 sr(x) = \begin{cases} \lfloor{x}\rfloor,& \text{with probability }
