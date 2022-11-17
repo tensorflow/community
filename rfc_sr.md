@@ -126,7 +126,7 @@ tf.stochastic_cast(input, dtype, random_seed=None, random_algo=’Philox’)
 ```
 
 <table>
- <tr> Args </tr>                                                                       
+ <tr><td>Args</td></tr>                                                                       
  <tr><td>input</td><td>The original tensor to be casted</td></tr>                              
  <tr><td>dtype</td><td>Desired type after casting</td></tr>       
  <tr><td>random_seed</td><td>Random seed if users need to control the randomness. If None, the system will generate a seed.</td></tr>                              
