@@ -125,14 +125,13 @@ proposed like below:
 tf.stochastic_cast(input, dtype, random_seed=None, random_algo=’Philox’)
 ```
 
-Args        |                                                               
-: ----------| : ------------------------------------------------------------- 
-input       |  The original tensor to be casted                              
-dtype       |  Desired type after casting                                    
-random_seed |  Random seed if users need to control the randomness. If None,
-                the system will generate a seed.                              
-random_algo | Random number generator algorithms to be used, currently      
-                support ‘Philox’ or ‘Threefry’.                               
+<table>
+ <tr> Args </tr>                                                                       
+ <tr><td>input</td><td>The original tensor to be casted</td></tr>                              
+ <tr><td>dtype</td><td>Desired type after casting</td></tr>       
+ <tr><td>random_seed</td><td>Random seed if users need to control the randomness. If None, the system will generate a seed.</td></tr>                              
+ <tr><td>random_algo</td><td> Random number generator algorithms to be used, currently support ‘Philox’ or ‘Threefry’. </td></tr>
+</table>
 
 Returns |                                                                 |
 ------- | ---------------------------------------------------------------
