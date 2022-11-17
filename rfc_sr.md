@@ -126,7 +126,7 @@ tf.stochastic_cast(input, dtype, random_seed=None, random_algo=’Philox’)
 ```
 
 <table>
- <tr><td><strong>Args</strong></td><td>Def</td></tr>                                                      
+ <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>                                      
  <tr><td>input</td><td>The original tensor to be casted</td></tr>                              
  <tr><td>dtype</td><td>Desired type after casting</td></tr>       
  <tr><td>random_seed</td><td>Random seed if users need to control the randomness. If None, the system will generate a seed.</td></tr>                              
@@ -165,12 +165,14 @@ generation algorithms.
 ```
 tf.stochastic_cast(input, random_number, dtype)
 ```
+                                     
+<table>
+ <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>
+ <tr><td>input</td><td>The original tensor to be casted</td></tr>
+ <tr><td>dtype</td><td>Desired type after casting</td></tr>
+ <tr><td>random_number</td><td>Random numbers for determining the rounding direction. If the random number is less than the fractional part, the  result will be rounded up. This is required to be unsigned integers whose bit width is the same as the operand.</td></tr>
+</table>
 
-Args          |                                                            
-:-------------| :----------------------------------------------------------
-input         | The original tensor to be casted                           
-dtype         | Desired type after casting                                 
-random_number | Random numbers for determining the rounding direction. If the random number is less than the fractional part, the  result will be rounded up. This is required to be unsigned integers whose bit width is the same as the operand.       
 
 Returns |                                                                 |
 ------- | ---------------------------------------------------------------
@@ -197,13 +199,12 @@ Another way that sticks to the current rounding API design:
 tf.stochastic_round(input, to_precision, random_seed=None, random_algo=’Philox’)
 ```
 
-Args         |                                            
-:----------- |: -------------------------------------------------------------
-input        | The original tensor to be rounded                             
-to_precision | Desired precision after rounding                              
-random_seed  | Random seed if users need to control the randomness. If None, the system will generate a seed.                              
-random_algo  | Random number generator algorithms to be used, currently support ‘Philox’ or ‘Threefry’.
-
+<table>
+ <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>
+ <tr><td>to_precision</td><td>Desired precision after rounding</td></tr>
+ <tr><td>random_seed</td><td>Random seed if users need to control the randomness. If None, the system will generate a seed.</td></tr>
+ <tr><td>random_algo</td><td>Random number generator algorithms to be used, currently support ‘Philox’ or ‘Threefry’.</td></tr>
+</table>
 
 Returns |                                                                  |
 ------- | ----------------------------------------------------------------
