@@ -53,7 +53,10 @@ is proportional to the residual (value of the trailing bits that do not fit into
 the destination format). Different from deterministic rounding, stochastic
 rounding is an unbiased rounding mechanism. For example, when x = 3.7, it has a
 30% chance to be rounded to 3 and 70% chance to be rounded to 4. Thus the
-expected value of the rounding result would be $$ E(x) = 3 \times 0.3 + 4 \times 0.7 = 3.7. $$
+expected value of the rounding result would be 
+$$ 
+E(x) = 3 \times 0.3 + 4 \times 0.7 = 3.7. 
+$$
 
 Let $x ∈ R$, and let $\delta$ be the rounding precision. Then the rounded
 value $sr(x)$ of $x$ using stochastic rounding is defined as
