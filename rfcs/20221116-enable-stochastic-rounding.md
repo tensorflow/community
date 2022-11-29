@@ -9,7 +9,7 @@ Status        | Proposed
 
 ## Objective
 
-[Stochastic rounding](https://en.wikipedia.org/wiki/Rounding#Stochastic_rounding) is a rounding method that rounds a value to a nearest value with a probability dependent on the proximity, which gives an unbiased result on average. It has been proven[1](https://arxiv.org/pdf/1502.02551.pdf)[2](https://arxiv.org/pdf/1812.08011.pdf)[3](https://arxiv.org/pdf/1804.05267.pdf)[4](https://www.eecs.harvard.edu/htk/static/files/2022-hpca-zhang-mcdanel-kung.pdf) that such a rounding method is critical to accuracy when it comes to low-precision quantized training, but there is no such functionality in TF, and users must implement a stochastic rounding kernel in various ways. This document details an implementation of  stochastic rounding in TF that facilitates the use of stochastic rounding in quantized training. Below are the requirements: 
+[Stochastic rounding](https://en.wikipedia.org/wiki/Rounding#Stochastic_rounding) is a rounding method that rounds a value to a nearest value with a probability dependent on the proximity, which gives an unbiased result on average. It has been proven\[[1](https://arxiv.org/pdf/1502.02551.pdf)\]\[[2](https://arxiv.org/pdf/1812.08011.pdf)\]\[[3](https://arxiv.org/pdf/1804.05267.pdf)\]\[[4](https://www.eecs.harvard.edu/htk/static/files/2022-hpca-zhang-mcdanel-kung.pdf)\] that such a rounding method is critical to accuracy when it comes to low-precision quantized training, but there is no such functionality in TF, and users must implement a stochastic rounding kernel in various ways. This document details an implementation of  stochastic rounding in TF that facilitates the use of stochastic rounding in quantized training. Below are the requirements: 
 
 *   [P0] Enable stochastic rounding for float32/float64 to int8 on TPU and CPU
     and GPU.
@@ -118,7 +118,7 @@ rounding is a necessity. Given these considerations, an API is ultimately
 proposed like below:
 
 ```
-tf.stochastic_cast(input, dtype, random_seed=None, random_algo=’Philox’)
+tf.stochastic_cast(input, dtype, seed=None, alg=’Philox’)
 ```
 
 <table>
@@ -126,7 +126,7 @@ tf.stochastic_cast(input, dtype, random_seed=None, random_algo=’Philox’)
  <tr><td>input</td><td>The original tensor to be casted</td></tr>                              
  <tr><td>dtype</td><td>Desired type after casting</td></tr>       
  <tr><td>seed</td><td>Required seed for the RNG.</td></tr>                              
- <tr><td>alg</td><td> The RNG algorithm used to generate the random numbers. Valid choices are "philox" for the [Philox algorithm](https://www.thesalmons.org/john/random123/papers/random123sc11.pdf), "threefry" for the [ThreeFry algorithm](https://www.thesalmons.org/john/random123/papers/random123sc11.pdf), and "auto_select" (default) for the system to automatically select an algorithm based on the device type. </td></tr>
+ <tr><td>alg</td><td> The RNG algorithm used to generate the random numbers. Valid choices are "philox" for the Philox algorithm, "threefry" for the ThreeFry algorithm, and "auto_select" (default) for the system to automatically select an algorithm based on the device type. </td></tr>
 </table>
 
 Returns |                                                                 |
@@ -137,7 +137,7 @@ The API returns a tensor that contains the rounded values in specified data type
 with the same shape as the operand.
 
 The API asks users to provide random seed and algorithm so that the random
-number sequence can be reproduced thus they can replay the rounding results.
+number sequence can be reproduced and users  can replay the rounding results.
 
 This option encapsulates the random number generation aiming at simplifying API
 calls. Also, doing it this way, we can potentially avoid OOM issues introduced
@@ -191,14 +191,14 @@ the tensor in order to bypass the memory limit.
 Another way that sticks to the current rounding API design:
 
 ```
-tf.stochastic_round(input, to_precision, random_seed=None, random_algo=’Philox’)
+tf.stochastic_round(input, to_precision, seed=None, alg=’Philox’)
 ```
 
 <table>
  <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>
  <tr><td>to_precision</td><td>Desired precision after rounding</td></tr>
- <tr><td>random_seed</td><td>Random seed if users need to control the randomness. If None, the system will generate a seed.</td></tr>
- <tr><td>random_algo</td><td>Random number generator algorithms to be used, currently support ‘Philox’ or ‘Threefry’.</td></tr>
+ <tr><td>seed</td><td>Required seed for the RNG.</td></tr>
+ <tr><td>alg</td><td>The RNG algorithm used to generate the random numbers. Valid choices are "philox" for the Philox algorithm, "threefry" for the ThreeFry algorithm, and "auto_select" (default) for the system to automatically select an algorithm based on the device type.</td></tr>
 </table>
 
 Returns |                                                                  |
