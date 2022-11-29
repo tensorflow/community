@@ -9,14 +9,7 @@ Status        | Proposed
 
 ## Objective
 
-Stochastic rounding is a rounding method that rounds a value to a nearest value
-with a probability dependent on the proximity, which gives an unbiased result on
-average. It has been proven that such a rounding method is critical to accuracy
-when it comes to low-precision quantized training, but there is no such
-functionality in TF, and users must implement a stochastic rounding kernel in
-various ways. This document details the process of materializing stochastic
-rounding in TF, and facilitates the use of stochastic rounding in quantized
-training. Below are the requirements:
+[Stochastic rounding](https://en.wikipedia.org/wiki/Rounding#Stochastic_rounding) is a rounding method that rounds a value to a nearest value with a probability dependent on the proximity, which gives an unbiased result on average. It has been proven[1](https://arxiv.org/pdf/1502.02551.pdf)[2](https://arxiv.org/pdf/1812.08011.pdf)[3](https://arxiv.org/pdf/1804.05267.pdf)[4](https://www.eecs.harvard.edu/htk/static/files/2022-hpca-zhang-mcdanel-kung.pdf) that such a rounding method is critical to accuracy when it comes to low-precision quantized training, but there is no such functionality in TF, and users must implement a stochastic rounding kernel in various ways. This document details an implementation of  stochastic rounding in TF that facilitates the use of stochastic rounding in quantized training. Below are the requirements: 
 
 *   [P0] Enable stochastic rounding for float32/float64 to int8 on TPU and CPU
     and GPU.
@@ -92,7 +85,8 @@ multiplications:
 
 ```
 inputs = tf.clip_by_value(inputs, -128.0, 127.0)
-inputs = tf.math.round(inputs) inputs = tf.cast(inputs, dtype=tf.int8)
+inputs = tf.math.round(inputs) 
+inputs = tf.cast(inputs, dtype=tf.int8)
 // 'weights' tensor has been converted to int8 format beforehand.
 output = tf.einsum(inputs, weights)
 ```
@@ -131,8 +125,8 @@ tf.stochastic_cast(input, dtype, random_seed=None, random_algo=’Philox’)
  <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>                                      
  <tr><td>input</td><td>The original tensor to be casted</td></tr>                              
  <tr><td>dtype</td><td>Desired type after casting</td></tr>       
- <tr><td>random_seed</td><td>Random seed if users need to control the randomness. If None, the system will generate a seed.</td></tr>                              
- <tr><td>random_algo</td><td> Random number generator algorithms to be used, currently support ‘Philox’ or ‘Threefry’. </td></tr>
+ <tr><td>seed</td><td>Required seed for the RNG.</td></tr>                              
+ <tr><td>alg</td><td> The RNG algorithm used to generate the random numbers. Valid choices are "philox" for the [Philox algorithm](https://www.thesalmons.org/john/random123/papers/random123sc11.pdf), "threefry" for the [ThreeFry algorithm](https://www.thesalmons.org/john/random123/papers/random123sc11.pdf), and "auto_select" (default) for the system to automatically select an algorithm based on the device type. </td></tr>
 </table>
 
 Returns |                                                                 |
@@ -160,19 +154,18 @@ generation algorithms or custom generators.
 
 ### Alternatives Considered
 
-Similar to the proposal, but this option encapsulates random number generation
-inside of the API call and asks users to provide random seed and random number
-generation algorithms.
+Similar to the proposal, but this option doesn't encapsulate random number generation
+inside of the API call and asks users to provide random tensors.
 
 ```
-tf.stochastic_cast(input, random_number, dtype)
+tf.stochastic_cast(input, randoms, dtype)
 ```
                                      
 <table>
  <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>
  <tr><td>input</td><td>The original tensor to be casted</td></tr>
  <tr><td>dtype</td><td>Desired type after casting</td></tr>
- <tr><td>random_number</td><td>Random numbers for determining the rounding direction. If the random number is less than the fractional part, the  result will be rounded up. This is required to be unsigned integers whose bit width is the same as the operand.</td></tr>
+ <tr><td>randoms</td><td>Random numbers for determining the rounding direction. If the random number is less than the fractional part, the  result will be rounded up. This is required to be unsigned integers whose bit width is the same as the operand.</td></tr>
 </table>
 
 
@@ -190,9 +183,9 @@ With rounding and downcasting encapsulated in one API, the op can be emulated in
 the backend with higher efficiency.
 
 There is a disadvantage of this implementation that users need to materialize
-large tensors before calling this API. Once a large random tensor is
+large tensors before calling this API. Once they are
 materialized, calling this API will require storing and passing the large tensor
-around. When facing this OOM issue, users will need to potentially break down
+around, causing OOM issues. When facing this OOM issue, users will need to potentially break down
 the tensor in order to bypass the memory limit.
 
 Another way that sticks to the current rounding API design:
@@ -249,6 +242,7 @@ However, there are also cons of this option:
 
 ### Software Emulation
 
+Software emulation is required on hardwares that don't have built-in support for stochastic rounding. This includes CPU, GPU and some TPU versions. To keep consistent with the existing hardware implementations, the emulated algorithms are demonstrated below.
 Given a random value, below is the algorithm for rounding floats to integers:
 
 ```
