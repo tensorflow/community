@@ -118,14 +118,14 @@ rounding is a necessity. Given these considerations, an API is ultimately
 proposed like below:
 
 ```
-tf.stochastic_cast(input, dtype, seed=None, alg=’Philox’)
+tf.stochastic_cast(input, dtype, seed, alg=’auto_select’)
 ```
 
 <table>
  <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>                                      
  <tr><td>input</td><td>The original tensor to be casted</td></tr>                              
  <tr><td>dtype</td><td>Desired type after casting</td></tr>       
- <tr><td>seed</td><td>Required seed for the RNG.</td></tr>                              
+ <tr><td>seed</td><td>A required shape[2] tensor, the seed for the RNG. Recommended to use different seeds for each forward pass to eliminate potential bias introduced by PRNG. </td></tr>                              
  <tr><td>alg</td><td> The RNG algorithm used to generate the random numbers. Valid choices are "philox" for the Philox algorithm, "threefry" for the ThreeFry algorithm, and "auto_select" (default) for the system to automatically select an algorithm based on the device type. </td></tr>
 </table>
 
@@ -165,7 +165,7 @@ tf.stochastic_cast(input, randoms, dtype)
  <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>
  <tr><td>input</td><td>The original tensor to be casted</td></tr>
  <tr><td>dtype</td><td>Desired type after casting</td></tr>
- <tr><td>randoms</td><td>Random numbers for determining the rounding direction. If the random number is less than the fractional part, the  result will be rounded up. This is required to be unsigned integers whose bit width is the same as the operand.</td></tr>
+ <tr><td>randoms</td><td>Random tensor for determining the rounding direction. If the random number is less than the fractional part, the  result will be rounded up. This is required to be unsigned integers whose bit width is the same as the operand. The shape should be the same as input.</td></tr>
 </table>
 
 
@@ -191,13 +191,13 @@ the tensor in order to bypass the memory limit.
 Another way that sticks to the current rounding API design:
 
 ```
-tf.stochastic_round(input, to_precision, seed=None, alg=’Philox’)
+tf.stochastic_round(input, to_precision, seed, alg=’auto_select’)
 ```
 
 <table>
  <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>
  <tr><td>to_precision</td><td>Desired precision after rounding</td></tr>
- <tr><td>seed</td><td>Required seed for the RNG.</td></tr>
+ <tr><td>seed</td><td>A required shape[2] tensor, the seed for the RNG. Recommended to use different seeds for each forward pass to eliminate potential bias introduced by PRNG.</td></tr>
  <tr><td>alg</td><td>The RNG algorithm used to generate the random numbers. Valid choices are "philox" for the Philox algorithm, "threefry" for the ThreeFry algorithm, and "auto_select" (default) for the system to automatically select an algorithm based on the device type.</td></tr>
 </table>
 
@@ -254,7 +254,7 @@ function stochastic_rounding_f32_int32(x, random):
 
   integral = floor(abs(x))
   fractional = abs(x) - integral
-  should_round_up = random < (fractional * random_max)
+  should_round_up = random < (fractional * UINT32_MAX)
   result = should_round_up? (integral + 1) : integral
   return is_negative(x): -result : result
 ```
