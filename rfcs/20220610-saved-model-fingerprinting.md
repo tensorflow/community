@@ -184,7 +184,7 @@ One drawback of having a separate file is that it is a potentially significant c
 
 All fingerprints will be written to disk automatically, and there is no way to bypass or customize writing fingerprints when serializing a SavedModel.
 
-To read the fingerprint, users can load the protobuf into memory and read the field. At first, there will not be dedicated APIs in Python to get the fingerprint, since no other part of the SavedModel has special APIs to access its value. However, if the need arises, we can add APIs under the `tf.saved_model` namespace to read the fingerprint.
+There will be a public API in python `tf.saved_model.read_fingerprint(export_dir)` which returns a dictionary mapping the names of the fields in the protobuf (i.e. "saved_model_checksum", "graph_def_program_hash", "signature_def_hash", "saved_object_graph_hash", "checkpoint_hash", "version") to their values.
 
 ### Validation
 
