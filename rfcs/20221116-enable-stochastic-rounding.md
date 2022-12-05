@@ -123,8 +123,8 @@ tf.stochastic_cast(input, dtype, seed, alg=’auto_select’)
 
 <table>
  <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>                                      
- <tr><td>input</td><td>The original tensor to be casted</td></tr>                              
- <tr><td>dtype</td><td>Desired type after casting</td></tr>       
+ <tr><td>input</td><td>The original tensor to be casted.</td></tr>                              
+ <tr><td>dtype</td><td>Desired type after casting.</td></tr>       
  <tr><td>seed</td><td>A required shape[2] tensor, the seed for the RNG. Recommended to use different seeds for each forward pass to eliminate potential bias introduced by PRNG. </td></tr>                              
  <tr><td>alg</td><td> The RNG algorithm used to generate the random numbers. Valid choices are "philox" for the Philox algorithm, "threefry" for the ThreeFry algorithm, and "auto_select" (default) for the system to automatically select an algorithm based on the device type. </td></tr>
 </table>
@@ -163,8 +163,8 @@ tf.stochastic_cast(input, randoms, dtype)
                                      
 <table>
  <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>
- <tr><td>input</td><td>The original tensor to be casted</td></tr>
- <tr><td>dtype</td><td>Desired type after casting</td></tr>
+ <tr><td>input</td><td>The original tensor to be casted.</td></tr>
+ <tr><td>dtype</td><td>Desired type after casting.</td></tr>
  <tr><td>randoms</td><td>Random tensor for determining the rounding direction. If the random number is less than the fractional part, the  result will be rounded up. This is required to be unsigned integers whose bit width is the same as the operand. The shape should be the same as input.</td></tr>
 </table>
 
@@ -196,7 +196,8 @@ tf.stochastic_round(input, to_precision, seed, alg=’auto_select’)
 
 <table>
  <tr><td><strong>Args</strong></td><td><strong>Definition</strong></td></tr>
- <tr><td>to_precision</td><td>Desired precision after rounding</td></tr>
+ <tr><td>input</td><td>The original tensor to be rounded.</td></tr>
+ <tr><td>to_precision</td><td>Desired precision after rounding.</td></tr>
  <tr><td>seed</td><td>A required shape[2] tensor, the seed for the RNG. Recommended to use different seeds for each forward pass to eliminate potential bias introduced by PRNG.</td></tr>
  <tr><td>alg</td><td>The RNG algorithm used to generate the random numbers. Valid choices are "philox" for the Philox algorithm, "threefry" for the ThreeFry algorithm, and "auto_select" (default) for the system to automatically select an algorithm based on the device type.</td></tr>
 </table>
