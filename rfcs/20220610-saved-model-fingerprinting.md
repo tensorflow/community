@@ -1,11 +1,11 @@
 # SavedModel Fingerprinting
 
-| Status        | Accepted                                            |
+| Status        | Proposed                                             |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | 415 |
 | **Author(s)** | Monica Song (monicadsong@google.com)                 |
 | **Sponsor**   | Cesar Crusius (ccrusius@google.com)                  |
-| **Updated**   | 2022-06-10                                           |
+| **Updated**   | 2023-01-11                                         |
 
 ## Objective
 
@@ -184,7 +184,10 @@ One drawback of having a separate file is that it is a potentially significant c
 
 All fingerprints will be written to disk automatically, and there is no way to bypass or customize writing fingerprints when serializing a SavedModel.
 
-There will be a public API in python `tf.saved_model.read_fingerprint(filepath)` which returns a dictionary mapping the names of the fields in the protobuf (i.e. "saved_model_checksum", "graph_def_program_hash", "signature_def_hash", "saved_object_graph_hash", "checkpoint_hash", "version") to their values.
+There will be an API in python `tf.saved_model.read_fingerprint(export_dir)` which returns a `Fingerprint` object
+(`tf.saved_model.Fingerprint`) containing the values of the fingerprint.
+
+Following convention, these two new public APIs will be released under the "experimental" namespace, i.e. `tf.saved_model.experimental` and then graduate to non-experimental when stable.
 
 ### Validation
 
