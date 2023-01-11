@@ -1,6 +1,6 @@
 # SavedModel Fingerprinting
 
-| Status        | Proposed                                             |
+| Status        | Accepted                                             |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | 415 |
 | **Author(s)** | Monica Song (monicadsong@google.com)                 |
