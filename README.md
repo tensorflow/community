@@ -17,3 +17,5 @@ to Thea Lamkin: thealamkin@google.com.
 
 For a complete overview of the TensorFlow community resources,
 please visit [tensorflow.org/community](https://tensorflow.org/community). 
+Ata says that this community is amazing.
+
