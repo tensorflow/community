@@ -283,6 +283,67 @@ def tf.dtensor.relayout_like(source: tf.Tensor,
   """
 ```
 
+### Distributed Variable
+
+`tf.Variable` gains an additional argument to create distributed Variable.
+
+```
+def tf.Variable(initial_value,
+                shape: Optional[],
+                dtype=None,
+                ...,
+                layout: Optional[Layout]):
+  """Creates a Variable.
+  The only new argument is layout.
+  Args:
+    layout:
+      If provided, declares the Layout of the Tensor this Variable
+      intends to hold.
+      read() and assign() methods produce / consume distributed
+      tensors of the provided layout. An ValueError is raised if
+      the layout differs from the Variable's.
+      If None, use the layout of initial_value, or creates a
+      Variable that holds a non-distributed Tensor.
+  """
+```
+
+### Global and Local Perspective
+
+Currently, the functions for converting between Global and Local perspective
+Tensors is only supported eagerly. Following the traditions of TensorFlow,
+`pack` and `unpack` are not added as member methods of the `Tensor` class, but
+as module functions under the dtensor namespace.
+
+```python
+attr tf.Tensor.layout(self) -> Optional[Layout]:
+  """The layout of a DTensor, or None."""
+```
+
+```python
+def tf.dtensor.pack(
+                   component: Sequence[Tensor],
+                   layout: Layout) -> Tensor:
+  """Creates a distributed tensor from Local Perspective components.
+  Args:
+    components: a list of Tensors to become the components of the
+    distributed Tensor.
+    Note: Copies the component Tensors to the mesh devices if needed.
+  """
+```
+
+```python
+def tf.dtensor.unpack(dtensor) -> List[Tensor]:
+  """Extracts Local Perspective components from a distributed Tensor.
+
+  Returns:
+    A list of Tensors, one per device, that contains the
+    local data on that device.
+
+  Raises:
+    ValueError if tensor is not a distributed Tensor.
+  """
+```
+
 ### Dependencies
 
 *   Dependencies: does this proposal add any new dependencies to TensorFlow?
