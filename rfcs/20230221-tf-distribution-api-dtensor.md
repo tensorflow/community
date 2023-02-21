@@ -164,7 +164,7 @@ class tf.dtensor.Layout(LayoutLike):
 
 ```python
 class tf.dtensor.XlaOpSharding(LayoutLike):
-  def __init__(self, op_sharding: Xla.OpSharding,
+  def __init__(self, op_sharding: `Xla.OpSharding`,
                mesh: Optional[tf.dtensor.Mesh]):
     """Create a Layout from an XLA OpSharding specification.
 
