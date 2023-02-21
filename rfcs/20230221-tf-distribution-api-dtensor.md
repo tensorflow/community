@@ -522,10 +522,10 @@ class CustomSGDOptimizer(tf.Module):
 ```python
 
 mesh = tf.dtensor.Mesh(
-    dims=[('batch', 4), ('model', 2)], 
+    dims=[('batch', 4), ('model', 2)],
     devices=['TPU:i' for i in range(8)])
 
-mp = tf.distribute.DTensorStrategy(default_mesh=mesh, batch_dim='batch', 
+mp = tf.distribute.DTensorStrategy(default_mesh=mesh, batch_dim='batch',
     layout_map=tf.LayoutMap({"v.*": tf.dtensor.Layout(...)}))
 
 with mp.scope():
@@ -541,7 +541,7 @@ with mp.scope():
 ```python
 
 mesh = tf.dtensor.Mesh(
-    dims=[('batch', 4), ('model', 2)], 
+    dims=[('batch', 4), ('model', 2)],
     devices=['TPU:i' for i in range(8)])
 
 model = Model(mesh)
@@ -558,7 +558,7 @@ metric = tf.Variable(tf.zeros((),
 <td>Dataset</td>
 <td valign="top">
 
-```python 
+```python
 
 ALL_DATA_FILES = [f"{i}" for i in range(128)]
 
@@ -605,12 +605,12 @@ dataset = tf.create_dtensor_iterable(
 ```python
 
 @tf.function
-def train_step(x, y): 
+def train_step(x, y):
   with tf.GradientTape() as tape:
     y_pred = model(x)
     loss, metric_update = ...
   metric.update(metric_update)
-  
+
   g_var = tape.gradient(model.vars)
   optimizer.apply_gradients(zip(g_vars, model.vars)))
 
@@ -627,12 +627,12 @@ for _ in range(NUM_EPOCHS):
 ```python
 
 @tf.function
-def train_step(x, y): 
+def train_step(x, y):
   with tf.GradientTape() as tape:
     y_pred = model(x)
     loss, metric_update = ...
   metric.assign_add(metric_update)
-  
+
   g_var = tape.gradient(model.vars)
   optimizer.apply_gradients(zip(g_vars, model.vars)))
 
@@ -650,11 +650,141 @@ for _ in range(NUM_EPOCHS):
 <td valign="top"></td>
 <td valign="top"></td>
 </tr>
+</table>
+
+### Example for Distributed Embedding
+
+The new Distribution API also offers a uniform API for distributed embeddings.
+For distributed embeddings, the embedding table variable can be on a different
+mesh than the primary computational mesh. One such placement would be on a
+submesh of the main computational mesh (in order to manually spread embedding
+tables among devices).
+
+This API can potentially be extended to represent embedding using special
+embedding devices. These devices can be colocated with the computation hosts, or
+remote (like ParameterServer). The design will be addressed in an extension RFC.
+
+<table>
 <tr>
-<td></td>
-<td valign="top"></td>
-<td valign="top"></td>
+<th>Phase</th>
+<th>Distributed Embedding Example: Keras and Strategy</th>
+<th>Distributed Embedding Example: Low Level DTensor</th>
 </tr>
+<tr>
+<td>
+Mesh definition
+</td>
+<td valign="top">
+
+```python
+
+mesh = tf.dtensor.Mesh(
+    dims=[('batch', 4), ('model', 2)],
+    devices=['GPU:i' for i in range(8)])
+
+# Mesh for the embedding tables
+embedding_mesh = tf.dtensor.Mesh(
+    dim=[('embedding', 2)],
+    devices=["/worker:0/GPU:0", "/worker:0/GPU:1"])
+
+```
+
+</td>
+<td valign="top">
+
+```python
+
+mesh = tf.dtensor.Mesh(
+    dims=[('batch', 4), ('model', 2)],
+    devices=['GPU:i' for i in range(8)])
+
+# Mesh for the embedding tables
+embedding_mesh = tf.dtensor.Mesh(
+    dim=[('embedding', 2)],
+    devices=["/worker:0/GPU:0", "/worker:0/GPU:1"])
+
+# Support for ParameterServer will arrive later.
+# embedding_mesh = tf.dtensor.Mesh(
+#    dims=[('embedding', 2)],
+#    devices=['/ps:0/cpu:0', '/ps:1/cpu:0']))
+
+```
+
+</td>
+</tr>
+<tr>
+<td>Model Definition</td>
+<td valign="top">
+
+```python
+
+class Model(tf.keras.Model):
+  def __init__(self):
+    self.embedding_layer = tf.keras.layers.Embedding(
+        vocab_size=1000, embedding_dim=30)
+
+
+
+
+  def call(x):
+    ind, img, ... = x
+    t = self.embedding_layer(ind)   # Runs on embedding devices
+    t = tf.batch_norm(sync=False)(t)  # Runs on accelerators
+    ...
+    return y
+
+```
+
+</td>
+<td valign="top"></td>
+
+```python
+
+class Model(tf.Module):
+  def __init__(self, mesh, embedding_mesh):
+    self.table = tf.Variable(
+        tf.random.uniform,
+        shape=(1000, 30),
+        layout=tf.Layout(['unsharded', 'embedding'],
+                         mesh=embedding_mesh))
+
+  def call(self, x):
+    ind, img, ... = x
+    t = tf.gather(ind, self.table)  # Runs on embedding devices
+    t = tf.dtensor.relayout_like(t, img)
+    t = tf.batch_norm(sync=False)(t)  # Runs on accelerators
+    ...
+    return y
+```
+</tr>
+
+<tr>
+<td>Model Instantiation</td>
+<td valign="top">
+
+```python
+
+with mp.scope():
+  model = Model()
+  ...
+layout_map = tf.LayoutMap(
+    {"embedding": tf.dtensor.Layout(['unsharded', 'embedding'],
+                            mesh=embedding_mesh)})
+for var in model.variables:
+  var.set_layout(layout_map.get(var))
+
+```
+</td>
+<td valign="top">
+
+```python
+
+model = Model(mesh, embedding_mesh)
+```
+
+</td>
+</tr>
+
 </table>
 
 ### Dependencies
