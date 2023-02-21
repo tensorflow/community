@@ -929,6 +929,7 @@ with mp2.scope():
   stage2 = Model2()
 with mp3.scope():
   stage3 = Model3()
+
 ```
 
 </td>
@@ -944,6 +945,7 @@ mesh3 = tf.dtensor.Mesh(['GPU:2'])
 stage1 = Model1(mesh1)
 stage2 = Model2(mesh2)
 stage3 = Model3(mesh3)
+
 ```
 
 </td>
@@ -961,7 +963,6 @@ stage3 = Model3(mesh3)
 
 ```python
 
-
 @tf.function
 def pipeline_train_step(iter, nsteps):
   for ...
@@ -976,6 +977,7 @@ def pipeline_train_step(iter, nsteps):
     loss = tf.reduce_mean((t-y)**2)
 
 pipeline_train_step(iter(global_dataset), nsteps)
+
 ```
 
 </td>
@@ -997,6 +999,7 @@ def pipeline_train_step(iter, nsteps):
     loss = tf.reduce_mean((t-y)**2)
 
 pipeline_train_step(iter(global_dataset), nsteps)
+
 ```
 
 </td>
