@@ -871,11 +871,13 @@ class Model2(tf.Module):
 class Model3(tf.Module):
   def __init__(self):
     self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
+
 ```
 
 </td>
 
 <td valign="top">
+
 ```python
 
 class Model1(tf.Module):
@@ -897,6 +899,7 @@ class Model3(tf.Module):
                     dtype=tf.float32,
                     layout=tf.dtensor.Layout(UNSHARDED,
                                      mesh))
+
 ```
 
 </td>
