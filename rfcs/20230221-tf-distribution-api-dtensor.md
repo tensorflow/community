@@ -451,6 +451,12 @@ case:
 </tr>
 
 <tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
+</tr>
+
+<tr>
 <td>Model Definition</td>
 <td valign="top">
 
@@ -515,6 +521,13 @@ class CustomSGDOptimizer(tf.Module):
 
 </td>
 </tr>
+
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
+</tr>
+
 <tr>
 <td>Model Instantiation</td>
 <td valign="top">
@@ -554,6 +567,13 @@ metric = tf.Variable(tf.zeros((),
 
 </td>
 </tr>
+
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
+</tr>
+
 <tr>
 <td>Dataset</td>
 <td valign="top">
@@ -598,6 +618,13 @@ dataset = tf.create_dtensor_iterable(
 
 </td>
 </tr>
+
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
+</tr>
+
 <tr>
 <td>Training</td>
 <td valign="top">
@@ -670,6 +697,13 @@ remote (like ParameterServer). The design will be addressed in an extension RFC.
 <th>Distributed Embedding Example: Keras and Strategy</th>
 <th>Distributed Embedding Example: Low Level DTensor</th>
 </tr>
+
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
+</tr>
+
 <tr>
 <td>
 Mesh definition
@@ -712,6 +746,13 @@ embedding_mesh = tf.dtensor.Mesh(
 
 </td>
 </tr>
+
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
+</tr>
+
 <tr>
 <td>Model Definition</td>
 <td valign="top">
@@ -756,6 +797,12 @@ class Model(tf.Module):
     ...
     return y
 ```
+</tr>
+
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
 </tr>
 
 <tr>
