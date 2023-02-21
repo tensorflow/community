@@ -203,6 +203,43 @@ observed:
     functionality to tf.device annotations when Mesh with a single device is
     used.
 
+### Tensor Creation
+
+When used eagerly, the following TensorFlow API functions create a DTensor with
+the provided layout, and a non-DTensor if the layout argument is omitted. In a
+tf.function, the layout will be respected if set, otherwise it will be
+determined by the Distribution API.
+
+The new Layout argument is appended to the end of the argument list, after the
+optional `name` argument to maintain backward compatibility.
+
+```python
+def tf.zeros(shape, dtype=dtypes.float32, name=None,
+             layout: Optional[tf.dtensor.LayoutLike])
+def tf.ones(shape, dtype=dtypes.float32, name=None,
+            layout: Optional[tf.dtensor.LayoutLike])
+def tf.fill(dims, value, name: Optional[str],
+            layout: Optional[tf.dtensor.LayoutLike])
+def tf.zeros_like(param, dtype=dtypes.float32, name=None,
+                  layout: Optional[tf.dtensor.LayoutLike])
+def tf.ones_like(param, dtype=dtypes.float32, name=None,
+                 layout: Optional[tf.dtensor.LayoutLike])
+```
+
+```python
+def tf.random.stateless_random_uniform(shape, seed, minval=0, maxval=None,
+        dtype=dtypes.float32, name=None,
+        layout: Optional[tf.dtensor.LayoutLike])
+def tf.random.stateless_random_normal(shape, seed, minval=0, maxval=None,
+        dtype=dtypes.float32, name=None,
+        layout: Optional[tf.dtensor.LayoutLike])
+def tf.random.stateless_random_truncated_normal(shape, seed,
+        minval=0, maxval=None, dtype=None, name=None,
+        layout: Optional[tf.dtensor.LayoutLike])
+```
+
+The list is non-exhaustive.
+
 ### Dependencies
 
 *   Dependencies: does this proposal add any new dependencies to TensorFlow?
