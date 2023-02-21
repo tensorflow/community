@@ -518,6 +518,7 @@ class CustomSGDOptimizer(tf.Module):
 <tr>
 <td>Model Instantiation</td>
 <td>
+
 ```python
 
 mesh = tf.dtensor.Mesh(
@@ -533,9 +534,12 @@ with mp.scope():
   metric = tf.keras.metrics.Sum()
 
 ```
+
 </td>
 <td>
+
 ```python
+
 mesh = tf.dtensor.Mesh(
     dims=[('batch', 4), ('model', 2)], 
     devices=['TPU:i' for i in range(8)])
@@ -547,6 +551,7 @@ metric = tf.Variable(tf.zeros((),
                      layout=tf.dtensor.Layout(UNSHARDED, mesh))
 
 ```
+
 </td>
 </tr>
 </table>
