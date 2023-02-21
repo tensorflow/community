@@ -66,7 +66,7 @@ used interchangeably with 'distribute'.
 *   **Mesh**: A cartesian grid of devices. The dimensions of the grid are named.
     The following example is a 2 by 3 mesh on 6 CPU devices.
 
-```
+```python
 mesh = tf.dtensor.Mesh({'x': 2, 'y' : 3}, devices=[
     'CPU:0', 'CPU:1', 'CPU:2',
     'CPU:3', 'CPU:4', 'CPU:5'])
@@ -81,13 +81,13 @@ mesh = tf.dtensor.Mesh({'x': 2, 'y' : 3}, devices=[
     a mesh dimension. The axis is present in all of the Local Perspective Tensor
     components. For example, on the 2 by 3 mesh defined above,
 
-```
+```python
 tf.Tensor(shape=[5, 4, 6],
        layout=tf.dtensor.Layout([tf.dtensor.Mesh.UNSHARDED, 'x', 'y'], mesh))
 ```
 
-The Global Perspective Tensor has a shape of [5, 4, 6]. The 6 components in the
-Local Perspective all have the shape of [5=5, 2=4//2, 2=6//3].
+The Global Perspective Tensor has a shape of `[5, 4, 6]`. The 6 components in the
+Local Perspective all have the shape of `[5=5, 2=4//2, 2=6//3]`.
 
 ### Runtime Architectures:
 
