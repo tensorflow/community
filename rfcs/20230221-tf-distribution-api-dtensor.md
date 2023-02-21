@@ -37,9 +37,19 @@ new subclass of `tf.distribute.Strategy`.
 
 This is a draft RFC, API endpoints in this document are not final. This document
 may refer to but does not cover the following topics for which we expect follow
-on RFCs: * Keras integration * Saved Model/C++ API * Automatic sharding * Mixed
-use of DTensor and non-DTensor execution in tf.functions * tf.data integration *
-Representation of DTensor primitives in the TF Graph
+on RFCs:
+
+*   Keras integration
+
+*   Saved Model/C++ API
+
+*   Automatic sharding
+
+*   Mixed use of DTensor and non-DTensor execution in tf.functions
+
+*   tf.data integration
+
+*   Representation of DTensor primitives in the TF Graph
 
 ## Glossary
 
@@ -81,8 +91,9 @@ Local Perspective all have the shape of [5=5, 2=4//2, 2=6//3].
 
 ### Runtime Architectures:
 
-The Distribution API supports the following runtime architectures: * Local mode:
-1 local Process with multiple (local) accelerator devices.
+The Distribution API supports the following runtime architectures:
+
+*   Local mode: 1 local Process with multiple (local) accelerator devices.
 
 *   Multi-client Distributed mode: N Processes each with one or more local
     accelerator devices, running identical programs. The user application runs
