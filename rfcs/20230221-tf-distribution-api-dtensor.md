@@ -419,6 +419,104 @@ for _ in range(NUM_EPOCHS):
   print(metric)
 ```
 
+### Example for Simple Data and Model Parallel Training
+
+An advantage of the new Distribution API is that data and model parallel
+training are programmed uniformly via a single API. In the examples, the
+available devices are arranged into a rank 2 Mesh, with one dimension for the
+data parallelism, and the other dimensions for the model parallelism. Pure data
+parallelism is achieved when the model parallel dimensions of the mesh is
+omitted or of size 1 (e.g. mesh of shape 4x1 is a four way data parallelism
+mesh).
+
+Note the following changes comparing to the single-device (non-distributed)
+case:
+
+*   An iterable is created from a dataset object representing the full input
+    dataset (`ALL_DATA_FILES`). The iterable yields distributed tensors for the
+    global training, constructed by concatenating multiple elements of the input
+    dataset along a mesh axis.
+*   The right panel of the examples demonstrate the direct use of the low level
+    Distribution API.
+*   The left panel demonstrates a potential high level tf.distribute class
+    ‘DTensorStrategy’ along with a potential Keras integration. The interaction
+    with Keras demonstrated in the left panel is only a vision of how things may
+    work, but not a binding design.
+
+<table>
+<th>
+<td>Phase</td>
+<td>High Level API Example: Keras and DTensorStrategy  </td>
+<td>Low Level API Example: DTensor and from-scratch tf.Module </td>
+</th>
+
+<tr>
+<td>Model Definition</td>
+<td>
+
+```python
+
+# Variable layouts are set after the model/layer instantiation.
+
+class Model(tf.keras.Model):
+  def __init__(self):
+    self.var = tf.Variable(tf.random.uniform,
+                           shape=(30, 30),
+                           dtype=tf.float32)
+    self.embedding_layer = tf.keras.Embedding(
+                               vocab_size=1000,
+                               embedding_dim=30)
+
+  def call(self, x):
+    …
+    t = self.embedding_layer(ind)
+    t = BatchNorm(sync=False)(t)
+    …
+    return y
+
+```
+
+</td>
+<td>
+
+```python
+
+# Variable layouts are set during the model instantation
+
+class Model(tf.Module):
+  # Note the additional mesh argument.
+  def __init__(self, mesh):
+    self.var = tf.Variable(tf.random.uniform,
+                           shape=(30, 30),
+                           dtype=tf.float32,
+                           layout=tf.dtensor.Layout(UNSHARDED, mesh))
+    self.table = tf.Variable(
+                           tf.random.uniform,
+                           shape=(1000, 30),
+                           dtype=tf.float32,
+                           layout=tf.dtensor.Layout(['model'], mesh))
+
+  def call(self, x):
+    …
+    t = tf.gather(ind, table)
+    t = tf.batch_norm(sync=False)(t)
+    …
+    return y
+
+class CustomSGDOptimizer(tf.Module):
+  def __init__(self, model):
+    self.vars = model.trainable_variables
+    self.momentum_slots = [tf.Variable(tf.zeros_like(var))
+                  for var in self.vars]
+    ...
+  def apply(self, grads):
+    ...
+```
+
+</td>
+</tr>
+</table>
+
 ### Dependencies
 
 *   Dependencies: does this proposal add any new dependencies to TensorFlow?
