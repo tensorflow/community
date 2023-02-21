@@ -857,6 +857,7 @@ declare the meshes it intends to use for each stage.
 <tr>
 <td>Model Definition</td>
 <td valign="top">
+
 ```python
 
 class Model1(tf.Module):
@@ -871,7 +872,9 @@ class Model3(tf.Module):
   def __init__(self):
     self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
 ```
+
 </td>
+
 <td valign="top">
 ```python
 
@@ -895,6 +898,7 @@ class Model3(tf.Module):
                     layout=tf.dtensor.Layout(UNSHARDED,
                                      mesh))
 ```
+
 </td>
 </tr>
 
@@ -907,6 +911,7 @@ class Model3(tf.Module):
 <tr>
 <td> Model Instantiation </td>
 <td valign="top">
+
 ```python
 
 mesh1 = tf.dtensor.Mesh(['GPU:0'])
@@ -925,8 +930,10 @@ with mp2.scope():
 with mp3.scope():
   stage3 = Model3()
 ```
+
 </td>
 <td valign="top">
+
 ```python
 
 mesh1 = tf.dtensor.Mesh(['GPU:0'])
@@ -938,6 +945,7 @@ stage1 = Model1(mesh1)
 stage2 = Model2(mesh2)
 stage3 = Model3(mesh3)
 ```
+
 </td>
 </tr>
 
@@ -950,6 +958,7 @@ stage3 = Model3(mesh3)
 <tr>
 <td>Training Loop</td>
 <td valign="top">
+
 ```python
 
 
@@ -968,8 +977,10 @@ def pipeline_train_step(iter, nsteps):
 
 pipeline_train_step(iter(global_dataset), nsteps)
 ```
+
 </td>
 <td valign="top">
+
 ```python
 
 @tf.function
@@ -987,6 +998,7 @@ def pipeline_train_step(iter, nsteps):
 
 pipeline_train_step(iter(global_dataset), nsteps)
 ```
+
 </td>
 </tr>
 
