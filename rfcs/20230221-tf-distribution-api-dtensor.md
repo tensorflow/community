@@ -184,6 +184,7 @@ class tf.dtensor.XlaOpSharding(LayoutLike):
         no compatible layout can be found, raise ValueError.
         If not provided, returns any layout that satisifies the OpSharding spec.
         The returned layout may change in future versions.
+    """
 ```
 
 ### Distribution API and tf.function
