@@ -240,6 +240,44 @@ def tf.random.stateless_random_truncated_normal(shape, seed,
 
 The list is non-exhaustive.
 
+### Data transfer/reformatting
+
+Refer to the relayout rules section for more information on source Layout and
+destination Layout. Note that these operations support tf.GradientTape.
+
+```python
+def tf.dtensor.relayout(source: tf.Tensor,
+                mesh_or_layout: Union[LayoutLike, Mesh]):
+  """Makes a copy of source to the new layout or mesh.
+
+  If a mesh is provided, preserve sharding specifications of the source.
+  If the sharding specifications refers to any dimension names,
+  the destination mesh and the source mesh shall have the
+  same shape and dimension names.
+  """
+```
+
+```python
+def tf.dtensor.relayout_like(source: tf.Tensor,
+    reference: tf.Tensor,
+    use_mesh_only: Bool=False):
+  """Makes a colocation copy of source according to Layout of reference.
+
+  If use_mesh_only is True, use the mesh of reference_tensor,
+  preserve the sharding specifications.
+  If use_mesh_only is False, use the layout of the reference_tensor.
+
+  Example:
+
+    >>> a = tf.ones((16, 3), layout=Layout([], mesh1))
+    >>> x = tf.ones((4, 3), layout=Layout(['batch'], mesh2))
+    >>> y = tf.dtensor.relayout_like(a, reference=x)
+    >>> z = tf.dtensor.relayout_like(a, reference=x, use_mesh_only=True)
+
+  y is batch sharded on mesh2, z is replicated on mesh2.
+  """
+```
+
 ### Dependencies
 
 *   Dependencies: does this proposal add any new dependencies to TensorFlow?
