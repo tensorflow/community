@@ -1016,6 +1016,95 @@ pipeline_train_step(iter(global_dataset), nsteps)
 
 </table>
 
+### Example: Weight Update Sharding Manually
+
+Weight Update Sharding (MSFT Zero/fully sharded Data-parallel), is a technique
+to speed up data-parallel training with model parallel techniques. With this
+technique both tf.Variables and training data are sharded over the batch axis. A
+fused ReduceScatter optimization eliminates unnecessary communication during the
+backward pass, saving optimizer computation time.
+
+```python
+
+# Variables get sharded along the data parallel dimension, does not matter what dimension of the tensor is sharded.
+mesh = tf.dtensor.Mesh(dims=[('batch', 4)], devices=['GPU:0', 'GPU:1', 'GPU:2', 'GPU:3'])
+variable = tf.Variable(tf.ones((4, 4)), layout=tf.dtensor.Layout(['batch'], mesh=mesh))
+
+# inputs are sharded along the batch mesh dimension
+input = tf.dtensor.relayout(tf.ones((8, 4)), layout=tf.dtensor.Layout(['batch'], mesh=mesh)
+
+@tf.function
+def train_step(input):
+  with tf.GradientTape() as tape:
+    r_variable = tf.dtensor.relayout(variable, tf.dtensor.Layout(UNSHARDED, mesh)
+    result = tf.matmul(input, r_variable)
+    loss = tf.reduce_mean(result)
+  grads = tape.gradients(loss, variable)
+  # Pseudo code for the backward pass:
+  # DTensorAllReduce followed by DTensorAllScatter on the same axis is fused into DTensorReduceScatter
+  # result_g = tf.ones_like(result) * result.size
+  # r_variable_g = tf.matmul(result_g, input)  # Emits a DTensorAllReduce (fused)
+  # variable_g = tf.dtensor.relayout(r_variable_g,     # Emits a DTensorAllScatter (fused)
+  #                          tf.fetch_layout(variable))
+  # grads = variable_g
+  """
+  optimizer.apply_gradients(grads, variable)
+
+```
+
+### tf.dtensor.relayout Rules
+
+`tf.dtensor.relayout` (and `tf.dtensor.relayout_like`) copies a Tensor from one
+layout to another. The semantics of `relayout` is that:
+
+*   In the Global Perspective relayout is an Identity operation.
+
+*   The global value of the source Tensor and destination Tensor are numerically
+    identical. The input Tensor and the output Tensor are sharded according to
+    the input and output Layouts. From a performance standpoint, if the result
+    of a relayout should be sharded (e.g. its consumed by an operation whose
+    other inputs are batch sharded, or a relayout is used), the slicing Op for
+    obtaining the per-device component can be fused with the copy, producing
+    AllToAll collectives (submesh) or Send/Recv Ops (unique meshes).
+
+*   If only an output mesh is provided, the sharding specifications of the input
+    Tensor are preserved. The output sharding specifications inherit the input
+    sharding specifications. Preserving sharding specifications requires the
+    input and output meshes must be of identical shapes (isometric), unless the
+    sharding specifications are fully replicated. The following are several
+    examples of how we expect relayout to behave
+
+```python
+
+# Create some meshes.
+mesh = tf.dtensor.Mesh({'x' : 2, 'y' : 2}, ['GPU:0', 'GPU:1', 'GPU:2', 'GPU:3'])
+
+# submesh0 and submesh1 are of same shape (isometric).
+submesh0 = tf.dtensor.Mesh({'y' : 2}, ['GPU:0', 'GPU:1'])
+submesh1 = tf.dtensor.Mesh({'y' : 2}, ['GPU:2', 'GPU:3'])
+
+r = tf.pack_dtensor([[1.], [1.]], tf.dtensor.Layout(UNSHARDED, mesh))
+
+# From Replicated to Sharded.
+s0 = tf.dtensor.relayout(r, Layout(['y'], submesh0))
+s1 = tf.dtensor.relayout(r, Layout(['y'], submesh1))
+
+# From Sharded to Replicated.
+r0 = tf.dtensor.relayout(s0, Layout(['unsharded'], mesh))
+
+# From Sharded to Sharded
+s = tf.dtensor.relayout(s0, Layout(['x'], mesh))
+
+# Preserving sharding specifications, From Sharded to Sharded
+# Source and Dest mesh must be of isometirc.
+s1 = tf.dtensor.relayout(s0, submesh1)    # from submesh0 to submesh1
+
+# Preserving sharding specfications, From Replicated to Replicated
+# Source and Dest mesh can be of any mesh
+r0 = tf.dtensor.relayout(r, submesh0)     # from mesh to submesh0
+r1 = tf.dtensor.relayout(r, submesh1)     # from mesh to submesh0
+```
+
 ### Dependencies
 
 *   Dependencies: does this proposal add any new dependencies to TensorFlow?
