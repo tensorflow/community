@@ -444,11 +444,11 @@ case:
     work, but not a binding design.
 
 <table>
-<th>
-<td>Phase</td>
-<td>High Level API Example: Keras and DTensorStrategy  </td>
-<td>Low Level API Example: DTensor and from-scratch tf.Module </td>
-</th>
+<tr>
+<th>Phase</th>
+<th>High Level API Example: Keras and DTensorStrategy  </th>
+<th>Low Level API Example: DTensor and from-scratch tf.Module </th>
+</tr>
 
 <tr>
 <td>Model Definition</td>
