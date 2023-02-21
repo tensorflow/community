@@ -443,7 +443,7 @@ case:
     with Keras demonstrated in the left panel is only a vision of how things may
     work, but not a binding design.
 
-<table style="vertical-align:top;">
+<table valign="top">
 <tr>
 <th>Phase</th>
 <th>High Level API Example: Keras and DTensorStrategy  </th>
