@@ -443,7 +443,7 @@ case:
     with Keras demonstrated in the left panel is only a vision of how things may
     work, but not a binding design.
 
-<table>
+<table style="vertical-align:top;">
 <tr>
 <th>Phase</th>
 <th>High Level API Example: Keras and DTensorStrategy  </th>
@@ -513,6 +513,40 @@ class CustomSGDOptimizer(tf.Module):
     ...
 ```
 
+</td>
+</tr>
+<tr>
+<td>Model Instantiation</td>
+<td>
+```python
+
+mesh = tf.dtensor.Mesh(
+    dims=[('batch', 4), ('model', 2)], 
+    devices=['TPU:i' for i in range(8)])
+
+mp = tf.distribute.DTensorStrategy(default_mesh=mesh, batch_dim='batch', 
+    layout_map=tf.LayoutMap({"v.*": tf.dtensor.Layout(...)}))
+
+with mp.scope():
+  model = Model()
+  optimizer = tf.keras.optimizers.SGD()
+  metric = tf.keras.metrics.Sum()
+
+```
+</td>
+<td>
+```python
+mesh = tf.dtensor.Mesh(
+    dims=[('batch', 4), ('model', 2)], 
+    devices=['TPU:i' for i in range(8)])
+
+model = Model(mesh)
+optimizer = CustomSGDOptimizer(model)
+# TensorFlow creates a DTensor Variable when there is a layout argument.
+metric = tf.Variable(tf.zeros((),
+                     layout=tf.dtensor.Layout(UNSHARDED, mesh))
+
+```
 </td>
 </tr>
 </table>
