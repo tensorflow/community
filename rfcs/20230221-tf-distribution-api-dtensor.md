@@ -160,7 +160,7 @@ class tf.dtensor.Layout(LayoutLike):
     """
 
 class tf.dtensor.XlaOpSharding(LayoutLike):
-  def __init__(self, op_sharding: Xla.OpSharding, 
+  def __init__(self, op_sharding: Xla.OpSharding,
                mesh: Optional[tf.dtensor.Mesh]):
     """Create a Layout from an XLA OpSharding specification.
 
@@ -178,9 +178,30 @@ class tf.dtensor.XlaOpSharding(LayoutLike):
          An unsupported OpSharding raises a ValueError.
        mesh: If provided, attempt to create a layout for the mesh. If
         no compatible layout can be found, raise ValueError.
-        If not provided, returns any layout that satisifies the OpSharding spec. 
+        If not provided, returns any layout that satisifies the OpSharding spec.
         The returned layout may change in future versions.
 ```
+
+### Distribution API and tf.function
+
+Eagerly invoked tf.function is the unit of execution by the Distribution API
+(note: Since TensorFlow 2.9 Eager Operations also run as functions). When a
+tf.function is executed by the Distribution API, the following behaviors are
+observed:
+
+*   Non-DTensor input arguments are converted to distributed Tensor values with
+    replicated layouts. If such conversion is unsafe (e.g. at risk of consuming
+    large amounts of memory), a TypeError is raised that directs the user to
+    explicitly perform the conversion. This conversion is commonly referred to
+    as autobroadcast.
+
+*   TensorFlow/DTensor SPMD expansion passes lower the function body to post
+    SPMD functions suitable for execution for devices listed in the Mesh.
+
+*   SPMD expansion ignores the tf.device annotations inside the tf.function
+    body. relayout copies a Tensor between Meshes, offering an equivalent
+    functionality to tf.device annotations when Mesh with a single device is
+    used.
 
 ### Dependencies
 
