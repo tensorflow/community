@@ -344,6 +344,23 @@ def tf.dtensor.unpack(dtensor) -> List[Tensor]:
   """
 ```
 
+### Summary of Changes to TensorFlow Python API
+
+Changes to the tensorflow namespace:
+
+*   Addition of new layout argument to many tensor creation methods (e.g.
+    tf.ones, tf.Variable).
+*   Addition of new methods in tf.Tensor type: Tensor.layout.
+
+New APIs added to tf.dtensor:
+
+*   tf.dtensor.relayout
+*   tf.dtensor.pack
+*   tf.dtensor.unpack
+*   tf.dtensor.Layout
+*   tf.dtensor.Mesh
+*   tf.dtensor.XlaOpSharding
+
 ### Dependencies
 
 *   Dependencies: does this proposal add any new dependencies to TensorFlow?
