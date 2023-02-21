@@ -555,13 +555,105 @@ metric = tf.Variable(tf.zeros((),
 </td>
 </tr>
 <tr>
+<td>Dataset</td>
+<td valign="top">
+
+```python 
+
+ALL_DATA_FILES = [f"{i}" for i in range(128)]
+
+# A standard tf.distribute dataset function.
+def dataset_fn(context):
+  # shard input data according to the context
+  LOCAL_DATA_FILES = ALL_DATA_FILES[...]
+  dataset = tf.data.SSTableDataset(LOCAL_DATA_FILES)
+  dataset = dataset.batch(64)
+  return dataset
+
+dataset = mp.distribute_dataset_from_fn(dataset_fn)
+
+# global batch size is 64 * mesh.dim_size('batch') = 128
+
+```
+
+</td>
+<td valign="top">
+
+```python
+
+ALL_DATA_FILES = [f"{i}" for i in range(128)]
+
+dataset = tf.data.SSTableDataset(ALL_DATA_FILES)
+dataset = dataset.batch(32)
+
+dataset = tf.create_dtensor_iterable(
+    dataset,
+    element_layouts=Layout(['batch', 'unsharded'], mesh),
+    batch_dimension='batch',
+    num_elements_per_batch=8)
+
+# global batch size is 32 * 8 = 128
+
+```
+
+</td>
+</tr>
+<tr>
+<td>Training</td>
+<td valign="top">
+
+```python
+
+@tf.function
+def train_step(x, y): 
+  with tf.GradientTape() as tape:
+    y_pred = model(x)
+    loss, metric_update = ...
+  metric.update(metric_update)
+  
+  g_var = tape.gradient(model.vars)
+  optimizer.apply_gradients(zip(g_vars, model.vars)))
+
+# The more standard training loop inside a tf.function also
+# works.
+for _ in range(NUM_EPOCHS):
+  for _ in range(0, STEPS_PER_EPOCH):
+    result = mp.run(train_step, next(dataset_iter))
+
+```
+</td>
+<td valign="top">
+
+```python
+
+@tf.function
+def train_step(x, y): 
+  with tf.GradientTape() as tape:
+    y_pred = model(x)
+    loss, metric_update = ...
+  metric.assign_add(metric_update)
+  
+  g_var = tape.gradient(model.vars)
+  optimizer.apply_gradients(zip(g_vars, model.vars)))
+
+
+for _ in range(NUM_EPOCHS):
+  for _ in range(0, STEPS_PER_EPOCH):
+    result = train_step(iter(global_dataset))
+```
+
+</td>
+</tr>
+
+<tr>
 <td></td>
-<td valign="top">
-
-</td>
-<td valign="top">
-
-</td>
+<td valign="top"></td>
+<td valign="top"></td>
+</tr>
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
 </tr>
 </table>
 
