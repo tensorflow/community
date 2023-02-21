@@ -54,14 +54,14 @@ on RFCs:
 ## Glossary
 
 Distributed Tensor: A Tensor that is distributed to multiple devices. A
-Distributed Tensor can be viewed as a single Tensor, in the 'Global
-Perspective'; or in the 'Local Perspective', as a collection of Tensors, one per
-device.
+Distributed Tensor can be viewed as a single Tensor, in the **'Global
+Perspective'**; or in the **'Local Perspective'**, as a collection of Tensors,
+one per device.
 
-The 'Global Tensor Perspective' to the 'Local Tensor Perspective' are related by
-Layout and Mesh, which are defined below. A distributed Tensor can be 'shard',
-'replicated', or a hybrid of both, although sometimes the terminology 'shard' is
-used interchangeably with 'distribute'.
+The 'Global Tensor Perspective' and the 'Local Tensor Perspective' are related
+by DTensor's Layout and Mesh, which are defined below. A distributed Tensor can
+be 'shard', 'replicated', or a hybrid of both, although sometimes the
+terminology 'shard' is used interchangeably with 'distribute'.
 
 *   **Mesh**: A cartesian grid of devices. The dimensions of the grid are named.
     The following example is a 2 by 3 mesh on 6 CPU devices.
@@ -86,8 +86,8 @@ tf.Tensor(shape=[5, 4, 6],
        layout=tf.dtensor.Layout([tf.dtensor.Mesh.UNSHARDED, 'x', 'y'], mesh))
 ```
 
-The Global Perspective Tensor has a shape of `[5, 4, 6]`. The 6 components in the
-Local Perspective all have the shape of `[5=5, 2=4//2, 2=6//3]`.
+The Global Perspective Tensor has a shape of `[5, 4, 6]`. The 6 components in
+the Local Perspective all have the shape of `[5=5, 2=4//2, 2=6//3]`.
 
 ### Runtime Architectures:
 
@@ -109,6 +109,77 @@ The Distribution API supports the following runtime architectures:
     workers.
 
 ## Design Proposal
+
+### Data Structures: tf.dtensor.Mesh and tf.dtensor.Layout
+
+Mesh and Layout defines how a Tensor is distributed by the Distribution API.
+Mesh provides the abstraction for the topology of devices. Layout defines the
+policy that a Tensor is distributed to a mesh.
+
+```python
+class tf.dtensor.Mesh:
+  def __init__(self,
+               dims: OrderedDict[str, int],
+               devices: List[Union[str, tf.DeviceSpec]])
+    """Creates a device Mesh.
+    Args:
+      dims: Dict for the dimension names and the sizes of the
+        dimensions. e.g. {'x':3, 'y':2} creates a 3 by 2 mesh.
+      devices: a list of device names.
+        This is the global list of devices across all clients.
+        len(devices) shall equal to the product of the mesh sizes.
+    """
+
+  @classmethod
+  def distributed(cls, dims, devices):
+    """Create a device Mesh that is evenly distributed across all clients.
+    Args:
+      dims: Dict for the dimension names and the sizes of the
+        dimensions. e.g. {'x':3, 'y':2} creates a 3 by 2 mesh.
+      devices: a list of device names.
+        This is the client-local list of devices. A global list
+        is constructed by using the same list of devices on each client.
+        e.g. ["GPU:0"] creates a mesh that uses "GPU:0" from all
+        clients.
+    """
+
+class tf.dtensor.Layout(LayoutLike):
+  def __init__(self,
+               sharding_spec: List[str],
+               mesh: tf.dtensor.Mesh):
+    """Create a Layout.
+    Args:
+      sharding_spec: a list of sharding specifications.
+        Sharding specifcation is a string, either refers to a
+        dimension name, indicating an axis
+        is sharded to the corresponding mesh dimension, or UNSHARDED,
+        indicating the axis is replicated.
+        When sharding_spec is shorter than the rank of the Tensor, the
+        additional axes are treated as UNSHARDED.
+      mesh: the mesh of this Layout.
+    """
+
+class tf.dtensor.XlaOpSharding(LayoutLike):
+  def __init__(self, op_sharding: Xla.OpSharding, mesh: Optional[tf.dtensor.Mesh])):
+    """Create a Layout from an XLA OpSharding specification.
+
+    OpSharding is used in XLA by gSPMD and JAX. The sharding style
+    directly defines how a Tensor is sharded to a list of devices.
+    This constructor is provided to simplify the interporation with
+    these sharding systems. A DTensor mesh can be either provided or
+    created automatically based on the provided OpSharding.
+    (e.g. jax.OpShardingSharding).
+
+    Args:
+       op_sharding: An Xla OpSharding protobuf message.
+         Only some forms of XLA OpSharding are supported by DTensor.
+         Type 3 (OTHER) is partially supported.
+         An unsupported OpSharding raises a ValueError.
+       mesh: If provided, attempt to create a layout for the mesh. If
+        no compatible layout can be found, raise ValueError.
+        If not provided, returns any layout that satisifies the OpSharding spec. 
+        The returned layout may change in future versions.
+```
 
 ### Dependencies
 
