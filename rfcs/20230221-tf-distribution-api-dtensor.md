@@ -120,7 +120,7 @@ policy that a Tensor is distributed to a mesh.
 class tf.dtensor.Mesh:
   def __init__(self,
                dims: OrderedDict[str, int],
-               devices: List[Union[str, tf.DeviceSpec]])
+               devices: List[Union[str, tf.DeviceSpec]]):
     """Creates a device Mesh.
     Args:
       dims: Dict for the dimension names and the sizes of the
@@ -160,7 +160,8 @@ class tf.dtensor.Layout(LayoutLike):
     """
 
 class tf.dtensor.XlaOpSharding(LayoutLike):
-  def __init__(self, op_sharding: Xla.OpSharding, mesh: Optional[tf.dtensor.Mesh])):
+  def __init__(self, op_sharding: Xla.OpSharding, 
+               mesh: Optional[tf.dtensor.Mesh]):
     """Create a Layout from an XLA OpSharding specification.
 
     OpSharding is used in XLA by gSPMD and JAX. The sharding style
