@@ -361,6 +361,64 @@ New APIs added to tf.dtensor:
 *   tf.dtensor.Mesh
 *   tf.dtensor.XlaOpSharding
 
+## Examples and API User Journey
+
+**A Typical Path For Scaling Up:**
+
+```mermaid
+flowchart LR
+
+non-distributed -> multi-device data-parallel -> model-parallel (single-mesh) ->
+advanced techniques: pipelining / multimesh (embedding)
+```
+
+With the new Distribution API, all of these can be implemented with the same set
+of primitives.
+
+### Starting example: a typical non-distributed Training Loop
+
+This example follows the well-lit path for training a model with TensorFlow Core
+API, using a custom training loop. In the next sections, this example will be
+expanded to demonstrate applying TensorFlow's new Distribution API.
+
+```python
+# Starting example: a single-device Training Loop
+
+class Model(tf.keras.Model):
+  def __init__(self):
+     self.var = tf.Variable(initial_value_fn=...)
+     self.embedding_layer = keras.EmbeddingLayer(...)
+
+  def call(self, x):
+     …
+     t = BatchNorm()(t)
+     …
+     return y
+
+
+model = Model()
+optimizer = tf.keras.optimizers.SGD()
+metric = tf.keras.metrics.Sum()
+
+dataset = tf.data.Dataset(['0.txt', '1.txt', …]).batch(batchsize=32)
+
+def train_step(item):
+  x, y = item
+  with tf.GradientTape() as tape:
+    y_pred = model(x)
+    loss, metric_update = ...
+  metric.update(metric_update)
+
+  g_var = tape.gradient(model.var)
+  optimizer.apply_gradients(zip(g_var, model.var))
+
+for _ in range(NUM_EPOCHS):
+  dataset_iter = iter(dataset)
+  for _ in range(0, STEPS_PER_EPOCH, nsteps):
+    train_step(next(dataset_iter))
+  print(metric)
+```
+
 ### Dependencies
 
 *   Dependencies: does this proposal add any new dependencies to TensorFlow?
