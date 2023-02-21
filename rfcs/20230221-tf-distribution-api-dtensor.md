@@ -367,10 +367,9 @@ New APIs added to tf.dtensor:
 
 ```mermaid
 flowchart LR
-
-A[non-distributed] -> B[multi-device data-parallel]
-B -> C[model-parallel (single-mesh)]
-C -> D[advanced techniques: pipelining / multimesh (embedding)]
+    A[non-distributed] --> B[multi-device data-parallel]
+    B --> C[model-parallel (single-mesh)]
+    C --> D[advanced techniques: pipelining / multimesh (embedding)]
 ```
 
 With the new Distribution API, all of these can be implemented with the same set
