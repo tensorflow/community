@@ -777,7 +777,7 @@ class Model(tf.keras.Model):
 ```
 
 </td>
-<td valign="top"></td>
+<td valign="top">
 
 ```python
 
@@ -797,6 +797,7 @@ class Model(tf.Module):
     ...
     return y
 ```
+</td>
 </tr>
 
 <tr>
@@ -830,6 +831,169 @@ model = Model(mesh, embedding_mesh)
 ```
 
 </td>
+</tr>
+
+</table>
+
+### Example for Pipelining Model Parallel
+
+Pipelining pins stages of computation to different sets of devices to reduce the
+amount of communication between devices. A pipelined model must explicitly
+declare the meshes it intends to use for each stage.
+
+<table>
+<tr>
+<th>Phase</th>
+<th>Distributed Embedding Example: Keras and Strategy</th>
+<th>Distributed Embedding Example: Low Level DTensor</th>
+</tr>
+
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
+</tr>
+
+<tr>
+<td>Model Definition</td>
+<td valign="top">
+```python
+
+class Model1(tf.Module):
+  def __init__(self):
+    self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
+
+class Model2(tf.Module):
+  def __init__(self):
+    self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
+
+class Model3(tf.Module):
+  def __init__(self):
+    self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
+```
+</td>
+<td valign="top">
+```python
+
+class Model1(tf.Module):
+  def __init__(self, mesh):
+    self.var = tf.Variable(tf.zeros, shape=(30, 20),
+                    dtype=tf.float32,
+                    layout=tf.dtensor.Layout(..., mesh))
+
+class Model2(tf.Module):
+  def __init__(self, mesh):
+    self.var = tf.Variable(tf.zeros, shape=(30, 20),
+                    dtype=tf.float32,
+                    layout=tf.dtensor.Layout(UNSHARDED,
+                                     mesh))
+
+class Model3(tf.Module):
+  def __init__(self, mesh):
+    self.var = tf.Variable(tf.zeros, shape=(30, 20),
+                    dtype=tf.float32,
+                    layout=tf.dtensor.Layout(UNSHARDED,
+                                     mesh))
+```
+</td>
+</tr>
+
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
+</tr>
+
+<tr>
+<td> Model Instantiation </td>
+<td valign="top">
+```python
+
+mesh1 = tf.dtensor.Mesh(['GPU:0'])
+mesh2 = tf.dtensor.Mesh(['GPU:1'])
+mesh3 = tf.dtensor.Mesh(['GPU:2'])
+
+mp1 = tf.distribute.DTensorStrategy(default_mesh=mesh1,
+    layout_map = tf.LayoutMap(
+    {"variable": tf.dtensor.Layout(..., mesh=mesh1)}))
+mp2 = tf.distribute.DTensorStrategy(default_mesh=mesh2)
+mp3 = tf.distribute.DTensorStrategy(default_mesh=mesh3)
+with mp1.scope():
+  stage1 = Model1()
+with mp2.scope():
+  stage2 = Model2()
+with mp3.scope():
+  stage3 = Model3()
+```
+</td>
+<td valign="top">
+```python
+
+mesh1 = tf.dtensor.Mesh(['GPU:0'])
+mesh2 = tf.dtensor.Mesh(['GPU:1'])
+mesh3 = tf.dtensor.Mesh(['GPU:2'])
+
+
+stage1 = Model1(mesh1)
+stage2 = Model2(mesh2)
+stage3 = Model3(mesh3)
+```
+</td>
+</tr>
+
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
+</tr>
+
+<tr>
+<td>Training Loop</td>
+<td valign="top">
+```python
+
+
+@tf.function
+def pipeline_train_step(iter, nsteps):
+  for ...
+    x, y = next(iter)
+
+    t = mp1.run(stage1, x)
+    t = tf.dtensor.relayout(t, mesh2)
+    t = mp2.run(stage2, t)
+    t = tf.dtensor.relayout(t, mesh3)
+    t = mp3.run(stage3, t)
+
+    loss = tf.reduce_mean((t-y)**2)
+
+pipeline_train_step(iter(global_dataset), nsteps)
+```
+</td>
+<td valign="top">
+```python
+
+@tf.function
+def pipeline_train_step(iter, nsteps):
+  for ...
+    x, y = next(iter)
+
+    t = stage1(x)
+    t = tf.dtensor.relayout(t, mesh2)
+    t = stage2(t)
+    t = tf.dtensor.relayout(t, mesh3)
+    t = stage3(t)
+
+    loss = tf.reduce_mean((t-y)**2)
+
+pipeline_train_step(iter(global_dataset), nsteps)
+```
+</td>
+</tr>
+
+<tr>
+<td></td>
+<td valign="top"></td>
+<td valign="top"></td>
 </tr>
 
 </table>
