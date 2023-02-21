@@ -443,7 +443,7 @@ case:
     with Keras demonstrated in the left panel is only a vision of how things may
     work, but not a binding design.
 
-<table valign="top">
+<table>
 <tr>
 <th>Phase</th>
 <th>High Level API Example: Keras and DTensorStrategy  </th>
@@ -452,7 +452,7 @@ case:
 
 <tr>
 <td>Model Definition</td>
-<td>
+<td valign="top">
 
 ```python
 
@@ -477,7 +477,7 @@ class Model(tf.keras.Model):
 ```
 
 </td>
-<td>
+<td valign="top">
 
 ```python
 
@@ -517,7 +517,7 @@ class CustomSGDOptimizer(tf.Module):
 </tr>
 <tr>
 <td>Model Instantiation</td>
-<td>
+<td valign="top">
 
 ```python
 
@@ -536,7 +536,7 @@ with mp.scope():
 ```
 
 </td>
-<td>
+<td valign="top">
 
 ```python
 
@@ -551,6 +551,15 @@ metric = tf.Variable(tf.zeros((),
                      layout=tf.dtensor.Layout(UNSHARDED, mesh))
 
 ```
+
+</td>
+</tr>
+<tr>
+<td></td>
+<td valign="top">
+
+</td>
+<td valign="top">
 
 </td>
 </tr>
