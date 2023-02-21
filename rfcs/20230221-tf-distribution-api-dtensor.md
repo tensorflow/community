@@ -142,7 +142,9 @@ class tf.dtensor.Mesh:
         e.g. ["GPU:0"] creates a mesh that uses "GPU:0" from all
         clients.
     """
+```
 
+```python
 class tf.dtensor.Layout(LayoutLike):
   def __init__(self,
                sharding_spec: List[str],
@@ -158,7 +160,9 @@ class tf.dtensor.Layout(LayoutLike):
         additional axes are treated as UNSHARDED.
       mesh: the mesh of this Layout.
     """
+```
 
+```python
 class tf.dtensor.XlaOpSharding(LayoutLike):
   def __init__(self, op_sharding: Xla.OpSharding,
                mesh: Optional[tf.dtensor.Mesh]):
