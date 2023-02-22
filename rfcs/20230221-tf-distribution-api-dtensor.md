@@ -539,7 +539,7 @@ mesh = tf.dtensor.Mesh(
     devices=['TPU:i' for i in range(8)])
 
 mp = tf.distribute.DTensorStrategy(default_mesh=mesh, batch_dim='batch',
-    layout_map=tf.LayoutMap({"v.*": tf.dtensor.Layout(...)}))
+    layout_map=tf.keras.LayoutMap({"v.*": tf.dtensor.Layout(...)}))
 
 with mp.scope():
   model = Model()
@@ -812,14 +812,18 @@ class Model(tf.Module):
 
 ```python
 
-with mp.scope():
+mp = tf.distribute.DTensorStrategy(
+    default_mesh=mesh, 
+    batch_dim='batch', 
+    layout_map=tf.keras.LayoutMap({
+      "v.*": tf.dtensor.Layout(...),
+      "embedding": tf.dtensor.Layout(
+           ['unsharded', 'embedding'],
+           mesh=embedding_mesh)}))
+
+with mp.scope()
   model = Model()
   ...
-layout_map = tf.LayoutMap(
-    {"embedding": tf.dtensor.Layout(['unsharded', 'embedding'],
-                            mesh=embedding_mesh)})
-for var in model.variables:
-  var.set_layout(layout_map.get(var))
 
 ```
 </td>
@@ -922,7 +926,7 @@ mesh2 = tf.dtensor.Mesh(['GPU:1'])
 mesh3 = tf.dtensor.Mesh(['GPU:2'])
 
 mp1 = tf.distribute.DTensorStrategy(default_mesh=mesh1,
-    layout_map = tf.LayoutMap(
+    layout_map = tf.keras.LayoutMap(
     {"variable": tf.dtensor.Layout(..., mesh=mesh1)}))
 mp2 = tf.distribute.DTensorStrategy(default_mesh=mesh2)
 mp3 = tf.distribute.DTensorStrategy(default_mesh=mesh3)
