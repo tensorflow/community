@@ -1,17 +1,18 @@
 # A new TensorFlow Distribution API with DTensor
 
-Status                    | (Proposed / Accepted / Implemented / Obsolete)
-:------------------------ | :---------------------------------------------
-**RFC #**                 | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)
-**Author(s)**             | Yu Feng (feyu@google.com)
-**Author(s)**             | Bruce Fontaine (bfontain@google.com)
-**Author(s)**             | Yuefeng Zhou (yuefengz@google.com)
-**Author(s)**             | Scott Zhu (scottzhu@google.com)
-**Author(s)**             | Srujun Thanmay Gupta (srujun@google.com)
-**Author(s)**             | Justin Szaday (twelve@google.com)
-**Author(s)**             | Samuel Lee (samuelslee@google.com)
-**Sponsor**               | Yu Feng (feyu@google.com)
-**Updated**               | 2023-02-21
+| Status        | (Proposed / Accepted / Implemented / Obsolete)          |
+| :------------ | :------------------------------------------------------ |
+| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
+:               : (update when you have community PR #)                   :
+| **Author(s)** | Yu Feng (feyu@google.com)                               |
+| **Author(s)** | Bruce Fontaine (bfontain@google.com)                    |
+| **Author(s)** | Yuefeng Zhou (yuefengz@google.com)                      |
+| **Author(s)** | Scott Zhu (scottzhu@google.com)                         |
+| **Author(s)** | Srujun Thanmay Gupta (srujun@google.com)                |
+| **Author(s)** | Justin Szaday (twelve@google.com)                       |
+| **Author(s)** | Samuel Lee (samuelslee@google.com)                      |
+| **Sponsor**   | Yu Feng (feyu@google.com)                               |
+| **Updated**   | 2023-02-21                                              |
 
 ## Objective
 
@@ -24,25 +25,26 @@ intrinsic part of TensorFlow that defines a representation of distributed
 Tensors with Mesh and Layout data structures. Users and high level libraries
 (such as Keras) can depend on Mesh and Layout just as other components of the
 TensorFlow low level API. An initial experimental implementation is covered here
-(on TensorFlow.org): DTensor Concepts; DTensor ML Tutorial; DTensor Keras
-Tutorial
+(on TensorFlow.org):
+[DTensor Concepts](https://www.tensorflow.org/guide/dtensor_overview)
+[DTensor ML Tutorial](https://www.tensorflow.org/tutorials/distribute/dtensor_ml_tutorial)
+[DTensor Keras Tutorial](https://www.tensorflow.org/tutorials/distribute/dtensor_keras_tutorial)
 
 This RFC defines the integration between TensorFlow and DTensor, the low level
 of TensorFlow's Next generation Distribution API.
 
-DTensor defines a uniform and
-generic API for composing distributed TensorFlow programs for accelerator types
-supported by TensorFlow. Common distribution patterns in machine learning,
-including data and model parallelism, spatial partitioning, and pipelining can
-all be expressed with primitives offered in this RFC. 
+DTensor defines a uniform and generic API for composing distributed TensorFlow
+programs for accelerator types supported by TensorFlow. Common distribution
+patterns in machine learning, including data and model parallelism, spatial
+partitioning, and pipelining can all be expressed with primitives offered in
+this RFC.
 
-A very basic form of
-interoperability with other ML frameworks, such as JAX is also supported in the
-API described in this RFC. 
+A very basic form of interoperability with other ML frameworks, such as JAX is
+also supported in the API described in this RFC.
 
-This document also demonstrates a potential path for
-integration with the Keras modeling primitives in the form of DTensorStrategy, a
-new subclass of `tf.distribute.Strategy`.
+This document also demonstrates a potential path for integration with the Keras
+modeling primitives in the form of DTensorStrategy, a new subclass of
+`tf.distribute.Strategy`.
 
 ## Disclaimer
 
@@ -142,7 +144,6 @@ New APIs added to tf.dtensor:
 *   new class tf.dtensor.Layout
 *   new class tf.dtensor.Mesh
 *   new class tf.dtensor.XlaOpSharding
-
 
 ### Data Structures: tf.dtensor.Mesh and tf.dtensor.Layout
 
@@ -843,8 +844,8 @@ class Model(tf.Module):
 ```python
 
 mp = tf.distribute.DTensorStrategy(
-    default_mesh=mesh, 
-    batch_dim='batch', 
+    default_mesh=mesh,
+    batch_dim='batch',
     layout_map=tf.keras.LayoutMap({
       "v.*": tf.dtensor.Layout(...),
       "embedding": tf.dtensor.Layout(
@@ -1141,50 +1142,34 @@ r1 = tf.dtensor.relayout(r, submesh1)     # from mesh to submesh0
 
 ### Dependencies
 
-*   Dependencies: does this proposal add any new dependencies to TensorFlow?
-*   Dependent projects: are there other areas of TensorFlow or things that use
-    TensorFlow (TFX/pipelines, TensorBoard, etc.) that this affects? How have
-    you identified these dependencies and are you sure they are complete? If
-    there are dependencies, how are you managing those changes?
+*   Dependencies: This proposal does not add new dependencies to TensorFlow.
+*   Dependent projects: None. The first implementation of the semantics of these
+    APIs will be based on the existing TensorFlow runtime.
 
 ### Engineering Impact
 
-*   Do you expect changes to binary size / startup time / build time / test
-    times?
-*   Who will maintain this code? Is this code in its own buildable unit? Can
-    this code be tested in its own? Is visibility suitably restricted to only a
-    small API surface for others to use?
+*   No signifiant binary overhead is added by implementing this RFC.
+*   The API will be curated by the TensorFlow API team. The initial
+    implementation will be maintained by the TensorFlow team.
 
 ### Platforms and Environments
 
-*   Platforms: does this work on all platforms supported by TensorFlow? If not,
-    why is that ok? Will it work on embedded/mobile? Does it impact automatic
-    code generation or mobile stripping tooling? Will it work with
-    transformation tools?
-*   Execution environments (Cloud services, accelerator hardware): what impact
-    do you expect and how will you confirm?
+*   Platforms: This API works on CPU, GPU and TPU. TensorFlow lite is not
+    supported.
 
 ### Best Practices
 
-*   Does this proposal change best practices for some aspect of using/developing
-    TensorFlow? How will these changes be communicated/enforced?
+*   This proposal, after fully implemented, changes the recommendated API for
+    distributed computing in TensorFlow to the proposed DTensor based API. The
+    message will be announced after the new API is ready for general
+    availability.
 
 ### Compatibility
 
-*   Does the design conform to the backwards & forwards compatibility
-    [requirements](https://www.tensorflow.org/programmers_guide/version_compat)?
-*   How will this proposal interact with other parts of the TensorFlow
-    Ecosystem?
-    -   How will it work with TFLite?
-    -   How will it work with distribution strategies?
-    -   How will it interact with tf.function?
-    -   Will this work on GPU/TPU?
-    -   How will it serialize to a SavedModel?
-
-### User Impact
-
-*   What are the user-facing changes? How will this feature be rolled out?
+*   This is a new API. Compatibility at API level is not a primary concern.
+*   Running exist user code developed with `tf.distribute` Strategy API under
+    the new API (in the form of DTensorStrategy) will be explored separately.
 
 ## Questions and Discussion Topics
 
-Seed this with open questions you require feedback on from the RFC process.
+*   TBD
