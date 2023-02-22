@@ -2,8 +2,7 @@
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)          |
 | :------------ | :------------------------------------------------------ |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
-|               | (update when you have community PR #)                   |
+| **RFC #**     | [442](https://github.com/tensorflow/community/pull/442) |
 | **Author(s)** | Yu Feng (feyu@google.com)                               |
 |               | Bruce Fontaine (bfontain@google.com)                    |
 |               | Yuefeng Zhou (yuefengz@google.com)                      |
