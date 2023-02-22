@@ -476,44 +476,18 @@ case:
 
 <table>
 <tr>
-<th>Phase</th>
-<th>High Level API Example: Keras and DTensorStrategy  </th>
 <th>Low Level API Example: DTensor and from-scratch tf.Module </th>
+<th>High Level API Example: Keras and DTensorStrategy  </th>
+<th>Phase</th>
 </tr>
 
 <tr>
+<td valign="top"></td>
+<td valign="top"></td>
 <td></td>
-<td valign="top"></td>
-<td valign="top"></td>
 </tr>
 
 <tr>
-<td>Model Definition</td>
-<td valign="top">
-
-```python
-
-# Variable layouts are set after the model/layer instantiation.
-
-class Model(tf.keras.Model):
-  def __init__(self):
-    self.var = tf.Variable(tf.random.uniform,
-                           shape=(30, 30),
-                           dtype=tf.float32)
-    self.embedding_layer = tf.keras.Embedding(
-                               vocab_size=1000,
-                               embedding_dim=30)
-
-  def call(self, x):
-    …
-    t = self.embedding_layer(ind)
-    t = BatchNorm(sync=False)(t)
-    …
-    return y
-
-```
-
-</td>
 <td valign="top">
 
 ```python
@@ -551,16 +525,58 @@ class CustomSGDOptimizer(tf.Module):
 ```
 
 </td>
+<td valign="top">
+
+```python
+
+# Variable layouts are set after the model/layer instantiation.
+
+class Model(tf.keras.Model):
+  def __init__(self):
+    self.var = tf.Variable(tf.random.uniform,
+                           shape=(30, 30),
+                           dtype=tf.float32)
+    self.embedding_layer = tf.keras.Embedding(
+                               vocab_size=1000,
+                               embedding_dim=30)
+
+  def call(self, x):
+    …
+    t = self.embedding_layer(ind)
+    t = BatchNorm(sync=False)(t)
+    …
+    return y
+
+```
+
+</td>
+<td>Model Definition</td>
 </tr>
 
 <tr>
+<td valign="top"></td>
+<td valign="top"></td>
 <td></td>
-<td valign="top"></td>
-<td valign="top"></td>
 </tr>
 
 <tr>
-<td>Model Instantiation</td>
+<td valign="top">
+
+```python
+
+mesh = tf.dtensor.Mesh(
+    dims=[('batch', 4), ('model', 2)],
+    devices=['TPU:i' for i in range(8)])
+
+model = Model(mesh)
+optimizer = CustomSGDOptimizer(model)
+# TensorFlow creates a DTensor Variable when there is a layout argument.
+metric = tf.Variable(tf.zeros((),
+                     layout=tf.dtensor.Layout(UNSHARDED, mesh))
+
+```
+
+</td>
 <td valign="top">
 
 ```python
@@ -580,33 +596,36 @@ with mp.scope():
 ```
 
 </td>
+<td>Model Instantiation</td>
+</tr>
+
+<tr>
+<td valign="top"></td>
+<td valign="top"></td>
+<td></td>
+</tr>
+
+<tr>
 <td valign="top">
 
 ```python
 
-mesh = tf.dtensor.Mesh(
-    dims=[('batch', 4), ('model', 2)],
-    devices=['TPU:i' for i in range(8)])
+ALL_DATA_FILES = [f"{i}" for i in range(128)]
 
-model = Model(mesh)
-optimizer = CustomSGDOptimizer(model)
-# TensorFlow creates a DTensor Variable when there is a layout argument.
-metric = tf.Variable(tf.zeros((),
-                     layout=tf.dtensor.Layout(UNSHARDED, mesh))
+dataset = tf.data.SSTableDataset(ALL_DATA_FILES)
+dataset = dataset.batch(32)
+
+dataset = tf.create_dtensor_iterable(
+    dataset,
+    element_layouts=Layout(['batch', 'unsharded'], mesh),
+    batch_dimension='batch',
+    num_elements_per_batch=8)
+
+# global batch size is 32 * 8 = 128
 
 ```
 
 </td>
-</tr>
-
-<tr>
-<td></td>
-<td valign="top"></td>
-<td valign="top"></td>
-</tr>
-
-<tr>
-<td>Dataset</td>
 <td valign="top">
 
 ```python
@@ -628,36 +647,37 @@ dataset = mp.distribute_dataset_from_fn(dataset_fn)
 ```
 
 </td>
+<td>Dataset</td>
+</tr>
+
+<tr>
+<td valign="top"></td>
+<td valign="top"></td>
+<td></td>
+</tr>
+
+<tr>
 <td valign="top">
 
 ```python
 
-ALL_DATA_FILES = [f"{i}" for i in range(128)]
+@tf.function
+def train_step(x, y):
+  with tf.GradientTape() as tape:
+    y_pred = model(x)
+    loss, metric_update = ...
+  metric.assign_add(metric_update)
 
-dataset = tf.data.SSTableDataset(ALL_DATA_FILES)
-dataset = dataset.batch(32)
+  g_var = tape.gradient(model.vars)
+  optimizer.apply_gradients(zip(g_vars, model.vars)))
 
-dataset = tf.create_dtensor_iterable(
-    dataset,
-    element_layouts=Layout(['batch', 'unsharded'], mesh),
-    batch_dimension='batch',
-    num_elements_per_batch=8)
 
-# global batch size is 32 * 8 = 128
-
+for _ in range(NUM_EPOCHS):
+  for _ in range(0, STEPS_PER_EPOCH):
+    result = train_step(iter(global_dataset))
 ```
 
 </td>
-</tr>
-
-<tr>
-<td></td>
-<td valign="top"></td>
-<td valign="top"></td>
-</tr>
-
-<tr>
-<td>Training</td>
 <td valign="top">
 
 ```python
@@ -680,33 +700,13 @@ for _ in range(NUM_EPOCHS):
 
 ```
 </td>
-<td valign="top">
-
-```python
-
-@tf.function
-def train_step(x, y):
-  with tf.GradientTape() as tape:
-    y_pred = model(x)
-    loss, metric_update = ...
-  metric.assign_add(metric_update)
-
-  g_var = tape.gradient(model.vars)
-  optimizer.apply_gradients(zip(g_vars, model.vars)))
-
-
-for _ in range(NUM_EPOCHS):
-  for _ in range(0, STEPS_PER_EPOCH):
-    result = train_step(iter(global_dataset))
-```
-
-</td>
+<td>Training</td>
 </tr>
 
 <tr>
+<td valign="top"></td>
+<td valign="top"></td>
 <td></td>
-<td valign="top"></td>
-<td valign="top"></td>
 </tr>
 </table>
 
@@ -724,37 +724,18 @@ remote (like ParameterServer). The design will be addressed in an extension RFC.
 
 <table>
 <tr>
-<th>Phase</th>
-<th>Distributed Embedding Example: Keras and Strategy</th>
 <th>Distributed Embedding Example: Low Level DTensor</th>
+<th>Distributed Embedding Example: Keras and Strategy</th>
+<th>Phase</th>
 </tr>
 
 <tr>
+<td valign="top"></td>
+<td valign="top"></td>
 <td></td>
-<td valign="top"></td>
-<td valign="top"></td>
 </tr>
 
 <tr>
-<td>
-Mesh definition
-</td>
-<td valign="top">
-
-```python
-
-mesh = tf.dtensor.Mesh(
-    dims=[('batch', 4), ('model', 2)],
-    devices=['GPU:i' for i in range(8)])
-
-# Mesh for the embedding tables
-embedding_mesh = tf.dtensor.Mesh(
-    dim=[('embedding', 2)],
-    devices=["/worker:0/GPU:0", "/worker:0/GPU:1"])
-
-```
-
-</td>
 <td valign="top">
 
 ```python
@@ -776,16 +757,55 @@ embedding_mesh = tf.dtensor.Mesh(
 ```
 
 </td>
+<td valign="top">
+
+```python
+
+mesh = tf.dtensor.Mesh(
+    dims=[('batch', 4), ('model', 2)],
+    devices=['GPU:i' for i in range(8)])
+
+# Mesh for the embedding tables
+embedding_mesh = tf.dtensor.Mesh(
+    dim=[('embedding', 2)],
+    devices=["/worker:0/GPU:0", "/worker:0/GPU:1"])
+
+```
+
+</td>
+<td>
+Mesh definition
+</td>
 </tr>
 
 <tr>
+<td valign="top"></td>
+<td valign="top"></td>
 <td></td>
-<td valign="top"></td>
-<td valign="top"></td>
 </tr>
 
 <tr>
-<td>Model Definition</td>
+<td valign="top">
+
+```python
+
+class Model(tf.Module):
+  def __init__(self, mesh, embedding_mesh):
+    self.table = tf.Variable(
+        tf.random.uniform,
+        shape=(1000, 30),
+        layout=tf.Layout(['unsharded', 'embedding'],
+                         mesh=embedding_mesh))
+
+  def call(self, x):
+    ind, img, ... = x
+    t = tf.gather(ind, self.table)  # Runs on embedding devices
+    t = tf.dtensor.relayout_like(t, img)
+    t = tf.batch_norm(sync=False)(t)  # Runs on accelerators
+    ...
+    return y
+```
+</td>
 <td valign="top">
 
 ```python
@@ -808,37 +828,24 @@ class Model(tf.keras.Model):
 ```
 
 </td>
+<td>Model Definition</td>
+</tr>
+
+<tr>
+<td valign="top"></td>
+<td valign="top"></td>
+<td></td>
+</tr>
+
+<tr>
 <td valign="top">
 
 ```python
 
-class Model(tf.Module):
-  def __init__(self, mesh, embedding_mesh):
-    self.table = tf.Variable(
-        tf.random.uniform,
-        shape=(1000, 30),
-        layout=tf.Layout(['unsharded', 'embedding'],
-                         mesh=embedding_mesh))
-
-  def call(self, x):
-    ind, img, ... = x
-    t = tf.gather(ind, self.table)  # Runs on embedding devices
-    t = tf.dtensor.relayout_like(t, img)
-    t = tf.batch_norm(sync=False)(t)  # Runs on accelerators
-    ...
-    return y
+model = Model(mesh, embedding_mesh)
 ```
+
 </td>
-</tr>
-
-<tr>
-<td></td>
-<td valign="top"></td>
-<td valign="top"></td>
-</tr>
-
-<tr>
-<td>Model Instantiation</td>
 <td valign="top">
 
 ```python
@@ -858,14 +865,7 @@ with mp.scope()
 
 ```
 </td>
-<td valign="top">
-
-```python
-
-model = Model(mesh, embedding_mesh)
-```
-
-</td>
+<td>Model Instantiation</td>
 </tr>
 
 </table>
@@ -878,19 +878,20 @@ declare the meshes it intends to use for each stage.
 
 <table>
 <tr>
-<th>Phase</th>
-<th>Distributed Embedding Example: Keras and Strategy</th>
 <th>Distributed Embedding Example: Low Level DTensor</th>
+<th>Distributed Embedding Example: Keras and Strategy</th>
+<th>Phase</th>
 </tr>
 
 <tr>
+<td valign="top"></td>
+<td valign="top"></td>
 <td></td>
-<td valign="top"></td>
-<td valign="top"></td>
 </tr>
 
 <tr>
-<td>Model Definition</td>
+<td valign="top"></td>
+<td valign="top"></td>
 <td valign="top">
 
 ```python
@@ -942,12 +943,26 @@ class Model3(tf.Module):
 
 <tr>
 <td></td>
-<td valign="top"></td>
-<td valign="top"></td>
+<td>Model Definition</td>
 </tr>
 
 <tr>
-<td> Model Instantiation </td>
+<td valign="top">
+
+```python
+
+mesh1 = tf.dtensor.Mesh(['GPU:0'])
+mesh2 = tf.dtensor.Mesh(['GPU:1'])
+mesh3 = tf.dtensor.Mesh(['GPU:2'])
+
+
+stage1 = Model1(mesh1)
+stage2 = Model2(mesh2)
+stage3 = Model3(mesh3)
+
+```
+
+</td>
 <td valign="top">
 
 ```python
@@ -971,54 +986,16 @@ with mp3.scope():
 ```
 
 </td>
-<td valign="top">
-
-```python
-
-mesh1 = tf.dtensor.Mesh(['GPU:0'])
-mesh2 = tf.dtensor.Mesh(['GPU:1'])
-mesh3 = tf.dtensor.Mesh(['GPU:2'])
-
-
-stage1 = Model1(mesh1)
-stage2 = Model2(mesh2)
-stage3 = Model3(mesh3)
-
-```
-
-</td>
+<td> Model Instantiation </td>
 </tr>
 
 <tr>
+<td valign="top"></td>
+<td valign="top"></td>
 <td></td>
-<td valign="top"></td>
-<td valign="top"></td>
 </tr>
 
 <tr>
-<td>Training Loop</td>
-<td valign="top">
-
-```python
-
-@tf.function
-def pipeline_train_step(iter, nsteps):
-  for ...
-    x, y = next(iter)
-
-    t = mp1.run(stage1, x)
-    t = tf.dtensor.relayout(t, mesh2)
-    t = mp2.run(stage2, t)
-    t = tf.dtensor.relayout(t, mesh3)
-    t = mp3.run(stage3, t)
-
-    loss = tf.reduce_mean((t-y)**2)
-
-pipeline_train_step(iter(global_dataset), nsteps)
-
-```
-
-</td>
 <td valign="top">
 
 ```python
@@ -1041,12 +1018,35 @@ pipeline_train_step(iter(global_dataset), nsteps)
 ```
 
 </td>
+<td valign="top">
+
+```python
+
+@tf.function
+def pipeline_train_step(iter, nsteps):
+  for ...
+    x, y = next(iter)
+
+    t = mp1.run(stage1, x)
+    t = tf.dtensor.relayout(t, mesh2)
+    t = mp2.run(stage2, t)
+    t = tf.dtensor.relayout(t, mesh3)
+    t = mp3.run(stage3, t)
+
+    loss = tf.reduce_mean((t-y)**2)
+
+pipeline_train_step(iter(global_dataset), nsteps)
+
+```
+
+</td>
+<td>Training Loop</td>
 </tr>
 
 <tr>
+<td valign="top"></td>
+<td valign="top"></td>
 <td></td>
-<td valign="top"></td>
-<td valign="top"></td>
 </tr>
 
 </table>
