@@ -4,9 +4,9 @@ Status                    | (Proposed / Accepted / Implemented / Obsolete)
 :------------------------ | :---------------------------------------------
 **RFC #**                 | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)
 **Author(s)**             | Yu Feng (feyu@google.com), 
-                          | Bruce Fontaine (bfontain@google.com), 
-                          | Yuefeng Zhou (yuefengz@google.com), 
-                          | Scott Zhu (scottzhu@google.com)
+**Author(s)**             | Bruce Fontaine (bfontain@google.com), 
+**Author(s)**             | Yuefeng Zhou (yuefengz@google.com), 
+**Author(s)**             | Scott Zhu (scottzhu@google.com)
 **Sponsor**               | A N Expert (whomever@tensorflow.org)
 **Updated**               | 2023-02-21
 
