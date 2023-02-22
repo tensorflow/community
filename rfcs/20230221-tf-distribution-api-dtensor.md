@@ -3,11 +3,14 @@
 Status                    | (Proposed / Accepted / Implemented / Obsolete)
 :------------------------ | :---------------------------------------------
 **RFC #**                 | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)
-**Author(s)**             | Yu Feng (feyu@google.com), 
-**Author(s)**             | Bruce Fontaine (bfontain@google.com), 
-**Author(s)**             | Yuefeng Zhou (yuefengz@google.com), 
+**Author(s)**             | Yu Feng (feyu@google.com)
+**Author(s)**             | Bruce Fontaine (bfontain@google.com)
+**Author(s)**             | Yuefeng Zhou (yuefengz@google.com)
 **Author(s)**             | Scott Zhu (scottzhu@google.com)
-**Sponsor**               | A N Expert (whomever@tensorflow.org)
+**Author(s)**             | Srujun Thanmay Gupta (srujun@google.com)
+**Author(s)**             | Justin Szaday (twelve@google.com)
+**Author(s)**             | Samuel Lee (samuelslee@google.com)
+**Sponsor**               | Yu Feng (feyu@google.com)
 **Updated**               | 2023-02-21
 
 ## Objective
@@ -25,13 +28,19 @@ TensorFlow low level API. An initial experimental implementation is covered here
 Tutorial
 
 This RFC defines the integration between TensorFlow and DTensor, the low level
-of TensorFlow's Next generation Distribution API. DTensor defines a uniform and
+of TensorFlow's Next generation Distribution API.
+
+DTensor defines a uniform and
 generic API for composing distributed TensorFlow programs for accelerator types
 supported by TensorFlow. Common distribution patterns in machine learning,
 including data and model parallelism, spatial partitioning, and pipelining can
-all be expressed with primitives offered in this RFC. A very basic form of
+all be expressed with primitives offered in this RFC. 
+
+A very basic form of
 interoperability with other ML frameworks, such as JAX is also supported in the
-API described in this RFC. This document also demonstrates a potential path for
+API described in this RFC. 
+
+This document also demonstrates a potential path for
 integration with the Keras modeling primitives in the form of DTensorStrategy, a
 new subclass of `tf.distribute.Strategy`.
 
@@ -40,6 +49,8 @@ new subclass of `tf.distribute.Strategy`.
 This is a draft RFC, API endpoints in this document are not final. This document
 may refer to but does not cover the following topics for which we expect follow
 on RFCs:
+
+*   Representation of DTensor primitives in the TF Graph
 
 *   Keras integration
 
@@ -50,8 +61,6 @@ on RFCs:
 *   Mixed use of DTensor and non-DTensor execution in tf.functions
 
 *   tf.data integration
-
-*   Representation of DTensor primitives in the TF Graph
 
 ## Glossary
 
@@ -69,9 +78,11 @@ terminology 'shard' is used interchangeably with 'distribute'.
     The following example is a 2 by 3 mesh on 6 CPU devices.
 
 ```python
+
 mesh = tf.dtensor.Mesh({'x': 2, 'y' : 3}, devices=[
     'CPU:0', 'CPU:1', 'CPU:2',
     'CPU:3', 'CPU:4', 'CPU:5'])
+
 ```
 
 *   **Layout**: A list of sharding specifications. A sharding specification is a
@@ -84,8 +95,10 @@ mesh = tf.dtensor.Mesh({'x': 2, 'y' : 3}, devices=[
     components. For example, on the 2 by 3 mesh defined above,
 
 ```python
+
 tf.Tensor(shape=[5, 4, 6],
        layout=tf.dtensor.Layout([tf.dtensor.Mesh.UNSHARDED, 'x', 'y'], mesh))
+
 ```
 
 The Global Perspective Tensor has a shape of `[5, 4, 6]`. The 6 components in
@@ -112,6 +125,25 @@ The Distribution API supports the following runtime architectures:
 
 ## Design Proposal
 
+### Summary of Changes to TensorFlow Python API
+
+Changes to the tensorflow namespace:
+
+*   Addition of new layout argument to many tensor creation methods (e.g.
+    tf.ones)
+*   Addition of a new layout argument to tf.Variable.
+*   Addition of a new attribute in tf.Tensor type: Tensor.layout.
+
+New APIs added to tf.dtensor:
+
+*   tf.dtensor.relayout
+*   tf.dtensor.pack
+*   tf.dtensor.unpack
+*   new class tf.dtensor.Layout
+*   new class tf.dtensor.Mesh
+*   new class tf.dtensor.XlaOpSharding
+
+
 ### Data Structures: tf.dtensor.Mesh and tf.dtensor.Layout
 
 Mesh and Layout defines how a Tensor is distributed by the Distribution API.
@@ -119,6 +151,7 @@ Mesh provides the abstraction for the topology of devices. Layout defines the
 policy that a Tensor is distributed to a mesh.
 
 ```python
+
 class tf.dtensor.Mesh:
   def __init__(self,
                dims: OrderedDict[str, int],
@@ -147,6 +180,7 @@ class tf.dtensor.Mesh:
 ```
 
 ```python
+
 class tf.dtensor.Layout(LayoutLike):
   def __init__(self,
                sharding_spec: List[str],
@@ -165,6 +199,7 @@ class tf.dtensor.Layout(LayoutLike):
 ```
 
 ```python
+
 class tf.dtensor.XlaOpSharding(LayoutLike):
   def __init__(self, op_sharding: `Xla.OpSharding`,
                mesh: Optional[tf.dtensor.Mesh]):
@@ -221,6 +256,7 @@ The new Layout argument is appended to the end of the argument list, after the
 optional `name` argument to maintain backward compatibility.
 
 ```python
+
 def tf.zeros(shape, dtype=dtypes.float32, name=None,
              layout: Optional[tf.dtensor.LayoutLike])
 def tf.ones(shape, dtype=dtypes.float32, name=None,
@@ -234,6 +270,7 @@ def tf.ones_like(param, dtype=dtypes.float32, name=None,
 ```
 
 ```python
+
 def tf.random.stateless_random_uniform(shape, seed, minval=0, maxval=None,
         dtype=dtypes.float32, name=None,
         layout: Optional[tf.dtensor.LayoutLike])
@@ -251,8 +288,10 @@ The list is non-exhaustive.
 
 Refer to the relayout rules section for more information on source Layout and
 destination Layout. Note that these operations support tf.GradientTape.
+Specifically, `relayout_like` is the gradient Op of `relayout`.
 
 ```python
+
 def tf.dtensor.relayout(source: tf.Tensor,
                 mesh_or_layout: Union[LayoutLike, Mesh]):
   """Makes a copy of source to the new layout or mesh.
@@ -265,6 +304,7 @@ def tf.dtensor.relayout(source: tf.Tensor,
 ```
 
 ```python
+
 def tf.dtensor.relayout_like(source: tf.Tensor,
     reference: tf.Tensor,
     use_mesh_only: Bool=False):
@@ -317,11 +357,13 @@ Tensors is only supported eagerly. Following the traditions of TensorFlow,
 as module functions under the dtensor namespace.
 
 ```python
+
 attr tf.Tensor.layout(self) -> Optional[Layout]:
   """The layout of a DTensor, or None."""
 ```
 
 ```python
+
 def tf.dtensor.pack(
                    component: Sequence[Tensor],
                    layout: Layout) -> Tensor:
@@ -334,6 +376,7 @@ def tf.dtensor.pack(
 ```
 
 ```python
+
 def tf.dtensor.unpack(dtensor) -> List[Tensor]:
   """Extracts Local Perspective components from a distributed Tensor.
 
@@ -346,28 +389,12 @@ def tf.dtensor.unpack(dtensor) -> List[Tensor]:
   """
 ```
 
-### Summary of Changes to TensorFlow Python API
-
-Changes to the tensorflow namespace:
-
-*   Addition of new layout argument to many tensor creation methods (e.g.
-    tf.ones, tf.Variable).
-*   Addition of new methods in tf.Tensor type: Tensor.layout.
-
-New APIs added to tf.dtensor:
-
-*   tf.dtensor.relayout
-*   tf.dtensor.pack
-*   tf.dtensor.unpack
-*   tf.dtensor.Layout
-*   tf.dtensor.Mesh
-*   tf.dtensor.XlaOpSharding
-
 ## Examples and API User Journey
 
 **A Typical Path For Scaling Up:**
 
 ```mermaid
+
 flowchart LR
     A[non-distributed] --> B[multi-device data-parallel]
     B --> C[model-parallel on \n single-mesh]
@@ -384,6 +411,7 @@ API, using a custom training loop. In the next sections, this example will be
 expanded to demonstrate applying TensorFlow's new Distribution API.
 
 ```python
+
 # Starting example: a single-device Training Loop
 
 class Model(tf.keras.Model):
