@@ -890,28 +890,6 @@ declare the meshes it intends to use for each stage.
 </tr>
 
 <tr>
-<td valign="top"></td>
-<td valign="top"></td>
-<td valign="top">
-
-```python
-
-class Model1(tf.Module):
-  def __init__(self):
-    self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
-
-class Model2(tf.Module):
-  def __init__(self):
-    self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
-
-class Model3(tf.Module):
-  def __init__(self):
-    self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
-
-```
-
-</td>
-
 <td valign="top">
 
 ```python
@@ -939,11 +917,32 @@ class Model3(tf.Module):
 ```
 
 </td>
+<td valign="top">
+
+```python
+
+class Model1(tf.Module):
+  def __init__(self):
+    self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
+
+class Model2(tf.Module):
+  def __init__(self):
+    self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
+
+class Model3(tf.Module):
+  def __init__(self):
+    self.var = tf.Variable(tf.zeros, shape=(30, 20), dtype=tf.float32)
+
+```
+
+</td>
+<td>Model Definition</td>
 </tr>
 
 <tr>
+<td valign="top"></td>
+<td valign="top"></td>
 <td></td>
-<td>Model Definition</td>
 </tr>
 
 <tr>
