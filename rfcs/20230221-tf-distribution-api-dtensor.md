@@ -5,12 +5,12 @@
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
 :               : (update when you have community PR #)                   :
 | **Author(s)** | Yu Feng (feyu@google.com)                               |
-| **Author(s)** | Bruce Fontaine (bfontain@google.com)                    |
-| **Author(s)** | Yuefeng Zhou (yuefengz@google.com)                      |
-| **Author(s)** | Scott Zhu (scottzhu@google.com)                         |
-| **Author(s)** | Srujun Thanmay Gupta (srujun@google.com)                |
-| **Author(s)** | Justin Szaday (twelve@google.com)                       |
-| **Author(s)** | Samuel Lee (samuelslee@google.com)                      |
+: **Author(s)** : Bruce Fontaine (bfontain@google.com)                    :
+: **Author(s)** : Yuefeng Zhou (yuefengz@google.com)                      :
+: **Author(s)** : Scott Zhu (scottzhu@google.com)                         :
+: **Author(s)** : Srujun Thanmay Gupta (srujun@google.com)                :
+: **Author(s)** : Justin Szaday (twelve@google.com)                       :
+: **Author(s)** : Samuel Lee (samuelslee@google.com)                      :
 | **Sponsor**   | Yu Feng (feyu@google.com)                               |
 | **Updated**   | 2023-02-21                                              |
 
