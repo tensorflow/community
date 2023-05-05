@@ -1,6 +1,6 @@
 # A new TensorFlow Distribution API with DTensor
 
-| Status        | (Proposed / Accepted / Implemented / Obsolete)          |
+| Status        | Accepted           |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [442](https://github.com/tensorflow/community/pull/442) |
 | **Author(s)** | Yu Feng (feyu@google.com)                               |
