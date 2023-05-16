@@ -22,8 +22,6 @@ updates corresponding to evolving input patterns and vocabulary changes.
 ### Extended goals
     * Works with synchronous distributed training
 
-
-
 ## Motivation
 Recommendation systems and search ranking are crucial in powering the largest
 revenue streams, such as PCTR/PCVR and video recommendation. However, as
@@ -243,13 +241,11 @@ Users will be able to access DynamicEmbedding as a new layer in Keras.
 An illustration of how to use this layer is shown above.
 
 ## Acknowledgement
-
 The [TensorFlow Recommenders Addon project](https://github.com/tensorflow/recommenders-addons/blob/master/docs/api_docs/tfra/dynamic_embedding.md)
 maintained by TensorFlow SIG Recommenders is a community-led project that
 aims to solve similar issues currently. This RFC is inspired by both
 Google internal use cases as well as the TFRA project. We are thankful
 for the contributions from TFRA maintainers (in particular, Haidong
 Rong from Nvidia) and welcome future collaborations on this RFC.
-
 
 ## Questions and Discussion Topic
