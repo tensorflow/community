@@ -94,7 +94,7 @@ for input lookup across all workers. This ensures that the vocabulary
 is always up-to-date and that all workers are using the same vocabulary. 
 
 
-![DynamicEmbedding](/usr/local/google/home/divyasreepat/community/rfcs/20230515-DynamicEmbedding/DynamicEmbedding.png)
+![DynamicEmbedding](/20230515-DynamicEmbedding/DynamicEmbedding.png)
 
 Here is a deeper look at what is done in DynamicLookup layer and how the
 UpdateEmbeddingCallback updates the embeddings and vocabulary
@@ -115,7 +115,7 @@ vocabulary-> index mapping
 This updated vocabulary is used for lookup in the DynamicLookup layer
 until the callback event is triggered again after the time interval.
 
-![DynamicLookup](/usr/local/google/home/divyasreepat/community/rfcs/20230515-DynamicEmbedding/DynamicLookup.png)
+![DynamicLookup](0230515-DynamicEmbedding/DynamicLookup.png)
 
 The image below illustrates the workflow when the parameter server
 strategy is used. PSS supports asynchronous training. Each worker
@@ -126,7 +126,7 @@ the vocabulary table is aggregated from values across all the workers.
 The top k vocabulary is extracted and the vocabulary lookup is updated
 with these values.
 
-![DynamicEmbedding asynchronous training](/usr/local/google/home/divyasreepat/community/rfcs/20230515-DynamicEmbedding/AsyncTraining.png)
+![DynamicEmbedding asynchronous training](0230515-DynamicEmbedding/AsyncTraining.png)
 
 ## Performance implications
 There are two options to have a mutable data structure to maintain the
