@@ -26,13 +26,12 @@ updates corresponding to evolving input patterns and vocabulary changes.
 Recommendation systems and search ranking are crucial in powering the largest
 revenue streams, such as PCTR/PCVR and video recommendation. However, as
 recommendation models have become more complicated, there are three distinct
-challenges that need to be addressed. These include 
-
-the difficulty in separating popular and less-popular items or adapting to
-the seasonal cycle of popularity, the lack of a cross-platform solution for
-handling larger and larger embedding tables the dynamic nature of large
-embedding tables due to modeling large unique id-based features and the
-crossing features among them.
+challenges that need to be addressed. These include the difficulty in
+separating popular and less-popular items or adapting to the seasonal cycle
+of popularity, the lack of a cross-platform solution for handling larger
+and larger embedding tables the dynamic nature of large embedding tables
+due to modeling large unique id-based features and the crossing features
+among them.
 
 Currently, there are two ways to handle such limitations in TensorFlow: 
 direct hashing without a vocabulary
