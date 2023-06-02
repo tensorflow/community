@@ -94,6 +94,7 @@ new, community-owned repos that the SIG will drive.
 - Paul Van Eck (IBM)
 - Rising Odegua (Datopian)
 - Saswat Samal (Student)
+- Kartikey Rawat (CodeDay)
 - Shivay Lamba (Metvy)
 - Ted Chang (IBM)
 - Va Barbosa (IBM)
