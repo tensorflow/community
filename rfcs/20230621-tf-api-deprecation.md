@@ -2,7 +2,7 @@
 
 | Status        | Proposed       |
 :-------------- |:---------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) |
+| **RFC #**     | [450](https://github.com/tensorflow/community/pull/450) |
 | **Author(s)** | Ayush Jain (ayh@google.com)                          |
 | **Sponsor**   | Rohan Jain (rohanj@google.com)                       |
 | **Updated**   | 2023-06-21                                           |
