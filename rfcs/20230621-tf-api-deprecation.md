@@ -9,7 +9,7 @@
 
 ## Objective
 
-This proposal outlines an explicit policy for long-term code health, specific to TensorFlow.
+This proposal outlines an explicit policy for long-term code health by adding a process and mechanism for API / op deprecation and removal, specific to TensorFlow.
 
 Because of TensorFlow’s position in both the Google-internal and third-party ML development worlds, we take special care when deprecating or removing public APIs. 
 
