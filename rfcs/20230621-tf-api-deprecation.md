@@ -60,7 +60,7 @@ A TensorFlow API is considered fully deprecated when:
         * Ex: if `tf.bar` uses deprecated `tf.foo`, calling `tf.bar` should not trigger a warning.
 * As appropriate, examples (e.g. experimental Colab notebooks) are created demonstrating the replacement of any deprecated modules or methods.
 * The API is covered by a publicly available _strict mode_ which users can optionally enable to convert warnings to failures, with error messages that guide them to replacements.
-    * Strict mode is a globally applied state, switched on with `tf.exprimental.enable_strict_mode()`. 
+    * Strict mode is a globally applied state, switched on with `tf.experimental.enable_strict_mode()`. 
     * Once enabled, ignorable runtime warnings for deprecated APIs will instead be replaced with errors, detailing the deprecation and suggested alternatives.
 * Alongside release in TF Nightly, messaging is sent through appropriate communication channels to inform of the upcoming deprecation, rationale, and available substitutes.
     * Depending on the nature and scope of deprecation, this may be done at the individual API level or in interrelated block(s).
