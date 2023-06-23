@@ -44,7 +44,7 @@ Consider the sunsetting of some `tf.foo`, proposed during TF 2.X:
 * Adjust defaults wherever applicable to use updated equivalents in TF 2.(X+1).
 * Remove `tf.foo` with the TF release nearest after 12 months after initial warnings were added.
 
-This process takes place over **a full year**, giving users substantial time to adapt. If users are unable to migrate in that period, they may pin to the last release invluding `tf.foo` and move when they deem it suitable or necessary.
+This process takes place over **a full year**, giving users substantial time to adapt. If users are unable to migrate in that period, they may pin to the last release including `tf.foo` and move when they deem it suitable or necessary.
 
 Subsequent sections go into more depth on the execution of this process.
 
