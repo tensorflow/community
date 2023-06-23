@@ -27,7 +27,7 @@ TensorFlow had only one major version revision, and this strict adherence to bac
 
 An API is eligible for deprecation whenever there exists a better way to fulfill its purpose, making alternatives obsolete. “Better” and “obsolete” are terms subject to maintainer discretion - the API may either be part of an unsupported and since-replaced suite, exhibit inferior performance, not comply with Function-based execution, or otherwise. As defined, an eligible API must then have a functional, non-experimental equivalent available that users can be directed upon deprecation. 
 
-If there are fewer than fewer than 500 dependent non-TF-fork repositories on GitHub, said API is deemed suitable for public deprecation. If it does not meet this requirement, it is ineligible and the process stops here. If usage diminishes over time, it can be reevaluated at a later date.
+If there are fewer than 500 dependent non-TF-fork repositories on GitHub, said API is deemed suitable for public deprecation. If it does not meet this requirement, it is ineligible and the process stops here. If usage diminishes over time, it can be reevaluated at a later date.
 
 Note that while we use API as a blanket term throughout this document, this policy also explicitly covers TensorFlow ops that have fallen out of favor. For an op to be eligible for deprecation, it must be expressible through a graph rewrite using other existing ops.
 
