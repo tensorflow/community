@@ -58,6 +58,7 @@ A TensorFlow API is considered fully deprecated when:
     * Runtime warnings can be added by wrapping a deprecated pattern with `@deprecation(...)` as defined in [deprecation.py](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/util/deprecation.py), or, if of greater scale, by adding a distinct deprecated export wrapper in [tf_export.py](https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/util/tf_export.py) (and using said new wrapper).
     * **Internal usage of deprecated APIs should not raise warnings**. Any warnings should only come from a user-facing call of the deprecated API. 
         * Ex: if `tf.bar` uses deprecated `tf.foo`, calling `tf.bar` should not trigger a warning.
+* If an op is being deprecated, it is functionally replaced through graph rewrites of other existing ops. 
 * As appropriate, examples (e.g. experimental Colab notebooks) are created demonstrating the replacement of any deprecated modules or methods.
 * The API is covered by a publicly available _strict mode_ which users can optionally enable to convert warnings to failures, with error messages that guide them to replacements.
     * Strict mode is a globally applied state, switched on with `tf.experimental.enable_strict_mode()`. 
