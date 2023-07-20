@@ -29,8 +29,7 @@ Since proto cannot natively handle sizes > 2GB, we must develop a new format for
 
 ## User Benefit
 
-How will users (or other contributors) benefit from this work? What would be the
-headline in the release notes or blog post?
+As models get larger, the likelihood of encountering the 2GB limit increases. Many users inside and outside Google have reported this issue, and were met with no solution, resulting in hacks and workarounds. With this change, current and future model builders will be unrestricted by the size of the SavedModel proto.
 
 ## Design Proposal
 
@@ -57,7 +56,7 @@ File Change:
 
 | Old [SavedModel format]   | New [Image format]                               |
 | ------------------------- | ------------------------------------------------ |
-| saved_model_dir/<br>├variables/<br>├assets/<br>├fingerprint.pb<br>├saved_model.pb | saved_model_dir/<br>├variables/<br>├assets/<br>├fingerprint.pb<br>├saved_model.cpb
+| saved_model_dir/<br>├ variables/<br>├ assets/<br>├ fingerprint.pb<br>├ saved_model.pb | saved_model_dir/<br>├ variables/<br>├ assets/<br>├ fingerprint.pb<br>├ saved_model.cpb
 
 ### Proto-splitting library
 
@@ -257,7 +256,7 @@ Merger::Merge(my_chunks, chunked_message, &my_proto);
 
 // Read from disk
 my_project::MyOtherProto my_other_proto;
-Merger::Read("path/to/saved_model", &my_other_proto);
+Merger::Read("path/to/my_proto_file", &my_other_proto);
 ```
 
 #### Chunked File Specification
@@ -270,11 +269,11 @@ The chunked proto is split into a sequence of smaller messages or scalars, all s
 - Fast chunk seeking
 - Fast writing (parallel encoding)
 
-The last chunk in the `{PREFIX}.cpb` file is always a serialized ChunkedProto message. In the initial version of the chunker, all chunks will be stored in a single file, but in the future there may be other outputted files that follow the pattern `{PREFIX}.*.cpb`. The main file will always be `{PREFIX}.cpb`
+The last chunk in the `{PREFIX}.cpb` file is always a set of serialized chunks followed by a `ChunkedMetadata` message. In the initial version of the chunker, all chunks will be stored in a single file, but in the future there may be other outputted files that follow the pattern `{PREFIX}.*.cpb`. The main file will always be `{PREFIX}.cpb`.
 
-> NOTE: We do not use the .riegeli suffix to somewhat hide the implementation details about the format. The user should go through official APIs to read and write SavedModel. Many dependencies on SavedModel are on the `saved_model.pb` file itself. Converters and libraries read/write directly from this file, which makes it difficult to update the format without breaking these use cases.
+> NOTE: We do not use the .riegeli suffix to somewhat hide the implementation details about the format. The user should go through official APIs to read and write `SavedModel`. Many dependencies on `SavedModel` are on the `saved_model.pb` file itself. Converters and libraries read/write directly from this file, which makes it difficult to update the format without breaking these use cases.
 
-#### ChunkedProto Specification
+#### Chunked Proto Specification
 
 ```protobuf
 // The ChunkMetadata is generated and saved as the last chunk when exported with
@@ -345,19 +344,30 @@ message FieldIndex {
 }
 ```
 
-We choose to use the proto format here for familiarity. In the event that even ChunkedMessage exceeds 2GB, we can (in the future) add recursion to chunk::Writer to chunk the output proto until it is less than 2GB. The version field is there to handle this future feature. See the Versioning section for more information.
+We choose to use the proto format here for familiarity. In the event that even `ChunkedMessage` exceeds 2GB, we can (in the future) add recursion to `Splitter.Split()` to chunk the output proto until it is less than 2GB. The version field is there to handle this future feature.
+
+##### Versioning
+
+The outputs of `Splitter.Split()` (`ChunkedProto` and `ChunkedMessage`) have a version field to handle future updates.
+
+###### Hypothetical version updates
+
+- The initial version of `Splitter` writes a single riegeli file, but in a new version it outputs several files.
+- The `ChunkedMessage` itself could exceed 2GB. In a new version of `Splitter`, the `ChunkedMessage` can be recursively chunked and recursively joined when read.
+- Riegeli is no longer used. `*.chunk.riegli` is kept so that previous versions of the code can still read it. Old code will read the `VersionDef` and see that it can no longer process the data, and report an understandable error.
+- The initial version of `Splitter` returns serialized proto chunks, but in a new version, returns a chunk reference that is actually a URL to an external file.
 
 ### Alternatives Considered
 
-We decided to explore different serialization formats, even outside of proto. There hasn't been any major changes to SavedModel in ages - lots of libraries are built on top of the saved_model.pb or a GraphDef file, and are parsing that proto directly. Any change we make to the format now is almost equally painful, and since we've decided to do this, we're exploring all options out there.
+We decided to explore different serialization formats, even outside of proto. There hasn't been any major changes to `SavedModel` in ages - lots of libraries are built on top of the `saved_model.pb` or a `GraphDef` file, and are parsing that proto directly. Any change we make to the format now is almost equally painful, and since we've decided to do this, we're exploring all options out there.
 
 The conclusion can likely be that re-using proto is the best, as it gives us an easy solution to compatibility and we can focus on other areas (e.g. MLA integration to interface with other frameworks). However, even splitting the proto comes with compatibility problems: What happens when we need to split the proto again for constants? This breaks compatibility -again-. Also in the future, are we anticipating more cross-framework models (JAX2TF is using a workaround by storing StableHLO as an attribute in a custom op)? Why not invest this time in MLIR, which supports multiple dialects and will never hit a file size limit?
 
 #### Proto Splitting: Introduce REF fields to the current schema
 
-An alternative to the Chunker described above is introducing a new Ref message type that references external data. When the proto must be split, we serialize the split data into a separate file, and reference the file in a new field.
+An alternative to the `Splitter` described above is introducing a new `Ref` message type that references external data. When the proto must be split, we serialize the split data into a separate file, and reference the file in a new field.
 
-For example, splitting GraphDef nodes and constant value:
+For example, splitting `GraphDef` nodes and constant value:
 
 <table>
 <tr>
@@ -401,7 +411,7 @@ message AttrValue {
 </tr>
 </table>
 
-This approach allows existing code to continue parsing the GraphDef/SavedModel proto with minimal changes, and allows us to continue using the proto library from the box.
+This approach allows existing code to continue parsing the `GraphDef`/`SavedModel` proto with minimal changes, and allows us to continue using the proto library from the box.
 
 ##### The problem
 
@@ -424,11 +434,11 @@ Specific features we are looking for:
 
 ##### *Easy migration for current proto schemas*
 
-We can assume that GraphDef is constantly changing, e.g. with the introduction of new types and fields. Even with ~1 major change a year, it would be problematic if the CL author had to jump through hoops to make it serializable with the Image format.
+We can assume that `GraphDef` is constantly changing, e.g. with the introduction of new types and fields. Even with ~1 major change a year, it would be problematic if the CL author had to jump through hoops to make it serializable with the Image format.
 
 ##### *Flexible API but obscure written format*
 
-Many projects write directly to/from the SavedModel proto instead of using the intended APIs. This leads to many unintended dependencies on the format that make it difficult for us to make the needed changes.
+Many projects write directly to/from the `SavedModel` proto instead of using the intended APIs. This leads to many unintended dependencies on the format that make it difficult for us to make the needed changes.
 
 The format should come with APIs that are flexible enough to handle existing use cases (e.g. inspecting the image, transforming a function from one graph to another, inserting new symbols), but not be a free-for-all transformation that we have no control over.
 
@@ -449,7 +459,7 @@ The format should come with APIs that are flexible enough to handle existing use
 - Used by PAX/ORBAX checkpoints to serialize checkpoint values and PyTree.
 - Good for serializing data in a small and fast format (Like JSON but fast)
 - File format itself has no 2GB limitation, and the limits for individual fields is the same as proto. 
-- Not great for serializing the TF Graph IR. When starting from a GraphDef/FunctionDef proto, it takes a lot of time to convert the proto into a dict (~1 min for a 300MB proto). Excluding this conversion time, packing the message into a binary takes 30% more time than proto.
+- Not great for serializing the TF Graph IR. When starting from a `GraphDef`/`FunctionDef` proto, it takes a lot of time to convert the proto into a dict (~1 min for a 300MB proto). Excluding this conversion time, packing the message into a binary takes 30% more time than proto.
   - Note: We could explore directly serializing proto to the msgpack file format. Some moma-fu shows that there are Go teams that have taken this approach. However, I don't think this can be accomplished in the allotted time frame (Q2 2023) without help.
 
 ###### Flatbuffer
@@ -457,7 +467,7 @@ The format should come with APIs that are flexible enough to handle existing use
 - Extra work in translating schema and ensuring that they are in sync.
 - Also has a 2GB limitation as it is also based on int32.
 
-###### RecordIO 
+###### RecordIO
 
 - Fault-tolerant to a fault (will silently skip records with errors). This is not permissible in model graphs.
 - No 2GB limit
@@ -466,7 +476,7 @@ The format should come with APIs that are flexible enough to handle existing use
 
 - Extra work in translating schema and ensuring they are in sync
 - Has a data blob limit of 512 MB
-- No 2GB limit 
+- No 2GB limit
 - Very fast
 
 ###### FRODO (fast read-only data objects) go/frodo/overview
@@ -492,13 +502,13 @@ The format should come with APIs that are flexible enough to handle existing use
 
 ###### Database or Query-compatible format (SQL, SSTable)
 
-- Could be used for storing GraphDef, but not sure if this path is worth exploring
+- Could be used for storing `GraphDef`, but not sure if this path is worth exploring
 
 ###### Home-brewed format [.tf]
 
 - We have to write our own encoder and decoder
 - Efficiency, performance, compatibility are on us
-- Homemade format can target versioning. Proto doesn't have versions. Differences in schema are handled automatically by proto encoding/decoding logic, it's easy to edit schema without bumping up any versions [GraphDef mitigates this by using a bot that updates the version every day]. Differences in the representation are handled programmatically, leading to legacy code floating around to handle older serialized models.
+- Homemade format can target versioning. Proto doesn't have versions. Differences in schema are handled automatically by proto encoding/decoding logic, it's easy to edit schema without bumping up any versions [`GraphDef` mitigates this by using a bot that updates the version every day]. Differences in the representation are handled programmatically, leading to legacy code floating around to handle older serialized models.
 - Can exceed 2GB as needed
 
 #### Related Discussions and Solutions
@@ -511,15 +521,15 @@ From the Protobuf docs:
 
 ##### MLIR: TFG Dialect
 
-One of the options that was heavily considered was converting the GraphDef to a non-proto representation. TFG is an MLIR dialect that has exact roundtrip conversions to/from GraphDef, and is fairly mature. The issue here is that the MLIR Bytecode format is not yet mature enough for SavedModel - close teams (Foundations and DNA) will be investigating this format for the cross-framework serving use case. Eventually SavedModel should integrate with MLA and be able to load functions defined using MLIR, but we are close to this stage yet.
+One of the options that was heavily considered was converting the `GraphDef` to a non-proto representation. TFG is an MLIR dialect that has exact roundtrip conversions to/from `GraphDef`, and is fairly mature. The issue here is that the MLIR Bytecode format is not yet mature enough for `SavedModel` - close teams (Foundations and DNA) will be investigating this format for the cross-framework serving use case. Eventually `SavedModel` should integrate with MLA and be able to load functions defined using MLIR, but we are close to this stage yet.
 
 ##### Community Suggestions
 
 ###### Applicable
 
 - Splitting on a common repeated field (GraphDefs consist of repeated nodes)
-- Using ByteSizeLong to measure the total size of (Applicable - GraphDefs)
-  - ByteSizeLong returns the correct size if > 2GB
+- Using `ByteSizeLong` to measure the total size of (Applicable - GraphDefs)
+  - `ByteSizeLong` returns the correct size if > 2GB
 - Splitting
 
 ###### Inapplicable
@@ -540,7 +550,7 @@ Riegeli has many compression options, one of which is storing protos transposed.
 
 #### Lazy Parsing
 
-With the way that the ChunkedMessage is defined, we can easily tell which fields have been chunked / not chunked, and which blobs contain the data for the fields. We can use this to implement a lazy proto reader which parses and joins fields when directly requested.
+With the way that the `ChunkedMessage` is defined, we can easily tell which fields have been chunked / not chunked, and which blobs contain the data for the fields. We can use this to implement a lazy proto reader which parses and joins fields when directly requested.
 
 ### Dependencies (TODO)
 * Dependencies: does this proposal add any new dependencies to TensorFlow?
