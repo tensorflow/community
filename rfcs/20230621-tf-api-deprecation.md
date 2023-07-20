@@ -1,6 +1,6 @@
 # TensorFlow API Deprecation Charter
 
-| Status        | Proposed       |
+| Status        | Accepted      |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [450](https://github.com/tensorflow/community/pull/450) |
 | **Author(s)** | Ayush Jain (ayh@google.com)                          |
