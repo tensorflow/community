@@ -8,21 +8,13 @@
 
 ## Objective
 
-We are proposing a new format for `SavedModel` and a generic proto-splitting library that resolves the 2GB proto issue, primarily for TF2 model graph generation. The purpose of this RFC is to publicize the design of this new format, which has been implemented (see [tensorflow/tools/proto_splitter](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/proto_splitter)), but is open to comments and changes from the open source community.
+We are proposing a new format for `SavedModel` and a generic proto-splitting library that resolves the 2GB proto issue. The purpose of this RFC is to publicize the design of this new format, which has been implemented (see [tensorflow/tools/proto_splitter](https://github.com/tensorflow/tensorflow/tree/master/tensorflow/tools/proto_splitter)), but is open to comments and changes from the open source community.
 
 ## Motivation
 
-The 2GB proto serialization limitation is an ongoing problem that has plagued [many projects](https://discuss.tensorflow.org/t/fix-the-notorious-graphdef-2gb-limitation/12572). We have evaluated many solutions and have decided on splitting the proto as the short-term solution, with a longer term plan to migrate to a common way to represent using MLIR.
+The 2GB proto serialization limitation is an ongoing problem that has plagued [many projects](https://discuss.tensorflow.org/t/fix-the-notorious-graphdef-2gb-limitation/12572). We have evaluated many solutions and have decided on splitting the proto as the short-term solution.
 
-### The 2GB problem
-
-To understand the limitation, consider the following model lifecycle from a hypothetical ML team. The team's models are generated from Python, then exported to `SavedModel` (TF2) or `GraphDef` (TF1). These models are then passed to the TF2 Loading C++ API or the custom training framework for TF1 GraphDefs.
-
-The number of nodes and functions in the `GraphDef` directly corresponds to the number of slices (devices) used. When there are too many devices, the `GraphDef`/`SavedModel` gets quite large, and the model cannot be exported. To work around this, the team reduces the number of devices, which significantly slows down step times.
-
-This team would like to serialize and deserialize models that exceed this limit. After all, why should the team be concerned with an arbitrary protobuf implementation detail when they simply want to save and load their model?
-
-Since protos cannot natively handle sizes > 2GB, we have developed a new format for serializing the `SavedModel` proto.
+For SavedModels, the most common causes of large protos are large embedding constants and a large number of the NodeDef/FunctionDefs. Current workarounds for models >2GB result in significantly slower step times, so we have developed a solution: a new format for serializing the `SavedModel` proto.
 
 ## User Benefit
 
@@ -72,6 +64,21 @@ splitter.write(file_prefix)
 
 # Access the chunks created in the splitter.
 chunks, chunked_message = splitter.split()
+```
+
+And in C++:
+
+```c++
+MyProto proto = ConstructMyProto();
+MySplitterClass splitter = MySplitterClass(&proto);
+
+// Export the chunks to a file.
+splitter.Write(file_prefix);
+
+// Access the chunks created in the splitter.
+ASSERT_OK_AND_ASSIGN(auto ret, splitter.Split());
+vector<MessageBytes>* chunks = ret.first;
+ChunkedMessage chunked_message = ret.second;
 ```
 
 Once the proto has been split (and possibly written to disk), the `Merger` class can be used to merge it back into its original form. `Merger::Merge` requires the user to already have a collection of chunks in memory, while `Merger::Read` merges a chunked proto directly from disk. The methods can be used like so:
