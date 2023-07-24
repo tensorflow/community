@@ -4,7 +4,8 @@
 :-------------- |:-------------------------------------------------------------------------------------------- |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
 | **Author(s)** | Kathy Wu (<kathywu@google.com>), Adam Cogdell (<adamcogdell@google.com>)                     |
-| **Updated**   | 2023-05-22                                                                                   |
+| **Sponsor**   | Ivan Petrychenko (<petrychenko@google.com>)                                                  |
+| **Updated**   | 2023-07-24                                                                                   |
 
 ## Objective
 
