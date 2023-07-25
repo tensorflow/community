@@ -198,7 +198,7 @@ The outputs of `Splitter.Split()` (`ChunkMetadata` and `ChunkedMessage`) have a 
 
 We decided to explore different serialization formats, even outside of proto. There haven't been any major changes to `SavedModel` in ages - lots of libraries are built on top of the `saved_model.pb` or a `GraphDef` file, and are parsing that proto directly. Any change we make to the format now is almost equally painful, and since we've decided to do this, we explored all options out there.
 
-The conclusion was that re-using proto is the best, as it gave us an easy solution to compatibility so that we can focus on other areas (e.g. MLA integration to interface with other frameworks). However, even splitting the proto comes with compatibility problems: What happens when we need to split the proto again for constants? This breaks compatibility *again*. Also in the future, are we anticipating more cross-framework models (JAX2TF is using a workaround by storing StableHLO as an attribute in a custom op)? Why not invest this time in MLIR, which supports multiple dialects and will never hit a file size limit?
+The conclusion was that re-using proto is the best, as it gave us an easy solution to compatibility so that we can focus on other areas. However, even splitting the proto comes with compatibility problems: What happens when we need to split the proto again for constants? This breaks compatibility *again*. Also in the future, are we anticipating more cross-framework models (JAX2TF is using a workaround by storing StableHLO as an attribute in a custom op)? Why not invest this time in MLIR, which supports multiple dialects and will never hit a file size limit?
 
 #### Proto Splitting: Introduce REF fields to the current schema
 
@@ -255,8 +255,6 @@ The problem is that many existing converters and libraries parse the proto direc
 #### Alternate Formats
 
 We explored written formats for both the image dump and function graphs (which are represented as Proto data structures in-memory). The format for the image does not necessarily need to be Proto-compatible, but the serialization of the function graph should be.
-
-In the future, we should consider using other HLO or using native data structures to represent functions and ops in-memory, rather than a proto-backed data structure. Proto recommends not using protobuf when it is not being serialized.
 
 Specific features we are looking for:
 
@@ -317,7 +315,7 @@ The format should come with APIs that are flexible enough to handle existing use
 
 #### MLIR: TFG Dialect
 
-One of the options that was heavily considered was converting the `GraphDef` to a non-proto representation. TFG is an MLIR dialect that has exact roundtrip conversions to/from `GraphDef`, and is fairly mature. The issue here is that the MLIR Bytecode format is not yet mature enough for `SavedModel` - close teams (Foundations and DNA) will be investigating this format for the cross-framework serving use case. Eventually `SavedModel` should integrate with MLA and be able to load functions defined using MLIR, but we are close to this stage yet.
+One of the options that was heavily considered was converting the `GraphDef` to a non-proto representation. TFG is an MLIR dialect that has exact roundtrip conversions to/from `GraphDef`, and is fairly mature. The issue here is that the MLIR Bytecode format is not yet mature enough for `SavedModel` - close teams (Foundations and DNA) will be investigating this format for the cross-framework serving use case.
 
 ### Performance Implications
 
