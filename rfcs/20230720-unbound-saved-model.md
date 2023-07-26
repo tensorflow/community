@@ -2,7 +2,7 @@
 
 | Status        | Implemented                                                                                  |
 :-------------- |:-------------------------------------------------------------------------------------------- |
-| **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
+| **RFC #**     | [453](https://github.com/tensorflow/community/pull/453)                                      |
 | **Author(s)** | Kathy Wu (<kathywu@google.com>), Adam Cogdell (<adamcogdell@google.com>)                     |
 | **Sponsor**   | Ivan Petrychenko (<petrychenko@google.com>)                                                  |
 | **Updated**   | 2023-07-24                                                                                   |
