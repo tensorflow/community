@@ -1,6 +1,6 @@
 # TFRT Kernel Fallback
 
-| Status        | Accepted                                               |
+| Status        | Obsolete                                                |
 | :------------ | :------------------------------------------------------ |
 | **RFC #**     | [266](https://github.com/tensorflow/community/pull/266) |
 | **Author(s)** | Anna Revinskaya (annarev@google.com), Jeremy Lau (lauj@google.com) |
