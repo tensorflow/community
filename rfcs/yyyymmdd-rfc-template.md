@@ -1,49 +1,32 @@
-# Title of RFC
+# Build Managment System Of Freelancers By Registering 
 
 | Status        | (Proposed / Accepted / Implemented / Obsolete)       |
 :-------------- |:---------------------------------------------------- |
 | **RFC #**     | [NNN](https://github.com/tensorflow/community/pull/NNN) (update when you have community PR #)|
-| **Author(s)** | My Name (me@example.org), AN Other (you@example.org) |
+| **Author(s)** | Joe (hyeon.woo@ideamood.co.kr), AN Other (you@example.org) |
 | **Sponsor**   | A N Expert (whomever@tensorflow.org)                 |
-| **Updated**   | YYYY-MM-DD                                           |
+| **Updated**   | 2023-07-22                                           |
 | **Obsoletes** | TF-RFC it replaces, else remove this header          |
 
 ## Objective
-
-What are we doing and why? What problem will this solve? What are the goals and
-non-goals? This is your executive summary; keep it short, elaborate below.
+To manage freelancers efficiently by giving benefits them once freelancers register on our website(ideamood.co.kr)
 
 ## Motivation
-
-Why this is a valuable problem to solve? What background information is needed
-to show how this design addresses the problem?
-
-Which users are affected by the problem? Why is it a problem? What data supports
-this? What related work exists?
+Freelancers we need could consider us(ideamood) random beloning organization so I want to solve that problem by giving sense of belonginig to them
 
 ## User Benefit
-
-How will users (or other contributors) benefit from this work? What would be the
-headline in the release notes or blog post?
+Our organization(ideamood) can prepare for the situation when we need freelancers and the freelancers can get opportunity to work at the same time
 
 ## Design Proposal
-
-This is the meat of the document, where you explain your proposal. If you have
-multiple alternatives, be sure to use sub-sections for better separation of the
-idea, and list pros/cons to each approach. If there are alternatives that you
-have eliminated, you should also list those here, and explain why you believe
-your chosen approach is superior.
-
-Make sure you’ve thought through and addressed the following sections. If a section is not relevant to your specific proposal, please explain why, e.g. your RFC addresses a convention or process, not an API.
-
+If we build and develope the system of registration section for freelancers internally, we can react for the situation when we need them as soon as possible by using their ability.
+And we can manage and control the freelancers more efficieontly by creating connection which give benfits each other If the freelancers register on our website(ideamood.co.kr).
+Also we approvce and accept the freelancers by setting standard.
 
 ### Alternatives Considered
-* Make sure to discuss the relative merits of alternatives to your proposal.
+* We can take many advantages as a prepared team and organization firmly
 
 ### Performance Implications
-* Do you expect any (speed / memory)? How will you confirm?
-* There should be microbenchmarks. Are there?
-* There should be end-to-end tests and benchmarks. If there are not (since this is still a design), how will you track that these will be created?
+* We can use freelancer's ability by filtering and selecting us(ideamood), whichh means we can be trust oraganization more and more for prospect and potencail clients, not only our clients we already got signed contract.
 
 ### Dependencies
 * Dependencies: does this proposal add any new dependencies to TensorFlow?
