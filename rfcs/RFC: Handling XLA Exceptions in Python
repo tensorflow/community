@@ -1,0 +1,101 @@
+RFC: Handling XLA Exceptions in Python
+
+Status	Propose
+Author	Vinay Kumar Burugu
+Collaborator	Loki Ravi
+PR	https://github.com/tensorflow/community/pull/435
+
+Objective
+
+The aim of this RFC is to:
+
+1. Any exception/status code thrown by XLA to be uniquely named (independent of TensorFlow).
+2. XLA exceptions to be readily available to front-end frameworks so that they can be exposed to users.
+
+Motivation
+
+1. Though XLA was developed as a part of Tensorflow, it is also used by PyTorch, JAX, etc. There is a need for exceptions thrown by XLA to be named independent of Tensorflow. 
+2. Today, XLA defines XlaRuntimeError in the xla client. However, this exception is not readily available to front-ends. Refer to this (https://github.com/google/jax/pull/10676) effort in JAX to expose this Exception to users.
+
+User Benefit
+
+1. *Simplified contract with front-ends*: Add a single line of code to front-ends to import XLA exceptions. For eg: from import xla.exceptions as xla_exceptions.
+2. *Better exception names in XLA*: Derive readable exceptions like XlaInvalidArgumentError from XlaError to replace the existing ValueError. Additionally, this would make it easier to catch/trap Exceptions from XLA and attribute errors to XLA.
+
+Design Proposal
+
+This proposal would replace existing std:: and py:: exceptions thrown by the CPP layers with new custom exceptions which will all be extended from XlaError base class. All status objects originating from XLA will be replaced by XLA specific status codes. Equivalent python exceptions will be defined under a common module xla.exceptions which will contain translations for status objects (previously TensorFlow exceptions (https://github.com/tensorflow/tensorflow/blob/87462bfac761435a46641ff2f10ad0b6e5414a4b/tensorflow/python/framework/errors_impl.py)) as well as direct throws from XLA (previously std library exceptions).
+
+This proposal introduces an XlaError base class and all exceptions are extended from this class.
+
+class XlaError : public std::Exception {
+public:
+    char * what () {
+        return "Custom XLA Exception";
+    }
+}
+
+We will create different exception classes based on the need by extending this base class. For example:
+
+class XlaInvalidValueError : public XlaError {
+public:
+    char * what () {
+        return "Invalid value provided.";
+    }
+}
+
+We will expose the exceptions under a common module xla.exceptions for use by front-ends. We will additionally modify TensorFlow and PyTorch front-ends to import xla exceptions as import xla.exceptions as xla_exceptions
+
+The effort can be categorized into:
+
+1. Replacing existing status objects
+
+ XlaInternalError (Currently a TensorFlow status object)
+
+Current implementation[Link to code (https://github.com/tensorflow/tensorflow/blob/d1a41c236defc6dd05e6fb31dddea8e0a8b53b96/tensorflow/compiler/xla/runtime/execution_engine.cc#:~:text=return%20InternalError(%22exported%20function%20not%20found%3A%20%25s%22%2C%20function_name)%3B)]:
+
+return InternalError("exported function not found: %s", function_name);
+
+Proposed implementation:
+
+return XlaInternalError("exported function not found: %s", function_name);
+
+Python UX:
+
+import xla.exceptions as xla_exceptions
+try:
+    #Some line of code
+except xla_exceptions.XlaInternalError:
+    pass
+
+2. Replacing existing use of std:: and py:: exceptions in the CPP layer
+
+XlaAttributeError (Currently a py:: lib exception)
+
+Current implementation[Link to code (https://github.com/tensorflow/tensorflow/blob/master/tensorflow/compiler/xla/python/xla.cc#:~:text=throw%20py%3A%3Aattribute_error(absl%3A%3AStrCat(%22Unknown%20attribute%20%22%2C%20name))%3B)]:
+
+throw py::attribute_error(absl::StrCat("Unknown attribute ", name));
+
+Proposed implementation:
+
+throw XlaAttributeError(absl::StrCat("Unknown attribute ", name))
+
+
+Python UX:
+
+import xla.exceptions as xla_exceptions
+try:
+    #Some line of code
+except xla_exceptions.XlaAttributeError:
+    pass
+
+3. Exposing them under a common module at the Python layer
+
+We will register these exceptions in Python using pybind.
+
+PYBIND11_MODULE(xla.exceptions, m) {
+auto py_xlaerror = py::register_exception<XlaError>(m, "XlaError");
+py::register_exception<XlaInvalidArgumentError>(m, "XlaInvalidArgumentError", py_xlaerror.ptr());
+py::register_exception<XlaInternalError>(m, "XlaInternalError", py_xlaerror.ptr());
+}
+
