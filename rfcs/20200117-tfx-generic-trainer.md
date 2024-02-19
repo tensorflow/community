@@ -43,7 +43,7 @@ We propose changing the user facing API to be more generic so that users can do
     establishing Keras as the
     [Standardized high-level API](https://medium.com/tensorflow/standardizing-on-keras-guidance-on-high-level-apis-in-tensorflow-2-0-bad2b04c819a).
 *   Allows
-    [custom training](https://www.tensorflow.org/tutorials/customization/custom_training)
+    [custom training](https://www.tensorflow.org/tutorials/customization/custom_training_walkthrough)
     for customization of training loop.
 
 ## Detailed Design
